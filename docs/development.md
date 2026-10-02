@@ -9,7 +9,7 @@ Install Git and a 64-bit Node.js version satisfying `lab/package.json`: **Node 2
 Clone this repository, then open PowerShell in the checkout root:
 
 ```powershell
-git clone https://github.com/larrybogo/irish-electrical-lab.git
+git clone https://github.com/Bh0ps/irish-electrical-lab.git
 Set-Location irish-electrical-lab/lab
 npm ci
 ```

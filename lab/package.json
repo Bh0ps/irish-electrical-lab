@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/larrybogo/irish-electrical-lab.git" },
+  "repository": { "type": "git", "url": "https://github.com/Bh0ps/irish-electrical-lab.git" },
   "engines": {
     "node": ">=22.13.0"
   },

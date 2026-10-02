@@ -25,7 +25,7 @@ open source under the [MIT license](LICENSE).
 
 ## Use the Windows app
 
-Download the setup executable from [Releases](https://github.com/larrybogo/irish-electrical-lab/releases).
+Download the setup executable from [Releases](https://github.com/Bh0ps/irish-electrical-lab/releases).
 Install it for your Windows account, then open **Irish Electrical Lab** from the
 Desktop or Start menu. Windows 11 x64 is the tested platform. The installer
 bundles its runtime; a separate Node.js installation is not required for normal use.
@@ -43,7 +43,7 @@ and replacement installations.
 Install **Node.js 22.13 or newer**, npm and Git. In PowerShell:
 
 ```powershell
-git clone https://github.com/larrybogo/irish-electrical-lab.git
+git clone https://github.com/Bh0ps/irish-electrical-lab.git
 cd irish-electrical-lab/lab
 npm run install:ci
 npm run dev
