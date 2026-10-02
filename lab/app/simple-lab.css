@@ -1,0 +1,196 @@
+/* The learning shell shares the original bench and component controls. */
+.simple-lab { min-height: 600px; }
+.simple-lab .app-header { height: 68px; padding: 0 20px; gap: 16px; }
+.simple-lab .brand { font-size: 14px; letter-spacing: 1px; }
+.simple-lab .brand small { font-size: 10px; }
+.simple-navigation { display: flex; gap: 4px; padding: 4px; background: #213747; border: 1px solid #3b5162; border-radius: 9px; }
+.simple-navigation button { height: 36px; min-width: 88px; background: transparent; color: #c5d3df; border: 0; box-shadow: none; }
+.simple-navigation button[aria-pressed=true] { background: #f0c779; color: #203343; }
+.simple-lab .header-right { gap: 8px; }
+.simple-lab .header-right button { background: transparent; border-color: #405769; color: #d2dfe9; height: 35px; }
+.simple-lab .header-right button:hover { background: #294457; }
+.simple-workspace { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+.simple-workspace.with-course { grid-template-columns: minmax(0, 1fr) 350px; }
+.simple-workspace.with-tools { grid-template-columns: minmax(0, 1fr) 330px; }
+.simple-lab .work-area { padding: 18px; gap: 12px; background: #f3f6fa; }
+.simple-lab .workspace-heading { min-height: 53px; }
+.simple-lab .workspace-heading > div:first-child { min-width: 0; }
+.simple-lab .workspace-heading h1 { font-size: 21px; line-height: 1.25; letter-spacing: -.4px; }
+.simple-lab .workspace-heading input { width: min(430px, 100%); background: white; font-size: 18px; font-weight: 600; }
+.simple-lab .eyebrow { font-size: 11px; letter-spacing: .6px; margin-bottom: 5px; }
+.simple-lab .heading-actions { gap: 12px; }
+.simple-supply { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.simple-lab .test-circuit-button { min-width: 116px; height: 39px; font-size: 13px !important; }
+.simple-lab .canvas-wrap { min-height: 280px; border: 1px solid #b7c6d3; border-radius: 10px; box-shadow: 0 3px 12px #1d34480d; }
+.simple-lab .toolbar { height: 49px; padding: 6px 8px; gap: 1px; background: #f9fbfdee; border-color: #d0dce6; }
+.simple-lab .tool-button { color: #425b6f !important; font-size: 12px !important; padding: 6px 7px !important; white-space: nowrap; }
+.simple-lab .tool-button:hover { background: #e3ebf2 !important; color: #203f58 !important; }
+.simple-lab .tool-button.active { background: #f5dfb2 !important; color: #513d1c !important; }
+.simple-lab .toolbar .icon-button { color: #4d687d; width: 29px; height: 31px; }
+.simple-lab .toolbar .icon-button:hover { background: #e0eaf2; }
+.simple-lab .toolbar-divider { background: #ccd8e2; margin: 0 3px; }
+.simple-lab .canvas-top-label { top: 61px; left: 13px; color: #4b657b; font-size: 11px; padding: 4px 7px; background: #f5f9fbd9; border-radius: 4px; }
+.simple-lab .canvas-top-label > span { display: block; }
+.simple-lab .canvas-bottom { color: #426079; left: 13px; bottom: 10px; right: 13px; font-size: 11px; }
+.simple-lab .canvas-bottom span { padding: 3px 6px; border-radius: 4px; background: #f6f9fbdc; }
+.simple-view-menu { position: absolute; top: 55px; right: 9px; z-index: 6; background: #fff; width: 320px; max-width: calc(100% - 18px); max-height: calc(100% - 80px); overflow: auto; padding: 14px; border: 1px solid #c7d5e1; box-shadow: 0 8px 24px #203c5224; border-radius: 8px; }
+.simple-view-menu .quick-actions { margin-top: 10px; }
+.simple-view-menu h3 { margin: 13px 0 8px; font-size: 12px; color: #567084; }
+.camera-mode-controls { display: flex; gap: 7px; margin: 12px 0; }
+.camera-mode-controls button { flex: 1; font-size: 12px; }
+.camera-mode-controls button[aria-pressed=true], .scenery-options button[aria-pressed=true] { background: #fff1d7; border-color: #c2a064; color: #634c23; }
+.free-camera-help { background: #eff5f8; padding: 9px 11px; border-radius: 6px; color: #49677e; font-size: 11px; line-height: 1.6; }
+.free-camera-help p { margin: 0 0 8px; }
+.free-camera-help label { display: block; }
+.free-camera-help output { float: right; font-variant-numeric: tabular-nums; }
+.free-camera-help input { display: block; width: 100%; accent-color: #40617b; margin-top: 4px; }
+.scenery-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.scenery-options button { justify-content: flex-start; white-space: normal; height: auto; min-height: 42px; padding: 7px 9px; font-size: 11px; line-height: 1.4; text-align: left; }
+.scenery-options button svg { flex: none; }
+.scene-caption { font-size: 10px; opacity: .85; margin-top: 2px; }
+.menu-choice-content { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.menu-choice-content > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.equipment-thumbnail { display: inline-flex; justify-content: center; align-items: center; flex: none; border-radius: 7px; background: #eaf0f4; color: #56718a; overflow: hidden; }
+.equipment-thumbnail img { width: 100%; height: 100%; object-fit: contain; }
+.lesson-equipment-icon { display: inline-block; width: 49px; height: 44px; position: relative; flex: none; }
+.lesson-equipment-icon > .primary { position: absolute; left: 0; top: 0; }
+.lesson-equipment-icon > .secondary { position: absolute; right: 0; bottom: 0; border: 2px solid #f8fafc; border-radius: 7px; }
+.course-list button > .lesson-equipment-icon { color: inherit; font: inherit; }
+.course-list button > .course-number { min-width: 16px; font-size: 11px; }
+.placement-caption { position: absolute; top: 93px; left: 15px; z-index: 4; display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid #d0b074; border-radius: 7px; background: #fff8e8ee; color: #5a492d; font-size: 12px; }
+.placement-caption button { border: 0; background: transparent; text-decoration: underline; margin-left: 5px; }
+.test-running-overlay { position: absolute; bottom: 43px; left: 50%; transform: translateX(-50%); max-width: 90%; padding: 10px 14px; background: #193c55ec; color: #fff; display: flex; align-items: center; gap: 8px; border-radius: 7px; font-size: 12px; z-index: 5; pointer-events: none; }
+.testing-pulse { animation: test-pulse .7s ease-in-out infinite alternate; }
+@keyframes test-pulse { from { opacity: .35; } to { opacity: 1; } }
+.bench-status { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; color: #60758a; font-size: 12px; padding: 2px 3px; }
+.bench-status button { border: 0; background: none; padding: 0; color: #325b78; text-decoration: underline; text-underline-offset: 3px; text-align: left; }
+.bench-status details { position: relative; }
+.bench-status summary { cursor: pointer; }
+.bench-status details[open] > span { position: absolute; bottom: 22px; left: 0; width: 300px; padding: 12px; background: white; border: 1px solid #ccd9e5; border-radius: 6px; box-shadow: 0 4px 14px #20374922; z-index: 8; }
+.bench-status .attached-lesson { margin-left: auto; font-size: 11px; }
+.wiring-hint { display: flex; gap: 9px; align-items: flex-start; padding: 10px 12px; border: 1px solid #d4e0e8; border-radius: 7px; background: #fff; font-size: 12px; flex: none; }
+.wiring-hint > svg { flex: none; color: #a08145; margin-top: 2px; }
+.wiring-hint > div { flex: 1; }
+.wiring-hint b { font-weight: 650; color: #345670; }
+.wiring-hint p { margin: 3px 0; line-height: 1.4; }
+.wiring-hint small { font-size: 11px; color: #63798c; }
+.wiring-hint.warning { border-color: #dec59b; background: #fff9ed; }
+.wiring-hint.error { border-color: #dab5ae; background: #fff5f1; }
+.wiring-hint button { height: 30px; font-size: 12px; padding: 4px 8px; }
+.learn-column, .context-drawer { background: white; border-left: 1px solid #d6e0e9; min-height: 0; overflow: auto; padding: 18px; color: #3d566a; }
+.context-drawer { padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.context-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.context-drawer > .context-heading { padding: 16px 17px 11px; border-bottom: 1px solid #e3eaf0; flex: none; }
+.context-heading h2 { font-size: 16px; font-weight: 650; margin: 0; }
+.context-content { padding: 16px 17px; overflow: auto; flex: 1; min-height: 0; }
+.simple-lab .context-content p, .simple-lab .lesson-context p { font-size: 12px; line-height: 1.6; margin: 8px 0; }
+.simple-lab .context-content h3, .simple-lab .lesson-context h3 { font-size: 13px; font-weight: 650; margin: 14px 0 8px; }
+.simple-lab .context-content details, .simple-lab .lesson-context details { margin-top: 14px; }
+.simple-lab details > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: #4f6c82; line-height: 1.6; }
+.simple-lab .lesson-heading { margin-bottom: 12px; }
+.lesson-stage-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 18px; }
+.lesson-stage-button { display: flex; align-items: center; justify-content: flex-start; gap: 6px; padding: 8px; border: 1px solid #d8e2eb; background: #f6f8fb; border-radius: 6px; color: #61768a; font-size: 12px; }
+.lesson-stage-button > span { display: grid; place-items: center; font-size: 10px; width: 17px; height: 17px; flex: none; background: #e7edf3; border-radius: 50%; }
+.lesson-stage-button.active { border-color: #c6a160; background: #fff4dd; color: #5b461e; }
+.lesson-stage-button.complete > span { background: #e1efe8; color: #377456; }
+.simple-lab .active-task { padding: 0; background: transparent; border: 0; }
+.simple-lab .task-topline { font-size: 11px; letter-spacing: .3px; color: #8494a4; margin-bottom: 9px; display: flex; justify-content: space-between; }
+.simple-lab .active-task h3 { font-size: 18px; line-height: 1.35; margin: 0 0 10px; color: #24455e; }
+.simple-lab .task-instruction { font-size: 14px; line-height: 1.65; margin: 0 0 12px; color: #405d73; position: sticky; top: 0; z-index: 3; background: white; padding: 7px 0; }
+.task-support-actions { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.task-support-actions button { font-size: 12px; padding: 3px 7px; color: #59778d; }
+.simple-lab .prediction-options { gap: 7px; }
+.simple-lab .prediction-options button { font-size: 13px; line-height: 1.5; padding: 10px; }
+.simple-lab .task-navigation { display: flex; gap: 7px; margin-top: 14px; }
+.simple-lab [data-learning-primary] { width: 100%; margin-top: 12px; height: 40px; background: #e5bb70; color: #2d3f4d; border: 1px solid #ceaa68; font-size: 13px; }
+.task-saved-progress { font-size: 11px; color: #698373; display: flex; gap: 5px; align-items: center; margin-top: 9px; line-height: 1.5; }
+.simple-lab .task-feedback { font-size: 12px; line-height: 1.55; padding: 10px; margin-top: 12px; }
+.lesson-more-detail { border-top: 1px solid #e2e9ef; margin-top: 22px; padding-top: 14px; }
+.lesson-more-detail p { font-size: 12px; line-height: 1.7; color: #607a8f; }
+.lesson-stage-outline { margin: 13px 0; }
+.lesson-stage-outline > summary { padding: 6px 0; }
+.lesson-stage-outline button { display: flex; align-items: center; justify-content: space-between; text-align: left; width: 100%; border: 0; padding: 7px 8px; border-radius: 4px; font-size: 12px; background: #f5f8fb; margin-top: 4px; }
+.course-tool-context { background: #f5f8fb; padding: 12px; border: 1px solid #d9e3ec; border-radius: 7px; margin: 10px 0; }
+.course-tool-context > .context-heading { margin-bottom: 9px; font-size: 13px; }
+.simple-lab .essential-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.simple-lab .essential-actions button { font-size: 12px; height: 32px; padding: 5px 9px; }
+.simple-lab .equipment-purpose { color: #506b80; }
+.simple-lab .equipment-state { font-size: 12px; padding: 8px 10px; background: #e9f0f5; border-radius: 5px; }
+.compact-object-state { font-size: 12px; padding: 8px 10px; background: #e9f0f5; border-radius: 5px; margin: 10px 0; }
+.compact-object > .quick-actions { margin-bottom: 12px; }
+.dimmer-control { padding: 12px; margin: 12px 0; border: 1px solid #d9c399; border-radius: 7px; background: #fff8e9; }
+.dimmer-level-label, .dimmer-range-labels { display: flex; justify-content: space-between; align-items: center; }
+.dimmer-level-label { font-size: 13px; color: #4d432f; }
+.dimmer-level-label output { font-variant-numeric: tabular-nums; font-size: 17px; font-weight: 650; }
+.dimmer-control input[type=range] { display: block; width: 100%; height: 30px; margin: 8px 0 0; accent-color: #ab7930; cursor: pointer; }
+.dimmer-range-labels { font-size: 10px; color: #7c725d; }
+.dimmer-readings { font-size: 11px; margin: 10px 0 0; }
+.dimmer-readings > div { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; }
+.dimmer-readings dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.simple-lab .technical-details { padding-top: 8px; }
+.simple-lab .part-picker { margin: 12px 0; }
+.simple-lab .part-explanation { padding: 8px; }
+.simple-lab .terminal-list { margin-top: 10px; }
+.simple-lab .workbench-settings { margin-top: 12px; border: 0; }
+.simple-lab .component-state { padding: 8px 0; }
+.simple-lab .meter-display { margin: 12px 0; padding: 13px; }
+.simple-lab .meter-display > b { font-size: 28px; margin: 8px 0; }
+.simple-lab .probe-button { padding: 9px; }
+.simple-lab .findings-group h3 { font-size: 15px; }
+.simple-lab .finding { padding: 10px; }
+.simple-lab .finding p { font-size: 12px; line-height: 1.55; margin: 7px 0; }
+.simple-lab .finding .quiet-button { border: 1px solid #c5d4df; border-radius: 4px; padding: 5px 8px; margin-top: 4px; }
+.simple-lab .quick-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.simple-lab .quick-actions button { font-size: 12px; height: 33px; }
+.connection-preview { padding: 12px; background: #f4f7fb; border: 1px solid #dce5ed; border-radius: 7px; margin: 14px 0; }
+.connection-preview small { display: block; font-size: 10px; letter-spacing: .8px; color: #8296a6; margin-bottom: 4px; }
+.connection-preview small:not(:first-child) { margin-top: 16px; padding-top: 12px; border-top: 1px solid #dbe5ed; }
+.connection-preview b { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.simple-lab .equipment-palette { display: flex; flex-direction: column; gap: 5px; margin-top: 14px; }
+.simple-lab .equipment-palette button { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #dce5ed; border-radius: 6px; text-align: left; background: #fff; color: #4d6b81; }
+.simple-lab .equipment-palette button:hover { background: #fff5df; border-color: #cfaf75; }
+.simple-lab .equipment-palette span { flex: 1; }
+.simple-lab .equipment-palette b { display: block; font-size: 12px; font-weight: 600; }
+.simple-lab .equipment-palette small { display: block; color: #8a9ba9; font-size: 11px; margin-top: 4px; }
+.context-content > .choice { margin-top: 10px; }
+.courses-dialog { width: min(700px, 90vw) !important; max-width: 700px !important; max-height: 85vh; overflow: auto; }
+.course-list { display: flex; flex-direction: column; gap: 4px; overflow: auto; height: min(430px, 48vh); }
+.course-list button { display: flex; align-items: center; gap: 12px; text-align: left; padding: 11px; border: 1px solid #e2e9ef; background: #f8fafc; border-radius: 6px; }
+.course-list button:hover { background: #fff5df; border-color: #cfb179; }
+.course-list button > span { font: 12px Consolas, monospace; color: #869bae; }
+.course-list button > div { flex: 1; }
+.course-list b { display: block; font-size: 13px; color: #365770; }
+.course-list small { display: block; font-size: 11px; color: #7e95a8; margin-top: 3px; }
+.builds-dialog, .more-dialog { max-height: 84vh; overflow: auto; }
+.build-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.build-menu button { justify-content: flex-start; font-size: 13px; }
+.saved-build-list { margin-top: 12px; }
+.saved-build-row { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+.saved-build-row button:first-child { flex: 1; white-space: normal; text-align: left; justify-content: flex-start; height: auto; min-height: 37px; font-size: 12px; }
+.preference-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; font-size: 13px; }
+.more-dialog details p { font-size: 13px; color: #546e82; line-height: 1.65; }
+.simple-lab .app-footer { height: 29px; font-size: 11px; }
+@media (max-width: 1100px) {
+  .simple-lab .app-header { padding: 0 14px; gap: 10px; }
+  .simple-lab .brand { font-size: 12px; }
+  .simple-workspace.with-course { grid-template-columns: minmax(0, 1fr) 330px; }
+  .simple-workspace.with-tools { grid-template-columns: minmax(0, 1fr) 310px; }
+  .simple-lab .work-area { padding: 12px; gap: 10px; }
+  .learn-column { padding: 15px; }
+  .simple-lab .workspace-heading h1 { font-size: 18px; }
+  .simple-lab .heading-actions { gap: 8px; }
+  .simple-supply { flex-direction: column; gap: 3px; font-size: 10px; }
+  .simple-lab .tool-button { padding: 6px !important; gap: 4px !important; }
+  .simple-lab .toolbar .icon-button { width: 26px; }
+  .simple-lab .toolbar-divider { margin: 0 2px; }
+}
+@media (max-width: 850px) {
+  .simple-lab .brand small { display: none; }
+  .simple-lab .brand-icon { display: none; }
+  .simple-lab .header-right button { padding: 5px 8px; }
+  .simple-navigation button { min-width: 66px; }
+  .simple-workspace.with-course, .simple-workspace.with-tools { grid-template-columns: minmax(0, 1fr) 290px; }
+  .simple-lab .toolbar { flex-wrap: wrap; height: auto; }
+  .simple-lab .toolbar-spacer { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .testing-pulse { animation: none; } }

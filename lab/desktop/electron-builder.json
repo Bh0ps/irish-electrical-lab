@@ -1,0 +1,27 @@
+{
+  "appId": "ie.irish-electrical-lab.desktop",
+  "productName": "Irish Electrical Lab",
+  "directories": { "app": "desktop/app", "output": "release", "buildResources": "desktop/assets" },
+  "files": ["*.cjs", "package.json"],
+  "extraResources": [
+    { "from": "dist/client", "to": "web", "filter": ["**/*"] },
+    { "from": "desktop/assets/icon.ico", "to": "icon.ico" },
+    { "from": "desktop/assets/qa-circuits.json", "to": "qa-circuits.json" },
+    { "from": "desktop/assets/qa-benchmark.json", "to": "qa-benchmark.json" },
+    { "from": "../LICENSE", "to": "licenses/PROJECT-MIT.txt" },
+    { "from": "../THIRD_PARTY_NOTICES.md", "to": "licenses/THIRD_PARTY_NOTICES.md" },
+    { "from": "vendor/shadcn-tailwind-4.13.0.LICENSE.md", "to": "licenses/shadcn-tailwind.LICENSE.md" },
+    { "from": "build/sites-vite-plugin.LICENSE", "to": "licenses/sites-vite-plugin.LICENSE" },
+    { "from": "desktop/assets/THIRD_PARTY_DEPENDENCIES.txt", "to": "licenses/THIRD_PARTY_DEPENDENCIES.txt" },
+    { "from": "../docs/usage.md", "to": "guides/usage.md" },
+    { "from": "examples/industrial-plant", "to": "examples/industrial-plant", "filter": ["*.json", "README.md"] }
+  ],
+  "asar": true,
+  "npmRebuild": true,
+  "beforeBuild": "desktop/no-runtime-dependencies.cjs",
+  "electronDist": "node_modules/electron/dist",
+  "electronLanguages": ["en-GB", "en-US"],
+  "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "desktop/assets/icon.ico", "requestedExecutionLevel": "asInvoker", "artifactName": "Irish-Electrical-Lab-${version}-Setup.${ext}" },
+  "nsis": { "oneClick": false, "perMachine": false, "allowElevation": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "Irish Electrical Lab", "deleteAppDataOnUninstall": false, "runAfterFinish": true },
+  "publish": null
+}

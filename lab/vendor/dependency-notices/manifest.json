@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "description": "Version-scoped, offline license supplements for published npm tarballs missing a license file. Exact source text and SHA-256 are retained. No package license is replaced by the project MIT license.",
+  "notices": [
+    {
+      "packages": [
+        "@react-three/fiber@9.8.1"
+      ],
+      "file": "vendor/dependency-notices/react-three-fiber.LICENSE",
+      "source": "https://raw.githubusercontent.com/pmndrs/react-three-fiber/v9.8.1/LICENSE",
+      "sha256": "9c35b5de7b7493a707fffe4eb23bd2f7f449153c1911f7c6eefb4e591fd5349a",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "embla-carousel@8.6.0",
+        "embla-carousel-react@8.6.0",
+        "embla-carousel-reactive-utils@8.6.0"
+      ],
+      "file": "vendor/dependency-notices/embla-carousel.LICENSE",
+      "source": "https://raw.githubusercontent.com/davidjerleke/embla-carousel/v8.6.0/LICENSE",
+      "sha256": "992490064b90ec94c302fe5f29dcc14cb44145857064e46f9ffe6c8f511c1093",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "input-otp@1.4.2"
+      ],
+      "file": "vendor/dependency-notices/input-otp.LICENSE",
+      "source": "https://raw.githubusercontent.com/guilhermerodz/input-otp/master/LICENSE",
+      "sha256": "079031192fea535a245aa64a637d8433c406b82a14f91c3606b1d63e41c00152",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "drizzle-orm@0.45.2"
+      ],
+      "file": "vendor/dependency-notices/drizzle-orm.LICENSE",
+      "source": "https://raw.githubusercontent.com/drizzle-team/drizzle-orm/0.45.2/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "@mediapipe/tasks-vision@0.10.17"
+      ],
+      "file": "vendor/dependency-notices/mediapipe.LICENSE",
+      "source": "https://raw.githubusercontent.com/google/mediapipe/master/LICENSE",
+      "sha256": "8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "@radix-ui/react-compose-refs@1.1.2"
+      ],
+      "file": "vendor/dependency-notices/radix-ui.LICENSE",
+      "source": "https://raw.githubusercontent.com/radix-ui/primitives/main/LICENSE",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "@cloudflare/workers-types@4.20260515.1"
+      ],
+      "file": "vendor/dependency-notices/cloudflare-workerd.LICENSE",
+      "source": "https://raw.githubusercontent.com/cloudflare/workerd/main/LICENSE",
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "draco3d@1.5.7"
+      ],
+      "file": "vendor/dependency-notices/draco.LICENSE",
+      "source": "https://raw.githubusercontent.com/google/draco/1.5.7/LICENSE",
+      "sha256": "d3709b0fb4b8a94bbb1d02b8a2e484f258b0d9c5c5a01f940391f3fe662cd1a4",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "react-remove-scroll-bar@2.3.8"
+      ],
+      "file": "vendor/dependency-notices/react-remove-scroll-bar.LICENSE",
+      "source": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/master/LICENSE",
+      "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "@next/env@16.3.4",
+        "@next/swc-win32-x64-msvc@16.3.4"
+      ],
+      "file": "vendor/dependency-notices/next.LICENSE",
+      "source": "Installed next@16.3.4 license.md (shared Next.js project license)",
+      "sha256": "ee765244e2d59f5234d474f62e0766fa0c8b99af967fdd4c0cb8dcb0c76ea224",
+      "coverage": "project-license"
+    },
+    {
+      "packages": [
+        "client-only@0.0.1"
+      ],
+      "file": "vendor/dependency-notices/react-client-only.LICENSE",
+      "source": "https://raw.githubusercontent.com/facebook/react/v18.2.0/LICENSE",
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "coverage": "project-license",
+      "note": "The marker package declares MIT and points to the React project; its npm tarball contains no license file. This retains the shared React project notice."
+    },
+    {
+      "packages": [
+        "maath@0.10.8"
+      ],
+      "file": "vendor/dependency-notices/maath-easing.NOTICE",
+      "source": "node_modules/maath/dist/easing-0f4db1c0.esm.js (exact installed source comment)",
+      "sha256": "2fda481f5dc33e4f7d0e7c09d238796646adb689e7abaf47c61e262559c86a09",
+      "coverage": "inline-only",
+      "note": "Package declares MIT but includes no package-level LICENSE. Full inline third-party notices are retained; no historical package copyright attribution has been invented."
+    },
+    {
+      "packages": [
+        "maath@0.10.8"
+      ],
+      "file": "vendor/dependency-notices/maath-noise.NOTICE",
+      "source": "node_modules/maath/dist/index-0332b2ed.esm.js (exact installed source comment)",
+      "sha256": "30dfb44ea5abdce4d99eac558c9154843a08c1861037c0674c83dfe7f3024e9c",
+      "coverage": "inline-only",
+      "note": "Package declares MIT but includes no package-level LICENSE. Full inline third-party notices are retained; no historical package copyright attribution has been invented."
+    },
+    {
+      "packages": [
+        "stats-gl@2.4.2"
+      ],
+      "file": "vendor/dependency-notices/stats-gl.DECLARATION",
+      "source": "node_modules/stats-gl/README.md (exact installed license declaration)",
+      "sha256": "e890cfe945ba12341370cbf79707c50dd153465bba4e83546ed2671f2c872d57",
+      "coverage": "declaration-only",
+      "note": "The package and upstream repo have no LICENSE file. The installed README and package.json declare MIT. StatsGl is not used by the lab; verify the distributed bundle before claiming complete package notices."
+    }
+  ]
+}

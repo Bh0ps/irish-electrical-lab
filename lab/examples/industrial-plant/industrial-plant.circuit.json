@@ -1,0 +1,4465 @@
+{
+  "version": 1,
+  "id": "custom-industrial-process-plant-v1",
+  "name": "Integrated process plant · 80 equipment",
+  "revision": 0,
+  "supply": {
+    "enabled": true,
+    "phase": "three",
+    "voltage": 400,
+    "frequency": 50,
+    "sourceResistance": 0.08
+  },
+  "components": [
+    {
+      "id": "plant-supply",
+      "type": "source3",
+      "label": "D01 · 400 V / 230.9 V plant supply",
+      "position": [
+        -21.2,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "sourceResistance": 0.12
+      }
+    },
+    {
+      "id": "plant-isolator",
+      "type": "isolator3",
+      "label": "D02 · Master four-pole isolation",
+      "position": [
+        -18,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      }
+    },
+    {
+      "id": "plant-residual",
+      "type": "rcd3",
+      "label": "D03 · Four-pole residual monitor · 30 mA",
+      "position": [
+        -14.8,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "tripMa": 30,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "plant-incomer",
+      "type": "mcb3",
+      "label": "D04 · Linked 32 A incomer",
+      "position": [
+        -21.2,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 32,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "bus-phase-1",
+      "type": "terminal",
+      "label": "D05 · L1 distribution bank",
+      "position": [
+        -18,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    {
+      "id": "bus-phase-2",
+      "type": "terminal",
+      "label": "D06 · L2 distribution bank",
+      "position": [
+        -14.8,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    {
+      "id": "bus-phase-3",
+      "type": "terminal",
+      "label": "D07 · L3 distribution bank",
+      "position": [
+        -21.2,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    {
+      "id": "bus-neutral",
+      "type": "neutralbar",
+      "label": "D08 · Main neutral distribution bank",
+      "position": [
+        -18,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    {
+      "id": "bus-earth",
+      "type": "earthbar",
+      "label": "D09 · Protective-earth distribution bank",
+      "position": [
+        -14.8,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    {
+      "id": "control-feeder",
+      "type": "mcb",
+      "label": "D10 · 6 A control-supply feed",
+      "position": [
+        -21.2,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 6,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "control-supply",
+      "type": "dcsupply",
+      "label": "D11 · Isolated regulated 24 V / 200 W",
+      "position": [
+        -18,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "outputVoltage": 24,
+        "efficiency": 0.92,
+        "maxPower": 200,
+        "nominalVoltage": 230,
+        "outputCurrent": 10
+      }
+    },
+    {
+      "id": "plant-spd",
+      "type": "spd",
+      "label": "D12 · Parallel surge-protection branch",
+      "position": [
+        -14.8,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "healthy": true
+      }
+    },
+    {
+      "id": "conveyor-feeder",
+      "type": "mcb3",
+      "label": "P01 · Conveyor three-pole 6 A feed",
+      "position": [
+        -9.2,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 6,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "process-plc",
+      "type": "plc",
+      "label": "P02 · Wired guard AND pressure permissives",
+      "position": [
+        -6,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "mode": "and",
+        "on": true,
+        "nominalVoltage": 24,
+        "controlVoltage": 24
+      }
+    },
+    {
+      "id": "guard-permission",
+      "type": "switch",
+      "label": "P03 · Process guard permission",
+      "position": [
+        -2.8,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      }
+    },
+    {
+      "id": "pressure-permission",
+      "type": "sensor",
+      "label": "P04 · Process pressure condition",
+      "position": [
+        -9.2,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "active": true,
+        "demand": true,
+        "sensorValue": 1,
+        "setpoint": 0.5,
+        "mode": "pressure",
+        "nominalVoltage": 24,
+        "controlVoltage": 24,
+        "delay": 0
+      }
+    },
+    {
+      "id": "plant-safety",
+      "type": "safetyRelay",
+      "label": "P05 · Manual-reset two-channel permission",
+      "position": [
+        -6,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "on": true,
+        "nominalVoltage": 24,
+        "controlVoltage": 24,
+        "mode": "manual"
+      }
+    },
+    {
+      "id": "emergency-channel-a",
+      "type": "pushbutton",
+      "label": "P06 · E-stop channel A · press to interrupt",
+      "position": [
+        -2.8,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "pressed": false
+      }
+    },
+    {
+      "id": "emergency-channel-b",
+      "type": "pushbutton",
+      "label": "P07 · E-stop channel B · press to interrupt",
+      "position": [
+        -9.2,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "pressed": false
+      }
+    },
+    {
+      "id": "plant-reset",
+      "type": "pushbutton",
+      "label": "P08 · Reset safety permission",
+      "position": [
+        -6,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "pressed": false
+      }
+    },
+    {
+      "id": "conveyor-start",
+      "type": "pushbutton",
+      "label": "P09 · Conveyor START · momentary",
+      "position": [
+        -2.8,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "pressed": false
+      }
+    },
+    {
+      "id": "conveyor-stop",
+      "type": "pushbutton",
+      "label": "P10 · Conveyor STOP · momentary",
+      "position": [
+        -9.2,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "pressed": false
+      }
+    },
+    {
+      "id": "conveyor-contactor",
+      "type": "contactor",
+      "label": "P11 · Held conveyor contactor",
+      "position": [
+        -6,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 3,
+        "mechanicallyInterlockedWith": ""
+      }
+    },
+    {
+      "id": "conveyor-overload",
+      "type": "overload",
+      "label": "P12 · Conveyor overload and coil inhibit",
+      "position": [
+        -2.8,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "currentRating": 3,
+        "closed": true,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "conveyor-motor",
+      "type": "motor3",
+      "label": "P13 · 750 W three-phase belt drive",
+      "position": [
+        -9.2,
+        0,
+        -3.4000000000000004
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 750,
+        "nominalVoltage": 400,
+        "powerFactor": 0.82,
+        "windingVoltage": 230.94010767585033
+      }
+    },
+    {
+      "id": "mixer-feeder",
+      "type": "mcb3",
+      "label": "M01 · Mixer three-pole 6 A feed",
+      "position": [
+        2.8,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 6,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "mixer-forward",
+      "type": "contactor",
+      "label": "M02 · Mixer FORWARD interlocked contactor",
+      "position": [
+        6,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 3,
+        "mechanicallyInterlockedWith": "mixer-reverse"
+      }
+    },
+    {
+      "id": "mixer-reverse",
+      "type": "contactor",
+      "label": "M03 · Mixer REVERSE interlocked contactor",
+      "position": [
+        9.2,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 3,
+        "mechanicallyInterlockedWith": "mixer-forward"
+      }
+    },
+    {
+      "id": "mixer-overload",
+      "type": "overload",
+      "label": "M04 · Shared mixer overload",
+      "position": [
+        2.8,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "currentRating": 3,
+        "closed": true,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "mixer-motor",
+      "type": "motor3",
+      "label": "M05 · Reversible 900 W process mixer",
+      "position": [
+        6,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 900,
+        "nominalVoltage": 400,
+        "powerFactor": 0.8,
+        "windingVoltage": 230.94010767585033
+      }
+    },
+    {
+      "id": "mixer-direction",
+      "type": "selector",
+      "label": "M06 · Direction selector · A forward / B reverse",
+      "position": [
+        9.2,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "position": 0,
+        "closed": true
+      }
+    },
+    {
+      "id": "mixer-forward-limit",
+      "type": "switch",
+      "label": "M07 · Forward travel permissive",
+      "position": [
+        2.8,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      }
+    },
+    {
+      "id": "mixer-reverse-limit",
+      "type": "switch",
+      "label": "M08 · Reverse travel permissive",
+      "position": [
+        6,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      }
+    },
+    {
+      "id": "mixer-enable",
+      "type": "switch",
+      "label": "M09 · Mixer RUN enable",
+      "position": [
+        9.2,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": false
+      }
+    },
+    {
+      "id": "mixer-forward-indicator",
+      "type": "indicator",
+      "label": "M10 · Forward coil indication",
+      "position": [
+        2.8,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 1,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "mixer-reverse-indicator",
+      "type": "indicator",
+      "label": "M11 · Reverse coil indication",
+      "position": [
+        6,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 1,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "pumps-feeder",
+      "type": "rcbo",
+      "label": "W01 · Pump branch L2 / N · 10 A RCBO",
+      "position": [
+        14.8,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 10,
+        "tripMa": 30,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "pump-duty",
+      "type": "selector",
+      "label": "W02 · Duty selector · A pump A / B pump B",
+      "position": [
+        18,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "position": 0,
+        "closed": true
+      }
+    },
+    {
+      "id": "normal-level",
+      "type": "switch",
+      "label": "W03 · Normal liquid-level call",
+      "position": [
+        21.2,
+        0,
+        -14
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      }
+    },
+    {
+      "id": "high-level",
+      "type": "switch",
+      "label": "W04 · High liquid-level assist",
+      "position": [
+        14.8,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": false
+      }
+    },
+    {
+      "id": "pump-a-contactor",
+      "type": "contactor",
+      "label": "W05 · Duty/assist pump A contactor",
+      "position": [
+        18,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 3,
+        "mechanicallyInterlockedWith": ""
+      }
+    },
+    {
+      "id": "pump-b-contactor",
+      "type": "contactor",
+      "label": "W06 · Duty/assist pump B contactor",
+      "position": [
+        21.2,
+        0,
+        -11.35
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 3,
+        "mechanicallyInterlockedWith": ""
+      }
+    },
+    {
+      "id": "pump-a",
+      "type": "pump",
+      "label": "W07 · 250 W drainage pump A",
+      "position": [
+        14.8,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 250,
+        "nominalVoltage": 230,
+        "powerFactor": 0.85
+      }
+    },
+    {
+      "id": "pump-b",
+      "type": "pump",
+      "label": "W08 · 250 W drainage pump B",
+      "position": [
+        18,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 250,
+        "nominalVoltage": 230,
+        "powerFactor": 0.85
+      }
+    },
+    {
+      "id": "pump-a-indicator",
+      "type": "indicator",
+      "label": "W09 · Pump A coil indication",
+      "position": [
+        21.2,
+        0,
+        -8.7
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 1,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "pump-b-indicator",
+      "type": "indicator",
+      "label": "W10 · Pump B coil indication",
+      "position": [
+        14.8,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 1,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "pump-a-assist",
+      "type": "relay",
+      "label": "W11 · High-level A request isolation relay",
+      "position": [
+        18,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 1
+      }
+    },
+    {
+      "id": "pump-b-assist",
+      "type": "relay",
+      "label": "W12 · High-level B request isolation relay",
+      "position": [
+        21.2,
+        0,
+        -6.050000000000001
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 1
+      }
+    },
+    {
+      "id": "drive-feeder",
+      "type": "mcb3",
+      "label": "V01 · Utility VFD three-pole 6 A feed",
+      "position": [
+        -21.2,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 6,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "utility-drive",
+      "type": "vfd",
+      "label": "V02 · Variable-frequency utility drive",
+      "position": [
+        -18,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "frequency": 35,
+        "efficiency": 0.95,
+        "on": true,
+        "maxPower": 1600,
+        "outputVoltage": 400
+      }
+    },
+    {
+      "id": "utility-motor",
+      "type": "motor3",
+      "label": "V03 · 600 W variable-speed utility motor",
+      "position": [
+        -14.8,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 600,
+        "nominalVoltage": 400,
+        "powerFactor": 0.85,
+        "windingVoltage": 230.94010767585033
+      }
+    },
+    {
+      "id": "drive-run",
+      "type": "switch",
+      "label": "V04 · Independent utility-drive RUN",
+      "position": [
+        -21.2,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": false
+      }
+    },
+    {
+      "id": "plant-ready-indicator",
+      "type": "indicator",
+      "label": "V05 · Safety permission available",
+      "position": [
+        -18,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 1,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "ventilation-delay",
+      "type": "timer",
+      "label": "V06 · Pressure-permitted ventilation delay · 2 s",
+      "position": [
+        -14.8,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "on": true,
+        "demand": true,
+        "delay": 2,
+        "mode": "timer",
+        "nominalVoltage": 24,
+        "controlVoltage": 24
+      }
+    },
+    {
+      "id": "airflow-permission",
+      "type": "sensor",
+      "label": "V07 · Ventilation environmental permission",
+      "position": [
+        -21.2,
+        0,
+        7.3
+      ],
+      "rotation": 0,
+      "params": {
+        "active": true,
+        "demand": true,
+        "sensorValue": 0.8,
+        "setpoint": 0.5,
+        "mode": "humidity",
+        "nominalVoltage": 24,
+        "controlVoltage": 24,
+        "delay": 0
+      }
+    },
+    {
+      "id": "ventilation-fan",
+      "type": "fan",
+      "label": "V08 · 24 V / 12 W control-domain fan",
+      "position": [
+        -18,
+        0,
+        7.3
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 12,
+        "nominalVoltage": 24,
+        "powerFactor": 0.9
+      }
+    },
+    {
+      "id": "heating-feeder",
+      "type": "mcb3",
+      "label": "H01 · Three-phase heat branch · 6 A",
+      "position": [
+        -9.2,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 6,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "heating-contactor",
+      "type": "contactor",
+      "label": "H02 · Linked three-stage heater contactor",
+      "position": [
+        -6,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "nominalVoltage": 24,
+        "coilWatts": 3,
+        "mechanicallyInterlockedWith": ""
+      }
+    },
+    {
+      "id": "heater-phase-1",
+      "type": "heater",
+      "label": "H03 · 350 W heater phase L1",
+      "position": [
+        -2.8,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 350,
+        "nominalVoltage": 230
+      },
+      "variant": "heater-wall"
+    },
+    {
+      "id": "heater-phase-2",
+      "type": "heater",
+      "label": "H04 · 350 W heater phase L2",
+      "position": [
+        -9.2,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 350,
+        "nominalVoltage": 230
+      },
+      "variant": "heater-wall"
+    },
+    {
+      "id": "heater-phase-3",
+      "type": "heater",
+      "label": "H05 · 350 W heater phase L3",
+      "position": [
+        -6,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 350,
+        "nominalVoltage": 230
+      },
+      "variant": "heater-wall"
+    },
+    {
+      "id": "heat-demand",
+      "type": "thermostat",
+      "label": "H06 · Process-water thermostat",
+      "position": [
+        -2.8,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "temperature": 18,
+        "setpoint": 21
+      }
+    },
+    {
+      "id": "heat-limit",
+      "type": "cutout",
+      "label": "H07 · Independent 85 °C thermal limit",
+      "position": [
+        -9.2,
+        0,
+        7.3
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "temperature": 20,
+        "setpoint": 85,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "heat-valve",
+      "type": "valve",
+      "label": "H08 · 24 V valve with end-position proof",
+      "position": [
+        -6,
+        0,
+        7.3
+      ],
+      "rotation": 0,
+      "params": {
+        "delay": 2,
+        "watts": 4,
+        "mode": "two-port",
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "heat-circulator",
+      "type": "pump",
+      "label": "H09 · 24 V / 12 W circulation pump",
+      "position": [
+        -2.8,
+        0,
+        7.3
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 12,
+        "nominalVoltage": 24,
+        "powerFactor": 0.9
+      }
+    },
+    {
+      "id": "heat-proven-indicator",
+      "type": "indicator",
+      "label": "H10 · Valve-open / heater-coil indication",
+      "position": [
+        -9.2,
+        0,
+        9.95
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 1,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "lighting-feeder",
+      "type": "rcbo",
+      "label": "L01 · Work-light branch L3 / N · 6 A",
+      "position": [
+        2.8,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 6,
+        "tripMa": 30,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "worklight-dimmer",
+      "type": "dimmer",
+      "label": "L02 · Workbench lighting dimmer",
+      "position": [
+        6,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "level": 0.78,
+        "referenceOhms": 960
+      }
+    },
+    {
+      "id": "worklight-a",
+      "type": "lamp",
+      "label": "L03 · 40 W workbench lamp A",
+      "position": [
+        9.2,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 40,
+        "nominalVoltage": 230
+      },
+      "variant": "lamp-bulb"
+    },
+    {
+      "id": "worklight-b",
+      "type": "lamp",
+      "label": "L04 · 40 W workbench lamp B",
+      "position": [
+        2.8,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 40,
+        "nominalVoltage": 230
+      },
+      "variant": "lamp-batten"
+    },
+    {
+      "id": "inspection-driver",
+      "type": "driver",
+      "label": "L05 · Isolated 24 V inspection-light driver",
+      "position": [
+        6,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "outputVoltage": 24,
+        "efficiency": 0.92,
+        "maxPower": 30,
+        "nominalVoltage": 230
+      }
+    },
+    {
+      "id": "inspection-led-a",
+      "type": "led",
+      "label": "L06 · 6 W low-voltage inspection lamp A",
+      "position": [
+        9.2,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 6,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "inspection-led-b",
+      "type": "led",
+      "label": "L07 · 6 W low-voltage inspection lamp B",
+      "position": [
+        2.8,
+        0,
+        7.3
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 6,
+        "nominalVoltage": 24
+      }
+    },
+    {
+      "id": "plant-emergency",
+      "type": "emergency",
+      "label": "L08 · Maintained emergency exit light",
+      "position": [
+        6,
+        0,
+        7.3
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 6,
+        "nominalVoltage": 230,
+        "battery": true,
+        "maintained": true,
+        "batteryCharge": 1
+      }
+    },
+    {
+      "id": "yard-feeder",
+      "type": "rcbo",
+      "label": "Y01 · Yard and alarm branch L1 / N · 6 A",
+      "position": [
+        14.8,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 6,
+        "tripMa": 30,
+        "resetToken": 0
+      }
+    },
+    {
+      "id": "yard-darkness",
+      "type": "sensor",
+      "label": "Y02 · Yard darkness threshold",
+      "position": [
+        18,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "active": true,
+        "demand": true,
+        "sensorValue": 0.8,
+        "setpoint": 0.5,
+        "mode": "photocell",
+        "nominalVoltage": 230,
+        "delay": 0
+      }
+    },
+    {
+      "id": "yard-light",
+      "type": "lamp",
+      "label": "Y03 · 45 W external yard luminaire",
+      "position": [
+        21.2,
+        0,
+        2
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 45,
+        "nominalVoltage": 230
+      },
+      "variant": "lamp-outdoor"
+    },
+    {
+      "id": "plant-smoke-alarm",
+      "type": "alarm",
+      "label": "Y04 · Process smoke alarm with backup",
+      "position": [
+        14.8,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 2,
+        "nominalVoltage": 230,
+        "battery": true,
+        "alarm": false,
+        "batteryCharge": 1
+      }
+    },
+    {
+      "id": "plant-heat-alarm",
+      "type": "alarm",
+      "label": "Y05 · Interlinked heat alarm with backup",
+      "position": [
+        18,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 2,
+        "nominalVoltage": 230,
+        "battery": true,
+        "alarm": false,
+        "batteryCharge": 1
+      }
+    },
+    {
+      "id": "mains-indicator",
+      "type": "indicator",
+      "label": "Y06 · Yard/alarms mains available",
+      "position": [
+        21.2,
+        0,
+        4.65
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 1,
+        "nominalVoltage": 230
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "plant-wire-001",
+      "from": {
+        "component": "plant-supply",
+        "terminal": "L1"
+      },
+      "to": {
+        "component": "plant-isolator",
+        "terminal": "L1IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-002",
+      "from": {
+        "component": "plant-isolator",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "plant-residual",
+        "terminal": "L1IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-003",
+      "from": {
+        "component": "plant-residual",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "plant-incomer",
+        "terminal": "L1IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-004",
+      "from": {
+        "component": "plant-incomer",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "bus-phase-1",
+        "terminal": "1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-005",
+      "from": {
+        "component": "plant-supply",
+        "terminal": "L2"
+      },
+      "to": {
+        "component": "plant-isolator",
+        "terminal": "L2IN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-006",
+      "from": {
+        "component": "plant-isolator",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "plant-residual",
+        "terminal": "L2IN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-007",
+      "from": {
+        "component": "plant-residual",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "plant-incomer",
+        "terminal": "L2IN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-008",
+      "from": {
+        "component": "plant-incomer",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "bus-phase-2",
+        "terminal": "1"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-009",
+      "from": {
+        "component": "plant-supply",
+        "terminal": "L3"
+      },
+      "to": {
+        "component": "plant-isolator",
+        "terminal": "L3IN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-010",
+      "from": {
+        "component": "plant-isolator",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "plant-residual",
+        "terminal": "L3IN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-011",
+      "from": {
+        "component": "plant-residual",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "plant-incomer",
+        "terminal": "L3IN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-012",
+      "from": {
+        "component": "plant-incomer",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "bus-phase-3",
+        "terminal": "1"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-013",
+      "from": {
+        "component": "plant-supply",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "plant-isolator",
+        "terminal": "NIN"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-014",
+      "from": {
+        "component": "plant-isolator",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "plant-residual",
+        "terminal": "NIN"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-015",
+      "from": {
+        "component": "plant-residual",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "bus-neutral",
+        "terminal": "1"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-016",
+      "from": {
+        "component": "plant-supply",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "bus-earth",
+        "terminal": "1"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-017",
+      "from": {
+        "component": "bus-phase-1",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "control-feeder",
+        "terminal": "IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-018",
+      "from": {
+        "component": "control-feeder",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "control-supply",
+        "terminal": "L"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-019",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "control-supply",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-020",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "control-supply",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-021",
+      "from": {
+        "component": "bus-phase-1",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "plant-spd",
+        "terminal": "L"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-022",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "plant-spd",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-023",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "plant-spd",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-024",
+      "from": {
+        "component": "bus-phase-1",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "conveyor-feeder",
+        "terminal": "L1IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-025",
+      "from": {
+        "component": "bus-phase-2",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "conveyor-feeder",
+        "terminal": "L2IN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-026",
+      "from": {
+        "component": "bus-phase-3",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "conveyor-feeder",
+        "terminal": "L3IN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-027",
+      "from": {
+        "component": "conveyor-feeder",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-028",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "conveyor-overload",
+        "terminal": "1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-029",
+      "from": {
+        "component": "conveyor-feeder",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "3"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-030",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "conveyor-overload",
+        "terminal": "3"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-031",
+      "from": {
+        "component": "conveyor-feeder",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "5"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-032",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "6"
+      },
+      "to": {
+        "component": "conveyor-overload",
+        "terminal": "5"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-033",
+      "from": {
+        "component": "conveyor-overload",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "conveyor-motor",
+        "terminal": "U1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-034",
+      "from": {
+        "component": "conveyor-overload",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "conveyor-motor",
+        "terminal": "V1"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-035",
+      "from": {
+        "component": "conveyor-overload",
+        "terminal": "6"
+      },
+      "to": {
+        "component": "conveyor-motor",
+        "terminal": "W1"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-036",
+      "from": {
+        "component": "conveyor-motor",
+        "terminal": "U2"
+      },
+      "to": {
+        "component": "conveyor-motor",
+        "terminal": "V2"
+      },
+      "role": "output",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-037",
+      "from": {
+        "component": "conveyor-motor",
+        "terminal": "V2"
+      },
+      "to": {
+        "component": "conveyor-motor",
+        "terminal": "W2"
+      },
+      "role": "output",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-038",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "conveyor-motor",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-039",
+      "from": {
+        "component": "control-supply",
+        "terminal": "+"
+      },
+      "to": {
+        "component": "process-plc",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-040",
+      "from": {
+        "component": "control-supply",
+        "terminal": "-"
+      },
+      "to": {
+        "component": "process-plc",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-041",
+      "from": {
+        "component": "control-supply",
+        "terminal": "+"
+      },
+      "to": {
+        "component": "pressure-permission",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-042",
+      "from": {
+        "component": "control-supply",
+        "terminal": "-"
+      },
+      "to": {
+        "component": "pressure-permission",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-043",
+      "from": {
+        "component": "control-supply",
+        "terminal": "+"
+      },
+      "to": {
+        "component": "plant-safety",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-044",
+      "from": {
+        "component": "control-supply",
+        "terminal": "-"
+      },
+      "to": {
+        "component": "plant-safety",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-045",
+      "from": {
+        "component": "process-plc",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "guard-permission",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-046",
+      "from": {
+        "component": "guard-permission",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "process-plc",
+        "terminal": "I1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-047",
+      "from": {
+        "component": "process-plc",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "pressure-permission",
+        "terminal": "IN"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-048",
+      "from": {
+        "component": "pressure-permission",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "process-plc",
+        "terminal": "I2"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-049",
+      "from": {
+        "component": "process-plc",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "emergency-channel-a",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-050",
+      "from": {
+        "component": "emergency-channel-a",
+        "terminal": "NC"
+      },
+      "to": {
+        "component": "plant-safety",
+        "terminal": "S1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-051",
+      "from": {
+        "component": "pressure-permission",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "emergency-channel-b",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-052",
+      "from": {
+        "component": "emergency-channel-b",
+        "terminal": "NC"
+      },
+      "to": {
+        "component": "plant-safety",
+        "terminal": "S2"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-053",
+      "from": {
+        "component": "pressure-permission",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "plant-reset",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-054",
+      "from": {
+        "component": "plant-reset",
+        "terminal": "NO"
+      },
+      "to": {
+        "component": "plant-safety",
+        "terminal": "RESET"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-055",
+      "from": {
+        "component": "pressure-permission",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "21"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-056",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "22"
+      },
+      "to": {
+        "component": "plant-safety",
+        "terminal": "FB"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-057",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "plant-safety",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-058",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "process-plc",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-059",
+      "from": {
+        "component": "process-plc",
+        "terminal": "Q1"
+      },
+      "to": {
+        "component": "conveyor-stop",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-060",
+      "from": {
+        "component": "conveyor-stop",
+        "terminal": "NC"
+      },
+      "to": {
+        "component": "conveyor-overload",
+        "terminal": "95"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-061",
+      "from": {
+        "component": "conveyor-overload",
+        "terminal": "96"
+      },
+      "to": {
+        "component": "conveyor-start",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-062",
+      "from": {
+        "component": "conveyor-start",
+        "terminal": "NO"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-063",
+      "from": {
+        "component": "conveyor-overload",
+        "terminal": "96"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "13"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-064",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "14"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-065",
+      "from": {
+        "component": "process-plc",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "conveyor-contactor",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-066",
+      "from": {
+        "component": "bus-phase-1",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "mixer-feeder",
+        "terminal": "L1IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-067",
+      "from": {
+        "component": "bus-phase-2",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "mixer-feeder",
+        "terminal": "L2IN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-068",
+      "from": {
+        "component": "bus-phase-3",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "mixer-feeder",
+        "terminal": "L3IN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-069",
+      "from": {
+        "component": "mixer-feeder",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "mixer-forward",
+        "terminal": "1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-070",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "mixer-overload",
+        "terminal": "1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-071",
+      "from": {
+        "component": "mixer-feeder",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "mixer-forward",
+        "terminal": "3"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-072",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "mixer-overload",
+        "terminal": "3"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-073",
+      "from": {
+        "component": "mixer-feeder",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "mixer-forward",
+        "terminal": "5"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-074",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "6"
+      },
+      "to": {
+        "component": "mixer-overload",
+        "terminal": "5"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-075",
+      "from": {
+        "component": "mixer-feeder",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "mixer-reverse",
+        "terminal": "1"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-076",
+      "from": {
+        "component": "mixer-reverse",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "mixer-overload",
+        "terminal": "1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-077",
+      "from": {
+        "component": "mixer-feeder",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "mixer-reverse",
+        "terminal": "3"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-078",
+      "from": {
+        "component": "mixer-reverse",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "mixer-overload",
+        "terminal": "3"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-079",
+      "from": {
+        "component": "mixer-feeder",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "mixer-reverse",
+        "terminal": "5"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-080",
+      "from": {
+        "component": "mixer-reverse",
+        "terminal": "6"
+      },
+      "to": {
+        "component": "mixer-overload",
+        "terminal": "5"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-081",
+      "from": {
+        "component": "mixer-overload",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "mixer-motor",
+        "terminal": "U1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-082",
+      "from": {
+        "component": "mixer-overload",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "mixer-motor",
+        "terminal": "V1"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-083",
+      "from": {
+        "component": "mixer-overload",
+        "terminal": "6"
+      },
+      "to": {
+        "component": "mixer-motor",
+        "terminal": "W1"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-084",
+      "from": {
+        "component": "mixer-motor",
+        "terminal": "U2"
+      },
+      "to": {
+        "component": "mixer-motor",
+        "terminal": "V2"
+      },
+      "role": "output",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-085",
+      "from": {
+        "component": "mixer-motor",
+        "terminal": "V2"
+      },
+      "to": {
+        "component": "mixer-motor",
+        "terminal": "W2"
+      },
+      "role": "output",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-086",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "mixer-motor",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-087",
+      "from": {
+        "component": "process-plc",
+        "terminal": "Q1"
+      },
+      "to": {
+        "component": "mixer-overload",
+        "terminal": "95"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-088",
+      "from": {
+        "component": "mixer-overload",
+        "terminal": "96"
+      },
+      "to": {
+        "component": "mixer-enable",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-089",
+      "from": {
+        "component": "mixer-enable",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "mixer-direction",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-090",
+      "from": {
+        "component": "mixer-direction",
+        "terminal": "A"
+      },
+      "to": {
+        "component": "mixer-reverse",
+        "terminal": "21"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-091",
+      "from": {
+        "component": "mixer-reverse",
+        "terminal": "22"
+      },
+      "to": {
+        "component": "mixer-forward-limit",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-092",
+      "from": {
+        "component": "mixer-forward-limit",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "mixer-forward",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-093",
+      "from": {
+        "component": "process-plc",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "mixer-forward",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-094",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "A1"
+      },
+      "to": {
+        "component": "mixer-forward-indicator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-095",
+      "from": {
+        "component": "process-plc",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "mixer-forward-indicator",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-096",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "mixer-forward-indicator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-097",
+      "from": {
+        "component": "mixer-direction",
+        "terminal": "B"
+      },
+      "to": {
+        "component": "mixer-forward",
+        "terminal": "21"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-098",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "22"
+      },
+      "to": {
+        "component": "mixer-reverse-limit",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-099",
+      "from": {
+        "component": "mixer-reverse-limit",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "mixer-reverse",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-100",
+      "from": {
+        "component": "pressure-permission",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "mixer-reverse",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-101",
+      "from": {
+        "component": "mixer-reverse",
+        "terminal": "A1"
+      },
+      "to": {
+        "component": "mixer-reverse-indicator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-102",
+      "from": {
+        "component": "pressure-permission",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "mixer-reverse-indicator",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-103",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "mixer-reverse-indicator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-104",
+      "from": {
+        "component": "bus-phase-2",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "pumps-feeder",
+        "terminal": "LIN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-105",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "pumps-feeder",
+        "terminal": "NIN"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-106",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "normal-level",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-107",
+      "from": {
+        "component": "normal-level",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "pump-duty",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-108",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "high-level",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-109",
+      "from": {
+        "component": "pump-duty",
+        "terminal": "A"
+      },
+      "to": {
+        "component": "pump-a-contactor",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-110",
+      "from": {
+        "component": "pressure-permission",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "pump-a-contactor",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-111",
+      "from": {
+        "component": "high-level",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "pump-a-assist",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-112",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "pump-a-assist",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-113",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "pump-a-assist",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-114",
+      "from": {
+        "component": "pump-a-assist",
+        "terminal": "NO"
+      },
+      "to": {
+        "component": "pump-a-contactor",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-115",
+      "from": {
+        "component": "pumps-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "pump-a-contactor",
+        "terminal": "1"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-116",
+      "from": {
+        "component": "pump-a-contactor",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "pump-a",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-117",
+      "from": {
+        "component": "pumps-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "pump-a",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-118",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "pump-a",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-119",
+      "from": {
+        "component": "pump-a-contactor",
+        "terminal": "A1"
+      },
+      "to": {
+        "component": "pump-a-indicator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-120",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "pump-a-indicator",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-121",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "pump-a-indicator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-122",
+      "from": {
+        "component": "pump-duty",
+        "terminal": "B"
+      },
+      "to": {
+        "component": "pump-b-contactor",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-123",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "pump-b-contactor",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-124",
+      "from": {
+        "component": "high-level",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "pump-b-assist",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-125",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "A2"
+      },
+      "to": {
+        "component": "pump-b-assist",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-126",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "pump-b-assist",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-127",
+      "from": {
+        "component": "pump-b-assist",
+        "terminal": "NO"
+      },
+      "to": {
+        "component": "pump-b-contactor",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-128",
+      "from": {
+        "component": "pumps-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "pump-b-contactor",
+        "terminal": "1"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-129",
+      "from": {
+        "component": "pump-b-contactor",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "pump-b",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-130",
+      "from": {
+        "component": "pumps-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "pump-b",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-131",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "pump-b",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-132",
+      "from": {
+        "component": "pump-b-contactor",
+        "terminal": "A1"
+      },
+      "to": {
+        "component": "pump-b-indicator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-133",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "A2"
+      },
+      "to": {
+        "component": "pump-b-indicator",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-134",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "pump-b-indicator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-135",
+      "from": {
+        "component": "bus-phase-1",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "drive-feeder",
+        "terminal": "L1IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-136",
+      "from": {
+        "component": "bus-phase-2",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "drive-feeder",
+        "terminal": "L2IN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-137",
+      "from": {
+        "component": "bus-phase-3",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "drive-feeder",
+        "terminal": "L3IN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-138",
+      "from": {
+        "component": "drive-feeder",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "utility-drive",
+        "terminal": "L1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-139",
+      "from": {
+        "component": "drive-feeder",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "utility-drive",
+        "terminal": "L2"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-140",
+      "from": {
+        "component": "drive-feeder",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "utility-drive",
+        "terminal": "L3"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-141",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "utility-drive",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-142",
+      "from": {
+        "component": "utility-drive",
+        "terminal": "U"
+      },
+      "to": {
+        "component": "utility-motor",
+        "terminal": "U1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-143",
+      "from": {
+        "component": "utility-drive",
+        "terminal": "V"
+      },
+      "to": {
+        "component": "utility-motor",
+        "terminal": "V1"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-144",
+      "from": {
+        "component": "utility-drive",
+        "terminal": "W"
+      },
+      "to": {
+        "component": "utility-motor",
+        "terminal": "W1"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-145",
+      "from": {
+        "component": "utility-motor",
+        "terminal": "U2"
+      },
+      "to": {
+        "component": "utility-motor",
+        "terminal": "V2"
+      },
+      "role": "output",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-146",
+      "from": {
+        "component": "utility-motor",
+        "terminal": "V2"
+      },
+      "to": {
+        "component": "utility-motor",
+        "terminal": "W2"
+      },
+      "role": "output",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-147",
+      "from": {
+        "component": "bus-earth",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "utility-motor",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-148",
+      "from": {
+        "component": "utility-drive",
+        "terminal": "COM"
+      },
+      "to": {
+        "component": "drive-run",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-149",
+      "from": {
+        "component": "drive-run",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "utility-drive",
+        "terminal": "RUN"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-150",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "plant-ready-indicator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-151",
+      "from": {
+        "component": "conveyor-contactor",
+        "terminal": "A2"
+      },
+      "to": {
+        "component": "plant-ready-indicator",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-152",
+      "from": {
+        "component": "control-supply",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "plant-ready-indicator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-153",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "ventilation-delay",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-154",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "A2"
+      },
+      "to": {
+        "component": "ventilation-delay",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-155",
+      "from": {
+        "component": "plant-safety",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "airflow-permission",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-156",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "A2"
+      },
+      "to": {
+        "component": "airflow-permission",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-157",
+      "from": {
+        "component": "process-plc",
+        "terminal": "Q2"
+      },
+      "to": {
+        "component": "ventilation-delay",
+        "terminal": "IN"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-158",
+      "from": {
+        "component": "ventilation-delay",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "airflow-permission",
+        "terminal": "IN"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-159",
+      "from": {
+        "component": "airflow-permission",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "ventilation-fan",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-160",
+      "from": {
+        "component": "mixer-forward",
+        "terminal": "A2"
+      },
+      "to": {
+        "component": "ventilation-fan",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-161",
+      "from": {
+        "component": "control-supply",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "ventilation-fan",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-162",
+      "from": {
+        "component": "bus-phase-1",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "heating-feeder",
+        "terminal": "L1IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-163",
+      "from": {
+        "component": "bus-phase-2",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "heating-feeder",
+        "terminal": "L2IN"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-164",
+      "from": {
+        "component": "bus-phase-3",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "heating-feeder",
+        "terminal": "L3IN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-165",
+      "from": {
+        "component": "heating-feeder",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "heating-contactor",
+        "terminal": "1"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-166",
+      "from": {
+        "component": "heating-feeder",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "heating-contactor",
+        "terminal": "3"
+      },
+      "role": "L2",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-167",
+      "from": {
+        "component": "heating-feeder",
+        "terminal": "L3OUT"
+      },
+      "to": {
+        "component": "heating-contactor",
+        "terminal": "5"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-168",
+      "from": {
+        "component": "heating-contactor",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "heater-phase-1",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-169",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "heater-phase-1",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-170",
+      "from": {
+        "component": "control-supply",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "heater-phase-1",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-171",
+      "from": {
+        "component": "heating-contactor",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "heater-phase-2",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-172",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "heater-phase-2",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-173",
+      "from": {
+        "component": "plant-spd",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "heater-phase-2",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-174",
+      "from": {
+        "component": "heating-contactor",
+        "terminal": "6"
+      },
+      "to": {
+        "component": "heater-phase-3",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-175",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "3"
+      },
+      "to": {
+        "component": "heater-phase-3",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-176",
+      "from": {
+        "component": "plant-spd",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "heater-phase-3",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-177",
+      "from": {
+        "component": "guard-permission",
+        "terminal": "COM"
+      },
+      "to": {
+        "component": "heat-demand",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-178",
+      "from": {
+        "component": "heat-demand",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "heat-limit",
+        "terminal": "COM"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-179",
+      "from": {
+        "component": "heat-limit",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "heat-valve",
+        "terminal": "CALL"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-180",
+      "from": {
+        "component": "guard-permission",
+        "terminal": "COM"
+      },
+      "to": {
+        "component": "heat-valve",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-181",
+      "from": {
+        "component": "mixer-forward-indicator",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "heat-valve",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-182",
+      "from": {
+        "component": "plant-spd",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "heat-valve",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-183",
+      "from": {
+        "component": "heat-valve",
+        "terminal": "END"
+      },
+      "to": {
+        "component": "heating-contactor",
+        "terminal": "A1"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-184",
+      "from": {
+        "component": "mixer-forward-indicator",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "heating-contactor",
+        "terminal": "A2"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-185",
+      "from": {
+        "component": "heat-valve",
+        "terminal": "END"
+      },
+      "to": {
+        "component": "heat-circulator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-186",
+      "from": {
+        "component": "mixer-forward-indicator",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "heat-circulator",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-187",
+      "from": {
+        "component": "conveyor-motor",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "heat-circulator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-188",
+      "from": {
+        "component": "heat-valve",
+        "terminal": "END"
+      },
+      "to": {
+        "component": "heat-proven-indicator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-189",
+      "from": {
+        "component": "mixer-reverse",
+        "terminal": "A2"
+      },
+      "to": {
+        "component": "heat-proven-indicator",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-190",
+      "from": {
+        "component": "conveyor-motor",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "heat-proven-indicator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-191",
+      "from": {
+        "component": "bus-phase-3",
+        "terminal": "2"
+      },
+      "to": {
+        "component": "lighting-feeder",
+        "terminal": "LIN"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-192",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "lighting-feeder",
+        "terminal": "NIN"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-193",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "worklight-dimmer",
+        "terminal": "COM"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-194",
+      "from": {
+        "component": "worklight-dimmer",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "worklight-a",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-195",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "worklight-a",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-196",
+      "from": {
+        "component": "conveyor-motor",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "worklight-a",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-197",
+      "from": {
+        "component": "worklight-dimmer",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "worklight-b",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-198",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "worklight-b",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-199",
+      "from": {
+        "component": "mixer-motor",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "worklight-b",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-200",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "inspection-driver",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-201",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "inspection-driver",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-202",
+      "from": {
+        "component": "mixer-motor",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "inspection-driver",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-203",
+      "from": {
+        "component": "inspection-driver",
+        "terminal": "+"
+      },
+      "to": {
+        "component": "inspection-led-a",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-204",
+      "from": {
+        "component": "inspection-driver",
+        "terminal": "-"
+      },
+      "to": {
+        "component": "inspection-led-a",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-205",
+      "from": {
+        "component": "inspection-driver",
+        "terminal": "+"
+      },
+      "to": {
+        "component": "inspection-led-b",
+        "terminal": "L"
+      },
+      "role": "DC+",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-206",
+      "from": {
+        "component": "inspection-driver",
+        "terminal": "-"
+      },
+      "to": {
+        "component": "inspection-led-b",
+        "terminal": "N"
+      },
+      "role": "DC-",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-207",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "plant-emergency",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-208",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "plant-emergency",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-209",
+      "from": {
+        "component": "mixer-motor",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "plant-emergency",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-210",
+      "from": {
+        "component": "lighting-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "plant-emergency",
+        "terminal": "SL"
+      },
+      "role": "L3",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-211",
+      "from": {
+        "component": "bus-phase-1",
+        "terminal": "4"
+      },
+      "to": {
+        "component": "yard-feeder",
+        "terminal": "LIN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-212",
+      "from": {
+        "component": "bus-neutral",
+        "terminal": "1"
+      },
+      "to": {
+        "component": "yard-feeder",
+        "terminal": "NIN"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-213",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "yard-darkness",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-214",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "yard-darkness",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-215",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "yard-darkness",
+        "terminal": "IN"
+      },
+      "role": "L1",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-216",
+      "from": {
+        "component": "yard-darkness",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "yard-light",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-217",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "yard-light",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-218",
+      "from": {
+        "component": "mixer-forward-indicator",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "yard-light",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-219",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "plant-smoke-alarm",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-220",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "plant-smoke-alarm",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-221",
+      "from": {
+        "component": "mixer-forward-indicator",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "plant-smoke-alarm",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-222",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "plant-heat-alarm",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-223",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "plant-heat-alarm",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-224",
+      "from": {
+        "component": "mixer-forward-indicator",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "plant-heat-alarm",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-225",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "mains-indicator",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-226",
+      "from": {
+        "component": "yard-feeder",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "mains-indicator",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-227",
+      "from": {
+        "component": "mixer-reverse-indicator",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "mains-indicator",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.004,
+      "bends": []
+    },
+    {
+      "id": "plant-wire-228",
+      "from": {
+        "component": "plant-smoke-alarm",
+        "terminal": "LINK"
+      },
+      "to": {
+        "component": "plant-heat-alarm",
+        "terminal": "LINK"
+      },
+      "role": "control",
+      "resistance": 0.004,
+      "bends": []
+    }
+  ],
+  "faults": []
+}

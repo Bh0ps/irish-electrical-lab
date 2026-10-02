@@ -1,0 +1,14 @@
+# Local task metadata, downloaded tools and generated Windows packages.
+/.codex/
+/tools/
+/lab/release/
+/lab/.local-runtime/
+
+# Raw local verification includes learner backups and database recovery files.
+# The public, curated verification summary is docs/verification.md.
+/verification/
+
+**/__pycache__/
+*.py[cod]
+*.blend[1-9]
+*.tsbuildinfo

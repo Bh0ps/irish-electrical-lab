@@ -1,0 +1,479 @@
+{
+  "passed": true,
+  "components": 80,
+  "wires": 228,
+  "maximumSolverUnknowns": 340,
+  "configurationId": "custom-industrial-process-plant-v1",
+  "lessonIdPresent": false,
+  "routingReport": {
+    "passed": true,
+    "wires": 228,
+    "routed": 228,
+    "elapsedMs": 1625.5004000000008,
+    "issues": []
+  },
+  "checks": [
+    {
+      "name": "original custom document has exactly 80 components and no lessonId",
+      "passed": true,
+      "detail": {
+        "components": 80,
+        "wires": 228
+      }
+    },
+    {
+      "name": "versioned circuit import accepts actual component/terminal limits",
+      "passed": true,
+      "detail": {
+        "components": 80,
+        "wires": 228
+      }
+    },
+    {
+      "name": "initial standalone network resolves without electrical/protective findings",
+      "passed": true,
+      "detail": {
+        "nodes": 309,
+        "elapsedMs": 261.33760000000007,
+        "findings": []
+      }
+    },
+    {
+      "name": "initial process is stopped while lighting and valve-proven heating operate",
+      "passed": true,
+      "detail": {
+        "conveyor": {
+          "energized": false,
+          "closed": true,
+          "tripped": false,
+          "level": 0,
+          "direction": 0,
+          "elapsed": 0,
+          "resetToken": 0,
+          "details": "0.0 / 0.0 / 0.0 V across windings; insufficient three-phase supply. Rotation is explanatory, not a torque calculation.",
+          "frequency": 50,
+          "unbalance": 0
+        },
+        "heater": 352.1928251641617,
+        "lamp": 20.265630701890924
+      }
+    },
+    {
+      "name": "manual safety reset arms actual wired permission",
+      "passed": true,
+      "detail": {
+        "nodes": 309,
+        "elapsedMs": 51.94470000000001,
+        "findings": []
+      }
+    },
+    {
+      "name": "duty pump A operates while standby pump B is stopped",
+      "passed": true,
+      "detail": {
+        "a": 251.40111991484844,
+        "b": 6.284138580096781e-30
+      }
+    },
+    {
+      "name": "conveyor START then release maintains the actual auxiliary holding loop",
+      "passed": true,
+      "detail": {
+        "nodes": 324,
+        "elapsedMs": 57.43280000000004,
+        "findings": []
+      }
+    },
+    {
+      "name": "conveyor remains running after momentary START release",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": true,
+        "tripped": false,
+        "level": 0.9985096713794199,
+        "direction": 1,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "230.6 / 230.6 / 230.6 V across windings; forward sequence. Rotation is explanatory, not a torque calculation.",
+        "frequency": 50,
+        "unbalance": 0.00023535080470691685
+      }
+    },
+    {
+      "name": "mixer forward direction follows wired sequence",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": true,
+        "tripped": false,
+        "level": 0.9979354425751358,
+        "direction": 1,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "230.5 / 230.4 / 230.5 V across windings; forward sequence. Rotation is explanatory, not a torque calculation.",
+        "frequency": 50,
+        "unbalance": 0.00023212044159453616
+      }
+    },
+    {
+      "name": "direction transfer settles with interlocks preserving exclusive contact closure",
+      "passed": true,
+      "detail": {
+        "nodes": 340,
+        "elapsedMs": 268.92539999999985,
+        "findings": []
+      }
+    },
+    {
+      "name": "reverse selector reverses winding sequence with only one contactor closed",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": true,
+        "tripped": false,
+        "level": 0.9979354406610624,
+        "direction": -1,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "230.4 / 230.5 / 230.5 V across windings; reverse sequence. Rotation is explanatory, not a torque calculation.",
+        "frequency": 50,
+        "unbalance": 0.0002579630808022851
+      }
+    },
+    {
+      "name": "actual reverse limit interrupts motor power",
+      "passed": true,
+      "detail": {
+        "energized": false,
+        "closed": true,
+        "tripped": false,
+        "level": 0,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "0.0 / 0.0 / 0.0 V across windings; insufficient three-phase supply. Rotation is explanatory, not a torque calculation.",
+        "frequency": 50,
+        "unbalance": 0
+      }
+    },
+    {
+      "name": "duty transfer stops pump A and starts pump B",
+      "passed": true,
+      "detail": {
+        "a": 9.027247905462696e-29,
+        "b": 251.16836172917235
+      }
+    },
+    {
+      "name": "high-level assist supplies both pump requests",
+      "passed": true,
+      "detail": {
+        "a": 250.87261138793014,
+        "b": 250.87261138793014
+      }
+    },
+    {
+      "name": "independent utility VFD run path and converter resolve",
+      "passed": true,
+      "detail": {
+        "nodes": 339,
+        "elapsedMs": 339.40470000000005,
+        "findings": []
+      }
+    },
+    {
+      "name": "utility drive supplies the declared 35 Hz fundamental output",
+      "passed": true,
+      "detail": {
+        "motor": {
+          "energized": true,
+          "closed": true,
+          "tripped": false,
+          "level": 0.699673977886575,
+          "direction": 1,
+          "elapsed": 0,
+          "resetToken": 0,
+          "details": "161.6 / 161.6 / 161.6 V across windings; forward sequence. Rotation is explanatory, not a torque calculation.",
+          "frequency": 35,
+          "unbalance": 0.00001091925604395415
+        },
+        "drive": {
+          "energized": true,
+          "closed": true,
+          "tripped": false,
+          "level": 0,
+          "direction": 0,
+          "elapsed": 0,
+          "resetToken": 0,
+          "details": "Enabled; 342.3 W output; within teaching limits. Converter behavior is averaged; switching waveforms are excluded.",
+          "regulatedVoltage": 280,
+          "outputPower": 342.3382413660101,
+          "currentLimited": false,
+          "inputWatts": 360.254034968572
+        }
+      }
+    },
+    {
+      "name": "wired delayed ventilation begins after the 2 s permission",
+      "passed": true,
+      "detail": {
+        "timer": {
+          "energized": true,
+          "closed": true,
+          "tripped": false,
+          "level": 0,
+          "direction": 0,
+          "elapsed": 4.3,
+          "resetToken": 0,
+          "details": "Actual input high; powered yes; output closed; timer 4.3 s.",
+          "command": true
+        },
+        "fan": 11.872406033965
+      }
+    },
+    {
+      "name": "sensor condition inhibits its downstream ventilation fan",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": false,
+        "tripped": false,
+        "level": 0,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "Actual input high; powered yes; output open; timer 0.0 s.",
+        "command": false
+      }
+    },
+    {
+      "name": "dimmer changes actual lamp power through series resistance",
+      "passed": true,
+      "detail": {
+        "high": 20.23770469430489,
+        "low": 0.8678479676673623
+      }
+    },
+    {
+      "name": "satisfied thermostat closes valve then removes heater and circulation demands",
+      "passed": true,
+      "detail": {
+        "heater": 3.760258098225855e-30,
+        "valve": {
+          "energized": false,
+          "closed": false,
+          "tripped": false,
+          "level": 0,
+          "direction": 0,
+          "elapsed": 0,
+          "resetToken": 0,
+          "details": "Actuator 0% open; end switch open. Travel is a stateful teaching abstraction.",
+          "moving": false
+        }
+      }
+    },
+    {
+      "name": "actual interlink propagates alarm request to peer",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": true,
+        "tripped": false,
+        "level": 1,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "Mains power; alarm active. LINK propagates a conceptual signal through actual closed wire/contact paths. Its manufacturer-dependent voltage and waveform are excluded.",
+        "linkActive": true,
+        "conceptualInterlink": true
+      }
+    },
+    {
+      "name": "missing guard permissive drops the held process conveyor",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": false,
+        "tripped": false,
+        "level": 0,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "Inputs 0/1; and logic; outputs use actual COM wiring.",
+        "output2": true
+      }
+    },
+    {
+      "name": "one interrupted safety channel removes process permission and pump demands",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": false,
+        "tripped": false,
+        "level": 0,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "Channels open/closed; feedback present; output inhibited. This state model provides no safety certification.",
+        "resetHigh": false,
+        "resetRequested": false
+      }
+    },
+    {
+      "name": "released safety input cannot automatically rearm manual permission",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": false,
+        "tripped": false,
+        "level": 0,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "Channels closed/closed; feedback present; output inhibited. This state model provides no safety certification.",
+        "resetHigh": false,
+        "resetRequested": false
+      }
+    },
+    {
+      "name": "momentary STOP removes held conveyor request",
+      "passed": true,
+      "detail": {
+        "energized": false,
+        "closed": true,
+        "tripped": false,
+        "level": 0,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "0.0 / 0.0 / 0.0 V across windings; insufficient three-phase supply. Rotation is explanatory, not a torque calculation.",
+        "frequency": 50,
+        "unbalance": 0
+      }
+    },
+    {
+      "name": "master supply loss removes external loads while emergency backup illuminates",
+      "passed": true,
+      "detail": {
+        "energized": true,
+        "closed": true,
+        "tripped": false,
+        "level": 1,
+        "direction": 0,
+        "elapsed": 0,
+        "resetToken": 0,
+        "details": "Integral battery provides a conceptual emergency light; it does not energize the mains terminals.",
+        "normalActive": false,
+        "emergencyActive": true,
+        "lightOutputPower": 6
+      }
+    },
+    {
+      "name": "24 V control supply and independent protective network are resolved",
+      "passed": true,
+      "detail": {
+        "controlVoltage": {
+          "value": 23.934406076800684,
+          "explanation": "RMS voltage between the actual probe terminals within an isolated output."
+        },
+        "source": {
+          "energized": true,
+          "closed": true,
+          "tripped": false,
+          "level": 0,
+          "direction": 0,
+          "elapsed": 0,
+          "resetToken": 0,
+          "details": "400.0 V line-to-line, 230.9 V phase-to-neutral."
+        },
+        "control": {
+          "energized": true,
+          "closed": true,
+          "tripped": false,
+          "level": 0,
+          "direction": 0,
+          "elapsed": 0,
+          "resetToken": 0,
+          "details": "Enabled; 31.5 W output; within teaching limits. Converter behavior is averaged; switching waveforms are excluded.",
+          "regulatedVoltage": 24,
+          "outputPower": 31.486532250004853,
+          "currentLimited": false,
+          "inputWatts": 33.99806851530584
+        },
+        "totalPower": 1223.6145755533223,
+        "totalCurrent": 1.9068064709739074,
+        "nodes": 309,
+        "elapsedMs": 257.04280000000017
+      }
+    },
+    {
+      "name": "every exercised operating state remains below the 512 MNA unknown limit",
+      "passed": true,
+      "detail": {
+        "maximumUnknowns": 340,
+        "solverLimit": 512
+      }
+    },
+    {
+      "name": "actual missing protective wire is reported despite a working heater",
+      "passed": true,
+      "detail": {
+        "heater": 352.1928251641617,
+        "findings": [
+          {
+            "id": "cpc:heater-phase-1",
+            "title": "CPC connection is missing",
+            "explanation": "The PE terminal has no modelled conductor path to the supply earth reference. Operation may still occur; this is not an automatic numerical failure.",
+            "component": "heater-phase-1",
+            "severity": "warning",
+            "category": "protection"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a real line-to-earth study fault trips the upstream residual monitor",
+      "passed": true,
+      "detail": {
+        "residual": {
+          "energized": false,
+          "closed": false,
+          "tripped": true,
+          "level": 0,
+          "direction": 0,
+          "elapsed": 0,
+          "resetToken": 0,
+          "details": "2304.4 mA did not return through the monitored active conductors. CPC current is outside the sensor.",
+          "imbalance": 0,
+          "peakResidual": 2.304395212933031,
+          "tripResidual": 2.304395212933031
+        },
+        "preTrip": {
+          "totalCurrent": 4.173884713686972,
+          "explanation": "2304.4 mA did not return through the monitored active conductors. CPC current is outside the sensor."
+        }
+      }
+    },
+    {
+      "name": "every actual conductor routes with audited fixture/wire clearance",
+      "passed": true,
+      "detail": {
+        "passed": true,
+        "wires": 228,
+        "routed": 228,
+        "elapsedMs": 1625.5004000000008,
+        "issues": []
+      }
+    },
+    {
+      "name": "every equipment variant resolves to a bundled detailed model",
+      "passed": true,
+      "detail": {
+        "equipment": 80,
+        "missingAssets": []
+      }
+    }
+  ],
+  "assumptions": "Original standalone 80-object training plant. Steady-state 400 V line-to-line, 230.94 V phase-to-neutral, isolated 24 V DC. Coil/thermal/timer/safety, VFD, backup and PLC are declared educational block models; no manufacturer safety performance or physical plant certification is claimed."
+}

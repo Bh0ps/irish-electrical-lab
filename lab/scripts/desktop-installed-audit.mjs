@@ -1,0 +1,16 @@
+import {readFileSync,readdirSync,writeFileSync,statSync,mkdirSync} from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+const source=path.resolve('dist/client'),installed=path.join(process.env.LOCALAPPDATA,'Programs','Irish Electrical Lab');
+const destination=path.resolve('../verification/desktop');
+mkdirSync(destination,{recursive:true});
+const version=JSON.parse(readFileSync('desktop/app/package.json','utf8')).version;
+const hash=file=>crypto.createHash('sha256').update(readFileSync(file)).digest('hex');
+const files=directory=>readdirSync(directory,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?files(path.join(directory,entry.name)):[path.join(directory,entry.name)]);
+const contracts=files(source).map(file=>{const relative=path.relative(source,file),target=path.join(installed,'resources/web',relative);return {file:relative.replaceAll('\\','/'),source:hash(file),installed:hash(target)};});
+const shell=['resources/app.asar','Irish Electrical Lab.exe'].map(relative=>({file:relative,source:hash(path.join('release/win-unpacked',relative)),installed:hash(path.join(installed,relative))}));
+const installer=path.resolve(`release/Irish-Electrical-Lab-${version}-Setup.exe`);
+const report={version,recordedAt:new Date().toISOString(),installed,assetCount:contracts.length,allAssetsMatch:contracts.every(file=>file.source===file.installed),shellMatches:shell.every(file=>file.source===file.installed),installer:{file:installer,bytes:statSync(installer).size,sha256:hash(installer)},shell,assets:contracts};
+writeFileSync(path.join(destination,'installed-all-files-audit.json'),JSON.stringify(report,null,2));
+if(!report.allAssetsMatch||!report.shellMatches)throw new Error('Installed files differ from the delivered package.');
+console.log(JSON.stringify({...report,assets:undefined},null,2));
