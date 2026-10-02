@@ -42,6 +42,11 @@ reported protective defect; course operating objectives correctly remain
 unassigned for this free build. The source operating checks are distinct from
 that native electrical report.
 
+Native mouse operation also reset the process safety permission and pulsed the
+conveyor START control. After the momentary button released, the selected
+contactor still reported **Operating**, with **23.9 V across its coil**. This
+demonstrates the actual custom holding path in the installed app.
+
 The public installer was rebuilt from the reviewed source and sanitized assets.
 Its unpacked resources contain **303 files**; all **287 web assets** match the
 production build. Project/dependency notices, the usage guide and the demo JSON
