@@ -38,10 +38,14 @@ export function castsEquipmentShadow(material:THREE.Material|THREE.Material[],la
 
 const sourceVector=(value:number[])=>new THREE.Vector3(value[0],value[2],-value[1]);
 const sourceAxis=(axis:string)=>sourceVector(axis==='x'?[1,0,0]:axis==='y'?[0,1,0]:[0,0,1]);
+function raycastVisible(this:THREE.Mesh,caster:THREE.Raycaster,hits:THREE.Intersection[]){
+  if(this.visible)THREE.Mesh.prototype.raycast.call(this,caster,hits);
+}
 export interface AssetPresentation {
   scene:THREE.Group;
   covers:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion}[];
-  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;conceptualInternal?:boolean}[];
+  chamber:boolean;
+  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   motions:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;angle:number;current:number}[];
   owned:THREE.Material[];
   initialized:boolean;
@@ -56,7 +60,7 @@ export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:strin
 }
 /** Clone transforms and selectable identity while sharing immutable mesh data. */
 export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
-  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],motions:[],owned:[],initialized:false};
+  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],motions:[],owned:[],initialized:false,chamber:false};
   scene.userData.equipmentSource='Blender';
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
@@ -65,8 +69,10 @@ export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
     if(node.userData.animation){const axis=sourceAxis(String(node.userData.axis??'z'));const q=node.quaternion,angle=2*Math.atan2(new THREE.Vector3(q.x,q.y,q.z).dot(axis),q.w);presentation.motions.push({node,position:node.position.clone(),quaternion:node.quaternion.clone(),angle,current:angle});}
     if(!(node instanceof THREE.Mesh))return;
     node.receiveShadow=true;
+    node.raycast=raycastVisible;
     const entry:AssetPresentation['meshes'][number]={node,part,material:node.material};
     for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.partId==='cover'){entry.coverAssembly=true;break;}
+    for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.serviceChamber){entry.serviceChamber=true;presentation.chamber=true;break;}
     for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.conceptualInternal){entry.conceptualInternal=true;break;}
     let constructionDetail=false;for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.detailId){constructionDetail=true;break;}
     if(part==='body'&&!constructionDetail||node.userData.inspectionHousing){
@@ -102,14 +108,14 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
 export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState):void{
   for(const cover of presentation.covers){
     cover.node.position.copy(cover.position);cover.node.quaternion.copy(cover.quaternion);
-    if(view==='open'){cover.node.position.add(sourceVector([.55,.08,.15]));cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),Math.PI/2.5));}
+    if(view==='open'){cover.node.position.add(sourceVector([presentation.chamber?1:.55,.08,.15]));cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),Math.PI/2.5));}
     if(view==='exploded')cover.node.position.add(sourceVector([.5,.5,.65]));
   }
   const active=!!state?.energized;
   const brightness=lampBrightness(component,state);
   for(const mesh of presentation.meshes){
     const conceptualInternal=mesh.conceptualInternal||['electronics','coil','thermal','magnetic'].includes(mesh.part)||mesh.part==='winding'&&!['transformer','dcsupply'].includes(component.type);
-    mesh.node.visible=!(view==='cutaway'&&mesh.coverAssembly||view==='normal'&&conceptualInternal);
+    mesh.node.visible=!(view==='cutaway'&&mesh.coverAssembly||view==='normal'&&(conceptualInternal||mesh.serviceChamber));
     mesh.node.material=view==='cutaway'&&mesh.cutaway?mesh.cutaway:mesh.light??mesh.material;
     mesh.node.castShadow=castsEquipmentShadow(mesh.node.material,!!mesh.lampOutput,!!mesh.node.userData.lampEnvelope);
     if(mesh.light){

@@ -1,9 +1,11 @@
 import { COMPONENTS } from './components.ts';
 import { getComponentTerminals } from './terminal-layout.ts';
-import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types.ts';
+import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types.ts';
+import { CABLE_CORES, FLAT_CORE_ORDER } from './cables.ts';
 
 // Shared with the renderer: selection changes colour, never the cable diameter.
 export const WIRE_RADIUS = .018;
+export const SHEATH_RADIUS = .045;
 export const WIRE_CLEARANCE = .025;
 // Includes two .012 corner deviations and a small numerical margin.
 export const ROUTE_SPACING = .09;
@@ -12,13 +14,17 @@ const GRID = .14;
 const HASH_CELL = .42;
 const MAX_ROUTE_SPAN = 80;
 export interface RoutingIssue { wire: string; message: string }
-export interface CircuitRoutes { routes: Map<string, Vec3[]>; issues: RoutingIssue[] }
+export interface CableGeometry { sheath: Vec3[]; tails: Map<string,[Vec3[],Vec3[]]>; open: {core:CableCore; points:Vec3[]}[] }
+export interface CircuitRoutes { routes: Map<string, Vec3[]>; issues: RoutingIssue[]; cables?: Map<string,CableGeometry> }
 interface Segment { a: Vec3; b: Vec3; wire: string; joint?: string }
 interface Obstacle { component: ComponentInstance; min: Vec3; max: Vec3; worldMin: Vec3; worldMax: Vec3 }
 const keyOf = (e: Endpoint) => `${e.component}\u0000${e.terminal}`;
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0]+b[0],a[1]+b[1],a[2]+b[2]];
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
 const dot = (a: Vec3, b: Vec3) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const scale = (a:Vec3,k:number):Vec3 => [a[0]*k,a[1]*k,a[2]*k];
+const unit = (a:Vec3):Vec3 => scale(a,1/(Math.hypot(...a)||1));
+const cross = (a:Vec3,b:Vec3):Vec3 => [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const distance = (a: Vec3,b: Vec3) => Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 const clamp = (v:number) => Math.max(0,Math.min(1,v));
 function localToWorld(c: ComponentInstance, p: Vec3): Vec3 {
@@ -35,6 +41,16 @@ export function terminalPosition(doc:CircuitDocument,e:Endpoint):Vec3 {
   const c=doc.components.find(c=>c.id===e.component),def=c&&COMPONENTS[c.type];
   const t=c&&def&&getComponentTerminals(c,def).find(t=>t.id===e.terminal);
   return c&&t?localToWorld(c,t.anchor):[0,0,0];
+}
+
+function rotateDirection(rotation:number, p:Vec3):Vec3 {
+  const co=Math.cos(rotation),si=Math.sin(rotation);
+  return unit([p[0]*co+p[2]*si,p[1],p[2]*co-p[0]*si]);
+}
+export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
+  const c=doc.components.find(c=>c.id===e.component),def=c&&COMPONENTS[c.type];
+  const terminal=c&&def&&getComponentTerminals(c,def).find(t=>t.id===e.terminal);
+  return rotateDirection(c?.rotation??0, terminal?.entryDirection??[0,0,-1]);
 }
 
 /** Closest distance between finite 3D segments, including parallel/zero-length cases. */
@@ -65,8 +81,8 @@ function obstaclesFor(doc:CircuitDocument):Obstacle[] {
   return doc.components.flatMap(component=>{
     const def=COMPONENTS[component.type];if(!def)return [];
     const terminals=getComponentTerminals(component,def);
-    const min:Vec3=[-def.size[0]/2,-.015,Math.min(-def.size[2]/2,...terminals.map(t=>t.anchor[2]-.015))];
-    const max:Vec3=[def.size[0]/2,def.size[1]*1.05,def.size[2]/2];
+    const min:Vec3=[-def.size[0]/2,-.015,-def.size[2]/2].map((v,i)=>Math.min(v,...terminals.map(t=>t.anchor[i]-.015))) as Vec3;
+    const max:Vec3=[def.size[0]/2,def.size[1]*1.05,def.size[2]/2].map((v,i)=>Math.max(v,...terminals.map(t=>t.anchor[i]+.015))) as Vec3;
     if(component.params.gangModule==='left'){min[0]=Math.min(min[0],.23-.565*def.size[0]/1.3);max[0]=Math.max(max[0],.23+.565*def.size[0]/1.3);}
     const corners=[min[0],max[0]].flatMap(x=>[min[1],max[1]].flatMap(y=>[min[2],max[2]].map(z=>localToWorld(component,[x,y,z]))));
     return [{component,min,max,worldMin:[0,1,2].map(a=>Math.min(...corners.map(p=>p[a]))-BODY_CLEARANCE) as Vec3,worldMax:[0,1,2].map(a=>Math.max(...corners.map(p=>p[a]))+BODY_CLEARANCE) as Vec3}];
@@ -124,13 +140,15 @@ class SegmentIndex {
       // A physical junction has one bore. Only its short access segments may meet.
       if(s.wire===wire) {
         if(!avoidOwn||!s.joint)continue;
-        const length=distance(s.a,s.b),v=sub(s.b,s.a),trim=Math.min(.14,length*.45);
+        const length=distance(s.a,s.b),v=sub(s.b,s.a),trim=.14;
+        if(length<=trim)continue;
         const tip:Vec3=[s.b[0]-v[0]*trim/length,s.b[1]-v[1]*trim/length,s.b[2]-v[2]*trim/length];
         if(segmentDistance(a,b,s.a,tip)<ROUTE_SPACING-1e-7)return true;
         continue;
       }
       if(joint&&s.joint===joint)continue;
-      const required=joint&&s.joint?spacing:Math.max(ROUTE_SPACING,spacing);
+      const envelope=(id:string)=>id.startsWith('@sheath-')?SHEATH_RADIUS-WIRE_RADIUS:0;
+      const required=(joint&&s.joint?spacing:Math.max(ROUTE_SPACING,spacing))+envelope(wire)+envelope(s.wire);
       if(segmentDistance(a,b,s.a,s.b)<required-1e-7)return true;
     }
     return false;
@@ -216,39 +234,115 @@ function search(start:Vec3,end:Vec3,ctx:Context,wire:string):Vec3[]|undefined {
   return undefined;
 }
 const routeCache=new Map<string,CircuitRoutes>();
+interface CableHead { point:Vec3; outward:Vec3; rotation:number }
+interface Harness {
+  wires: Wire[]; heads: Map<string,CableHead>;
+  runs: {run:CableRun; trunk:Wire; tails:{wire:Wire; a:Wire; b:Wire}[]}[];
+}
+function createHarness(doc:CircuitDocument,obstacles:Obstacle[]):Harness {
+  const harness:Harness={wires:[],heads:new Map(),runs:[]};
+  const mounted=new Set<string>();
+  for(const run of doc.cableRuns??[]) {
+    const members=doc.wires.filter(w=>w.cable?.runId===run.id);
+    const ends=[run.from,run.to].map((endpoint,side)=>{
+      const anchor=terminalPosition(doc,endpoint), normal=terminalDirection(doc,endpoint);
+      const owner=doc.components.find(c=>c.id===endpoint.component)!;
+      const right=rotateDirection(owner.rotation,[1,0,0]);
+      let point:Vec3=add(anchor,scale(normal,1.05));
+      // Leave enough exposed insulation to fan out from each sheath. Offset
+      // additional cables on the same equipment to their own unobstructed entry.
+      let found=false;
+      for(const depth of [1.25,1.6,2,2.4]) {
+        for(const offset of [0,.42,-.42,.84,-.84,1.26,-1.26]) {
+          const p=add(add(anchor,scale(normal,depth)),scale(right,offset));p[1]=Math.max(.65,p[1]);
+          if(hitsBody(p,p,obstacles)||[...harness.heads.values()].some(head=>distance(head.point,p)<.70))continue;
+          point=p;found=true;break;
+        }
+        if(found)break;
+      }
+      const id='@sheath-'+side+'-'+run.id;
+      harness.heads.set(id,{point,outward:normal,rotation:owner.rotation});
+      return {component:id,terminal:'mouth'};
+    });
+    const physical=(id:string,from:Endpoint,to:Endpoint,bends:Vec3[]=[]):Wire=>({id,from,to,bends,role:'output',resistance:.01});
+    const trunk=physical('@sheath-'+run.id,ends[0],ends[1]);
+    harness.wires.push(trunk);
+    const tails=members.map(wire=>{
+      mounted.add(wire.id);
+      const reverse=wire.cable!.reversed, first=reverse?wire.to:wire.from, last=reverse?wire.from:wire.to;
+      // Per-core waypoints dress the exposed portion at the wire's first end.
+      const a=physical('@tail-a-'+wire.id,first,ends[0],reverse?[]:wire.bends);
+      const b=physical('@tail-b-'+wire.id,ends[1],last,reverse?[...wire.bends].reverse():[]);
+      harness.wires.push(a,b);return {wire,a,b};
+    });
+    harness.runs.push({run,trunk,tails});
+  }
+  harness.wires.push(...doc.wires.filter(w=>!mounted.has(w.id)));
+  return harness;
+}
 /** Geometry-only identity; supply, simulation and inspection edits do not reroute. */
 export function circuitRoutingKey(doc:CircuitDocument):string {
   return JSON.stringify([
-    obstaclesFor(doc).sort((a,b)=>a.component.id.localeCompare(b.component.id)).map(o=>[o.component.id,o.component.position,o.component.rotation,o.min,o.max,o.component.params.gangGroup??'',o.component.params.gangModule??'',getComponentTerminals(o.component,COMPONENTS[o.component.type]).map(t=>[t.id,t.anchor])]),
-    [...doc.wires].sort((a,b)=>a.id.localeCompare(b.id)).map(w=>[w.id,w.from,w.to,w.bends]),
+    obstaclesFor(doc).sort((a,b)=>a.component.id.localeCompare(b.component.id)).map(o=>[o.component.id,o.component.position,o.component.rotation,o.min,o.max,o.component.params.gangGroup??'',o.component.params.gangModule??'',getComponentTerminals(o.component,COMPONENTS[o.component.type]).map(t=>[t.id,t.anchor,t.entryDirection])]),
+    [...doc.wires].sort((a,b)=>a.id.localeCompare(b.id)).map(w=>[w.id,w.from,w.to,w.bends,w.cable]),
+    doc.cableRuns,
   ]);
 }
 /** Plans the whole harness together. Routing never edits saved bends or topology. */
 export function routeCircuit(doc:CircuitDocument):CircuitRoutes {
-  const ordered=[...doc.wires].sort((a,b)=>a.id.localeCompare(b.id));
-  const obstacles=obstaclesFor(doc);
   const signature=circuitRoutingKey(doc);
   const cached=routeCache.get(signature);if(cached)return cached;
+  let result=planHarness(doc);
+  // A crowded fan-out can trap a later route between previously allocated
+  // corridors. Give that connection first choice on one bounded retry.
+  const blocked=result.issues.filter(i=>i.message.startsWith('No clear route')||i.message.startsWith('A terminal entry is obstructed'));
+  if(blocked.length){
+    const retry=planHarness(doc,new Set(blocked.map(i=>i.wire)));
+    if(retry.routes.size>result.routes.size || retry.routes.size===result.routes.size&&retry.issues.length<result.issues.length)result=retry;
+  }
+  routeCache.set(signature,result);if(routeCache.size>6)routeCache.delete(routeCache.keys().next().value!);
+  return result;
+}
+function planHarness(doc:CircuitDocument,priority=new Set<string>()):CircuitRoutes {
+  const obstacles=obstaclesFor(doc),harness=createHarness(doc,obstacles);
+  const ordered=harness.wires.sort((a,b)=>a.id.localeCompare(b.id));
   const result:CircuitRoutes={routes:new Map(),issues:[]};
   const occupied=new SegmentIndex(),exits=new Map<string,[Vec3,Vec3]>(),invalid=new Set<string>();
   const neighbours=new Map<string,string[]>();
   for(const w of ordered)for(const e of [w.from,w.to]){const key=keyOf(e),ids=neighbours.get(key)??[];if(!ids.includes(w.id))ids.push(w.id);neighbours.set(key,ids);}
   const entries=ordered.flatMap(w=>[['from',w.from],['to',w.to]].map(([label,endpoint])=>({w,label:label as string,e:endpoint as Endpoint})))
-    .sort((a,b)=>neighbours.get(keyOf(b.e))!.length-neighbours.get(keyOf(a.e))!.length||keyOf(a.e).localeCompare(keyOf(b.e))||a.w.id.localeCompare(b.w.id));
-  const anchors=new Map(entries.map(({e})=>[keyOf(e),terminalPosition(doc,e)]));
-  function runway(c:ComponentInstance,b:Vec3):Vec3 {
-    const x=-Math.sin(c.rotation),z=-Math.cos(c.rotation);
-    return Math.abs(x)>Math.abs(z)?[b[0]+Math.sign(x)*GRID*3,b[1],b[2]]:[b[0],b[1],b[2]+Math.sign(z)*GRID*3];
+    .sort((a,b)=>Number(priority.has(b.w.id))-Number(priority.has(a.w.id))||neighbours.get(keyOf(b.e))!.length-neighbours.get(keyOf(a.e))!.length||keyOf(a.e).localeCompare(keyOf(b.e))||a.w.id.localeCompare(b.w.id));
+  const owners=new Map(doc.components.map(c=>[c.id,c]));
+  const anchors=new Map(entries.map(({e})=>[keyOf(e),harness.heads.get(e.component)?.point??terminalPosition(doc,e)]));
+  const directions=new Map(entries.map(({e})=>[keyOf(e),harness.heads.get(e.component)?.outward??terminalDirection(doc,e)]));
+  function approach(w:Wire,e:Endpoint):Vec3 {
+    const normal=directions.get(keyOf(e))!;
+    if(!harness.heads.has(e.component))return normal;
+    if(w.id.startsWith('@sheath-')) {
+      const other=w.from===e?w.to:w.from;
+      return unit(sub(anchors.get(keyOf(other))!,anchors.get(keyOf(e))!));
+    }
+    return scale(normal,-1);
+  }
+  function runway(normal:Vec3,b:Vec3,e:Endpoint):Vec3 {
+    if(harness.heads.has(e.component))return b;
+    const dominant=normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));
+    const p=[...b] as Vec3;p[dominant]+=Math.sign(normal[dominant])*GRID*3;
+    if(p[1]<.08)p[1]=.08;
+    return p;
   }
   function exit(w:Wire,e:Endpoint):[Vec3,Vec3]|undefined {
-    const a=anchors.get(keyOf(e))!,c=doc.components.find(c=>c.id===e.component);if(!c)return undefined;
-    const co=Math.cos(c.rotation),si=Math.sin(c.rotation),own=occupied.segments.filter(s=>s.joint===keyOf(e));
-    // Allocate a compact cone of rear ports, not a widening horizontal fan.
-    // Try alternative angles/depths when adjacent terminal rows occupy a cone.
-    for(const depth of [.34,.50,.70,.94])for(const radius of [0,.12,.18,.24,.32,.44,.60])for(let angle=0;angle<(radius?16:1);angle++) {
+    const a=anchors.get(keyOf(e))!,normal=approach(w,e),rotation=owners.get(e.component)?.rotation??harness.heads.get(e.component)!.rotation;
+    const side=rotateDirection(rotation,[1,0,0]),basis=Math.abs(dot(side,normal))>.94?[0,1,0] as Vec3:side;
+    const right=unit(sub(basis,scale(normal,dot(basis,normal)))),up=unit(cross(right,normal));
+    const own=occupied.segments.filter(s=>s.joint===keyOf(e));
+    // Allocate a compact cone around the physical cable-entry direction.
+    const depths=harness.heads.has(e.component)?[.22,.34,.5,.7]:priority.size?[.5,.34,.70,.94]:[.34,.50,.70,.94];
+    for(const depth of depths)for(const radius of [0,.12,.18,.24,.32,.44,.60])for(let angle=0;angle<(radius?16:1);angle++) {
       const x=Math.cos(angle*Math.PI/8)*radius,y=Math.sin(angle*Math.PI/8)*radius;
-      const b=[a[0]+x*co-depth*si,a[1]+y,a[2]-x*si-depth*co].map(v=>Math.round(v/GRID)*GRID) as Vec3;
-      const lead=runway(c,b);
+      const offset=add(scale(normal,depth),add(scale(right,x),scale(up,y)));
+      const b=add(a,offset).map(v=>Math.round(v/GRID)*GRID) as Vec3;
+      const lead=runway(normal,b,e);
       if(b[1]<.07||hitsBody(a,b,obstacles,e.component)||hitsBody(b,b,obstacles))continue;
       if(occupied.hit(a,b,w.id,keyOf(e),2*WIRE_RADIUS+WIRE_CLEARANCE+.001)||occupied.hit(b,b,w.id,undefined))continue;
       if(occupied.segments.some(s=>s.wire!==w.id&&s.joint&&segmentDistance(a,b,s.b,s.b)<ROUTE_SPACING-1e-7))continue;
@@ -265,12 +359,13 @@ export function routeCircuit(doc:CircuitDocument):CircuitRoutes {
   for(const {w,label,e} of entries) {
     const access=exit(w,e);
     if(!access) {
-      invalid.add(w.id);result.issues.push({wire:w.id,message:'A rear terminal entry is obstructed. Separate the fixtures or use a junction for crowded connections.'});
+      const name=harness.heads.has(e.component)?'the cable end':(owners.get(e.component)?.label??e.component)+' '+e.terminal;
+      invalid.add(w.id);result.issues.push({wire:w.id,message:'A terminal entry is obstructed at '+name+'. Separate the equipment or use a junction for crowded connections.'});
       continue;
     }
     const [a,b]=access;exits.set(`${w.id}:${label}`,[a,b]);
     occupied.insert({a,b,wire:w.id,joint:keyOf(e)});
-    occupied.insert({a:b,b:runway(doc.components.find(c=>c.id===e.component)!,b),wire:w.id});
+    occupied.insert({a:b,b:runway(approach(w,e),b,e),wire:w.id});
   }
   const extent=obstacles.length?obstacles:[];
   const low:Vec3=[0,1,2].map(a=>Math.min(...extent.map(o=>o.worldMin[a]),...Array.from(exits.values()).map(e=>e[1][a]),a===1?.10:0)-(a===1?0:1.25)) as Vec3;
@@ -279,8 +374,8 @@ export function routeCircuit(doc:CircuitDocument):CircuitRoutes {
   const ctx:Context={obstacles,occupied,low,high,rear:Math.min(...obstacles.map(o=>o.worldMin[2]),0)};
   // Mandatory manual waypoints get first choice of corridors; auto paths adapt.
   const crowding=(w:Wire)=>Math.max(neighbours.get(keyOf(w.from))!.length,neighbours.get(keyOf(w.to))!.length);
-  const span=(w:Wire)=>distance(terminalPosition(doc,w.from),terminalPosition(doc,w.to));
-  for(const w of [...ordered].sort((a,b)=>Number(b.bends.length>0)-Number(a.bends.length>0)||crowding(b)-crowding(a)||span(b)-span(a)||a.id.localeCompare(b.id))) {
+  const span=(w:Wire)=>distance(anchors.get(keyOf(w.from))!,anchors.get(keyOf(w.to))!);
+  for(const w of [...ordered].sort((a,b)=>Number(priority.has(b.id))-Number(priority.has(a.id))||Number(b.bends.length>0)-Number(a.bends.length>0)||crowding(b)-crowding(a)||span(b)-span(a)||a.id.localeCompare(b.id))) {
     if(invalid.has(w.id))continue;
     const [a,ea]=exits.get(`${w.id}:from`)!,[b,eb]=exits.get(`${w.id}:to`)!;
     if(w.bends.some(p=>hitsBody(p,p,obstacles))){result.issues.push({wire:w.id,message:'A saved bend is inside equipment. Move that bend to clear space.'});continue;}
@@ -308,7 +403,36 @@ export function routeCircuit(doc:CircuitDocument):CircuitRoutes {
     result.routes.set(w.id,route);
     for(let i=2;i<route.length-1;i++)occupied.insert({a:route[i-1],b:route[i],wire:w.id});
   }
-  routeCache.set(signature,result);if(routeCache.size>6)routeCache.delete(routeCache.keys().next().value!);
+  if(harness.runs.length) {
+    const physical=new Map(result.routes);result.cables=new Map();
+    for(const {run,trunk,tails} of harness.runs){
+      const sheath=physical.get(trunk.id);
+      result.routes.delete(trunk.id);
+      const geometry:CableGeometry={sheath:sheath??[],tails:new Map(),open:[]};
+      const used=new Set(tails.map(t=>t.wire.cable!.core));
+      for(const {wire,a,b} of tails) {
+        const start=physical.get(a.id),finish=physical.get(b.id);
+        result.routes.delete(a.id);result.routes.delete(b.id);
+        if(start || finish)geometry.tails.set(wire.id,[start??[],finish??[]]);
+        if(start&&finish&&sheath) {
+          const full=[...start,...sheath.slice(1),...finish.slice(1)];
+          result.routes.set(wire.id,wire.cable!.reversed?full.reverse():full);
+        }
+        for(const issue of result.issues)if(issue.wire===a.id||issue.wire===b.id)issue.wire=wire.id;
+      }
+      for(const e of [trunk.from,trunk.to]) {
+        const head=harness.heads.get(e.component)!;
+        const back=scale(head.outward,-1),side=rotateDirection(head.rotation,[1,0,0]);
+        (run.kind==='flat'?FLAT_CORE_ORDER:CABLE_CORES).forEach((core,i)=>{
+          if(used.has(core))return;
+          const end=add(head.point,add(scale(back,.13),scale(side,(i-1)*.07)));
+          geometry.open.push({core,points:[head.point,end]});
+        });
+      }
+      result.cables.set(run.id,geometry);
+      for(const issue of result.issues)if(issue.wire===trunk.id)issue.wire=run.id;
+    }
+  }
   return result;
 }
 /** Compatibility accessor; the shared planner is cached across all wires. */
@@ -317,8 +441,16 @@ export function routeWire(doc:CircuitDocument,wire:Wire):Vec3[] {return routeCir
 /** Independent final-route audit for regression tests and reports. */
 export function auditRoutes(doc:CircuitDocument,routing=routeCircuit(doc)):RoutingIssue[] {
   const issues=[...routing.issues],obstacles=obstaclesFor(doc),index=new SegmentIndex();
-  for(const w of [...doc.wires].sort((a,b)=>a.id.localeCompare(b.id))) {
-    const path=routing.routes.get(w.id);if(!path)continue;
+  const harness=createHarness(doc,obstacles),physical=new Map(routing.routes);
+  for(const {run,trunk,tails} of harness.runs){
+    const geometry=routing.cables?.get(run.id);if(!geometry)continue;
+    physical.set(trunk.id,geometry.sheath);
+    for(const {wire,a,b} of tails){
+      const paths=geometry.tails.get(wire.id);if(paths){physical.set(a.id,paths[0]);physical.set(b.id,paths[1]);}
+    }
+  }
+  for(const w of harness.wires.sort((a,b)=>a.id.localeCompare(b.id))) {
+    const path=physical.get(w.id);if(!path)continue;
     if(selfOverlap(path))issues.push({wire:w.id,message:'Route crosses itself.'});
     for(let i=1;i<path.length;i++) {
       const joint=i===1?keyOf(w.from):i===path.length-1?keyOf(w.to):undefined;

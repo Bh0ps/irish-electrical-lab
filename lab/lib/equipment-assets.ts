@@ -1,4 +1,5 @@
 import manifest from '../public/models/manifest.json';
+import referenceMap from '../../authoring/blender/reference-map.json';
 import { equipmentVariant } from './terminal-layout';
 import type { ComponentDefinition, ComponentInstance } from './types';
 import { publicAssetUrl } from '../web/asset-url';
@@ -24,3 +25,14 @@ export const EQUIPMENT_ASSETS = new Map(manifest.map(entry => [entry.galleryKey,
   thumbnailUrl: publicAssetUrl(entry.thumbnailUrl),
 }]));
 export function equipmentAsset(component:ComponentInstance,definition:ComponentDefinition){return EQUIPMENT_ASSETS.get(equipmentAssetKey(component,definition));}
+
+/** The source lists describe representative architecture. Equipment drawings,
+ * mounting and actual circuit ratings continue to vary between products. */
+export function equipmentReferences(component:ComponentInstance,definition:ComponentDefinition){
+  let ids=(referenceMap.familySources as Record<string,string[]>)[definition.model]??[];
+  if(component.type==='rcbo'||component.type==='rcd'||component.type==='rcd3')ids=['hager-rcbo','abb-mcb'];
+  if(component.type==='spd')ids=['schneider-spd'];
+  if(component.type==='plug3'||component.type==='socket3')ids=['mennekes-plug','mennekes-contacts'];
+  if(component.type==='socket'||component.type==='plug'||component.type==='fcu')ids=['mk-accessory'];
+  return ids.flatMap(id=>referenceMap.sources.filter(source=>source.id===id));
+}

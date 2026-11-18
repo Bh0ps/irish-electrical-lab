@@ -1,7 +1,7 @@
 export type Vec3 = [number, number, number];
 export type Parameters = Record<string, string | number | boolean>;
 export type TerminalRole = 'L' | 'N' | 'PE' | 'L1' | 'L2' | 'L3' | 'control' | 'output' | 'DC+' | 'DC-';
-export interface TerminalDefinition { id: string; label: string; role: TerminalRole; purpose: string; anchor: Vec3; group?: string; scale?: number }
+export interface TerminalDefinition { id: string; label: string; role: TerminalRole; purpose: string; anchor: Vec3; entryDirection?: Vec3; group?: string; scale?: number }
 export interface PartDefinition { id: string; name: string; purpose: string }
 export interface ComponentDefinition {
   type: string; name: string; group: string; description: string; terminals: TerminalDefinition[];
@@ -9,12 +9,16 @@ export interface ComponentDefinition {
 }
 export interface ComponentInstance { id: string; type: string; label: string; position: Vec3; rotation: number; params: Parameters; variant?: string }
 export interface Endpoint { component: string; terminal: string }
-export interface Wire { id: string; from: Endpoint; to: Endpoint; role: TerminalRole; resistance: number; bends: Vec3[] }
+export type CableKind = 'single' | 'flat' | 'flex';
+export type CableCore = 'brown' | 'blue' | 'green-yellow';
+/** The two reference points locate a physical sheath; they never connect electrical nodes. */
+export interface CableRun { id: string; kind: Exclude<CableKind,'single'>; from: Endpoint; to: Endpoint }
+export interface Wire { id: string; from: Endpoint; to: Endpoint; role: TerminalRole; resistance: number; bends: Vec3[]; cable?: { runId: string; core: CableCore; reversed: boolean } }
 export interface FaultSetting { type: string; component?: string; wire?: string; enabled: boolean }
 export interface CircuitDocument {
   version: 1; id: string; name: string; revision: number;
   supply: { enabled: boolean; phase: 'single' | 'three'; voltage: number; frequency: number; sourceResistance: number };
-  components: ComponentInstance[]; wires: Wire[]; faults: FaultSetting[]; lessonId?: number;
+  components: ComponentInstance[]; wires: Wire[]; faults: FaultSetting[]; lessonId?: number; cableRuns?: CableRun[];
 }
 export interface Complex { re: number; im: number; reference?: string }
 export interface DeviceState { energized: boolean; closed: boolean; tripped: boolean; level: number; direction: number; elapsed: number; resetToken: number; details: string; [key: string]: string | number | boolean }

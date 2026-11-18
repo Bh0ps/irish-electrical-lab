@@ -1,6 +1,6 @@
 # Irish Electrical Lab on iPhone
 
-Use Safari on iOS 17 or later with WebGL 2 available. Open the lab, tap **Share**, and choose **Add to Home Screen**. If Safari shows **Open as Web App**, leave it enabled. Tap **Add** and open the new icon. The same lab also works directly in Safari. [Apple’s Home Screen instructions](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios)
+Use Safari on iOS 17 or later. The 3D bench uses WebGL 2. If graphics are unavailable, you can still operate equipment, connect wires and take readings through the equipment list. Open the lab, tap **Share**, and choose **Add to Home Screen**. If Safari shows **Open as Web App**, leave it enabled. Tap **Add** and open the new icon. The same lab also works directly in Safari. [Apple’s Home Screen instructions](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios)
 
 In the Home Screen app, open **More → Download for offline use**. Keep the app open with a connection until it shows **Offline ready**. The download includes both circuit workers and the simplified 3D equipment for every course and Sandbox. Inspecting equipment loads its full model on demand when available. The offline download can resume after a failed file or a connection interruption.
 
@@ -8,7 +8,9 @@ Safari, the Home Screen app, and Windows keep separate study data. On Windows, c
 
 Tap controls to operate them. Drag to orbit, pinch to zoom and drag with two fingers to pan. To move a part in Sandbox, select it, tap **Move**, then drag its housing. **Connect** and **Measure** accept taps on the workbench and let you search for terminals by name. Tap a wire to see **Remove conductor**, or find it by name under **View**. Use **Undo** to restore the last edit.
 
-For a short activity, open **Courses → Quick practice**. Pick a prediction, operate the highlighted equipment, then compare the live readings. You can return to the regular course from the experiment.
+Open **Start learning** for the first light-switch lesson. **Continue learning** brings you back to the saved activity. **Chapters** lists every lesson, Quick practice and the chapter practicals. In an experiment you can predict the outcome or choose **I’m not sure** and try the real control.
+
+**Equipment list** gives you the same controls and terminals by name. Use it when a part is hard to tap or the 3D view cannot start. **Connect → Cable** shows the shapes and cores of the three cable choices. In a meter exercise, pick the red and black probe points, then choose **Record reading**. A full backup includes your current coursebook position as well as the working circuit.
 
 ## Build and publish
 

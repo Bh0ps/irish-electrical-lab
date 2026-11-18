@@ -1,4 +1,44 @@
 /* The learning shell shares the original bench and component controls. */
+.book-home { margin: auto 0; padding: clamp(12px, 3vw, 30px) 3px; color:#1f3a43; }
+.book-home .book-eyebrow { margin:0 0 12px; color:#48666b; font-size:.83rem; font-weight:650; }
+.book-home h2 { margin:0 0 10px; font:600 clamp(1.7rem,3vw,2.6rem)/1.12 Georgia,serif; letter-spacing:-.04em; }
+.book-home p { font-size:1rem; line-height:1.55; }
+.book-primary,.book-link,.chapter-rows button,.equipment-list-view button { border-radius:6px;min-height:44px;font:inherit; }
+.book-primary { display:flex; align-items:center; justify-content:space-between; width:100%; padding:10px 16px; margin-top:18px; color:white; background:#234859; font-weight:650; }
+.book-link { display:block; margin-top:5px; background:transparent; color:#245266; text-decoration:underline; text-underline-offset:3px; text-align:left; }
+.book-index { display:grid;gap:5px;min-height:0;overflow:auto; }
+.book-search { display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #95aab0;border-radius:7px; }
+.book-search input { min-width:0; flex:1; background:transparent; }
+.book-index > details { border-bottom:1px solid #d4dfe2; padding:2px 0; }
+.book-index summary { cursor:pointer;padding:12px 2px;color:#243d48;font-weight:650;min-height:44px; }
+.book-index summary small { font-size:.8rem; font-weight:400; margin-left:.5em;color:#506771; }
+.chapter-rows { display:grid; gap:2px; margin:2px 0 10px; }
+.chapter-rows button { display:flex;align-items:center;gap:8px;text-align:left;padding:5px 8px;border:1px solid transparent; }
+.chapter-rows button:hover,.chapter-rows button:focus-visible { background:#f1f5f4; }
+.chapter-rows button>span:nth-last-child(2) { flex:1; }
+.chapter-rows .chapter-practical { background:#eef4f4;color:#254e56;font-weight:650; }
+.equipment-list-view { position:absolute;inset:55px 0 0;padding:12px 16px;overflow:auto;background:#f9fbfa;color:#203c48; }
+.equipment-list-view h2 { font-size:1rem;margin:0 0 8px; }
+.equipment-list-view ul { list-style:none;padding:0; }
+.equipment-list-view li { display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-bottom:1px solid #d4dfe2;padding:6px 0; }
+.equipment-list-view li>div { flex:1 1 125px; }
+.equipment-list-view small { display:block; }
+.equipment-list-view button { padding:5px 10px;border:1px solid #b6c7cb;background:white; }
+.book-shell .canvas-top-label,.book-shell .canvas-bottom,.showing-equipment-list .canvas-top-label,.showing-equipment-list .canvas-bottom,.book-landing .heading-actions,.book-landing .bench-status,.book-landing .phone-sheet-heading,.book-landing .canvas-wrap .toolbar,.book-shell .desktop-bench-action {display:none!important;}
+.book-shell:not(.book-landing) .simple-workspace .bench-status:not(:has(.attached-lesson)) { display:none; }
+.book-landing .learn-column { background:#fcfaf5; }
+.wiring-observation { border-inline-start:3px solid #ac7226; padding:8px 12px; background:#fff7e7; }
+.wire-identification { padding:.45rem 0; }
+.wire-identification summary { cursor:pointer; }
+.mobile-lab.book-landing .book-home { padding:12px 4px max(12px,env(safe-area-inset-bottom)); }
+.mobile-lab.book-shell .learn-column { scroll-padding-bottom: max(14px,env(safe-area-inset-bottom)); }
+.book-shell .task-feedback { overflow-wrap:anywhere; }
+@media(max-width:680px) {
+  .mobile-lab.showing-equipment-list .canvas-wrap { display:flex;flex-direction:column; }
+  .mobile-lab.showing-equipment-list .canvas-wrap>.toolbar { position:relative;flex:none; }
+  .mobile-lab.showing-equipment-list .equipment-list-view { position:relative;inset:auto;flex:1;min-height:0; }
+  .book-shell .bench-list-toggle { min-width:65px; }
+}
 .simple-lab { min-height: 600px; }
 .simple-lab .app-header { height: 68px; padding: 0 20px; gap: 16px; }
 .simple-lab .brand { font-size: 14px; letter-spacing: 1px; }
@@ -278,4 +318,17 @@ body:has(.mobile-lab) [data-slot=dialog-content] button { min-height: 44px; }
   .mobile-lab .bench-status, .mobile-lab .app-footer { display: none; }
   .mobile-lab .workspace-heading { min-height: 36px; }
   .mobile-lab .work-area, .mobile-lab .learn-column, .mobile-lab .context-content { padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+}
+
+.book-shell .heading-actions[hidden] { display:none; }
+.mobile-lab .header-action-name.chapter-nav-label { display:inline; }
+@media(max-width:390px) {
+  .mobile-lab .app-header { gap:3px;padding-inline:4px; }
+  .mobile-lab .app-header .brand { display:none; }
+  .mobile-lab .header-right button:has(.chapter-nav-label) svg { display:none; }
+  .mobile-lab .toolbar { overflow-x:auto; }
+}
+@media (orientation:portrait) {
+  .mobile-lab .learn-column .active-task > .primary-button { position:sticky;bottom:0;z-index:2;box-shadow:0 -3px 5px #fff9; }
+  .book-shell.mobile-lab .notice { position:static;transform:none;max-width:none;order:3;width:100%;max-height:72px;overflow:auto;flex:none; }
 }

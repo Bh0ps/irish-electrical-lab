@@ -5,13 +5,15 @@ static meshes by semantic ownership. The initial switch, rose and bulb fixture
 are rebuilt here as detailed Blender forms. Electrical IDs and rear ports remain
 the recipe's authoritative shared-layout coordinates. Run with --background.
 """
-import bpy, bmesh, json, math, sys, argparse
+import bpy, bmesh, json, math, sys, argparse, tempfile, time
 from types import SimpleNamespace
 from pathlib import Path
 from mathutils import Vector, Matrix
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from detail_library import enrich, REVISION, FAMILY_REQUIREMENTS
+from service_details import add_service_details
 from png_metadata import strip_text_metadata
+from portable_source import clear_browser_locations
 
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parent.parent
@@ -192,9 +194,12 @@ def authored_first_fixture(recipe,root):
         box('Shaped rear switch mechanism',(0,midpoint,rear+.135),(.315,.68*sy,.19),terminal_root,black,.045)
         for anchor in anchors:box('Moulded connection shoulder',(anchor[0],anchor[1]+.039,anchor[2]+.083),(.175,.147,.052),terminal_root,black,.025)
     else:
-        support=cyl('Circular integrated rear connection pod',(0,midpoint,rear+.10),.26 if kind=='lamp' else .322,.12,terminal_root,white)
+        # The rose is connected from inside the unscrewed cap. Its support
+        # belongs behind that front-facing bank, unlike the rear lamp holder.
+        behind=1 if kind=='lamp' else -1
+        support=cyl('Circular connection support',(0,midpoint,rear+behind*.10),.26 if kind=='lamp' else .322,.12,terminal_root,white)
         support.scale.y=.85 if kind=='lamp' else .55
-        for anchor in anchors:box('Rounded connection seat',(anchor[0],anchor[1]+.039,anchor[2]+.075),(.155,.135,.055),terminal_root,white,.024)
+        for anchor in anchors:box('Rounded connection seat',(anchor[0],anchor[1]+.039,anchor[2]+behind*.075),(.155,.135,.055),terminal_root,white,.024)
     if kind=='switch':
         body=semantic('body',bodyframe)
         back=box('Pressed metal back-box',(0,.7,-.25),(.91,.94,.045),body,steel,.018)
@@ -222,7 +227,6 @@ def authored_first_fixture(recipe,root):
         mounting=semantic('mounting',cover)
         for x in (-.426,.426):
             torus('Recessed fixing seat',(x,0,.042),.039,.006,mounting,grey);screw((x,0,.047),mounting,steel,dark)
-        label('10 AX',(0,-.402,.047),cover,dark,.035)
     elif kind=='rose':
         body=semantic('body',bodyframe)
         cyl('Rose mounting base',(0,.65,-.035),.422,.165,body,white)
@@ -406,9 +410,12 @@ def add_terminal_legends(recipe,root):
         node=by_id.get(terminal['id'])
         if not node:raise ValueError('Missing terminal '+terminal['id'])
         scale=terminal.get('scale',1)
-        white=material('Rear marking pad '+terminal['id'],(.80,.82,.75),0,.55)
-        box('Moulded terminal legend pad',(0,.082*scale,.001*scale),(.115*scale,.031*scale,.006*scale),node,white,.004)
-        label(terminal['label'],(0,.082*scale,.005*scale),node,dark,.020*scale)
+        white=material('Terminal marking pad '+terminal['id'],(.80,.82,.75),0,.55)
+        form=node.get('contactForm','pressure plate')
+        z=-.105 if form=='winding stud' else -.38 if form=='pin' else .001
+        if form!='core end':
+            box('Moulded terminal legend pad',(0,.082*scale,z*scale),(.145*scale,.038*scale,.006*scale),node,white,.004)
+            label(terminal['label'],(0,.082*scale,(z+.004)*scale),node,dark,min(.038,.162/max(1,len(terminal['label'])))*scale)
         node['canonicalAnchor']=terminal['anchor'];node['role']=terminal['role'];node['purpose']=terminal['purpose'];node['group']=terminal.get('group','')
     return by_id
 
@@ -425,17 +432,19 @@ def tag_inspection_shells(root):
 
 def set_view(root,view):
     component_type=str(root.get('galleryKey','')).split(':')[0]
+    travel=1.0 if any(child.get('serviceChamber') for child in root.children_recursive) else .55
     for obj in root.children_recursive:
         if obj.get('partId')=='cover' and obj.get('restPosition'):
             p=Vector(obj['restPosition']);obj.location=p
             obj.rotation_euler=(0,0,0);obj.hide_render=False
-            if view=='open':obj.location=p+Vector((.55,.08,.15));obj.rotation_euler[1]=math.pi/2.5
+            if view=='open':obj.location=p+Vector((travel,.08,.15));obj.rotation_euler[1]=math.pi/2.5
             if view=='exploded':obj.location=p+Vector((.5,.5,.65))
         if obj.type=='MESH':
             part=next((p.get('partId') for p in ancestors(obj) if p.get('partId')),'')
             internal=any(p.get('conceptualInternal') for p in ancestors(obj)) or part in ('electronics','coil','thermal','magnetic') or part=='winding' and component_type not in ('transformer','dcsupply')
             cover_assembly=any(p.get('partId')=='cover' for p in ancestors(obj))
-            obj.hide_render=view=='cutaway' and cover_assembly or view=='normal' and internal
+            chamber=any(p.get('serviceChamber') for p in ancestors(obj))
+            obj.hide_render=view=='cutaway' and cover_assembly or view=='normal' and (internal or chamber)
             if view=='cutaway' and (part=='body' or obj.get('inspectionHousing') or obj.get('lampEnvelope')):
                 obj.data.materials.clear();obj.data.materials.append(material('Conceptual cutaway housing',(.40,.64,.55),0,.5,.14))
 
@@ -496,6 +505,41 @@ def render_library(inventory):
             strip_text_metadata(PREVIEWS/f'{key}-{view}.png')
         print('INSPECTED',key,flush=True)
 
+def render_access(inventory):
+    """Review each installation face with the covers moved aside."""
+    folder=PREVIEWS/'service-access'
+    folder.mkdir(parents=True,exist_ok=True)
+    for entry in inventory:
+        key=entry['key']
+        bpy.ops.wm.open_mainfile(filepath=str(SOURCES/f'{key}.blend'))
+        root=next(obj for obj in bpy.context.scene.objects if obj.name.startswith('Electrical Lab'))
+        if root.get('detailRevision')!=3:raise ValueError('Access review requires current source: '+key)
+        set_view(root,'open');camera=studio()
+        n=Vector((0,0,0))
+        for terminal in entry['terminals']:n+=Vector(terminal['entryDirection'])
+        if n.length<.1:n=Vector((.3,.35,.89))
+        n.normalize()
+        fit_camera(root,camera,(n.x+.18,-(n.z if abs(n.z)>.18 else .25),max(.28,n.y)))
+        scene=bpy.context.scene;scene.render.resolution_x=256;scene.render.resolution_y=256
+        scene.eevee.taa_render_samples=8
+        file=folder/(key+'.png');scene.render.filepath=str(file)
+        bpy.ops.render.render(write_still=True);strip_text_metadata(file)
+        print('ACCESS_VIEW',key,flush=True)
+
+def export_glb(path):
+    # Readers (including the running Windows app) should only see complete
+    # GLBs. Blender writes to a sibling temporary file, then we swap it in.
+    with tempfile.TemporaryDirectory(dir=path.parent) as work:
+        staged=Path(work)/path.name
+        bpy.ops.export_scene.gltf(filepath=str(staged),export_format='GLB',use_selection=True,export_extras=True,export_yup=True,export_animations=False,export_cameras=False,export_lights=False,export_apply=True)
+        for attempt in range(15):
+            try:
+                staged.replace(path)
+                return
+            except (PermissionError,OSError):
+                if attempt==14:raise
+                time.sleep(.2)
+
 def export_lod(root,path):
     for obj in list(root.children_recursive):
         # Engraved text needs the close-inspection mesh. At distance its tiny
@@ -508,34 +552,43 @@ def export_lod(root,path):
         if obj.data.users>1:obj.data=obj.data.copy()
         modifier=obj.modifiers.new('Distance geometry simplification','DECIMATE');modifier.ratio=.24 if any(p.get('terminalId') for p in ancestors(obj)) else .18
         bpy.context.view_layer.objects.active=obj;bpy.ops.object.modifier_apply(modifier=modifier.name)
-    bpy.ops.export_scene.gltf(filepath=str(path),export_format='GLB',use_selection=True,export_extras=True,export_yup=True,export_animations=False,export_cameras=False,export_lights=False,export_apply=True)
+    export_glb(path)
     return sum(sum(len(p.vertices)-2 for p in obj.data.polygons) for obj in root.children_recursive if obj.type=='MESH')
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--first',action='store_true');parser.add_argument('--render-first',action='store_true');parser.add_argument('--render-library',action='store_true');parser.add_argument('--render-only',action='store_true');parser.add_argument('--thumbnails',action='store_true');parser.add_argument('--only');args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
+    bpy.context.preferences.filepaths.save_version=0
+    parser=argparse.ArgumentParser();parser.add_argument('--first',action='store_true');parser.add_argument('--render-first',action='store_true');parser.add_argument('--render-library',action='store_true');parser.add_argument('--render-access',action='store_true');parser.add_argument('--render-only',action='store_true');parser.add_argument('--thumbnails',action='store_true');parser.add_argument('--only');args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
     inventory=json.loads((HERE/'recipes/inventory.json').read_text());first=[item['key'] for item in inventory if item['galleryKey'] in ('switch:single-rocker','rose:default','lamp:bulb')]
+    references=json.loads((HERE/'reference-map.json').read_text())
     only=set(args.only.split(',')) if args.only else None
     selected=[item for item in inventory if (not args.first or item['key'] in first) and (only is None or item['key'] in only)]
     if args.render_only:
+        if args.render_access:render_access(selected)
         if args.thumbnails:
             for entry in selected:render_thumbnail(entry)
-        if args.render_library or not args.thumbnails:render_library(selected)
+        if args.render_library or not (args.thumbnails or args.render_access):render_library(selected)
         return
     reports=[]
     for entry in selected:
         recipe=json.loads((HERE/'recipes'/entry['file']).read_text());root=reconstruct(recipe);authored_first_fixture(recipe,root);authored_library_variants(recipe,root)
-        features=enrich(recipe,root,SimpleNamespace(**{name:globals()[name] for name in ('empty','material','box','cyl','torus','semantic','ancestors','setmesh','boolean_difference')}))
+        api=SimpleNamespace(**{name:globals()[name] for name in ('empty','material','box','cyl','torus','semantic','ancestors','setmesh','boolean_difference','label')})
+        features=enrich(recipe,root,api)
+        features.append(add_service_details(recipe,root,api))
+        # Persist the physical-reference inventory on both exported detail levels.
+        root['referenceIds']=references['familySources'][recipe['definition']['model']]
+        root['detailFeatures']=features
         add_terminal_legends(recipe,root);tag_inspection_shells(root)
         root['source']='Original typed recipe refined in Blender 4.5 LTS';root['galleryKey']=entry['galleryKey'];root['conceptualInternals']=True
         source_meshes=sum(o.type=='MESH' for o in root.children_recursive)
         # Save the original authoring objects before export batching: gear teeth,
         # threads, washers, pressure plates and PCB parts remain individually
         # editable. Runtime GLBs combine only static details with shared owners.
+        clear_browser_locations(bpy.data.screens)
         bpy.context.view_layer.update();bpy.ops.wm.save_as_mainfile(filepath=str(SOURCES/f"{entry['key']}.blend"),compress=True)
         merge_static(root);tag_inspection_shells(root)
         bpy.ops.object.select_all(action='DESELECT');root.select_set(True)
         for obj in root.children_recursive:obj.select_set(True)
-        bpy.ops.export_scene.gltf(filepath=str(ASSETS/f"{entry['key']}.glb"),export_format='GLB',use_selection=True,export_extras=True,export_yup=True,export_animations=False,export_cameras=False,export_lights=False,export_apply=True)
+        export_glb(ASSETS/f"{entry['key']}.glb")
         meshes=[obj for obj in root.children_recursive if obj.type=='MESH'];triangles=sum(sum(len(p.vertices)-2 for p in obj.data.polygons) for obj in meshes)
         low_path=ASSETS/(entry['key']+'.low.glb');low_triangles=export_lod(root,low_path)
         reports.append({'key':entry['key'],'galleryKey':entry['galleryKey'],'type':entry['component']['type'],'name':entry['name'],'url':'/models/'+entry['key']+'.glb','lowUrl':'/models/'+entry['key']+'.low.glb','thumbnailUrl':'/models/thumbnails/'+entry['key']+'.png','detailRevision':REVISION,'detailFamily':recipe['definition']['model'],'detailFeatures':features,'sourceMeshCount':source_meshes,'meshCount':len(meshes),'triangles':triangles,'lowTriangles':low_triangles,'terminals':recipe['terminals'],'bytes':(ASSETS/(entry['key']+'.glb')).stat().st_size,'lowBytes':low_path.stat().st_size,'bespokeBlender':True})
@@ -544,6 +597,7 @@ def main():
     merged={item['key']:item for item in old};merged.update({item['key']:item for item in reports});report_path.write_text(json.dumps(list(merged.values()),indent=2))
     if args.render_first:render_first(first)
     if args.render_library:render_library(selected)
+    if args.render_access:render_access(selected)
     if args.thumbnails:
         for entry in selected:render_thumbnail(entry)
     print('COMPLETE',len(reports),'generated assets',flush=True)

@@ -33,10 +33,10 @@ test('packaging includes local workers and a standalone runtime with no renderer
   const config=JSON.parse(readFileSync(new URL('../desktop/electron-builder.json',import.meta.url),'utf8'));assert.equal(config.nsis.perMachine,false);assert.equal(config.nsis.allowElevation,false);assert.equal(config.nsis.createDesktopShortcut,true);assert.equal(config.nsis.deleteAppDataOnUninstall,false);assert.equal(config.extraResources[0].from,'dist/client');
   const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');assert.match(main,/sandbox: true/);assert.match(main,/contextIsolation: true/);assert.match(main,/nodeIntegration: false/);assert.match(main,/requestSingleInstanceLock/);assert.match(main,/closeAllConnections/);assert.match(CSP,/worker-src 'self' blob:/);
 });
-test('version 1.3.0 keeps the existing per-user identity and shortcuts for upgrades',()=>{
+test('version 1.4.0 keeps the existing per-user identity and shortcuts for upgrades',()=>{
   const metadata=JSON.parse(readFileSync(new URL('../desktop/app/package.json',import.meta.url),'utf8'));
   const config=JSON.parse(readFileSync(new URL('../desktop/electron-builder.json',import.meta.url),'utf8'));
-  assert.equal(metadata.version,'1.3.0');assert.equal(config.appId,'ie.irish-electrical-lab.desktop');assert.equal(config.productName,'Irish Electrical Lab');assert.equal(config.nsis.createStartMenuShortcut,true);assert.equal(config.nsis.shortcutName,'Irish Electrical Lab');
+  assert.equal(metadata.version,'1.4.0');assert.equal(config.appId,'ie.irish-electrical-lab.desktop');assert.equal(config.productName,'Irish Electrical Lab');assert.equal(config.nsis.createStartMenuShortcut,true);assert.equal(config.nsis.shortcutName,'Irish Electrical Lab');
   const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');assert.match(main,/PROFILE_NAME = 'Irish Electrical Lab'/);assert.match(main,/app\.setPath\('userData', path\.join\(app\.getPath\('appData'\), PROFILE_NAME\)\)/);
 });
 
@@ -56,4 +56,9 @@ test('an unfinished upgrade verification cannot overwrite the learner recovery b
     assert.equal(readFileSync(backupFile,'utf8'),originalBackup);
     assert.match(readFileSync(path.join(output,'desktop-retention-seed-error.json'),'utf8'),/original backup has been preserved/);
   } finally {rmSync(directory,{recursive:true,force:true});}
+});
+
+test('the native reference action accepts the equipment documentation shipped with the coursebook',()=>{
+  const references=JSON.parse(readFileSync(new URL('../../authoring/blender/reference-map.json',import.meta.url),'utf8'));
+  for(const source of references.sources) assert.ok(allowedReference(source.url),source.title);
 });

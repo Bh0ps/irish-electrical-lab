@@ -16,6 +16,7 @@ function ports(ids: string[], roles?: TerminalRole[]): TerminalDefinition[] {
   });
 }
 const partText: Record<string, [string,string]> = {
+  test: ['Test button · T', 'The spring-return T button connects an internal test resistor across opposite sides of the sensing poles. With the device closed and a suitable supply connected, that imbalance trips the mechanism.'],
   body: ['Housing', 'The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing.'],
   cover: ['Removable cover', 'The cover limits access to internal connections. Opening it here is a virtual inspection operation.'],
   terminals: ['Terminal clamps', 'Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires.'],
@@ -46,6 +47,10 @@ const defs: ComponentDefinition[] = [];
 function explainTerminal(type:string,t:TerminalDefinition):void {
   const id=t.id;
   const set=(text:string)=>{t.purpose=text;};
+  if(type==='switch')return set(id==='COM'?'Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.':'Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.');
+  if(type==='dimmer')return set(id==='COM'?'Common supply contact. The dimmer changes the effective resistance between COM and OUT in this study model.':'Switched, adjustable output to the lamp. Turn the dial to change the equivalent resistance between COM and OUT.');
+  if(type==='switch2')return set(id==='COM'?'Common contact. Moving the rocker connects COM to one of the two traveller terminals.':`Traveller marked ${id==='T1'?'L1':'L2'}. The lesson calls this path ${id}. The rocker chooses whether it is joined to COM.`);
+  if((type==='meter'||type==='source'||type==='source3')&&(id==='PE'||id==='PEOUT'))return set('Protective connection at the represented supply boundary. This separate earth path is drawn beside the metering equipment. The meter measures energy on the active supply path.');
   if(id==='PE'||id==='PEOUT')return set(`${id==='PEOUT'?'Outgoing protective connection':'Protective connection'} to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.`);
   if(['transformer','driver','dcsupply'].includes(type)&&['+','-'].includes(id)){
     if(type==='transformer'){t.role='output';set(`Isolated AC secondary ${id==='+'?'first':'second'} winding end. The stable ${id} identifier is a software label, not fixed DC polarity. Measure RMS voltage between + and −; secondary-to-earth common-mode voltage is undetermined without a reference connection.`);}
@@ -92,7 +97,7 @@ function add(type: string, name: string, group: string, model: string, descripti
   const terminals=ports(ids,roles);
   if(['switch','switch2','intermediate','dimmer'].includes(type))terminals.forEach(t=>{t.role='L';t.purpose=t.id==='COM'?'Common line-contact connection. The switch links this terminal to the selected output; it is not a neutral connection.':type==='switch2'?'Traveller connection selected by the common contact. T1/T2 are alternative switch paths, not separate supply phases.':type==='intermediate'?'Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.':'Controlled line output. Its potential follows the actual contact or dimmer state.';});
   terminals.forEach(t=>explainTerminal(type,t));
-  const definition:ComponentDefinition={ type,name,group,model,description,terminals,defaults,parts:['body','cover','terminals','mounting',...parts].map(id=>({id,name:partText[id]?.[0]??id,purpose:partText[id]?.[1]??'Selectable functional part.'})),size,abstraction };
+  const definition:ComponentDefinition={ type,name,group,model,description,terminals,defaults,parts:['body','cover','terminals','mounting',...parts,...(['rcbo','rcd','rcd3'].includes(type)?['test']:[])].map(id=>({id,name:partText[id]?.[0]??id,purpose:partText[id]?.[1]??'Selectable functional part.'})),size,abstraction };
   definition.terminals=getComponentTerminals({type,label:name,params:defaults},definition);
   defs.push(definition);
 }
@@ -100,7 +105,7 @@ const load=['L','N','PE'], pass=['L','N','PE','LOUT','NOUT','PEOUT'];
 const poles3=['L1IN','L2IN','L3IN','NIN','L1OUT','L2OUT','L3OUT','NOUT'];
 add('source','Single-phase supply','Distribution','supply','Virtual customer supply with explicitly modelled source impedance. The service equipment is a contextual boundary.',load,{sourceResistance:.12},['display']);
 add('source3','Three-phase supply','Distribution','supply','Three sinusoidal RMS phases with 120-degree separation; line voltage is the selected industrial supply value.',['L1','L2','L3','N','PE'],{sourceResistance:.12},['display']);
-add('meter','Energy meter','Distribution','meter','Measures the supply path and represents metering on the customer boundary.',pass,{closed:true},['display','electronics']);
+add('meter','Energy meter','Distribution','meter','A supply meter records energy in kilowatt-hours. Its practice display shows the power passing through its own line connection right now, in kilowatts (kW).',pass,{closed:true},['display','electronics']);
 add('panel','Distribution enclosure','Distribution','panel','Openable cabinet with DIN rails, conductor bars, circuit labels and a customer-side supply path.',pass,{closed:true},[],[2,1.8,.8]);
 add('terminal','Terminal block','Distribution','bar','A set of explicitly joined terminals used to organise a circuit.',['1','2','3','4'],{},[],[1,.5,.7]);
 add('neutralbar','Neutral bar','Distribution','bar','Normal neutral connections share a metal bar. They remain separate from protective earth.',['1','2','3','4'],{},[],[1,.5,.7],['N','N','N','N']);

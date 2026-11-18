@@ -1,3 +1,4 @@
+import { COURSE_PAGES } from './coursebook-content.ts';
 import { COMPONENTS } from './components.ts';
 import { getScenario, lessonCompetency, evaluateScenarioExpectation, type ScenarioExpectation } from './scenarios.ts';
 import { measureResistance, measureVoltage } from './simulation.ts';
@@ -10,11 +11,15 @@ export interface MeasurementEvidence {
   a?:Endpoint; b?:Endpoint; wire?:string; value:number|null; unit:string; explanation:string; recordedAt:number;
   controlState:Record<string,string|number|boolean>;
   status?:'value'|'open'|'unresolved';
+  /** True for a meter setup that supplied the points to the learner. */
+  assisted?:boolean;
 }
 export interface LessonActivity {
   id:string;kind:'inspect'|'predict'|'connect'|'operate'|'measure'|'explain'|'repair'|'retest';title:string;instruction:string;explanation:string;
   component?:string;part?:string;endpoints?:Endpoint[];options?:{id:string;label:string}[];answer?:string;
   measurement?:{mode:'voltage'|'current'|'resistance';a?:Endpoint;b?:Endpoint;wire?:string};competency:string;
+  bookStep?:'intro'|'switch-off'|'switch-on'|'contact'|'meter-demo'|'dimmer'|'finish';
+  independentMeasurement?:boolean;
   wire?:string;expectedRole?:string;expectedParams?:Record<string,string|number|boolean>;expectedSupplyEnabled?:boolean;expectedObservations?:ScenarioExpectation[];
   expectedControls?:{component:string;params:Record<string,string|number|boolean>}[];
   expectedSignalOpen?:{a:Endpoint;b:Endpoint};scenarioStep?:number;
@@ -39,7 +44,9 @@ function identity(e:MeasurementEvidence){return e.mode==='current'?`current:${e.
 /** Only actual, current measurements count. Opposite probe order is the same observation. */
 export function currentEvidence(document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[]):MeasurementEvidence[]{
   const snapshot=controlSnapshot(document),seen=new Set<string>();
-  return evidence.filter(e=>{
+  // Prefer the latest verified sample of a given pair, including a learner
+  // choosing their own probes after seeing a worked reading.
+  return [...evidence].reverse().filter(e=>{
     if(!e||e.circuitId!==document.id||e.revision!==document.revision||e.lessonId!==document.lessonId||!Number.isFinite(e.recordedAt)||(e.value===null?e.status!=='open':!Number.isFinite(e.value))||!['voltage','current','resistance'].includes(e.mode)||!e.controlState||Object.keys(snapshot).some(k=>e.controlState[k]!==snapshot[k]))return false;
     const actual=captureMeasurement(document,result,e,e.recordedAt);if(actual.unit!==e.unit||e.status!==undefined&&actual.status!==e.status)return false;if(e.value===null){if(actual.status!=='open'||e.mode!=='resistance')return false;}else if(actual.value===null||Math.abs(actual.value-e.value)>Math.max(1e-6,Math.abs(actual.value)*1e-5))return false;
     const key=identity(e);if(seen.has(key))return false;seen.add(key);return true;
@@ -76,39 +83,6 @@ function operateLanguage(lesson:ConfigurationLesson,component:string,params:Reco
   }).join('. ')+'.';
 }
 
-function predictOutcome(lesson: ConfigurationLesson, prediction: Extract<ScenarioExpectation, {kind:'power'|'state'}>) {
-  const target = lesson.circuit.components.find(component => component.id === prediction.component)?.label ?? prediction.component;
-  const name = `“${target.split(' · ')[0]}”`;
-  if (prediction.kind === 'power') {
-    const answer = prediction.max === undefined ? 'operating' : 'stopped';
-    return { question: `What will you observe at ${name}?`, answer, options: [
-      { id: 'operating', label: 'It draws operating power' },
-      { id: 'stopped', label: 'Its operating power drops to zero' },
-    ] };
-  }
-
-  let question = `What will you observe at ${name}?`;
-  let labels: [string, string];
-  if (prediction.key === 'closed') {
-    question = `What state will the contacts at ${name} be in?`;
-    labels = prediction.equals ? ['The contacts are closed', 'The contacts are open'] : ['The contacts are open', 'The contacts are closed'];
-  } else if (prediction.key === 'energized') {
-    labels = prediction.equals ? ['It is energized', 'It is idle'] : ['It is idle', 'It is energized'];
-  } else if (prediction.key === 'direction') {
-    question = `What motion will you observe at ${name}?`;
-    labels = Number(prediction.equals) > 0 ? ['It turns forward', 'It turns in reverse'] : ['It turns in reverse', 'It turns forward'];
-  } else if (lesson.id === 30) {
-    question = `Which position will ${name} take?`;
-    labels = ['Hot water only', 'Shared heating and hot water'];
-  } else if (lesson.id === 42) {
-    question = `Will ${name} respond to the interlink?`;
-    labels = ['The linked alarm receives the signal', 'The linked alarm stays idle'];
-  } else {
-    labels = [`The ${prediction.key} state is ${String(prediction.equals)}`, `The ${prediction.key} state is different`];
-  }
-  return { question, answer: 'expected', options: [{ id: 'expected', label: labels[0] }, { id: 'opposite', label: labels[1] }] };
-}
-
 function predictionOrder(lessonId: number, answer: string, options: NonNullable<LessonActivity['options']>) {
   const correct = options.find(option => option.id === answer)!;
   const alternate = options.filter(option => option.id !== answer);
@@ -119,19 +93,16 @@ function predictionOrder(lessonId: number, answer: string, options: NonNullable<
 export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]{
   const competency=lessonCompetency(lesson.id),base=(id:string,kind:LessonActivity['kind'],title:string,instruction:string,explanation:string):LessonActivity=>({id:`lesson:${lesson.id}:${id}`,kind,title,instruction,explanation,competency});
   const activities:LessonActivity[]=lesson.circuit.components.map(c=>({...base(`inspect:${c.id}`,'inspect',`Inspect ${c.label}`,`Select ${c.label}. Open its terminal view and identify the normal operating terminals and any protective terminal.`,`${COMPONENTS[c.type].description} ${COMPONENTS[c.type].abstraction??''}`),component:c.id,part:'terminals',endpoints:COMPONENTS[c.type].terminals.map(t=>({component:c.id,terminal:t.id}))}));
-  const scenario=getScenario(lesson.id);let actionIndex=scenario?.steps.findIndex(s=>s.patches.length&&s.expectations.some(e=>e.kind==='power'||e.kind==='state'))??-1;
-  if(actionIndex<0)actionIndex=scenario?.steps.findIndex(s=>s.patches.length)??-1;
-  const action=actionIndex>=0?scenario?.steps[actionIndex]:undefined;
-  const observedAction=action?.expectations.length?action:scenario?.steps.slice(Math.max(0,actionIndex+1)).find(s=>s.expectations.length);
-  const prediction=observedAction?.expectations.find(e=>e.kind==='power'||e.kind==='state');
-  if(action&&prediction){
-    const {question,answer,options}=predictOutcome(lesson,prediction);
-    const actions=action.patches.map(p=>operateLanguage(lesson,p.component,p.params,true)).join(' ');
-    activities.push({...base('predict','predict','Predict before operating',`Imagine this change. ${actions} ${question}`,`${prediction.title}. Compare your prediction with the measured outcome, then trace the actual operating and return paths.`),component:prediction.component,answer,options:predictionOrder(lesson.id,answer,options)});
-  }else{
-    const pair=loadPair(lesson);activities.push({...base('predict','predict','Predict the measuring reference','Which path should carry the normal return current for this load?','Normal load current uses its designated return. Protective earth has a different purpose; some incorrect arrangements can operate and still fail protective checks.'),answer:'separate',options:predictionOrder(lesson.id,'separate',[{id:'separate',label:'The designated load return'},{id:'earth-return',label:'The protective earth conductor'}]),endpoints:pair?[pair.a,pair.b]:undefined});
+  const scenario=getScenario(lesson.id);
+  const page=COURSE_PAGES[lesson.id];
+  function questionActivity(kind:'predict'|'explain'):LessonActivity {
+    const content=kind==='predict'?page.prediction:page.explanation;
+    const options=[{id:'expected',label:content.right},{id:'alternative',label:content.alternative}];
+    return {...base(kind,kind,kind==='predict'?'What do you expect?':'What explains what you saw?',content.prompt,page.idea),
+      answer:'expected',options:predictionOrder(lesson.id+(kind==='explain'?1:0),'expected',options)};
   }
-  for(const w of lesson.circuit.wires){const from=lesson.circuit.components.find(c=>c.id===w.from.component)!,to=lesson.circuit.components.find(c=>c.id===w.to.component)!;const ft=COMPONENTS[from.type].terminals.find(t=>t.id===w.from.terminal)!,tt=COMPONENTS[to.type].terminals.find(t=>t.id===w.to.terminal)!;activities.push({...base(`connect:${w.id}`,'connect',`Connect ${display(lesson,w.from)} to ${display(lesson,w.to)}`,`With the simulated supply off, connect these actual terminals using the ${w.role} conductor identification.`,`${ft.purpose} → ${tt.purpose}. The connection is determined by its endpoints. Colour or visual proximity cannot change its electrical path.`),component:to.id,part:'terminals',endpoints:[structuredClone(w.from),structuredClone(w.to)],wire:w.id,expectedRole:w.role});}
+  activities.push(questionActivity('predict'));
+  for(const w of lesson.circuit.wires){const from=lesson.circuit.components.find(c=>c.id===w.from.component)!,to=lesson.circuit.components.find(c=>c.id===w.to.component)!;const ft=COMPONENTS[from.type].terminals.find(t=>t.id===w.from.terminal)!,tt=COMPONENTS[to.type].terminals.find(t=>t.id===w.to.terminal)!;activities.push({...base(`connect:${w.id}`,'connect',`Connect ${display(lesson,w.from)} to ${display(lesson,w.to)}`,`With the simulated supply off, connect ${display(lesson,w.from)} to ${display(lesson,w.to)}. Use the core marked ${w.role}.`,`${ft.purpose} → ${tt.purpose}. The connection is determined by its endpoints. Colour or visual proximity cannot change its electrical path.`),component:to.id,part:'terminals',endpoints:[structuredClone(w.from),structuredClone(w.to)],wire:w.id,expectedRole:w.role});}
   const source=lesson.circuit.components.find(c=>c.type==='source'||c.type==='source3');
   const localSources=lesson.circuit.components.filter(c=>['pv','battery'].includes(c.type)&&Boolean(c.params.on??COMPONENTS[c.type].defaults.on??true));
   const enableLocal=localSources.map(c=>`Select ${c.label} and use Operate to enable its local source.`).join(' ');
@@ -158,14 +129,14 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
   const pair=loadPair(lesson);if(pair)activities.push({...base('measure:voltage','measure','Measure across the load',`Place red on ${display(lesson,pair.a)} and black on ${display(lesson,pair.b)}. Record the voltage under the present control state.`,`${lesson.sections.find(s=>s.title==='Measurements and model limits')?.beginner??'Measure across the actual pair.'} A reading near zero can be a legitimate stopped state; record the control state with it.`),component:pair.a.component,endpoints:[pair.a,pair.b],measurement:{mode:'voltage',...pair}});
   const live=lesson.circuit.wires.find(w=>['L','L1','L2','L3','DC+'].includes(w.role));if(live)activities.push({...base('measure:current','measure','Measure a conductor current',`Select the conductor from ${display(lesson,live.from)} to ${display(lesson,live.to)} and record its RMS current.`,`This is current through that conductor. Parallel paths and ring legs may carry different currents; the selected wire and controls are part of the evidence.`),component:live.to.component,endpoints:[live.from,live.to],wire:live.id,measurement:{mode:'current',wire:live.id}});
   const target=lesson.circuit.wires.find(w=>w.id===lesson.challenge.wire);if(target)activities.push({...base('measure:target','measure','Localize an interrupted path',`Isolate simulated sources, then measure resistance between ${display(lesson,target.from)} and ${display(lesson,target.to)}. Re-enable the supply only after leaving resistance mode.`, 'Compare the isolated continuity with the voltage/current symptoms. An alternative parallel path can produce a finite resistance even when this conductor is broken. The ohmmeter uses the declared passive teaching model.'),component:target.to.component,endpoints:[target.from,target.to],measurement:{mode:'resistance',a:target.from,b:target.to}});
-  activities.push({...base('explain','explain','Explain operation and protection','Why does an operating load alone fail to demonstrate correct protective wiring?','Normal operation demonstrates an operating loop. Protective continuity, conductor identification and control behaviour require their own checks.'),options:[{id:'separate',label:'Operation and protective paths need separate checks'},{id:'lit',label:'An operating load proves every connection is correct'}],answer:'separate'});
+  activities.push(questionActivity('explain'));
   activities.push({...base('repair','repair','Repair the investigated defect','After recording and explaining the target measurements, repair the injected defect. Remove its cause before resetting any interrupted protection.','Clearing a defect is followed by a fresh operating check, not automatic competence credit.'),component:lesson.challenge.component,endpoints:target?[target.from,target.to]:undefined});
   activities.push(base('retest','retest','Retest the operating sequence','Run the lesson test after repair. Check every authored operating objective, including stopped states, independence and any timed sequence.','The test runs copies of this actual terminal graph. A passing result covers this declared model, not a real installation.'));
   return activities;
 }
 export function evaluateActivity(activity:LessonActivity,document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[]=[],answer?:string,context:{assessment?:BuildAssessment;inspected?:string[];challengeStarted?:boolean;diagnosisAccepted?:boolean;repairVerified?:boolean}={}):ActivityOutcome{
   const outcome=(status:ActivityOutcome['status'],explanation:string)=>({status,explanation});
-  if(activity.kind==='predict'||activity.kind==='explain')return answer?outcome(answer===activity.answer?'pass':'fail',answer===activity.answer?activity.explanation:'Reconsider the designated operating path, control request and protective purpose, then compare with the experiment.'):outcome('not-run','Choose a prediction or explanation before revealing the feedback.');
+  if(activity.kind==='predict'||activity.kind==='explain')return answer?outcome(answer===activity.answer?'pass':'fail',answer===activity.answer?activity.explanation:activity.explanation):outcome('not-run','Choose a prediction or explanation before revealing the feedback.');
   if(activity.kind==='inspect')return context.inspected?.includes(`${activity.component}.${activity.part}`)||answer===`${activity.component}.${activity.part}`?outcome('pass',activity.explanation):outcome('not-run','Select the requested physical part and read its purpose.');
   if(activity.kind==='connect'){
     const [a,b]=activity.endpoints??[];
@@ -195,7 +166,7 @@ export function evaluateActivity(activity:LessonActivity,document:CircuitDocumen
     if(params&&supply&&signalOpen&&unresolved)return outcome('unresolved','Run Test to resolve the sequence comparison at this operating point. A single snapshot cannot establish a change from an earlier reading.');
     return outcome(params&&supply&&signalOpen&&observed?'pass':'not-run',params&&supply&&signalOpen&&observed?activity.explanation:'Perform every stated control action and wait for its measured response. A released pushbutton alone does not demonstrate that the holding circuit operated.');
   }
-  if(activity.kind==='measure'){const m=activity.measurement;if(!m)return outcome('unresolved','This activity has no measurement contract.');const [a,b]=activity.endpoints??[];const actualWire=document.wires.find(w=>eq(w.from,a)&&eq(w.to,b)||eq(w.from,b)&&eq(w.to,a));const found=currentEvidence(document,result,evidence).some(e=>e.mode===m.mode&&(m.mode==='current'?e.wire===(actualWire?.id??m.wire):eq(e.a,m.a)&&eq(e.b,m.b)||eq(e.a,m.b)&&eq(e.b,m.a)));return outcome(found?'pass':'not-run',found?activity.explanation:'Record a current, resolved reading at the specified points in the current control state.');}
+  if(activity.kind==='measure'){const m=activity.measurement;if(!m)return outcome('unresolved','This activity has no measurement contract.');const [a,b]=activity.endpoints??[];const actualWire=document.wires.find(w=>eq(w.from,a)&&eq(w.to,b)||eq(w.from,b)&&eq(w.to,a));const found=currentEvidence(document,result,evidence).some(e=>(!activity.independentMeasurement||e.assisted===false)&&e.mode===m.mode&&(m.mode==='current'?e.wire===(actualWire?.id??m.wire):eq(e.a,m.a)&&eq(e.b,m.b)||eq(e.a,m.b)&&eq(e.b,m.a)));return outcome(found?'pass':'not-run',found?activity.explanation:activity.independentMeasurement?'Choose each measuring point yourself and record a fresh reading.':'Record a fresh reading at the specified points.');}
   if(activity.kind==='repair'){if(!context.challengeStarted||!context.diagnosisAccepted)return outcome('not-run','Start this fault exercise and establish an accepted, measured diagnosis before claiming a repair.');return outcome(document.faults.some(f=>f.enabled)||context.repairVerified===false?'not-run':'pass',document.faults.some(f=>f.enabled)?'The injected defect is still active. Record the evidence, remove its cause, then reset interrupted protection.':activity.explanation);}
   const a=context.assessment;return !a?outcome('not-run','Run the lesson test.'):a.circuitId!==document.id||a.revision!==document.revision?outcome('not-run','The circuit changed after that test; retest the current graph.'):outcome(a.passed?'pass':'fail',a.summary);
 }

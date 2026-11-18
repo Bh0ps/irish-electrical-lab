@@ -62,3 +62,17 @@ test('persistent test reports migrate with their electrical identity and reject 
   const wrongStatus=structuredClone(backup);(wrongStatus.progress as unknown as {lastTest:typeof record}).lastTest.assessment.checks[0].status='fail';assert.throws(()=>validateStudyBackup(wrongStatus),/saved test report/);
   const unknownVersion=structuredClone(backup);Object.assign((unknownVersion.progress as unknown as {lastTest:typeof record}).lastTest,{version:2});assert.throws(()=>validateStudyBackup(unknownVersion),/saved test report/);
 });
+
+test('coursebook position and lesson draft survive a Sandbox backup; invalid positions restore nothing',async()=>{
+  const data=fixture(),circuit=structuredClone(LESSONS.find(l=>l.id===7)!.circuit);
+  circuit.components.find(c=>c.id==='switch')!.params.closed=false;
+  const bookmark={version:1 as const,path:'coursebook' as const,mode:'explore' as const,activityId:'lesson:7:operate:sequence:1',circuit};
+  const saved=exportStudyBackup(data.draft,data.builds,data.progress,bookmark);
+  await restoreStudyBackup(JSON.stringify(saved));
+  assert.deepEqual(await readRecord('bookmark'),bookmark);
+  assert.deepEqual(await readRecord('draft'),data.draft);
+  await assert.rejects(restoreStudyBackup({...saved,bookmark:{...bookmark,activityId:'book:55:finish'}}));
+  assert.deepEqual(await readRecord('bookmark'),bookmark);
+  await restoreStudyBackup(JSON.stringify(data));
+  assert.equal(await readRecord('bookmark'),null);
+});

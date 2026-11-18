@@ -80,7 +80,7 @@ const galleryKeys = new Set(inventory.map(entry => entry.key));
 for(const entry of inventory)for(const component of [entry.component,...entry.companions??[]]) {
   const terminals=getComponentTerminals(component,COMPONENTS[component.type]);
   if(terminals.length!==COMPONENTS[component.type].terminals.length)fail(`${entry.key}: incomplete resolved terminal set`);
-  for(const terminal of terminals)if(terminal.anchor[2]>=0||!terminal.group)fail(`${entry.key}/${terminal.id}: connection belongs in an identified rear bank`);
+  for(const terminal of terminals)if(!terminal.entryDirection||Math.abs(Math.hypot(...terminal.entryDirection)-1)>1e-6||!terminal.group)fail(`${entry.key}/${terminal.id}: connection needs a marked bank and a unit entry direction`);
 }
 
 for (const def of COMPONENT_LIST) if (!galleryTypes.has(def.type)) fail(`${def.type}: missing from the QA gallery`);
@@ -101,7 +101,7 @@ if (leftGang && rightGang && (COMPONENTS[leftGang.type].terminals.length !== 2 |
 const report = {
   generatedAt: new Date().toISOString(), status: errors.length ? 'FAIL' : 'PASS',
   summary: { lessons: LESSONS.length, equipmentTypes: COMPONENT_LIST.length, galleryModels: inventory.length, gallerySheets: Math.ceil(inventory.length / 12), terminalDefinitions: COMPONENT_LIST.reduce((n, def) => n + def.terminals.length, 0), totalExampleComponents: LESSONS.reduce((n, lesson) => n + lesson.circuit.components.length, 0), totalExampleWires: LESSONS.reduce((n, lesson) => n + lesson.circuit.wires.length, 0), errors: errors.length, warnings: warnings.length },
-  checks: ['64 unique arrangements', 'registered procedural model families', 'finite placements and terminal anchors', 'valid conductor terminal endpoints', 'beginner and apprentice sections', 'guided builds and objectives', 'fault challenge metadata', 'reference links', 'complete gallery type and visual-variant coverage', 'shared two-gang plate with independent terminal identities', 'rear installation-terminal banks for every visual variant'],
+  checks: ['64 unique arrangements', 'registered procedural model families', 'finite placements and terminal anchors', 'valid conductor terminal endpoints', 'beginner and apprentice sections', 'guided builds and objectives', 'fault challenge metadata', 'reference links', 'complete gallery type and visual-variant coverage', 'shared two-gang plate with independent terminal identities', 'device-specific installation-terminal banks and directions'],
   errors: [...new Set(errors)], warnings, lessons: details,
   gallery: inventory.map(entry => ({ key: entry.key, type: entry.component.type, name: entry.name, source: entry.source })),
   qualification: 'Structural validation checks model/catalog completeness. Simulator tests verify operation and protection findings separately. Original geometry is representative teaching equipment.'

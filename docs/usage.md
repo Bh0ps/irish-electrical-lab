@@ -1,22 +1,24 @@
 # Irish Electrical Lab for Windows
 
-An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **64 configurations** are available in **Learn** and **Sandbox**. Version **1.3.0** adds six Quick practice experiments with live readings and a touch workbench for iPhone. The full courses retain automatic guided wiring checks and their operating and fault exercises.
+An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **64 configurations** are available in **Learn** and **Sandbox**. Version **1.4.0** introduces the coursebook, pictured cable choices and a keyboard-accessible equipment list.
 
 ## Start and stop
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Installer: `lab/release/Irish-Electrical-Lab-1.3.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
+Installer: `lab/release/Irish-Electrical-Lab-1.4.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
-Open **Courses → Quick practice** for an experiment on a working example. Pick a prediction, operate the real control, and compare the readings. **Back to lesson** takes you to the full course.
+Open **Chapters → Quick practice** for an experiment on a working example. Pick a prediction, operate the real control, and compare the readings. **Back to lesson** takes you to the full course.
 
 The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a port conflict shows a startup error. Work lives in `%APPDATA%\Irish Electrical Lab`, outside installation files, and replacement installers preserve it.
 
 ## Learn a course
 
-Choose **Learn → Courses** and select or search a configuration. Six stages organise every course: **Look → Predict → Build → Try → Measure → Fix**. One activity and its next action appear at a time. **Show me where** focuses equipment. **More detail** contains all steps, notes, apprentice explanations and references.
+Choose **Start learning**, then **Turn the light off** on the first bench. Turn it back on and see the contact inside the wall switch. **Continue learning** restores your coursebook step and working circuit. **Chapters** lets you browse all eight chapters, search by a trade name or everyday phrase, or try a chapter practical directly. The early examples work immediately. Later lessons leave individual connections for you to complete. A chapter practical begins with an isolated, unwired bench.
+
+The six-stage exercises remain available in course details. **Help** starts with a clue. A worked meter example shows the two points and the voltage between them. For a probe-placement exercise, choose both points yourself in 3D or through **Equipment list** and record the reading. A predicted result, an observed result and a demonstrated measurement are tracked separately. Ordinary fault practice allows hints. Choose the scored challenge in the test panel if you want a score.
 
 A guided Build begins with equipment laid out, wires removed and every represented external, PV or battery source isolated. Adding the correct wire for the displayed step checks its endpoints and conductor identification, records that demonstration and moves to the next step automatically. A wrong connection remains on the bench for investigation and does not advance the instruction. **Check connection** remains available when revisiting an existing connection or continuing after reload. Stage navigation, Undo/Redo and previously drawn wires do not automatically award new demonstrations.
 
@@ -28,7 +30,7 @@ Choose **Sandbox**, then **My builds → New circuit** or **Start from example**
 
 - **Add equipment:** search or choose a category, then click the bench. A snapped ghost shows size and occupied space. Placement returns to Select.
 - **Select:** click a rocker, lever or button to operate it; drag the housing to move it. Selected equipment offers Rotate, Duplicate, Delete and **Operate / toggle control**.
-- **Connect:** click two rear terminals. The context describes source and hovered destination. For an attached lesson, the exact terminal pair sets the default conductor identification in either click order, including control wires fed from a line terminal. A manual identification choice takes priority for that pending wire, allowing deliberate mistakes. Existing wires keep their identification. Escape or **Cancel connection** cancels the pending wire.
+- **Connect:** choose two terminals on the device or in the named list. Expand **Cable** to choose an insulated single, flat twin and earth, or round flex. A shared sheath holds individual cores. Select the core you want to connect, inspect or remove. Undo restores that edit. The context describes source and hovered destination. For an attached lesson, the exact terminal pair sets the default conductor identification in either click order, including control wires fed from a line terminal. A manual identification choice takes priority for that pending wire, allowing deliberate mistakes. Existing wires keep their identification. Escape or **Cancel connection** cancels the pending wire.
 - **Measure:** click terminals for probes, or a conductor for current.
 
 In the default **Orbit camera**, drag the background to orbit, scroll to zoom and right- or middle-drag to pan. **View** also offers **Free camera**: click the bench for keyboard focus, use **W/A/S/D** to move, **Q/E** to lower or raise and **Shift** for faster movement. Right-drag looks, middle-drag pans and scrolling moves forward or backward smoothly. Camera movement settles when released; typing, modal dialogs and equipment dragging suspend it. Left-click still operates equipment, selects wires and connects terminals.
@@ -65,7 +67,7 @@ Replacing changed work offers **Save and continue**, **Discard and continue**, o
 
 ## Models and educational limits
 
-Equipment ratings, terminal definitions and teaching-model notes are in `lab/lib/components.ts`, rendering code in `lab/lib/Equipment.tsx`, editable Blender assemblies and pipeline in `authoring/blender`, and runtime assets in `lab/public/models`. All **87 equipment variants** have detailed original construction: rear pressure-plate clamps, threaded fixings and washers, appropriate contacts, thermal elements, windings, circuit boards and process mechanisms. Editable Blender sources retain individual construction objects; static decorative geometry is combined by part and material for the app. Full and distance models share stable terminals and selectable functional parts. Real model thumbnails identify equipment in menus. These are representative study models, with conceptual internals labelled; the authoring guide records their architectural references and assumptions.
+Equipment ratings, terminal definitions and teaching-model notes are in `lab/lib/components.ts`, rendering code in `lab/lib/Equipment.tsx`, editable Blender assemblies and pipeline in `authoring/blender`, and runtime assets in `lab/public/models`. All **87 equipment variants** have detailed original construction: device-specific terminal entries and pressure clamps, threaded fixings and washers, appropriate contacts, thermal elements, windings, circuit boards and process mechanisms. Editable Blender sources retain individual construction objects; static decorative geometry is combined by part and material for the app. Full and distance models share stable terminals and selectable functional parts. Real model thumbnails identify equipment in menus. These are representative study models, with conceptual internals labelled; the authoring guide records their architectural references and assumptions.
 
 The environments use locally generated albedo, roughness and normal textures with local reflections. Contact shading, restrained emitter bloom and antialiasing run while frames are needed; **More → Graphics and supply settings → Graphics quality** selects automatic, high or economy settings. Each lamp's dynamic light follows its actual emitting power. Available dynamic-light slots are bounded for performance; all lamps retain their own power-driven surface brightness. Optical output is an illustrative proxy, not a lighting-design calculation.
 

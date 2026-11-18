@@ -120,6 +120,19 @@ function DisplayText({node,reading}:{node:THREE.Object3D;reading:string}){
   return createPortal(<mesh position={screen.position} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[screen.dimensions.x*.89,screen.dimensions.z*.77]}/><meshBasicMaterial map={map} transparent toneMapped={false} depthWrite={false}/></mesh>,node);
 }
 
+function RatingText({node,text}:{node:THREE.Object3D;text:string}){
+  const map=useMemo(()=>{
+    const canvas=document.createElement('canvas');canvas.width=320;canvas.height=80;
+    const ctx=canvas.getContext('2d');if(!ctx)return null;
+    ctx.fillStyle='#edece7';ctx.fillRect(0,0,320,80);
+    ctx.fillStyle='#182127';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 50px Arial';
+    ctx.fillText(text,160,41,310);
+    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
+  },[text]);
+  useEffect(()=>()=>map?.dispose(),[map]);
+  return map?createPortal(<mesh position={[0,.008,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.268,.065]}/><meshBasicMaterial map={map} toneMapped={false}/></mesh>,node):null;
+}
+
 export function BlenderEquipment(props:EquipmentProps&{fallback:React.ReactNode}){
   const entry=equipmentAsset(props.component,props.definition),[far,setFar]=useState(false),{invalidate}=useThree();
   const lowUrl=entry?.lowUrl;
@@ -140,7 +153,19 @@ export function BlenderEquipment(props:EquipmentProps&{fallback:React.ReactNode}
     const owner=semanticOwner(event.object);event.stopPropagation();
     if(owner.terminal)props.onTerminal(owner.terminal);else props.onPart(owner.part??'body');
   };
-  const displays:THREE.Object3D[]=[];presentation.scene.traverse(node=>{if(node.userData.partId==='display')displays.push(node);});
-  const type=props.component.type,active=!!props.state?.energized,reading=['multimeter','clamp'].includes(type)?String(props.component.params.reading??'—'):['source','source3','meter'].includes(type)?`${props.component.params.studyVoltage??(type==='source3'?400:240)} V`:type==='vfd'?`${active?Number(props.component.params.frequency??50).toFixed(1):'0.0'} Hz`:type==='plc'?(active?'I/O ONLINE':'I/O OFF'):type==='ev'?(active?'CHARGING':'READY'):active?'RUN':'OFF';
-  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}</group>;
+  const displays:THREE.Object3D[]=[],ratingPlates:THREE.Object3D[]=[];presentation.scene.traverse(node=>{if(node.userData.partId==='display')displays.push(node);if(node.userData.ratingPlate)ratingPlates.push(node);});
+  const type=props.component.type,active=!!props.state?.energized;
+  const reading=(()=>{
+    if(['multimeter','clamp'].includes(type))return String(props.component.params.reading??'—');
+    if(type==='meter')return typeof props.state?.meterWatts==='number'?(props.state.meterWatts/1000).toFixed(3)+' kW':'—';
+    if(type==='source'||type==='source3')return active?String(props.component.params.studyVoltage??(type==='source3'?400:240))+' V':'OFF';
+    if(type==='vfd')return (active?Number(props.component.params.frequency??50).toFixed(1):'0.0')+' Hz';
+    if(type==='plc')return active?'I/O ONLINE':'I/O OFF';
+    if(type==='ev')return active?'CHARGING':'READY';
+    return active?'RUN':'OFF';
+  })();
+  const values={...props.definition.defaults,...props.component.params};
+  const amp=Number(values.rating??values.currentRating??16),residual=Number(values.residualRating??Number(values.tripMa??30)/1000)*1000;
+  const rating=type==='rcbo'?`${amp} A · ${Number(residual.toFixed(2))} mA`:['rcd','rcd3'].includes(type)?`${Number(residual.toFixed(2))} mA`:`${amp} A`;
+  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}{ratingPlates.map(node=><RatingText key={node.uuid} node={node} text={rating}/>)}</group>;
 }

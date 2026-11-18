@@ -2,6 +2,7 @@
 'use strict';
 const fs=require('node:fs');
 const path=require('node:path');
+const {restoreProfileWithoutReact}=require('./graphics-diagnostics-helpers.cjs');
 function rendererHarness(){
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const text=element=>(element?.textContent??'').trim().replace(/\s+/g,' ');
@@ -27,6 +28,7 @@ async function runUiDiagnostics({app,window,output,root,fixtures,dialog}){
   const js=source=>window.webContents.executeJavaScript(source);
   await js(`(${rendererHarness.toString()})()`);
   const saved=await js('window.__labVerify.snapshot()');
+  const originalUrl=window.webContents.getURL();
   const originalBounds=window.getBounds(),originalOpen=dialog.showOpenDialog,originalSave=dialog.showSaveDialog;
   const openQueue=[],saveQueue=[];
   dialog.showOpenDialog=async()=>{const file=openQueue.shift();if(!file)throw new Error('Unexpected native open dialog during diagnostics.');return {canceled:false,filePaths:[file]};};
@@ -177,7 +179,8 @@ async function runUiDiagnostics({app,window,output,root,fixtures,dialog}){
   }catch(error){fs.writeFileSync(path.join(output,'desktop-ui-error.png'),(await window.webContents.capturePage()).toPNG());return {passed:false,checks,error:error.message};}
   finally{
     dialog.showOpenDialog=originalOpen;dialog.showSaveDialog=originalSave;
-    await js('window.__labVerify.sleep(700)');await js(`window.__labVerify.restore(${JSON.stringify(saved)})`);window.setBounds(originalBounds);await window.webContents.reload();
+    window.setBounds(originalBounds);
+    await restoreProfileWithoutReact({window,originalUrl,records:saved,directory:app.isPackaged?path.join(process.resourcesPath,'web'):path.resolve(__dirname,'../../dist/client'),returnToApp:true});
   }
 }
 module.exports={runUiDiagnostics};

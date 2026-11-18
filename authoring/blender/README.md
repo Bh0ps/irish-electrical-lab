@@ -6,7 +6,11 @@ Every variant receives a family-specific construction layer in `detail_library.p
 
 The one-way switch, rose and B22 holder, industrial cabinet, machinery applications and sensor variants retain their distinct original housings. Full source `.blend` files are saved before runtime batching, keeping individual threads, washers, screw heads, gear teeth, semiconductor leads and clamp parts editable. GLB export combines static details within a selectable assembly/material owner, preserving independent electrical terminals, functional controls and animation nodes. These are original generic training forms, rather than manufacturer CAD or dimensional service drawings.
 
-Stable `terminalId` extras identify each physical rear terminal exactly once. The authoritative rear layout remains `lab/lib/terminal-layout.ts`. GLB `partId` and animation extras preserve selectable housings, covers, clamps, contacts, coils, rotors and mechanisms. Cover-open, exploded and cutaway presentations change cloned scene transforms and materials; circuit connections remain fixed. Runtime clones share immutable source geometry and materials, with separate state materials only where needed.
+Stable `terminalId` extras identify each electrical connection exactly once. Revision 3 gives each terminal a physical access direction, marking and attachment form. Wall accessories retain rear contacts. DIN protection has upper and lower banks, motor winding boards have threaded studs and cable lugs, plug faces carry their mating pins, and the zone-valve flex ends at a separate connector row. The layout comes from `lab/lib/terminal-layout.ts`. GLB `partId` and animation extras preserve selectable housings, covers, contacts, coils, rotors and mechanisms. Cover-open, exploded and cutaway presentations move cloned scene geometry while retaining the connection positions.
+
+`service_details.py` builds the physical identification, glands and mounting details. The operating face of each residual device identifies its T button. The circuit energises a model test resistor while the button is pressed. A separate runtime insert prints the rating selected in that circuit. The reference map records the representative assumptions on access, mounting and electrical behaviour.
+
+Enclosed banks carry a `serviceChamber` flag. Removing the lid exposes its screws, wire entries and markings. The switch and socket retain accessible connections on their backs. Ray-picking tests follow the direction used by **Show terminals** to check physical access in both detail levels.
 
 Distance GLBs simplify mesh detail and omit microscopic engraved terminal lettering. Selected equipment always requests the full GLB. Engraved lettering returns with close inspection. The procedural renderer remains available while an asset loads or if local loading fails, so asset presentation cannot block wiring or simulation.
 
@@ -23,6 +27,7 @@ The Blender script supports `--first`, `--only <key,key2>`, `--render-first`, `-
 
 ```powershell
 blender --background --python authoring/blender/build_models.py -- --render-only --render-library --thumbnails
+blender --background --python authoring/blender/build_models.py -- --render-only --render-access
 python authoring/blender/contact_sheets.py
 ```
 
@@ -35,6 +40,8 @@ node --import tsx --test scripts/blender-assets.test.ts scripts/model-detail.tes
 The tests parse every full and distance GLB through Three.js, verify exactly-once terminal identities and real world coordinates, exercise inspection modes, prove cached assets remain unchanged, check distinct architectures and selectable construction geometry, and operate switches, contactors, valves and rotors. They also verify per-lamp solved-power brightness and the newly exposed bulb filament. `verification/model-detail/construction-audit.json` records actual mesh evidence; `verification/blender/asset-audit.json` records triangle counts. Eight views per variant show the front, rear and both inspection directions, so the back of a circuit board cannot conceal its component side in the review. The 87 icons are local files under `lab/public/models/thumbnails/`, referenced by `thumbnailUrl` in the manifest. Native GPU performance and picking are measured separately by the installed-app harness.
 
 Blender renders can embed local filenames in PNG text metadata. Every thumbnail and inspection render now passes through `png_metadata.py` immediately after export. This portable Python standard-library helper removes only `tEXt`, `zTXt` and `iTXt` chunks, validates chunk CRCs, and preserves every image, transparency, colour-profile and other retained chunk byte-for-byte. It does not decode or re-encode pixels. Invalid PNG files are rejected before writing.
+
+The exporter clears the file browser's saved directory in each Blender workspace before saving a source model. Before distributing sources, run `python authoring/blender/check_source_privacy.py` with Python 3.14 or newer. It decompresses the original model files and checks for user-profile paths inside them.
 
 Check source assets and run the sanitizer regressions from the workspace root:
 

@@ -1,5 +1,6 @@
 import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Endpoint, Parameters, TerminalRole, Wire } from './types';
 import * as Registry from './components.ts';
+import { furnishCableExamples } from './cables.ts';
 
 const IRISH = [
   { title: 'ESB Networks: supply voltages and 50 Hz frequency', url: 'https://media.esbnetworks.ie/media/docs/default-source/publications/conditions-for-connection-to-the-distribution-system.pdf?sfvrsn=1ad65234_1' },
@@ -93,9 +94,9 @@ class Bench {
     const count = this.components.length - 1, rows = Math.max(1, Math.ceil(count / 5));
     this.components.slice(1).forEach((c, i) => { c.position = [-2 + (i % 5) * 1.75, 0, rows === 1 ? 0 : -2 + Math.floor(i / 5) * 5 / (rows - 1)]; });
     if(this.id===11){const left=this.components.find(c=>c.id==='gang-a')!,right=this.components.find(c=>c.id==='gang-b')!;left.params={...left.params,gangModule:'left',gangGroup:'two-gang-11'};right.params={...right.params,gangModule:'right',gangGroup:'two-gang-11'};right.position=[left.position[0]+.46,left.position[1],left.position[2]];}
-    return { version: 1, id: `lesson-${this.id}`, name: this.name, revision: 0,
+    return furnishCableExamples({ version: 1, id: `lesson-${this.id}`, name: this.name, revision: 0,
       supply: { enabled: true, phase: this.three ? 'three' : 'single', voltage: this.three ? 400 : 240, frequency: 50, sourceResistance: 0.12 },
-      components: this.components, wires: this.wires, faults: [], lessonId: this.id };
+      components: this.components, wires: this.wires, faults: [], lessonId: this.id });
   }
 }
 

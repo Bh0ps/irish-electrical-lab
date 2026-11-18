@@ -113,6 +113,12 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
     const closed = !state.tripped && flag(p, 'closed', true);
     const nominal = number(p, 'ratedVoltage', number(p, 'nominalVoltage', 240));
     const watts = Math.max(0.01, number(p, 'watts', 100));
+    if (closed && p.testPressed === true && isType(item,'rcbo','rcd','rcd3')) {
+      // The test current returns through the neutral pole only. The regular
+      // residual-current calculation trips the device if that current flows.
+      const threshold=Math.max(.000001,number(p,'residualRating',number(p,'tripMa',30)/1000));
+      resistor(`${item.id}.testResistor`,T(item.type==='rcd3'?'L1IN':'LIN'),T('NOUT'),230/(2*threshold),item.id,false);
+    }
     const partner = String(p.mechanicallyInterlockedWith || '');
     if (item.type === 'contactor' && partner && (partner === item.id || !items.has(partner) || items.get(partner)?.type !== 'contactor')) net.diagnostics.push(diag(`interlockTarget:${item.id}`, 'Mechanical interlock target is invalid', 'Choose another existing contactor as the mechanically linked partner. Assessment is withheld until the partner is valid.', item.id, 'error', 'model'));
     if (isType(item, 'source', 'source3')) {
@@ -725,7 +731,16 @@ export function simulate(document: CircuitDocument, previousDeviceStates: Record
   const signalPaths = contactPaths(document, net), signalGroups = new Set(document.components.filter(item => item.type === 'alarm').map(item => signalPaths.find(terminal(item,'LINK'))));
   const wireCurrents = Object.fromEntries(document.wires.filter(wire => !signalGroups.has(signalPaths.find(endpointKey(wire.from)))).map(wire => [wire.id, solved.currents[`wire:${wire.id}`] || c()]));
   const elapsedMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - start;
-  return { revision: document.revision, terminalVoltages, branchCurrents: { ...solved.currents, ...solved.sourceCurrents }, wireCurrents, componentPower, deviceStates: states, diagnostics, events, totalPower, totalCurrent, converged: stable && solved.valid && !diagnostics.some(d => d.severity === 'error'), elapsedMs, nodes: solved.nodes, ...(preTrip ? { preTrip } : {}) };
+  const converged=stable&&solved.valid&&!diagnostics.some(d=>d.severity==='error');
+  for(const meter of document.components.filter(item=>item.type==='meter')){
+    const state=states[meter.id], supply=voltage(solved,terminal(meter,'L'),terminal(meter,'N'));
+    delete state.meterWatts;
+    if(converged&&supply&&abs(supply)>1){
+      const lineCurrent=solved.currents[`${meter.id}.linkL`]??c();
+      state.meterWatts=power(supply,lineCurrent);
+    }
+  }
+  return { revision: document.revision, terminalVoltages, branchCurrents: { ...solved.currents, ...solved.sourceCurrents }, wireCurrents, componentPower, deviceStates: states, diagnostics, events, totalPower, totalCurrent, converged, elapsedMs, nodes: solved.nodes, ...(preTrip ? { preTrip } : {}) };
 }
 
 export interface MeterReading { value: number | null; explanation: string }

@@ -16,6 +16,7 @@ export function createIsolatedGuidedBuild(example: CircuitDocument, id: string):
   document.id = id;
   document.supply.enabled = false;
   document.wires = [];
+  delete document.cableRuns;
   document.faults = [];
   for (const component of document.components) if (component.type === 'pv' || component.type === 'battery') {
     component.params.on = false;

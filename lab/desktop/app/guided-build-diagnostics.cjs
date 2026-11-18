@@ -144,8 +144,9 @@ async function runGuidedBuildDiagnostics({ app, window, directory, output, fixtu
   const stage = id => run(`const e=document.querySelector('[data-lesson-stage="${id}"]');if(!e)throw new Error('Lesson stage missing: ${id}');e.click();await v.sleep(180);`);
   const loadLesson = async fixture => {
     await closeDialogs();
-    await run(`v.click('Learn');await v.sleep(100);v.click('Courses');await v.sleep(120);v.input('Search configurations',${JSON.stringify(fixture.title)});await v.sleep(120);const card=Array.from(document.querySelectorAll('[role=dialog] button')).find(element=>v.visible(element)&&v.text(element).includes(${JSON.stringify(fixture.title)}));if(!card)throw new Error('Required course unavailable');card.click();`);
+    await run(`await v.openCourse(${fixture.id},${JSON.stringify(fixture.title)});`);
     await replacement();
+    await run('await v.fullExercises();');
     await waitState(fixture.id, value => value.draft?.lessonId === fixture.id && value.task, 'Requested course loaded');
   };
   const startGuided = async fixture => {
@@ -211,6 +212,7 @@ async function runGuidedBuildDiagnostics({ app, window, directory, output, fixtu
     const oneWay = fixtures.find(fixture => fixture.id === 7), control = fixtures.find(fixture => fixture.id === 41);
     if (!oneWay || !control) throw new Error('Required one-way and shutter-control fixtures are missing.');
     const exerciseRecords = new Map(originals);
+    exerciseRecords.delete('bookmark');
     exerciseRecords.set('draft', structuredClone(oneWay.circuit)); exerciseRecords.set('builds', []);
     exerciseRecords.set('progress', { version: 2, lessons: [], builds: [], faults: [], scores: {}, learning: {} });
     await run('v.stop();');
@@ -238,7 +240,7 @@ async function runGuidedBuildDiagnostics({ app, window, directory, output, fixtu
     await run('v.stop();'); await window.webContents.reload(); await install();
     const reloaded = await state(7);
     add('renderer reload preserves accepted graph and exact competence awards', same(graphKey(reloaded.draft.wires), graphKey(complete.draft.wires)) && same(awarded(reloaded), awarded(complete)), { wires: reloaded.draft.wires.length, awards: awarded(reloaded) });
-    await run(`v.click('Learn');`); await stage('build');
+    await run('await v.fullExercises();'); await stage('build');
     await unchanged(7, complete, first.id, 'reload followed by Build navigation does not replay automatic awards');
     await capture('reload-no-award');
     await loadLesson(control); current = await startGuided(control);

@@ -1,6 +1,9 @@
 'use strict';
 const ORIGIN = 'http://127.0.0.1:4187';
-const REFERENCE_HOSTS = ['esbnetworks.ie', 'nsai.ie', 'safeelectric.ie', 'hsa.ie', 'theiet.org', 'grant.ie', 'se.com', 'abb.com', 'siemens.com', 'hager.com', 'legrand.com', 'eaton.com', 'danfoss.com', 'honeywellhome.com', 'dimplex.com', 'schneider-electric.com', 'megger.com', 'fluke.com', 'www.varilight.co.uk', 'www.danlers.co.uk', 'kb.shelly.cloud', 'www.aico.co.uk', 'support.myenergi.com', 'docs.tia.siemens.cloud', 'www.pilz.com'];
+const REFERENCE_HOSTS = ['esbnetworks.ie', 'nsai.ie', 'safeelectric.ie', 'hsa.ie', 'theiet.org', 'grant.ie', 'se.com', 'abb.com', 'siemens.com', 'hager.com', 'legrand.com', 'eaton.com', 'danfoss.com', 'honeywellhome.com', 'dimplex.com', 'schneider-electric.com', 'megger.com', 'fluke.com', 'www.varilight.co.uk', 'www.danlers.co.uk', 'kb.shelly.cloud', 'www.aico.co.uk', 'support.myenergi.com', 'docs.tia.siemens.cloud', 'www.pilz.com',
+  'www.mennekes.org', 'www.cesco.ie', 'www.elandcables.com', 'www.phoenixcontact.com',
+  'mkelectric.presti.media', 'customer.resideo.com', 'www.tritonshowers.co.uk', 'www.myenergi.com',
+  'api.grundfos.com', 'www.dimplex.co.uk', 'www.lapp.com'];
 const MAX_JSON_BYTES = 32 * 1024 * 1024;
 function allowedReference(value) {
   if (typeof value !== 'string' || value.length > 4096) return false;

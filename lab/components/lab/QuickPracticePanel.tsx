@@ -9,6 +9,7 @@ import {
   type QuickPracticeExperiment, type QuickPracticeObservation,
 } from '../../lib/quick-practice';
 import type { CircuitDocument, SimulationResult } from '../../lib/types';
+import { COURSE_PAGES } from '../../lib/coursebook-content';
 
 interface Props {
   experiment: QuickPracticeExperiment;
@@ -16,6 +17,8 @@ interface Props {
   result?: SimulationResult;
   simulationError?: string;
   onAttempt: (success: boolean) => void;
+  onPrediction?: (success: boolean) => void;
+  onReflection?: (success: boolean) => void;
   onTarget: () => void;
   onTrace?: () => void;
   onRestart: () => void;
@@ -35,6 +38,7 @@ type Comparison = Extract<QuickPracticeObservation, { status: 'complete' }>;
 export default function QuickPracticePanel(props: Props) {
   const { experiment, document, result, simulationError, onAttempt, onPromptChange } = props;
   const [answer, setAnswer] = useState('');
+  const [reflection, setReflection] = useState('');
   const [baseline, setBaseline] = useState<QuickPracticeBaseline>();
   const [sequence, setSequence] = useState<PracticeSequence>(EMPTY_SEQUENCE);
   const [comparison, setComparison] = useState<Comparison>();
@@ -48,14 +52,16 @@ export default function QuickPracticePanel(props: Props) {
     if (!observation || simulationError) return;
     if (observation.status === 'complete' && !recorded.current) {
       recorded.current = true;
-      onAttempt(answer === experiment.answer);
+      onAttempt(true);
       setComparison(observation);
     } else if (observation.sequence !== sequence) {
       setSequence(observation.sequence);
     }
-  }, [answer, experiment.answer, observation, onAttempt, sequence, simulationError]);
+  }, [observation, onAttempt, sequence, simulationError]);
 
   const correct = answer === experiment.answer;
+  const reflectionQuestion = COURSE_PAGES[experiment.lessonId].explanation;
+  const reflectionOptions = experiment.lessonId % 2 ? [reflectionQuestion.alternative,reflectionQuestion.right] : [reflectionQuestion.right,reflectionQuestion.alternative];
   const message = simulationError ? 'The live reading is unavailable. Restart to check the circuit again.'
     : start && start.status !== 'ready' ? start.message
       : observation && observation.status !== 'complete' ? observation.message : '';
@@ -75,7 +81,10 @@ export default function QuickPracticePanel(props: Props) {
           className={answer === option.id ? 'chosen' : ''} onClick={() => setAnswer(option.id)}>{option.label}</button>)}
       </div>
       <Button className="primary-button full" disabled={!answer || start?.status !== 'ready' || !!simulationError}
-        onClick={() => { if (start?.status === 'ready') setBaseline(start.baseline); }}>Lock in prediction</Button>
+        onClick={() => { if (start?.status === 'ready') { props.onPrediction?.(correct); setBaseline(start.baseline); } }}>Try my prediction</Button>
+      <Button variant="link" disabled={start?.status !== 'ready' || !!simulationError} onClick={()=>{
+        if (start?.status === 'ready') { setAnswer(''); setBaseline(start.baseline); }
+      }}>I’m not sure — let me try</Button>
     </>}
     {baseline && !comparison && <>
       <p className="task-instruction">{experiment.instruction}</p>
@@ -84,8 +93,8 @@ export default function QuickPracticePanel(props: Props) {
     </>}
     {message && <p className={`task-feedback ${statusClass}`} role="status">{message}</p>}
     {comparison && baseline && <div className="practice-result">
-      <p className={`task-feedback ${correct ? 'success' : 'attention'}`} role="status">
-        {correct ? 'Your prediction matches the reading.' : 'Your prediction differed from the reading.'} {experiment.explanation}
+      <p className="task-feedback success" role="status">
+        {answer ? (correct ? 'Your prediction matches the reading. ' : 'The result was different from your prediction. ') : ''}{experiment.explanation}
       </p>
       {comparison.revision !== document.revision && <p className="small-copy">These readings are from your completed comparison.</p>}
       <table className="practice-comparison">
@@ -97,6 +106,13 @@ export default function QuickPracticePanel(props: Props) {
         </tr>)}</tbody>
       </table>
       {experiment.trace && props.onTrace && <Button variant="outline" size="sm" onClick={props.onTrace}>Trace path</Button>}
+      <p>{reflectionQuestion.prompt}</p>
+      <div className="prediction-options" aria-label="Explain your observation">{reflectionOptions.map(option=>
+        <button type="button" key={option} aria-pressed={reflection===option} disabled={reflection===reflectionQuestion.right} onClick={()=>{
+          if (reflection === option) return;
+          setReflection(option); props.onReflection?.(option === reflectionQuestion.right);
+        }}>{option}</button>)}</div>
+      {reflection && <p role="status">{reflection === reflectionQuestion.right ? 'You explained the result.' : 'Look at the two readings and try the other explanation.'}</p>}
     </div>}
     <div className="task-support-actions">
       <Button variant="ghost" size="sm" onClick={props.onExit}><ArrowLeft size={14} />Back to lesson</Button>

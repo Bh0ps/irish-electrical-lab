@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { COMPONENTS } from '../lib/components.ts';
 import { createBoundedWireCurve, WIRE_CORNER_RADIUS } from '../lib/Equipment.tsx';
 import { LESSONS } from '../lib/lessons.ts';
-import { routeCircuit, WIRE_RADIUS } from '../lib/routing.ts';
+import { routeCircuit, SHEATH_RADIUS, WIRE_RADIUS } from '../lib/routing.ts';
 import { getComponentTerminals } from '../lib/terminal-layout.ts';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from '../lib/types.ts';
 
@@ -16,7 +16,7 @@ const MINIMUM_GAP = 2 * WIRE_RADIUS + EPSILON;
 // This exemption applies only to a pair sharing the same component/terminal.
 const COMMON_BORE_RADIUS = .14;
 interface Segment { a: Vec3; b: Vec3 }
-interface RenderedWire { wire: Wire; source: Vec3[]; points: Vec3[]; segments: Segment[] }
+interface RenderedWire { wire: Wire; source: Vec3[]; points: Vec3[]; segments: Segment[]; radius:number }
 interface Issue { kind: string; wire: string; other?: string; distance?: number; position?: Vec3 }
 const difference = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -78,19 +78,22 @@ function physicalTerminal(document: CircuitDocument, endpoint: Endpoint): Vec3 {
   const [x, y, z] = terminal.anchor, cosine = Math.cos(component.rotation), sine = Math.sin(component.rotation);
   return [component.position[0] + x * cosine + z * sine, component.position[1] + y, component.position[2] - x * sine + z * cosine];
 }
-function sharedBores(document: CircuitDocument, a: Wire, b: Wire): Vec3[] {
-  const common = [a.from, a.to].filter(endpoint => [b.from, b.to].some(other => endpoint.component === other.component && endpoint.terminal === other.terminal));
-  return common.map(endpoint => physicalTerminal(document, endpoint));
+function sharedBores(document: CircuitDocument, a: RenderedWire, b: RenderedWire): Vec3[] {
+  return [a.wire.from, a.wire.to].flatMap((endpoint,i) => {
+    const common=[b.wire.from,b.wire.to].some(other=>endpoint.component===other.component&&endpoint.terminal===other.terminal);
+    if(!common)return [];
+    return [endpoint.component.startsWith('@')?(i?a.source.at(-1)!:a.source[0]):physicalTerminal(document,endpoint)];
+  });
 }
 function clippedSegments(segments: Segment[], bores: Vec3[]): Segment[] {
   return bores.reduce((current, bore) => current.flatMap(segment => outsideSphere(segment, bore, COMMON_BORE_RADIUS)), segments);
 }
 function minimumWireGap(document: CircuitDocument, a: RenderedWire, b: RenderedWire): number {
-  const bores = sharedBores(document, a.wire, b.wire);
+  const bores = sharedBores(document, a, b);
   const left = bores.length ? clippedSegments(a.segments, bores) : a.segments;
   const right = bores.length ? clippedSegments(b.segments, bores) : b.segments;
   let minimum = Infinity;
-  for (const one of left) for (const two of right) if (boxesNear(one, two)) minimum = Math.min(minimum, segmentGap(one.a, one.b, two.a, two.b));
+  for (const one of left) for (const two of right) if (boxesNear(one, two,a.radius+b.radius+EPSILON)) minimum = Math.min(minimum, segmentGap(one.a, one.b, two.a, two.b));
   return minimum;
 }
 
@@ -133,17 +136,17 @@ function fixtureIssues(document: CircuitDocument, rendered: RenderedWire): Issue
     const low: Vec3 = [-definition.size[0] / 2, -.015, Math.min(-definition.size[2] / 2, ...terminals.map(t => t.anchor[2] - .015))];
     const high: Vec3 = [definition.size[0] / 2, definition.size[1] * 1.05, definition.size[2] / 2];
     if (component.params.gangModule === 'left') { low[0] = Math.min(low[0], .23 - .565 * definition.size[0] / 1.3); high[0] = Math.max(high[0], .23 + .565 * definition.size[0] / 1.3); }
-    const inflatedLow = low.map(value => value - WIRE_RADIUS - EPSILON) as Vec3, inflatedHigh = high.map(value => value + WIRE_RADIUS + EPSILON) as Vec3;
+    const inflatedLow = low.map(value => value - rendered.radius - EPSILON) as Vec3, inflatedHigh = high.map(value => value + rendered.radius + EPSILON) as Vec3;
     const hit = rendered.segments.find(segment => !isTerminalAccess(document, rendered, segment, component) && entersBox(inLocal(component, segment.a), inLocal(component, segment.b), inflatedLow, inflatedHigh));
     if (hit) issues.push({ kind: 'rendered tube enters fixture clearance', wire: rendered.wire.id, other: component.id, position: hit.a });
   }
   return issues;
 }
 
-function renderedWire(wire: Wire, source: Vec3[]): RenderedWire {
+function renderedWire(wire: Wire, source: Vec3[],radius=WIRE_RADIUS): RenderedWire {
   const curve = createBoundedWireCurve(source);
   const points = Array.from({ length: curve.tubularSegments + 1 }, (_, i) => curve.getPointAt(i / curve.tubularSegments).toArray() as Vec3);
-  return { wire, source, points, segments: segmentsFor(points) };
+  return { wire, source, points, segments: segmentsFor(points),radius };
 }
 
 test('independent rendered audit detects crossings, close parallel tubes and skew nearest points', () => {
@@ -181,13 +184,32 @@ test('all 64 configurations have non-overlapping rendered tubes and clear fixtur
   for (const lesson of LESSONS) {
     const document = lesson.circuit, plan = routeCircuit(document), issues: Issue[] = [];
     issues.push(...plan.issues.map(issue => ({ kind: issue.message, wire: issue.wire })));
-    const rendered = document.wires.flatMap(wire => {
+    const rendered:RenderedWire[]=[];
+    const head=(id:string,side:number)=>({component:'@'+id,terminal:String(side)});
+    for(const wire of document.wires){
       const source = plan.routes.get(wire.id);
-      if (!source || source.length < 2) { issues.push({ kind: 'missing route', wire: wire.id }); return []; }
-      const model = renderedWire(wire, source);
-      wires++; meshSegments += model.segments.length;
-      assert.ok(distanceSquared(model.points[0], physicalTerminal(document, wire.from)) < 1e-20, `${lesson.id}/${wire.id}: starting bore moved`);
-      assert.ok(distanceSquared(model.points[model.points.length - 1], physicalTerminal(document, wire.to)) < 1e-20, `${lesson.id}/${wire.id}: ending bore moved`);
+      if (!source || source.length < 2) { issues.push({kind:'missing route',wire:wire.id});continue; }
+      wires++;
+      assert.ok(distanceSquared(source[0],physicalTerminal(document,wire.from))<1e-20,`${lesson.id}/${wire.id}: starting bore moved`);
+      assert.ok(distanceSquared(source.at(-1)!,physicalTerminal(document,wire.to))<1e-20,`${lesson.id}/${wire.id}: ending bore moved`);
+      if(!wire.cable){rendered.push(renderedWire(wire,source));continue;}
+      const {runId,reversed}=wire.cable;
+      const tails=plan.cables?.get(runId)?.tails.get(wire.id);
+      assert.ok(tails);
+      rendered.push(renderedWire({...wire,from:reversed?wire.to:wire.from,to:head(runId,0)},tails[0],.012),
+        renderedWire({...wire,from:head(runId,1),to:reversed?wire.from:wire.to},tails[1],.012));
+    }
+    for(const run of document.cableRuns??[]){
+      const geometry=plan.cables?.get(run.id);assert.ok(geometry?.sheath.length);
+      const jacket:Wire={id:run.id,from:head(run.id,0),to:head(run.id,1),role:'output',resistance:.01,bends:[]};
+      rendered.push(renderedWire(jacket,geometry.sheath,SHEATH_RADIUS));
+      for(const [i,open] of geometry.open.entries()){
+        const side=distanceSquared(open.points[0],geometry.sheath[0])<1e-14?0:1;
+        rendered.push(renderedWire({...jacket,id:run.id+' free '+i,from:head(run.id,side),to:head(run.id,2+i)},open.points,.012));
+      }
+    }
+    for(const model of rendered){
+      const {wire,source}=model;meshSegments+=model.segments.length;
       // The finite tube mesh, not just its ring centres, must stay inside the
       // chosen corner corridor. Distance to a source segment is convex, so
       // three samples also check each actual rendered linear mesh interval.
@@ -196,11 +218,10 @@ test('all 64 configurations have non-overlapping rendered tubes and clear fixtur
         if (nearest > WIRE_CORNER_RADIUS + EPSILON) issues.push({ kind: 'corner exceeds source corridor', wire: wire.id, distance: nearest, position: point });
       }
       issues.push(...fixtureIssues(document, model));
-      return [model];
-    });
+    }
     for (let left = 0; left < rendered.length; left++) for (let right = left + 1; right < rendered.length; right++) {
       const gap = minimumWireGap(document, rendered[left], rendered[right]);
-      if (gap < MINIMUM_GAP) issues.push({ kind: 'rendered tubes overlap outside joint', wire: rendered[left].wire.id, other: rendered[right].wire.id, distance: gap });
+      if (gap < rendered[left].radius+rendered[right].radius+EPSILON) issues.push({ kind: 'rendered tubes overlap outside joint', wire: rendered[left].wire.id, other: rendered[right].wire.id, distance: gap });
     }
     if (issues.length) failures.push({ lesson: lesson.id, issues });
   }

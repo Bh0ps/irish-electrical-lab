@@ -7,11 +7,11 @@ are release downloads rather than Git history.
 
 ## Install
 
-1. Download `Irish-Electrical-Lab-1.2.1-Setup.exe` from the project's GitHub release.
-2. Optionally compare its hash with the downloaded `SHA256SUMS.txt`:
+1. Download `Irish-Electrical-Lab-1.4.0-Setup.exe` from the project's GitHub release.
+2. Optionally compare its hash with the published `Irish-Electrical-Lab-1.4.0-SHA256.txt`.
 
    ```powershell
-   Get-FileHash .\Irish-Electrical-Lab-1.2.1-Setup.exe -Algorithm SHA256
+   Get-FileHash .\Irish-Electrical-Lab-1.4.0-Setup.exe -Algorithm SHA256
    ```
 
 3. Run the installer for your Windows account and open **Irish Electrical Lab**
@@ -48,7 +48,7 @@ production output. Read every flagged dependency license against the actual
 distributed code. Review native app behaviour and the public verification record.
 
 Before publication, audit the staged source and compiled resources for secrets,
-personal paths, study profiles and metadata. The PNG authoring pipeline strips
+personal paths, study profiles and metadata. Run `python authoring/blender/check_source_privacy.py` with Python 3.14 or newer to check the decompressed editable sources. The PNG authoring pipeline strips
 text metadata without changing pixels. Keep raw local verification and recovery
 files excluded. Commit only the reviewed source, archive that commit and publish
 the installer with its checksums. Never include a working application profile.
