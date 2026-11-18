@@ -1,6 +1,7 @@
 import manifest from '../public/models/manifest.json';
 import { equipmentVariant } from './terminal-layout';
 import type { ComponentDefinition, ComponentInstance } from './types';
+import { publicAssetUrl } from '../web/asset-url';
 
 /** One key is shared by the authoring inventory and the offline asset loader. */
 export function equipmentAssetKey(component: ComponentInstance, def: ComponentDefinition): string {
@@ -16,5 +17,10 @@ export function equipmentAssetKey(component: ComponentInstance, def: ComponentDe
   if(def.model==='cable')modes.push(/five|5|threephase|three-phase/.test(name)?'five-core':'three-core');
   return `${component.type}:${modes.join('|')||'default'}`;
 }
-export const EQUIPMENT_ASSETS=new Map(manifest.map(entry=>[entry.galleryKey,entry]));
+export const EQUIPMENT_ASSETS = new Map(manifest.map(entry => [entry.galleryKey, {
+  ...entry,
+  url: publicAssetUrl(entry.url),
+  lowUrl: publicAssetUrl(entry.lowUrl),
+  thumbnailUrl: publicAssetUrl(entry.thumbnailUrl),
+}]));
 export function equipmentAsset(component:ComponentInstance,definition:ComponentDefinition){return EQUIPMENT_ASSETS.get(equipmentAssetKey(component,definition));}

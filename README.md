@@ -4,13 +4,15 @@ An offline 3D electrical study game for Irish domestic, commercial and industria
 arrangements. Explore detailed equipment, build your own circuits, operate the
 controls and investigate faults through actual simulated connections.
 
-The main application is a Windows desktop app. A browser development version is
-also included. The original source, lesson data and editable Blender models are
+The lab runs as a Windows desktop app and an iPhone Home Screen app. The original
+source, lesson data and editable Blender models are
 open source under the [MIT license](LICENSE).
 
 ## What you can do
 
 - Study **64 configurations** through **Look → Predict → Build → Try → Measure → Fix**.
+- Try six **Quick practice** experiments with a prediction, a real control action,
+  and a comparison of live simulated readings.
 - Inspect **87 equipment variants**, including rear terminals, removable covers,
   cutaways and exploded assemblies.
 - Build freely with up to **80 components and 300 wires**, with individual terminal
@@ -37,6 +39,13 @@ the local address `127.0.0.1:4187`; a port conflict produces a startup error.
 See the [usage guide](docs/usage.md) for courses, camera controls, wiring, testing,
 saving and backup migration, and the [release guide](docs/releases.md) for checksums
 and replacement installations.
+
+## Use the iPhone app
+
+Open the [web app](https://bh0ps.github.io/irish-electrical-lab/) in Safari and
+choose **Share → Add to Home Screen**. Once opened from the Home Screen, choose
+**More → Download for offline use**. The [iPhone guide](docs/iphone.md) covers
+touch controls, offline use and moving a full study backup from Windows.
 
 ## Run from source
 

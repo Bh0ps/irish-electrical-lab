@@ -37,6 +37,7 @@ yarn-error.log*
 # typescript
 next-env.d.ts
 /dist/
+/dist-web/
 /.wrangler/
 /desktop/assets/THIRD_PARTY_DEPENDENCIES.txt
 # Checkout-local execution profile and tool state; never publish them.

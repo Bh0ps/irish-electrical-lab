@@ -59,8 +59,9 @@ function loadPair(lesson:ConfigurationLesson):{a:Endpoint;b:Endpoint}|undefined 
   for(const c of candidates){const ports=COMPONENTS[c.type]?.terminals.map(t=>t.id)??[];if(ports.includes('L')&&ports.includes('N'))return {a:{component:c.id,terminal:'L'},b:{component:c.id,terminal:'N'}};if(ports.includes('U1')&&ports.includes('U2'))return {a:{component:c.id,terminal:'U1'},b:{component:c.id,terminal:'U2'}};if(ports.includes('L1')&&ports.includes('N'))return {a:{component:c.id,terminal:'L1'},b:{component:c.id,terminal:'N'}};}
   const source=lesson.circuit.components.find(c=>c.type==='source'||c.type==='source3');return source?{a:{component:source.id,terminal:source.type==='source3'?'L1':'L'},b:{component:source.id,terminal:'N'}}:undefined;
 }
-function operateLanguage(lesson:ConfigurationLesson,component:string,params:Record<string,string|number|boolean>):string {
-  const item=lesson.circuit.components.find(c=>c.id===component),name=item?.label??component;
+function operateLanguage(lesson:ConfigurationLesson,component:string,params:Record<string,string|number|boolean>,prediction=false):string {
+  const item=lesson.circuit.components.find(c=>c.id===component),label=item?.label??component;
+  const name=prediction?`“${label.split(' · ')[0]}”`:label;
   return Object.entries(params).map(([key,value])=>{
     if(key==='closed')return `${value?'Close':'Open'} ${name}`;
     if(key==='pressed')return `${value?'Press':'Release'} ${name}`;
@@ -74,6 +75,46 @@ function operateLanguage(lesson:ConfigurationLesson,component:string,params:Reco
     return `Change the represented condition at ${name} to ${value}`;
   }).join('. ')+'.';
 }
+
+function predictOutcome(lesson: ConfigurationLesson, prediction: Extract<ScenarioExpectation, {kind:'power'|'state'}>) {
+  const target = lesson.circuit.components.find(component => component.id === prediction.component)?.label ?? prediction.component;
+  const name = `“${target.split(' · ')[0]}”`;
+  if (prediction.kind === 'power') {
+    const answer = prediction.max === undefined ? 'operating' : 'stopped';
+    return { question: `What will you observe at ${name}?`, answer, options: [
+      { id: 'operating', label: 'It draws operating power' },
+      { id: 'stopped', label: 'Its operating power drops to zero' },
+    ] };
+  }
+
+  let question = `What will you observe at ${name}?`;
+  let labels: [string, string];
+  if (prediction.key === 'closed') {
+    question = `What state will the contacts at ${name} be in?`;
+    labels = prediction.equals ? ['The contacts are closed', 'The contacts are open'] : ['The contacts are open', 'The contacts are closed'];
+  } else if (prediction.key === 'energized') {
+    labels = prediction.equals ? ['It is energized', 'It is idle'] : ['It is idle', 'It is energized'];
+  } else if (prediction.key === 'direction') {
+    question = `What motion will you observe at ${name}?`;
+    labels = Number(prediction.equals) > 0 ? ['It turns forward', 'It turns in reverse'] : ['It turns in reverse', 'It turns forward'];
+  } else if (lesson.id === 30) {
+    question = `Which position will ${name} take?`;
+    labels = ['Hot water only', 'Shared heating and hot water'];
+  } else if (lesson.id === 42) {
+    question = `Will ${name} respond to the interlink?`;
+    labels = ['The linked alarm receives the signal', 'The linked alarm stays idle'];
+  } else {
+    labels = [`The ${prediction.key} state is ${String(prediction.equals)}`, `The ${prediction.key} state is different`];
+  }
+  return { question, answer: 'expected', options: [{ id: 'expected', label: labels[0] }, { id: 'opposite', label: labels[1] }] };
+}
+
+function predictionOrder(lessonId: number, answer: string, options: NonNullable<LessonActivity['options']>) {
+  const correct = options.find(option => option.id === answer)!;
+  const alternate = options.filter(option => option.id !== answer);
+  return lessonId % 2 === 0 ? [...alternate, correct] : [correct, ...alternate];
+}
+
 /** Each configuration has concrete terminal targets, not a disconnected text checklist. */
 export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]{
   const competency=lessonCompetency(lesson.id),base=(id:string,kind:LessonActivity['kind'],title:string,instruction:string,explanation:string):LessonActivity=>({id:`lesson:${lesson.id}:${id}`,kind,title,instruction,explanation,competency});
@@ -84,12 +125,11 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
   const observedAction=action?.expectations.length?action:scenario?.steps.slice(Math.max(0,actionIndex+1)).find(s=>s.expectations.length);
   const prediction=observedAction?.expectations.find(e=>e.kind==='power'||e.kind==='state');
   if(action&&prediction){
-    let answer='expected',label=prediction.title;const component='component'in prediction?prediction.component:undefined;
-    if(prediction.kind==='power'){answer=prediction.max!==undefined?'stopped':'operating';label=answer==='stopped'?'Operating load power stops':'The load receives operating power';}
-    const other=answer==='stopped'?'operating':answer==='operating'?'stopped':'opposite';
-    activities.push({...base('predict','predict','Predict before operating',`After “${action.title}”, what should happen to ${component?lesson.circuit.components.find(c=>c.id===component)?.label??component:'the circuit'}?`,`${prediction.title}. Compare your prediction with the measured outcome, then trace the actual operating and return paths.`),component,answer,options:[{id:answer,label},{id:other,label:other==='stopped'?'Operating load power stops':other==='operating'?'The load receives operating power':'That expected behaviour is prevented'}]});
+    const {question,answer,options}=predictOutcome(lesson,prediction);
+    const actions=action.patches.map(p=>operateLanguage(lesson,p.component,p.params,true)).join(' ');
+    activities.push({...base('predict','predict','Predict before operating',`Imagine this change. ${actions} ${question}`,`${prediction.title}. Compare your prediction with the measured outcome, then trace the actual operating and return paths.`),component:prediction.component,answer,options:predictionOrder(lesson.id,answer,options)});
   }else{
-    const pair=loadPair(lesson);activities.push({...base('predict','predict','Predict the measuring reference','Can protective earth replace the normal return conductor for this load?','Normal load current uses its designated return. Protective earth has a different purpose; some incorrect arrangements can operate and still fail protective checks.'),answer:'separate',options:[{id:'separate',label:'Use the designated normal return'},{id:'earth-return',label:'Use protective earth as the normal return'}],endpoints:pair?[pair.a,pair.b]:undefined});
+    const pair=loadPair(lesson);activities.push({...base('predict','predict','Predict the measuring reference','Which path should carry the normal return current for this load?','Normal load current uses its designated return. Protective earth has a different purpose; some incorrect arrangements can operate and still fail protective checks.'),answer:'separate',options:predictionOrder(lesson.id,'separate',[{id:'separate',label:'The designated load return'},{id:'earth-return',label:'The protective earth conductor'}]),endpoints:pair?[pair.a,pair.b]:undefined});
   }
   for(const w of lesson.circuit.wires){const from=lesson.circuit.components.find(c=>c.id===w.from.component)!,to=lesson.circuit.components.find(c=>c.id===w.to.component)!;const ft=COMPONENTS[from.type].terminals.find(t=>t.id===w.from.terminal)!,tt=COMPONENTS[to.type].terminals.find(t=>t.id===w.to.terminal)!;activities.push({...base(`connect:${w.id}`,'connect',`Connect ${display(lesson,w.from)} to ${display(lesson,w.to)}`,`With the simulated supply off, connect these actual terminals using the ${w.role} conductor identification.`,`${ft.purpose} → ${tt.purpose}. The connection is determined by its endpoints. Colour or visual proximity cannot change its electrical path.`),component:to.id,part:'terminals',endpoints:[structuredClone(w.from),structuredClone(w.to)],wire:w.id,expectedRole:w.role});}
   const source=lesson.circuit.components.find(c=>c.type==='source'||c.type==='source3');

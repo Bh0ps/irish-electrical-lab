@@ -23,6 +23,8 @@ export interface EquipmentProps {
   onTerminal: (terminalId: string) => void;
   showLabels: boolean;
   lowDetail?: boolean;
+  /** Keep the independently cached distance model available while full detail loads. */
+  preferLowAsset?: boolean;
   /** Asset authoring retains opaque body materials while revealing internals. */
   authoring?: boolean;
   animate?: boolean;
