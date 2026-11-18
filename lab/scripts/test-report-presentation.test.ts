@@ -16,10 +16,10 @@ test('compact reports show one relevant finding first while retaining every verd
   const html = render(checks);
   const firstCard = html.slice(html.indexOf('aria-label="First test finding"'), html.indexOf('<details'));
   assert.match(firstCard, /UNRESOLVED · unresolved-model/); assert.doesNotMatch(firstCard, /FAIL · protection/);
-  assert.match(firstCard, /Show on bench/); assert.match(firstCard, /Next check:/);
+  assert.match(firstCard, /Show on bench/); assert.match(firstCard, /fix the first problem/i);
   assert.match(html, /All checks \(6\)/);
   for (const item of checks) assert.match(html, new RegExp(item.title));
-  assert.match(html, /PASS · stopped-state/); assert.match(html, /NOT RUN · not-run/); assert.match(html, /Last completed test/);
+  assert.match(html, /PASS · stopped-state/); assert.match(html, /NOT RUN · not-run/); assert.match(html, /passed checks.*2026/);
 });
 
 test('protection precedes operation and lesson matching when the model is resolved', () => {
@@ -30,6 +30,6 @@ test('protection precedes operation and lesson matching when the model is resolv
 
 test('historical reports remain readable but cannot target missing geometry as current findings', () => {
   const html = render([check('old-wire', 'protection', 'fail')], true);
-  assert.match(html, /Circuit changed/); assert.match(html, /previous edit/); assert.match(html, /Run the test again/);
-  assert.match(html, /disabled=""[^>]*>Show on bench/); assert.match(html, /old-wire explanation/);
+  assert.match(html, /Circuit changed/); assert.match(html, /Previous result/); assert.match(html, /Test it again/);
+  assert.doesNotMatch(html, /Show on bench/); assert.match(html, /old-wire explanation/);
 });

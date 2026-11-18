@@ -62,7 +62,7 @@ export default function QuickPracticePanel(props: Props) {
   const correct = answer === experiment.answer;
   const reflectionQuestion = COURSE_PAGES[experiment.lessonId].explanation;
   const reflectionOptions = experiment.lessonId % 2 ? [reflectionQuestion.alternative,reflectionQuestion.right] : [reflectionQuestion.right,reflectionQuestion.alternative];
-  const message = simulationError ? 'The live reading is unavailable. Restart to check the circuit again.'
+  const message = simulationError ? 'The meter couldn’t get a reading. Restart the experiment to try again.'
     : start && start.status !== 'ready' ? start.message
       : observation && observation.status !== 'complete' ? observation.message : '';
   const showRestart = !!comparison || !!simulationError || start?.status === 'unresolved' || observation?.status === 'unresolved';
@@ -72,11 +72,11 @@ export default function QuickPracticePanel(props: Props) {
   useEffect(() => { onPromptChange?.(phase, prompt); }, [phase, prompt, onPromptChange]);
 
   return <section className="active-task quick-practice" aria-label="Quick practice" data-practice-id={experiment.id} data-practice-phase={phase}>
-    <div className="task-topline"><span>Quick practice</span><b>{comparison ? '3 · Compare' : baseline ? '2 · Operate' : '1 · Predict'}</b></div>
-    <h3>{experiment.title}</h3>
+    <div className="task-topline"><span>Quick practice</span><b>{comparison ? 'Compare' : baseline ? 'Try it' : 'Predict'} · {comparison ? '3' : baseline ? '2' : '1'} of 3</b></div>
+    <progress className="course-position" aria-label="Position in this experiment" value={comparison ? 3 : baseline ? 2 : 1} max={3}/>
+    <h3>{baseline ? experiment.title : experiment.question}</h3>
     {!baseline && <>
-      <p className="task-instruction">{experiment.question}</p>
-      <div className="prediction-options" aria-label="Choose your prediction">
+      <div className="prediction-options" role="group" aria-label="Choose your prediction">
         {experiment.options.map(option => <button type="button" key={option.id} aria-pressed={answer === option.id}
           className={answer === option.id ? 'chosen' : ''} onClick={() => setAnswer(option.id)}>{option.label}</button>)}
       </div>
@@ -93,11 +93,9 @@ export default function QuickPracticePanel(props: Props) {
     </>}
     {message && <p className={`task-feedback ${statusClass}`} role="status">{message}</p>}
     {comparison && baseline && <div className="practice-result">
-      <p className="task-feedback success" role="status">
-        {answer ? (correct ? 'Your prediction matches the reading. ' : 'The result was different from your prediction. ') : ''}{experiment.explanation}
-      </p>
       {comparison.revision !== document.revision && <p className="small-copy">These readings are from your completed comparison.</p>}
       <table className="practice-comparison">
+        <caption className="sr-only">Readings from your experiment</caption>
         <thead><tr><th scope="col">Reading</th><th scope="col">Before</th>{comparison.sequence.during && <th scope="col">Run-on</th>}<th scope="col">After</th></tr></thead>
         <tbody>{comparison.readings.map((reading, index) => <tr key={reading.label}>
           <th scope="row">{reading.label}</th><td>{formatReading(baseline.readings[index])}</td>
@@ -105,14 +103,17 @@ export default function QuickPracticePanel(props: Props) {
           <td>{formatReading(reading)}</td>
         </tr>)}</tbody>
       </table>
+      <p className="task-feedback success" role="status">
+        {answer ? (correct ? 'You predicted it. ' : 'Here’s what happened. ') : ''}{experiment.explanation}
+      </p>
       {experiment.trace && props.onTrace && <Button variant="outline" size="sm" onClick={props.onTrace}>Trace path</Button>}
       <p>{reflectionQuestion.prompt}</p>
-      <div className="prediction-options" aria-label="Explain your observation">{reflectionOptions.map(option=>
+      <div className="prediction-options" role="group" aria-label="Explain your observation">{reflectionOptions.map(option=>
         <button type="button" key={option} aria-pressed={reflection===option} disabled={reflection===reflectionQuestion.right} onClick={()=>{
           if (reflection === option) return;
           setReflection(option); props.onReflection?.(option === reflectionQuestion.right);
         }}>{option}</button>)}</div>
-      {reflection && <p role="status">{reflection === reflectionQuestion.right ? 'You explained the result.' : 'Look at the two readings and try the other explanation.'}</p>}
+      {reflection && <p role="status">{reflection === reflectionQuestion.right ? 'That explains the readings.' : 'Look at what changed between Before and After, then try again.'}</p>}
     </div>}
     <div className="task-support-actions">
       <Button variant="ghost" size="sm" onClick={props.onExit}><ArrowLeft size={14} />Back to lesson</Button>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {LESSONS} from '../lib/lessons';
-import {captureTestRecord,testRecordMatches,validateTestRecord} from '../lib/test-record';
+import {captureTestRecord,obsoleteEmptyPass,testRecordMatches,validateTestRecord} from '../lib/test-record';
 import {migrateProgress} from '../lib/progress';
 import {simulate} from '../lib/simulation';
 import {assessBuild} from '../lib/assessment';
@@ -30,4 +30,21 @@ test('a damaged local report is omitted while ordinary study progress and eviden
   const local={...progress,lastTest:{version:999}};
   const recovered=migrateProgress(local as typeof progress);
   assert.deepEqual(recovered.lessons,[7]);assert.deepEqual(recovered.builds,[7]);assert.deepEqual(recovered.scores,{'7':85});assert.equal(recovered.lastTest,undefined);
+});
+
+test('an unwired Sandbox cannot restore an old false pass or test successfully on an empty bench',()=>{
+  const d=structuredClone(LESSONS[6].circuit);
+  delete d.lessonId;
+  d.wires=[];
+  const pass={revision:d.revision,circuitId:d.id,passed:true,checks:[{id:'supply',category:'operation' as const,status:'pass' as const,title:'Supply',explanation:'On'}],summary:'Old pass'};
+  const old=captureTestRecord(d,pass);
+  assert.equal(obsoleteEmptyPass(old,d),true);
+  for(const components of [d.components,[]]){
+    const unwired={...d,components};
+    const report=assessBuild(unwired,simulate(unwired));
+    assert.equal(report.passed,false);
+    assert.deepEqual(report.checks.map(c=>[c.id,c.status]),[['setup:wiring','not-run']]);
+    assert.equal(obsoleteEmptyPass(captureTestRecord(unwired,report),unwired),false);
+  }
+  assert.equal(obsoleteEmptyPass(old,LESSONS[6].circuit),false);
 });

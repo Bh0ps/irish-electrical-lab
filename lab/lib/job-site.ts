@@ -1,4 +1,5 @@
 import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Vec3 } from './types';
+import { physicalFixture, isStrip, type FixturePose } from './site-fixtures.ts';
 import {seatPosition} from './board-assembly';
 import { COMPONENTS } from './components';
 
@@ -38,9 +39,9 @@ export const JOBS: Record<number,Job> = {
   73:home(1,'Visual doorbell'),74:shop(3,'Door annunciator'),75:plant(0,'Room thermostat'),76:plant(1,'Valve actuator'),77:plant(1,'Condensate alarm'),
   78:work(0,'Proximity switch'),79:works(2,'DC distribution'),80:home(3,'Entrance installation'),
 };
-export interface SiteItem { id:string; ref:string; room:number; position:Vec3; rotation:number; scale:number }
+export interface SiteItem { id:string; ref:string; room:number; position:Vec3; rotation:number; scale:number; fixture?:FixturePose }
 export interface JobSite {kind:SiteKind; building:Building; name:string; room:number; items:SiteItem[]; first?:string; location:(room:number)=>string}
-const letters:Record<string,string>={source:'U',source3:'U',meter:'P',panel:'DB',gammaboard:'DB',invictaboard:'DB',mcb:'QF',mcb3:'QF',rcbo:'QF',rcd:'FI',rcd3:'FI',isolator:'QS',isolator3:'QS',fuse:'F',transformer:'T',driver:'PS',dcsupply:'PS',relay:'K',contactor:'KM',motor:'M',motor3:'M',valve:'Y',valve3:'Y',fan:'M',pump:'M',lamp:'E',led:'E',indicator:'H',chime:'HA',heater:'R',socket:'X',socket3:'X',terminal:'X',pushbutton:'S',switch:'S',switch2:'S',sensor:'B',plc:'A',thermostat:'B'};
+const letters:Record<string,string>={source:'U',source3:'U',meter:'P',panel:'DB',gammaboard:'DB',invictaboard:'DB',mcb:'QF',mcb3:'QF',rcbo:'QF',rcd:'FI',rcd3:'FI',isolator:'QS',isolator3:'QS',fuse:'F',transformer:'T',driver:'PS',dcsupply:'PS',relay:'K',contactor:'KM',motor:'M',motor3:'M',valve:'Y',valve3:'Y',fan:'M',pump:'M',lamp:'E',led:'E',indicator:'H',chime:'HA',heater:'R',socket:'X',shaveroutlet:'X',socket3:'X',terminal:'X',pushbutton:'S',switch:'S',switch2:'S',sensor:'B',plc:'A',thermostat:'B'};
 const isSupply=(c:ComponentInstance)=>/^(source3?|mcb3?|rcbo|rcd3?|meter|panel|earthbar|neutralbar|spd|board|enclosure|busbar|invictaboard|gammaboard)$/.test(c.type)||/^(supply|protect|board|group|branch\d+|main-isolator)$/.test(c.id);
 function roomFor(c:ComponentInstance,id:number,room:number) {
   if(id===2&&c.id==='load1')return 1;
@@ -119,8 +120,30 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     }
     if([71,72].includes(id)&&/rear|back/.test(c.id)){x=-5.02;y=1.19;z=BACK+.084;}
     if(id===80&&c.id==='courtesy'){x=.99;y=2.07;z=FRONT+.11;}
-    const scale=physicalHeight(c)/Math.max(.1,COMPONENTS[c.type]?.size[1]??1);
-    return {id:c.id,ref,room:area,position:[x,y,z] as Vec3,rotation:0,scale};
+    const cabinets = kind === 'home' && area === 0 && [13,65,66,68,69].includes(id);
+    const atBackWall = !outside && Math.abs(z - (BACK + .11)) < .0001;
+    const fixture = physicalFixture(c, atBackWall, cabinets);
+    let scale = physicalHeight(c) / Math.max(.1, COMPONENTS[c.type]?.size[1] ?? 1);
+    if (fixture) scale = fixture.scale[1];
+    // Plaster face is BACK - .01. Only the flush switch faceplate projects into the room.
+    if (atBackWall && fixture && ['switch','switch2','intermediate'].includes(c.type) && !c.variant)
+      z = BACK - .01 - (c.type === 'switch' ? .081 : .103)*fixture.scale[2] + .0005;
+    if (fixture && ['gammaboard','invictaboard'].includes(c.type))
+      z = BACK - .01 + COMPONENTS[c.type].size[2]*scale/2;
+    if (fixture?.flushPlate) z=BACK-.01+.0001;
+    if (id===24&&c.type==='shaveroutlet'){x=.73;y=1.36;}
+    if (id===24&&c.id==='isolation'&&all.some(p=>p.type==='shaveroutlet')){
+      // The two working components share one wall unit. Only the outlet plate is visible from the room.
+      x=.73;y=1.39;z=BACK-.04;scale=.04;
+    }
+    if (fixture?.batten) z = BACK - .01 + .161*fixture.scale[2];
+    if (id === 65 && c.id === 'door') { x = -4.274; y = 2.137; z = -2.3585; }
+    if (cabinets && isStrip(c)) {
+      y = id === 65 ? 2.282 : 1.526;
+      z = id === 65 ? -2.498 : -2.405;
+      x = c.id === 'right' ? -3.83 : -4.65;
+    }
+    return {id:c.id,ref,room:area,position:[x,y,z] as Vec3,rotation:0,scale,fixture};
   });
   // Mounted devices retain their enclosure's physical origin and orientation on site.
   const installed=new Map(doc.components.map(c=>[c.id,c]));
@@ -132,7 +155,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     const local=seatPosition({...board,position:[0,0,0],rotation:0},c,c.mount);
     item.room=parent.room;item.position=local.map((v,k)=>parent.position[k]+v*parent.scale) as Vec3;item.scale=parent.scale;
   }
-  const load=all.find(c=>['gammaboard','invictaboard'].includes(c.type))
+  const load=(id===24?all.find(c=>c.type==='shaveroutlet'):undefined)??all.find(c=>['gammaboard','invictaboard'].includes(c.type))
     ??(id===3?all.find(c=>c.type==='rcbo'):id===5?all.find(c=>c.type==='spd'):undefined)
     ??all.find(c=>/switch|pushbutton|dimmer|pwmcontrol/.test(c.type)&&roomFor(c,id,room)===room)??all.find(c=>roomFor(c,id,room)===room&&!isSupply(c));
   return {kind,building,name,room,items,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):rooms[r]??name};

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -60,46 +60,58 @@ function acquireAsset(url: string): CachedAsset {
   return entry;
 }
 
-function useBlenderAsset(url?: string) {
+interface VisibleModel { key: string; url: string; source: THREE.Group; entry: CachedAsset }
+
+function releaseAsset(entry: CachedAsset) {
+  entry.users--;
+  trimIdleAssets();
+}
+
+/** Keep the displayed GLB leased until its replacement has been parsed.
+ * Offline inspection uses the same authored assembly at reduced detail. */
+function useBlenderAsset(key: string, preferred?: string, other?: string, bootstrap?: string) {
   const { invalidate } = useThree();
-  const [, refresh] = useState(0);
-  const [failedUrl, setFailedUrl] = useState<string>();
+  const held = useRef<VisibleModel | undefined>(undefined);
+  const [visible, setVisible] = useState<VisibleModel>();
+  const [missing, setMissing] = useState<string>();
+  useEffect(() => () => {
+    if (held.current) releaseAsset(held.current.entry);
+    held.current = undefined;
+  }, []);
   useEffect(() => {
-    if (!url) return;
     let active = true;
-    let entry: CachedAsset;
-    const release = () => {
-      entry.users--;
-      trimIdleAssets();
-    };
-    const request = () => {
-      entry = acquireAsset(url);
-      entry.pending.then(() => {
-        if (active) {
-          refresh(value => value + 1);
-          invalidate();
-        }
-      }).catch(() => {
-        if (active) {
-          setFailedUrl(url);
-          invalidate();
-          window.addEventListener('online', retry, { once: true });
-        }
-      });
-    };
-    const retry = () => {
-      release();
-      request();
-    };
-    request();
-    return () => {
-      active = false;
-      window.removeEventListener('online', retry);
-      release();
-    };
-  }, [url, invalidate]);
-  const source = url ? assets.get(url)?.source : undefined;
-  return source ? { url: url!, source } : url && failedUrl === url ? { url, failed: true } : undefined;
+    async function adopt(url?: string) {
+      if (!url || !active) return false;
+      if (held.current?.url === url) return true;
+      const entry = acquireAsset(url);
+      try {
+        const source = entry.source ?? await entry.pending;
+        if (!active) { releaseAsset(entry); return false; }
+        const previous = held.current;
+        const next = { key, url, source, entry };
+        held.current = next;
+        setVisible(next);
+        setMissing(undefined);
+        invalidate();
+        if (previous) releaseAsset(previous.entry);
+        return true;
+      } catch {
+        releaseAsset(entry);
+        return false;
+      }
+    }
+    async function request() {
+      if (bootstrap && bootstrap !== preferred && held.current?.key !== key && preferred && !assets.get(preferred)?.source) {
+        await adopt(bootstrap);
+      }
+      if (!active || await adopt(preferred)) return;
+      if (held.current?.key !== key && !await adopt(other) && active) setMissing(key);
+      if (active) window.addEventListener('online', request, { once: true });
+    }
+    void request();
+    return () => { active = false; window.removeEventListener('online', request); };
+  }, [key, preferred, other, bootstrap, invalidate]);
+  return { model: visible?.key === key ? visible : undefined, missing: !preferred || missing === key };
 }
 function DisplayText({node,reading}:{node:THREE.Object3D;reading:string}){
   const map=useMemo(()=>{
@@ -133,25 +145,29 @@ function RatingText({node,text}:{node:THREE.Object3D;text:string}){
   return map?createPortal(<mesh position={[0,.008,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.268,.065]}/><meshBasicMaterial map={map} toneMapped={false}/></mesh>,node):null;
 }
 
-export function BlenderEquipment(props:EquipmentProps&{fallback:React.ReactNode}){
+export function BlenderEquipment(props:EquipmentProps&{children?:React.ReactNode}){
   const entry=equipmentAsset(props.component,props.definition),[far,setFar]=useState(false),{invalidate}=useThree();
   const lowUrl=entry?.lowUrl;
   const lowOnly=!!lowUrl&&(props.preferLowAsset?!!props.lowDetail:!props.selected&&(!!props.lowDetail||far));
-  const full=useBlenderAsset(lowOnly?undefined:entry?.url);
-  const low=useBlenderAsset(lowOnly||props.preferLowAsset||full?.failed?lowUrl:undefined);
-  const loaded=full?.source?full:low;
+  const {model:loaded,missing}=useBlenderAsset(entry?.galleryKey??props.component.type,lowOnly?lowUrl:entry?.url,lowOnly?entry?.url:lowUrl,props.preferLowAsset?lowUrl:undefined);
   const source=loaded?.source;
+  const {onModelAvailability}=props, id=props.component.id;
+  useEffect(()=>{
+    if(!missing || !onModelAvailability)return;
+    onModelAvailability(id,true);
+    return ()=>onModelAvailability(id,false);
+  },[missing,onModelAvailability,id]);
   const presentation=useMemo(()=>source?prepareBlenderModel(source):undefined,[source]);
   useEffect(()=>()=>presentation?.owned.forEach(material=>material.dispose()),[presentation]);
-  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state);invalidate();}},[presentation,props.view,props.component,props.state,invalidate]);
+  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,invalidate]);
   useFrame(({camera},dt)=>{if(presentation){
     if(!props.preferLowAsset&&!props.selected&&!props.lowDetail){const distance=camera.position.distanceTo(presentation.scene.getWorldPosition(new THREE.Vector3())),next=distance>(far?12:14);if(next!==far)setFar(next);}
     if(props.animate!==false&&animateBlenderModel(presentation,props.component,props.state,dt))invalidate();
   }});
-  if(!entry||!presentation)return props.fallback;
+  if(!entry||!presentation)return null;
   const pick=(event:ThreeEvent<MouseEvent>)=>{
     const owner=semanticOwner(event.object);event.stopPropagation();
-    if(owner.terminal)props.onTerminal(owner.terminal);else props.onPart(owner.part??'body');
+    if(owner.terminal)props.onTerminal(owner.terminal);else props.onPart(owner.part??'body',owner.detail);
   };
   const displays:THREE.Object3D[]=[],ratingPlates:THREE.Object3D[]=[];presentation.scene.traverse(node=>{if(node.userData.partId==='display')displays.push(node);if(node.userData.ratingPlate)ratingPlates.push(node);});
   const type=props.component.type,active=!!props.state?.energized;
@@ -167,5 +183,5 @@ export function BlenderEquipment(props:EquipmentProps&{fallback:React.ReactNode}
   const values={...props.definition.defaults,...props.component.params};
   const amp=Number(values.rating??values.currentRating??16),residual=Number(values.residualRating??Number(values.tripMa??30)/1000)*1000;
   const rating=type==='rcbo'?`${amp} A · ${Number(residual.toFixed(2))} mA`:['rcd','rcd3'].includes(type)?`${Number(residual.toFixed(2))} mA`:`${amp} A`;
-  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{type!=='forktester'&&displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}{ratingPlates.map(node=><RatingText key={node.uuid} node={node} text={rating}/>)}</group>;
+  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{props.children}{type!=='forktester'&&displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}{ratingPlates.map(node=><RatingText key={node.uuid} node={node} text={rating}/>)}</group>;
 }

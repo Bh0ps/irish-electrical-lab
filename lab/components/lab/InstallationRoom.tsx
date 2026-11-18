@@ -1,5 +1,9 @@
 'use client';
-import { useLayoutEffect, useMemo, useRef, useEffect } from 'react';
+import React, { Suspense, useLayoutEffect, useMemo, useRef, useEffect } from 'react';
+import { Environment, useGLTF } from '@react-three/drei';
+import { SiteFinishes } from './SiteFinishes';
+import { publicAssetUrl } from '../../web/asset-url';
+import { CUPBOARD_HINGE, CUPBOARD_SWING } from '../../lib/site-fixtures';
 import * as THREE from 'three';
 import { createSurfaceTextures, type SurfacePattern } from '../../lib/scene-materials';
 import { BACK, FRONT, ROOM_CENTRES, ROOM_WALLS, DOOR_Z, DOOR_WIDTH, type JobSite } from '../../lib/job-site';
@@ -125,13 +129,6 @@ function installation(site:JobSite){
       for(const x of [-.34,.40])box(x,.012,-1.06,.017,.003,2.38,'green');
       table(1.00,-2.48,.96,'walnut');box(1.0,.78,-2.48,.94,.18,.65,'walnut');
       for(const x of [.77,1.23]){box(x,.78,-2.145,.43,.15,.025,'oak');pipe(x,.78,-2.114,.018,.026,'brass');}
-      box(.81,.944,-2.45,.26,.042,.18,'sage');box(.82,.977,-2.46,.25,.023,.16,'paper');
-      pipe(1.17,1.012,-2.47,.074,.18,'cream');
-      for(let k=0;k<17;k++){const angle=k*2.4,h=.10+(.5+.5*Math.sin(k*5.1))*.16;const dx=Math.cos(angle),dz=Math.sin(angle);
-        add([1.17+dx*.066,1.10+h*.48,-2.47+dz*.066],[.032,h*.62,.014],k%3?'green':'foliage','ball',[dz*.61,angle,-dx*.61]);}
-      frame(.99,1.59,-2.69,.41,.54,'walnut');box(.99,1.59,-2.708,.394,.52,.009,'paper');
-      for(let k=0;k<8;k++){const sx=k%2?1:-1;add([.99+sx*.037,1.48+k*.025,-2.696],[.05,.017,.004],'foliage','ball',[0,0,sx*.59]);}
-      box(.99,1.56,-2.695,.006,.24,.005,'green');
       frame(-1.47,1.60,-2.72,.48,.64,'oak');box(-1.47,1.60,-2.75,.47,.63,.02,'linen');
     }
     for(const x of [-1.72,1.72]){box(x,.20,3.39,.38,.39,.38,'walnut');add([x,.55,3.39],[.25,.34,.23],'green','ball');}
@@ -157,15 +154,20 @@ const skip:THREE.Mesh['raycast']=()=>{};
 function Batch({items,g,m}:{items:Piece[];g:THREE.BufferGeometry;m:THREE.Material}){
   const ref=useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(()=>{const obj=new THREE.Object3D(),mesh=ref.current;if(!mesh)return;items.forEach((v,i)=>{obj.position.set(...v.p);obj.scale.set(...v.s);obj.rotation.set(...v.rotation);obj.updateMatrix();mesh.setMatrixAt(i,obj.matrix);});mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();},[items]);
-  return <instancedMesh ref={ref} args={[g,m,items.length]} raycast={skip} receiveShadow castShadow dispose={null}/>;
+  return <instancedMesh ref={ref} args={[g,m,items.length]} onClick={e=>e.stopPropagation()} receiveShadow castShadow dispose={null}/>;
 }
-export function ContactHalf({magnet=false}:{magnet?:boolean}){
-  const w=magnet ? .017 : .026;
-  return <group><mesh castShadow><boxGeometry args={[w,.067,.014]}/><meshStandardMaterial color="#e3dfcf" roughness={.47}/></mesh>
-    {[-.024,.024].map(y=><group key={y} position={[0,y,.0075]}><mesh rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.0028,.0028,.001,10]}/><meshStandardMaterial color="#9b9c94" metalness={.63}/></mesh><mesh position={[0,0,.0008]}><boxGeometry args={[.0038,.0006,.0004]}/><meshBasicMaterial color="#555a50"/></mesh></group>)}
-    <mesh position={[0,0,.0073]}><boxGeometry args={[w*.8,.002,.0007]}/><meshBasicMaterial color="#89918a"/></mesh>
-    {!magnet&&<mesh position={[0,.051,0]}><cylinderGeometry args={[.002,.002,.038,8]}/><meshStandardMaterial color="#ede8d9"/></mesh>}
-  </group>;
+// A missing decorative download must never take the operating equipment out of service.
+class SceneryBoundary extends React.Component<{children:React.ReactNode},{failed:boolean}> {
+  state = {failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  render(){return this.state.failed?null:this.props.children;}
+}
+function HallPlant(){
+  const asset=useGLTF(publicAssetUrl('/site-assets/potted-plant.glb'),false,false);
+  const plant=useMemo(()=>{const copy=asset.scene.clone(true);copy.traverse(node=>{
+    if(node instanceof THREE.Mesh){node.castShadow=true;node.receiveShadow=true;node.raycast=skip;}
+  });return copy;},[asset.scene]);
+  return <primitive object={plant} dispose={null} position={[1.17,.92,-2.46]}/>;
 }
 export default function InstallationRoom({site,economy,cupboardOpen,operateCupboard}:{site:JobSite;economy:boolean;cupboardOpen:boolean;operateCupboard:()=>void}){
   const {kind,building,name}=site;
@@ -185,10 +187,12 @@ export default function InstallationRoom({site,economy,cupboardOpen,operateCupbo
   },[kind,economy]);
   useEffect(()=>()=>{for(const m of Object.values(res.materials))m.dispose();for(const g of Object.values(res.geo))g.dispose();for(const t of res.maps.values())t.dispose();},[res]);
   return <group name={'Installation · '+building.name}>
-    {site.name==='Cupboard lighting'&&<group position={[-5.035,1.92,-2.34]} rotation={[0,cupboardOpen?-1.36:0,0]} onClick={e=>{e.stopPropagation();operateCupboard();}}>
+    <SceneryBoundary><Suspense fallback={null}><Environment files={publicAssetUrl('/site-assets/daylight.hdr')} environmentIntensity={.65}/></Suspense></SceneryBoundary>
+    <SceneryBoundary><Suspense fallback={null}><SiteFinishes materials={res.materials}/></Suspense></SceneryBoundary>
+    {site.name==='Cupboard lighting'&&<group position={CUPBOARD_HINGE} rotation={[0,cupboardOpen?CUPBOARD_SWING:0,0]} onClick={e=>{e.stopPropagation();operateCupboard();}}>
       <mesh position={[.38,0,0]} material={res.materials.sage} geometry={res.geo.box} scale={[.76,.75,.032]} castShadow receiveShadow/>
-      <group position={[.737,.18,-.025]} rotation={[0,Math.PI,0]}><ContactHalf magnet/></group>
       <mesh position={[.66,-.16,.036]} material={res.materials.metal} geometry={res.geo.box} scale={[.024,.12,.04]}/>
     </group>}
+    {kind==='home'&&!['Bathroom','Stair hall'].includes(building.rooms[1])&&<SceneryBoundary><Suspense fallback={null}><HallPlant/></Suspense></SceneryBoundary>}
     {[...batches].map(([key,items])=><Batch key={key} items={items} g={res.geo[items[0].shape]} m={res.materials[items[0].surface]}/>)}</group>;
 }

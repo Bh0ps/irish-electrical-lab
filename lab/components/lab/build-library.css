@@ -1,0 +1,28 @@
+.builds-dialog:has(.build-library) {
+  max-width: 34rem;
+  background: #fafaf6;
+  color: #21392f;
+  border: 1px solid #c3cec3;
+  border-radius: 14px;
+}
+.builds-dialog [data-slot=dialog-title] { font-size: 1.45rem; text-align:left; }
+.build-library { display:grid; gap:1rem; min-width:0; font-size:.94rem; }
+.library-current { display:flex; align-items:center; justify-content:space-between; gap:.7rem; background:#e9eee5; padding:.8rem 1rem; border-radius:9px; }
+.library-current>div,.library-open>span { min-width:0; display:grid; gap:.15rem; text-align:left; }
+.library-current strong,.library-open b { overflow-wrap:anywhere; }
+.library-current small,.library-open small,.library-saves>p,.library-files p { color:#506457; font-weight:400; }
+.library-current button { flex:none; color:white; background:#215a43; }
+.library-start { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr)); gap:.5rem; }
+.library-start button,.library-current button,.library-files summary { min-height:44px; }
+.library-saves h3 { font-size:1rem; display:flex; gap:.5rem; align-items:baseline; margin-bottom:.25rem; }
+.library-saves h3 span,.library-open small { font-size:.8rem; color:#5b6a60; }
+.library-saves ul { max-height:clamp(7rem,27dvh,17rem); overflow:auto; overscroll-behavior:contain; padding:0; margin:0; }
+.library-saves li { display:flex; gap:.3rem; align-items:center; justify-content:space-between; border-bottom:1px solid #d9dfd7; }
+.library-open { display:flex; align-items:center; gap:.65rem; flex:1; min-width:0; padding:.55rem .25rem; }
+.library-trash,.library-remove button { display:grid; place-items:center; min-width:44px; min-height:44px; }
+.library-remove { display:flex; gap:.15rem; align-items:center; flex-wrap:wrap; font-size:.82rem; }
+.library-remove button { text-decoration:underline; font-weight:600; }
+.library-files { border-top:1px solid #cbd4c9; }
+.library-files summary { cursor:pointer; padding:.75rem 0; font-weight:600; }
+.library-files p { margin-bottom:.6rem; }
+@media(max-width:400px) { .library-current { padding:.6rem; } .library-saves li:has(.library-remove) { flex-wrap:wrap; } }

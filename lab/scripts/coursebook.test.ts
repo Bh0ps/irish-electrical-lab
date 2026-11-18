@@ -10,7 +10,7 @@ import { LESSONS } from '../lib/lessons.ts';
 import { captureMeasurement, evaluateActivity, getLessonActivities } from '../lib/learning.ts';
 import { emptyLearningRecord } from '../lib/progress.ts';
 import { QUICK_PRACTICE_EXPERIMENTS, createQuickPracticeCircuit } from '../lib/quick-practice.ts';
-import { simulate } from '../lib/simulation.ts';
+import { measureVoltage, simulate } from '../lib/simulation.ts';
 
 const lesson = (id: number) => LESSONS.find(l => l.id === id)!;
 const noop = () => undefined;
@@ -45,12 +45,14 @@ test('nine chapters cover every course once with authored questions, distinct fi
   for (const chapter of CHAPTERS) assert.equal(chapter.lessons.at(-1),chapter.practical);
   assert.equal(new Set(LESSONS.map(l=>COURSE_PAGES[l.id].prediction.prompt)).size,80);
   assert.equal(new Set(LESSONS.map(l=>COURSE_PAGES[l.id].explanation.prompt)).size,80);
+  assert.equal(new Set(LESSONS.map(l=>COURSE_PAGES[l.id].outcome)).size,80);
   assert.ok(courseMatchesQuery(lesson(9),'stairs light'));
   assert.ok(courseMatchesQuery(lesson(55),'motor stays on after Start'));
   for (const l of LESSONS) {
     const activities=getCoursebookActivities(l);
     for(const a of activities) assert.ok(a.id && a.title && a.instruction);
     assert.equal(activities.at(-1)?.id,`book:${l.id}:finish`);
+    assert.equal(activities.at(-1)?.instruction,COURSE_PAGES[l.id].outcome);
     assert.equal(new Set(activities.map(a=>a.id)).size, activities.length);
     const explain=getLessonActivities(l).find(a=>a.kind==='explain')!;
     assert.equal(explain.instruction,COURSE_PAGES[l.id].explanation.prompt);
@@ -80,6 +82,25 @@ test('assisted placement cannot demonstrate choosing probes, even when the readi
   const independent={...reading,assisted:false,id:'independent',recordedAt:reading.recordedAt+1};
   assert.equal(evaluateActivity(task,doc,r,[{...reading,assisted:true},independent]).status,'pass');
   assert.equal(evaluateActivity(task,{...doc,revision:doc.revision+1},r,[independent]).status,'not-run');
+});
+test('common course searches find the named equipment and ordinary plurals',()=>{
+  assert.ok(courseMatchesQuery(lesson(43),'How do I wire a door bell?'));
+  assert.ok(courseMatchesQuery(lesson(13),'LEDs'));
+  assert.ok(courseMatchesQuery(lesson(1),'fuseboard'));
+  assert.ok(courseMatchesQuery(lesson(9),'lights on stairs'));
+  assert.ok(courseMatchesQuery(lesson(53),'3-phase'));
+  assert.ok(!courseMatchesQuery(lesson(52),'LEDs'));
+  assert.ok(!courseMatchesQuery(lesson(43),'???'));
+});
+test('the paused EV charger loses its terminal supply while the contactor input remains live',()=>{
+  const doc=structuredClone(lesson(46).circuit);
+  const request=doc.components.find(c=>c.id==='load-control')!;
+  request.params.active=false; doc.revision++;
+  const result=simulate(doc);
+  const input=measureVoltage(result,{component:'permission',terminal:'1'},{component:'supply',terminal:'N'});
+  const output=measureVoltage(result,{component:'evse',terminal:'L'},{component:'evse',terminal:'N'});
+  assert.ok(input.value!==null && input.value>230);
+  assert.ok(output.value!==null && Math.abs(output.value)<1);
 });
 test('all six quick experiments offer a route to operate without guessing',()=>{
   for(const experiment of QUICK_PRACTICE_EXPERIMENTS){

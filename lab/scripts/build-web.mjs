@@ -32,6 +32,10 @@ const modelPath = value => {
 };
 const packPaths = new Set(['models/manifest.json', ...models.flatMap(model => [modelPath(model.lowUrl), modelPath(model.thumbnailUrl)])]);
 assert.equal(packPaths.size, models.length * 2 + 1, 'Every model needs its own simplified geometry and thumbnail');
+for (const file of await readdir(path.join(directory, 'site-assets'))) {
+  assert.match(file, /^[a-z0-9_-]+\.(glb|hdr|jpg)$/);
+  packPaths.add('site-assets/'+file);
+}
 const shell = await Promise.all(['index.html', 'favicon.svg', ...installFiles, ...emittedAssets].sort().map(describe));
 for (const worker of ['routing', 'simulation']) assert.ok(shell.some(asset => asset.path.includes(`${worker}.worker-`)), `Missing ${worker} worker`);
 const pack = await Promise.all([...packPaths].sort().map(describe));
@@ -52,4 +56,4 @@ for (const filename of ['LICENSE', 'THIRD_PARTY_NOTICES.md']) {
   await copyFile(path.resolve(lab, '..', filename), path.join(licenseDirectory, filename));
 }
 
-console.log(`iPhone web build ${buildInfo.version}: ${shell.length} shell files, ${pack.length} offline equipment files, ${(bytes / 1024 ** 2).toFixed(1)} MiB.`);
+console.log(`iPhone web build ${buildInfo.version}: ${shell.length} shell files, ${pack.length} offline equipment and scene files, ${(bytes / 1024 ** 2).toFixed(1)} MiB.`);

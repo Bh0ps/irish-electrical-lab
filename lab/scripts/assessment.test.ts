@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import { LESSONS } from '../lib/lessons.ts';
-import { simulate } from '../lib/simulation.ts';
+import { measureResistance, simulate } from '../lib/simulation.ts';
 import { assessBuild } from '../lib/assessment.ts';
 import TestReport from '../components/lab/TestReport.tsx';
 import type { CircuitDocument, Endpoint } from '../lib/types.ts';
@@ -56,7 +56,7 @@ test('wire IDs, direction, order and visual layout do not decide the electrical 
 test('supply OFF and stale results cannot claim test success',()=>{
   const d=circuit();d.supply.enabled=false;fails(d,'supply');
   const enabled=circuit();const result=simulate(enabled);enabled.revision++;
-  const a=assessBuild(enabled,result,example);assert.equal(a.passed,false);assert.ok(a.checks.some(c=>c.id==='solution'&&c.status==='fail'));
+  const a=assessBuild(enabled,result,example);assert.equal(a.passed,false);assert.ok(a.checks.some(c=>c.id==='solution'&&c.status==='unresolved'));
 });
 test('injected open-live cannot pass as intact lesson',()=>{
   const d=circuit();d.faults=[{type:'open-live',wire:'w4',enabled:true}];const a=report(d);assert.equal(a.passed,false);assert.ok(a.checks.some(c=>c.title==='Study fault is still enabled'));
@@ -67,4 +67,37 @@ test('test panel renders immediate activity, lasting verdict, actionable faults 
   const a=report(d);const html=renderToStaticMarkup(React.createElement(TestReport,{assessment:a,running:false,stale:false,onSelect:()=>{}}));assert.match(html,/Test failed/);assert.match(html,/FAIL/);assert.match(html,/Extra connection/);
   const success=renderToStaticMarkup(React.createElement(TestReport,{assessment:report(circuit()),running:false,stale:false,onSelect:()=>{}}));assert.match(success,/Test passed/);assert.match(success,/passed checks/);
   const stale=renderToStaticMarkup(React.createElement(TestReport,{assessment:a,running:false,stale:true,onSelect:()=>{}}));assert.match(stale,/Circuit changed/);
+});
+
+test('both earth entries on the socket and fused unit share a real bond',()=>{
+  for(const type of ['socket','fcu']){
+    const d=circuit();
+    delete d.lessonId;
+    const source=d.components.find(c=>c.type==='source')!;
+    const item={id:'fitting',label:type,type,position:[2,0,0] as [number,number,number],rotation:0,params:{}};
+    d.components=[source,item];d.wires=[];
+    const a={component:item.id,terminal:'PE'},b={component:item.id,terminal:'PE2'};
+    d.wires.push({id:'earth',from:{component:source.id,terminal:'PE'},to:b,role:'PE',resistance:.01,bends:[]});
+    const r=simulate(d);
+    assert.ok(r.bondedEarthTerminals?.includes(item.id+'.PE'));
+    assert.ok(r.bondedEarthTerminals?.includes(item.id+'.PE2'));
+    assert.ok(!r.diagnostics.some(f=>f.id==='cpc:'+item.id));
+    const isolated={...d,supply:{...d.supply,enabled:false}};
+    const resistance=measureResistance(isolated,a,b).value;
+    assert.ok(resistance!==null&&resistance<.1);
+    const without={...d,wires:d.wires.filter(w=>![w.from,w.to].some(e=>e.component===item.id&&e.terminal==='PE2'))};
+    assert.ok(simulate(without).diagnostics.some(f=>f.id==='cpc:'+item.id));
+    extra(d,b,{component:item.id,terminal:type==='socket'?'N':'NOUT'});
+    assert.ok(simulate(d).diagnostics.some(f=>f.id.startsWith('neutralEarth:')));
+  }
+});
+
+test('an unpowered custom circuit can be measured for continuity without claiming powered operation passed',()=>{
+  const d=circuit();delete d.lessonId;
+  d.components=d.components.filter(c=>c.id==='switch'||c.id==='light');
+  d.wires=d.wires.filter(w=>[w.from,w.to].every(e=>d.components.some(c=>c.id===e.component)));
+  assert.ok(d.wires.length);
+  const report=assessBuild(d,simulate(d));
+  assert.ok(report.checks.some(c=>c.id==='supply'&&c.status==='not-run'));
+  assert.equal(report.passed,false);
 });

@@ -84,7 +84,7 @@ test('lighting budgets adapt without changing topology and prioritize the inspec
 
 test('emitter light anchors follow the real equipment translation and rotation', () => {
   const component = { ...light('rotated'), position: [4, 2, -3] as [number, number, number], rotation: Math.PI / 2 }, emitted = lampIllumination(component, output(component, 15))!;
-  assert.ok(Math.abs(emitted.position[0] - 4.04) < 1e-9); assert.ok(Math.abs(emitted.position[2] + 3) < 1e-9); assert.ok(emitted.position[1] > 2);
+  assert.ok(Math.abs(emitted.position[0] - 4.43571) < 1e-9); assert.ok(Math.abs(emitted.position[2] + 3) < 1e-9); assert.ok(emitted.position[1] > 2);
   assert.ok(lampIllumination({ ...component, variant: 'batten' }, output(component, 15))!.position[1] < emitted.position[1]);
 });
 

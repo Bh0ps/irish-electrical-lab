@@ -18,7 +18,7 @@ function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
 test('all catalogue variants have actual family construction, original sources and local rendered icons',async()=>{
-  assert.equal(manifest.length,108);const families=new Set<string>(),report:unknown[]=[];
+  assert.equal(manifest.length,109);const families=new Set<string>(),report:unknown[]=[];
   for(const asset of manifest){
     assert.equal(asset.detailRevision,3,asset.key);families.add(asset.detailFamily);
     assert.ok(asset.sourceMeshCount>asset.meshCount,asset.key+' original source keeps separately editable details');

@@ -24,7 +24,7 @@ function number(value:number,unit:string,signal:'AC'|'DC'|undefined,limit:number
 }
 export const forkMode=(method:ForkMethod):'voltage'|'current'|'resistance'=>method==='resistance'?'resistance':method==='fork-current'?'current':'voltage';
 export const forkDial=(method:ForkMethod)=>method==='off'?0:method.startsWith('fork')?1:method==='probe-voltage'?2:3;
-export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:ForkSetup,ohms?:{value:number|null;explanation:string},solveOhms=false):ForkReading {
+export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:ForkSetup,ohms?:{value:number|null;explanation:string;status?:'value'|'open'|'unresolved'},solveOhms=false):ForkReading {
   const {method,a,b}=input;
   if(method==='off')return {status:'off',value:null,shown:'',unit:'',explanation:'Turn the dial to begin.'};
   if(!r?.converged || r.revision!==doc.revision)return wait('Wait for the current circuit calculation.');
@@ -33,7 +33,7 @@ export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:
     if(doc.supply.enabled || doc.components.some(c=>['battery','pv'].includes(c.type)&&c.params.on!==false))return wait('Isolate the bench supply and any local sources before checking resistance.','Ω');
     const sample=ohms??(solveOhms?measureResistance(doc,a,b):undefined);
     if(!sample)return wait('Measuring resistance…','Ω');
-    if(sample.value===null)return sample.explanation.startsWith('Open circuit:')?{status:'open',value:null,shown:'OL',unit:'Ω',explanation:'Open circuit. The model found no conductive path between the probes.'}:wait(sample.explanation,'Ω');
+    if(sample.value===null)return (ohms ? ohms.status==='open' : 'reason' in sample && sample.reason==='open')?{status:'open',value:null,shown:'OL',unit:'Ω',explanation:'Open circuit. There is no path for the test current between these probes.'}:wait(sample.explanation,'Ω');
     const reading=number(sample.value,'Ω',undefined,2000,0,'Resistance between the two probes.');
     if(reading.status==='value')reading.beeps=sample.value<40;
     return reading;

@@ -57,11 +57,10 @@ export function lampIllumination(component: ComponentInstance, result?: Simulati
   const state = result?.deviceStates[component.id], power = state?.lightOutputPower;
   if (typeof power !== 'number' || !Number.isFinite(power) || power <= 0) return;
   const size = COMPONENTS[component.type]?.size ?? [1, 1.3, 1], variant = component.variant;
-  // The authored bulb's filament is at .79, inside its glass envelope. Using
-  // the generic housing height placed the point source above the bulb instead.
+  // Local centre of the A55 filament in the angled B22 lampholder.
   const bulb = component.type === 'lamp' && (!variant || variant === 'bulb');
-  const y = bulb ? .79 : component.type === 'emergency' ? size[1] * .7 : variant === 'downlight' ? .86 : variant === 'batten' ? .66 : size[1] * .85;
-  const offset = new THREE.Vector3(0, y, .04).applyAxisAngle(new THREE.Vector3(0, 1, 0), component.rotation);
+  const y = bulb ? .80971 : component.type === 'emergency' ? size[1] * .7 : variant === 'downlight' ? .86 : variant === 'batten' ? .66 : size[1] * .85;
+  const offset = new THREE.Vector3(0, y, bulb ? .43571 : .04).applyAxisAngle(new THREE.Vector3(0, 1, 0), component.rotation);
   const position: Vec3 = [component.position[0] + offset.x, component.position[1] + offset.y, component.position[2] + offset.z];
   const efficacy = bulb ? 13 : 70;
   return { id: component.id, position, power, intensity: Math.min(10000, power * (efficacy / (4 * Math.PI))), distance: 9, color: component.type === 'lamp' ? '#ffe4b5' : '#eef5ff' };

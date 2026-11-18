@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ConductorPicker, TerminalPicker } from './ConnectionPicker';
+import { describeEndpoint } from '../../lib/build-hints';
 import { publicAssetUrl } from '../../web/asset-url';
 import { terminations, prepareSample, type PreparationTask, type WorkshopVisual } from '../../lib/termination-practice';
 import type { ForkMethod, ForkReading, ForkSetup } from '../../lib/fork-tester';
@@ -25,7 +26,7 @@ export function TesterControls({doc,setup,reading,held,activeProbe,onSource,onIn
     {isFork&&<button type="button" className="tester-function" onClick={()=>onMethod(setup.method==='fork-current'?'fork-voltage':'fork-current')}>Yellow function · show {setup.method==='fork-current'?'volts':'amps'}</button>}
     {setup.method==='fork-voltage'&&<label>Earth reference<select value={setup.reference} onChange={e=>onReference(e.target.value as ForkSetup['reference'])}><option value="none">Choose a reference</option><option value="pad">Touch rear pad · black probe docked</option><option value="black">Black probe on bonded earth</option></select></label>}
     {isFork&&<details open><summary>Choose one insulated core</summary><ConductorPicker circuit={doc} selected={setup.wire} onPick={onWire}/></details>}
-    {usingProbes&&<div className="tester-shortcuts">{(['red','black'] as const).map(c=><button type="button" key={c} aria-pressed={activeProbe===c} onClick={()=>onProbe(c)}>{c==='red'?'Red (+)':'Black (COM)'} · {(c==='red'?setup.a:setup.b)?.terminal??'Place probe'}</button>)}</div>}
+    {usingProbes&&<div className="tester-shortcuts">{(['red','black'] as const).map(c=><button type="button" key={c} aria-pressed={activeProbe===c} onClick={()=>onProbe(c)}>{c==='red'?'Red (+)':'Black (COM)'} · {describeEndpoint(doc,c==='red'?setup.a:setup.b)?.label??'Place probe'}</button>)}</div>}
     {(usingProbes||setup.method==='fork-voltage'&&setup.reference==='black')&&<details><summary>Choose {usingProbes?activeProbe:'black reference'} terminal by name</summary><TerminalPicker circuit={doc} label={(usingProbes?activeProbe:'black reference')+' tester terminal'} onPick={onEndpoint}/></details>}
     {setup.method==='resistance'&&<button type="button" aria-pressed={sound} onClick={()=>{if(!sound&&typeof AudioContext!=='undefined'){audio.current??=new AudioContext();void audio.current.resume().catch(()=>{});}setSound(!sound);}}>Continuity tone · {sound?'on':'off'}</button>}
     <p role="status">{held?'Display held. Release HOLD to take a fresh reading.':reading.explanation}</p>

@@ -38,7 +38,7 @@ test('a wrong explicit conductor identification produces feedback without accept
   document.wires[0].role = 'PE';
   const result = evaluateGuidedWireAddition(activity, document, event, 'build');
   assert.equal(result?.status, 'fail');
-  assert.match(result!.explanation, /conductor identification differs/i);
+  assert.match(result!.explanation, /right terminals.*check its marking/i);
 });
 
 test('an older correctly identified duplicate cannot disguise a wrong added conductor', () => {

@@ -68,7 +68,7 @@ test('actual bulb light has a clear route to the forward bench receiver through 
     try{
       presentBlenderModel(model,'normal',component,state);model.scene.updateMatrixWorld(true);
       const ceramicCap=model.meshes.filter(mesh=>mesh.part==='cover');
-      assert.ok(ceramicCap.length>0&&ceramicCap.every(mesh=>!mesh.lampOutput&&!mesh.light&&mesh.node.castShadow),'opaque ceramic B22 holder stays unlit and keeps its physical shadow');
+      assert.ok(ceramicCap.length>0&&ceramicCap.every(mesh=>!mesh.lampOutput&&!mesh.light&&mesh.node.castShadow),'opaque B22 retaining collar stays unlit and keeps its physical shadow');
       const light=lampIllumination(component,{deviceStates:{[component.id]:state}} as SimulationResult)!;
       const start=new THREE.Vector3(...light.position),receiver=new THREE.Vector3(0,.01,1.4),direction=receiver.clone().sub(start);
       const ray=new THREE.Raycaster(start,direction.clone().normalize(),.03,direction.length());

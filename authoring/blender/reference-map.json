@@ -3,7 +3,50 @@
   "classification": "Original representative training equipment. Each model illustrates an equipment architecture. Construction, circuit ratings and simplified interfaces are identified in the lesson. Product literature documents the features used for comparison.",
   "coordinateContract": "Recipe Y-up, +Z operating front. Each electrical ID has its own physical cable mouth and outward entry vector. Wall accessories are wired at the rear. DIN protective devices have upper and lower banks, motor boards face upward, and fronts opened for service have connection blocks behind their covers. Source and meter earth connections represent the separate protective path at the installation boundary. The valve flying lead ends in a separate connector strip. Circuit IDs stay fixed when inspecting or moving equipment.",
   "sources": [
-    {"id":"gamma-entries","title":"Hager Ireland residential enclosures · Gamma 13 cable entry and accessories","url":"https://assets.sc.hager.com/ie/-/media/project/hagerdeep/republic-of-ireland/hager/republic-of-ireland/at-a-glance-flyers/aag-residential-enclosures_ie.pdf","architecture":"Gamma provides pre-marked cable entries at the top, bottom and sides. The training example uses prepared entries and an optional transparent door."},
+    {"id":"mk-k701-shaver","title":"MK Electric Logic Plus K701WHI · shaver supply unit","url":"https://buildings.honeywell.com/gb/en/products/by-category/electrical-and-wiring/wiring-devices/sockets/shaver-sockets/logic-plus-shaver-socket","architecture":"Original model of the 86 × 146 mm output face with 120.6 mm fixing centres and interlocked 115 V and 230 V positions. The lesson connects the isolated 230 V pair. The internal study tags are separated from the transformer to make measurements possible."},
+    {"id":"radium-a55","title":"Radium 11118941 · 60 W clear A55 B22d","url":"https://www.radium.de/en/products/standard-lamp-clear-60w230cb22d-ex","architecture":"The archived 230 V tungsten bulb has a 22 mm bayonet base, 55 mm diameter, clear round envelope and a maximum overall length of 97 mm."},
+    {
+      "id": "bg-wall-one",
+      "title": "BG 811 single one-way plate · rear product view",
+      "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/20a-16ax-light-switches/811-01",
+      "architecture": "Two recessed cable windows, a stepped captive-screw cassette, plate-reinforcing ribs and fixing bosses."
+    },
+    {
+      "id": "bg-wall-two",
+      "title": "BG 812 two-way plate · rear and side views",
+      "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/20a-16ax-light-switches/812-01",
+      "architecture": "Three recessed entries on the grey snap cassette, moulded COM/L1/L2 inscriptions and isolated side latches."
+    },
+    {
+      "id": "bg-wall-intermediate",
+      "title": "BG 813 intermediate plate · four rear terminals",
+      "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/20a-16ax-light-switches/813-01",
+      "architecture": "Four recessed contacts in two pairs, four captured case fixings and a reinforced central bridge."
+    },
+    {
+      "id": "bg-wall-paired",
+      "title": "BG 842 two-gang switch · paired cassette rear view",
+      "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/20a-16ax-light-switches/842-01",
+      "architecture": "Opposing switch modules share a fixing plate. The paired one-way lesson populates two active terminals per rocker."
+    },
+    {
+      "id": "bg-rose",
+      "title": "BG 661 ceiling rose · exposed clear base photograph",
+      "url": "https://www.bgelectrical.uk/uk/wiring-devices/ceiling-accessories/ceiling-roses/661-01",
+      "architecture": "Eight captive screws in grouped brass links (three neutral, three loop and two lamp line), a separate earth block, moulded wiring aperture, knockout and mounting slots."
+    },
+    {
+      "id": "lilley-batten",
+      "title": "S. Lilley B22 unswitched lampholders · 3015E and ceramic interiors",
+      "url": "https://s-lilley.co.uk/wp-content/uploads/2023/10/catalogue.pdf",
+      "architecture": "The 3015E uses a 48 mm two-fixing base with 40 mm centres, a 45° batten body, shade ring and earth terminal. The original teaching assembly uses an angled brass cap and ceramic live contacts."
+    },
+    {
+      "id": "gamma-entries",
+      "title": "Hager Ireland residential enclosures · Gamma 13 cable entry and accessories",
+      "url": "https://assets.sc.hager.com/ie/-/media/project/hagerdeep/republic-of-ireland/hager/republic-of-ireland/at-a-glance-flyers/aag-residential-enclosures_ie.pdf",
+      "architecture": "Gamma provides pre-marked cable entries at the top, bottom and sides. The training example uses prepared entries and an optional transparent door."
+    },
     {
       "id": "hager-accessory",
       "title": "Hager Ireland WMPS12 wall switch",
@@ -314,7 +357,13 @@
       "id": "ref-switch-door-contact",
       "title": "CQR magnetic door contacts",
       "url": "https://cqr.co.uk/wp-content/uploads/2025/06/Magnetic%20Contacts.pdf",
-      "architecture": "Separate reed body and magnet on frame and door."
+      "architecture": "Dimensions and installation of the fixed surface housing and moving magnet. The 24 V lighting lesson uses a load-rated switching output."
+    },
+    {
+      "id": "rated-cupboard-control",
+      "title": "Lightdream LD2022 · load-rated cabinet control",
+      "url": "https://lightdream.com.au/shop/sensor-switch/",
+      "architecture": "A magnet sensor and a 5 A switching output operate a 12 or 24 V DC strip when a cabinet door opens. The study circuit combines the sensor and switch into one contact."
     },
     {
       "id": "ref-fuse-dc-fuse",
@@ -399,6 +448,18 @@
       "title": "KNIPEX 97 53 04 self-adjusting ferrule crimping pliers",
       "url": "https://www.knipex.com/products/crimping-pliers/self-adjusting-crimping-pliers-for-wire-ferrules-with-lateral-access/self-adjusting-crimping-pliers-wire-ferrules-lateral-access/975304",
       "architecture": "Closed four-sided die, lateral ferrule entry and ratchet handles produce a square ferrule profile."
+    },
+    {
+      "id": "bg-824",
+      "title": "BG Electrical 824 rear photograph and dimension drawing",
+      "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/13a-sockets/824-01",
+      "architecture": "Double unswitched socket. The 146.5 × 86 mm face, twin earths and fixing centres follow the drawing. The grey cassette, top screw wells, rear entrances and pressed earth strap follow the rear photograph. Small mouldings are reconstructed from the photograph. The model is original."
+    },
+    {
+      "id": "bg-851",
+      "title": "BG Electrical 851 rear photograph and dimension drawing",
+      "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/fused-connection-units/851-01",
+      "architecture": "Switched fused connection unit with a bottom flex outlet. The 86 mm plate and 60.3 mm fixing centres follow the drawing. The rear photo shows the input and load markings, side earth connections and two-screw cord grip. Small mouldings are reconstructed from the photograph. The model is original."
     }
   ],
   "familySources": {
@@ -513,6 +574,7 @@
     ]
   },
   "variantSources": {
+    "shaveroutlet:default":["mk-k701-shaver"],
     "gammaboard:default": [
       "gamma-entries",
       "gamma-ie"
@@ -601,7 +663,8 @@
       "ref-fuse-dc-fuse"
     ],
     "switch:door-contact": [
-      "ref-switch-door-contact"
+      "ref-switch-door-contact",
+      "rated-cupboard-control"
     ],
     "source:default": [
       "ref-source-default"
@@ -730,13 +793,17 @@
       "ref-smartrelay-default"
     ],
     "rose:default": [
+      "bg-rose",
       "mk-accessory"
     ],
     "switch:single-rocker": [
+      "bg-wall-one",
       "hager-accessory",
       "mk-accessory"
     ],
     "lamp:bulb": [
+      "radium-a55",
+      "lilley-batten",
       "mk-accessory"
     ],
     "terminal:default": [
@@ -764,7 +831,7 @@
       "schneider-spd"
     ],
     "socket:default": [
-      "mk-accessory"
+      "bg-824"
     ],
     "socket3:default": [
       "mennekes-plug",
@@ -781,13 +848,15 @@
       "mk-accessory"
     ],
     "fcu:default": [
-      "mk-accessory"
+      "bg-851"
     ],
     "switch2:single-rocker": [
+      "bg-wall-two",
       "hager-accessory",
       "mk-accessory"
     ],
     "intermediate:single-rocker": [
+      "bg-wall-intermediate",
       "hager-accessory",
       "mk-accessory"
     ],
@@ -841,10 +910,12 @@
       "fluke-instrument"
     ],
     "switch:gang-module-left": [
+      "bg-wall-paired",
       "hager-accessory",
       "mk-accessory"
     ],
     "switch:gang-module-right": [
+      "bg-wall-paired",
       "hager-accessory",
       "mk-accessory"
     ],

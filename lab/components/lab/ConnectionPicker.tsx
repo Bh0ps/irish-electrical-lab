@@ -9,10 +9,10 @@ import { Input } from '../ui/input';
 import type { ComponentInstance, TerminalDefinition, Vec3 } from '../../lib/types';
 
 const terminalNames: Record<string,string> = {
-  L:'Line', N:'Neutral', PE:'Protective earth', LIN:'Incoming line', NIN:'Incoming neutral',
+  L:'Line', N:'Neutral', PE:'Protective earth', PE2:'Second earth terminal', LIN:'Incoming line', NIN:'Incoming neutral',
   LOUT:'Outgoing line', NOUT:'Outgoing neutral', PEOUT:'Outgoing earth', COM:'Common contact',
   NO:'Normally open contact', NC:'Normally closed contact', A1:'Coil terminal', A2:'Coil return',
-  T1:'First traveller', T2:'Second traveller', SL:'Switched line', '+':'Positive', '-':'Negative',
+  T1:'First strapper', T2:'Second strapper', SL:'Switched line', '+':'Positive', '-':'Negative',
 };
 function shortRole(t:TerminalDefinition) {
   if(t.role==='output'&&(t.id==='+'||t.id==='-'))return 'Isolated AC winding';

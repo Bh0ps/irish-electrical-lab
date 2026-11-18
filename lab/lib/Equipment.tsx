@@ -24,7 +24,7 @@ export interface EquipmentProps {
   state?: DeviceState;
   selected: boolean;
   view: EquipmentView;
-  onPart: (partId: string) => void;
+  onPart: (partId: string,detailId?:string) => void;
   onTerminal: (terminalId: string) => void;
   showLabels: boolean;
   lowDetail?: boolean;
@@ -32,6 +32,9 @@ export interface EquipmentProps {
   preferLowAsset?: boolean;
   /** Asset authoring retains opaque body materials while revealing internals. */
   authoring?: boolean;
+  /** The reed and magnet are separate pieces of the installed door contact. */
+  contactPiece?: 'reed' | 'magnet';
+  onModelAvailability?: (id:string,unavailable:boolean) => void;
   animate?: boolean;
 }
 
@@ -812,9 +815,9 @@ export const ProceduralEquipment = memo(function ProceduralEquipment(props: Equi
   </group></Context.Provider>;
 });
 export const Equipment = memo(function Equipment(props: EquipmentProps) {
-  return <><BlenderEquipment {...props} fallback={<ProceduralEquipment {...props}/>} />
+  return <BlenderEquipment {...props}>
     <InstalledHardware {...props}/>
-    {props.component.type==='forktester'&&<TesterFace params={props.component.params}/>}</>;
+    {props.component.type==='forktester'&&<TesterFace params={props.component.params}/>}</BlenderEquipment>;
 });
 
 /** Rounded corners never leave this distance from the routed line segments. */

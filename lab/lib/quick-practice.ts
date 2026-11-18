@@ -62,12 +62,12 @@ function liveTraveller(result: SimulationResult): string | undefined {
 const definitions: readonly ExperimentDefinition[] = [
   {
     id: 'switch-voltage', lessonId: 7, title: 'Voltage across the lamp',
-    question: 'What will a meter read across the lamp after you open the wall switch?',
-    instruction: 'Open the wall switch and watch the lamp. The lab will compare its voltage before and after.',
+    question: 'The lamp is lit. What will the meter read across it when you switch it off?',
+    instruction: 'Turn the wall switch off. Watch the lamp and the voltage across it.',
     target: 'switch', trace: 'L', targetKeys: ['closed'], answer: 'near-zero',
     options: [{ id: 'mains', label: 'Close to supply voltage' }, { id: 'near-zero', label: 'Close to zero volts' }],
-    explanation: 'Opening the switch breaks the line path to the lamp, so its two terminals settle at almost the same voltage.',
-    nextCheck: 'Check that the simulated supply is on, then confirm the wall switch is open.',
+    explanation: 'With the switch open, current stops flowing through the lamp. Its two terminals are now at almost the same voltage.',
+    nextCheck: 'Leave the supply on and check that the wall switch is off.',
     action: params => params.closed === false,
     before: (result, document) => (voltage(result, 'light') ?? 0) >= document.supply.voltage * .9,
     after: result => { const value = voltage(result, 'light'); return value !== null && value <= 1; },
@@ -76,11 +76,11 @@ const definitions: readonly ExperimentDefinition[] = [
   {
     id: 'traveller-route', lessonId: 9, title: 'One lamp, two switches',
     question: 'What happens to the lamp if you move switch A and leave switch B alone?',
-    instruction: 'Flip switch A once. Find which traveller it selects while switch B stays where it is.',
+    instruction: 'Flick switch A once. Leave B where it is and look at which connecting wire is live.',
     target: 'near', trace: 'control', targetKeys: ['position'], answer: 'off',
     options: [{ id: 'off', label: 'It goes out' }, { id: 'on', label: 'It stays on' }],
-    explanation: 'Switch A moves from traveller T1 to T2 while switch B stays on T1, so there is no complete line path through both switches.',
-    nextCheck: 'Check that only switch A was moved and that switch B is still in its starting position.',
+    explanation: 'A now connects to T2, but B is still on T1. The two switches no longer make a complete path through the lamp.',
+    nextCheck: 'Check that B is still in its original position.',
     action: params => params.position === 1,
     before: result => drawingPower(result, 'light') && liveTraveller(result) === 'T1',
     after: result => isOff(result, 'light') && liveTraveller(result) === 'T2',
@@ -91,12 +91,12 @@ const definitions: readonly ExperimentDefinition[] = [
   },
   {
     id: 'dimmer-power', lessonId: 12, title: 'Turn the light down',
-    question: 'What will happen to the power used by the lamp when you turn the dimmer down?',
-    instruction: 'Drag the Dimmer level slider to 30% or lower. Keep the dimmer switched on.',
+    question: 'You turn the dimmer down. What will happen to the lamp’s power reading?',
+    instruction: 'Turn the dimmer down to 30% or less. Leave its switch on.',
     target: 'dimmer', trace: 'L', initial: { level: .8, closed: true }, targetKeys: ['level'], answer: 'lower',
     options: [{ id: 'same', label: 'It stays about the same' }, { id: 'lower', label: 'It falls' }, { id: 'higher', label: 'It rises' }],
-    explanation: 'At the lower setting, this teaching model adds series resistance, so the lamp receives less current and uses less power.',
-    nextCheck: 'The dimmer needs to stay on. Set its slider to 30% or lower and check the lamp again.',
+    explanation: 'This lab dimmer adds resistance as you turn it down. Less current flows through the lamp, so its watt reading falls.',
+    nextCheck: 'Check the dimmer is on and its setting is 30% or less.',
     action: params => typeof params.level === 'number' && params.level >= 0 && params.level <= .3,
     before: result => drawingPower(result, 'light'),
     after: (result, before) => {
@@ -109,12 +109,12 @@ const definitions: readonly ExperimentDefinition[] = [
   },
   {
     id: 'pir-run-on', lessonId: 14, title: 'When motion stops',
-    question: 'What happens when the motion detector no longer requests light?',
-    instruction: 'Remove the motion request at the detector. Keep watching the light as the run-on timer counts down.',
+    question: 'Someone leaves the hall. When will the light go out?',
+    instruction: 'Switch off motion at the detector and leave it off. Watch the light for the next few seconds.',
     target: 'pir', trace: 'control', targetKeys: ['on', 'active', 'demand'], answer: 'delay', sequence: 'run-on',
     options: [{ id: 'instant', label: 'The lamp goes out immediately' }, { id: 'never', label: 'The lamp stays on until reset' }, { id: 'delay', label: 'The lamp stays on briefly, then goes out' }],
-    explanation: 'The timer keeps its output closed after the motion signal is removed, then opens it when the set delay expires.',
-    nextCheck: 'Check that motion demand is off and that the run-on timer still has power.',
+    explanation: 'When movement stops, the timer keeps its contact closed for a few more seconds. The light goes out when the contact opens.',
+    nextCheck: 'Check that the detector no longer senses movement and the timer still has its supply.',
     action: params => params.active === false,
     before: result => drawingPower(result, 'light') && result.deviceStates['occupancy-hold']?.command === true,
     after: result => isOff(result, 'light') && isOn(result, 'occupancy-hold') && result.deviceStates['occupancy-hold']?.closed === false,
@@ -122,11 +122,11 @@ const definitions: readonly ExperimentDefinition[] = [
   },
   {
     id: 'independent-branches', lessonId: 2, title: 'Which branch loses power?',
-    question: 'You open outgoing MCB 1. Which of the two circuits will stop?',
-    instruction: 'Open only outgoing MCB 1. Watch the lamp and compare the two branch readings.',
+    question: 'You switch off the first circuit breaker, MCB 1. Which circuits will lose power?',
+    instruction: 'Switch off MCB 1. Leave the other breaker on and compare the readings.',
     target: 'branch1', trace: 'L', targetKeys: ['closed'], answer: 'first',
     options: [{ id: 'both', label: 'Both circuits' }, { id: 'first', label: 'Circuit 1 only' }, { id: 'second', label: 'Circuit 2 only' }],
-    explanation: 'The open MCB breaks only its own branch. Circuit 2 still has a complete supply path through the shared RCCB.',
+    explanation: 'MCB 1 opens the lamp circuit. The second breaker still feeds its socket through the shared residual-current device.',
     nextCheck: 'Check that MCB 1 is open, while MCB 2 and the shared RCCB are still closed.',
     action: params => params.closed === false,
     before: result => drawingPower(result, 'load1') && drawingPower(result, 'load2'),
@@ -135,12 +135,12 @@ const definitions: readonly ExperimentDefinition[] = [
   },
   {
     id: 'starter-hold', lessonId: 55, title: 'What happens after Start?',
-    question: 'After you press and release Start, will the contactor still be closed?',
-    instruction: 'Press and release the green Start button. Watch the contactor and motor after you let go.',
+    question: 'You give Start a quick press. Will the starter contactor stay closed after you let go?',
+    instruction: 'Press and release the green Start button. Look at the motor and the coil reading.',
     target: 'start', trace: 'control', targetKeys: ['pressed'], answer: 'holds', sequence: 'press-release',
     options: [{ id: 'drops', label: 'It opens as soon as I release Start' }, { id: 'holds', label: 'It stays closed after I release Start' }],
-    explanation: 'The auxiliary holding contact closes when Start energizes the coil, giving the coil another supply path after Start is released.',
-    nextCheck: 'Check the coil supply and the auxiliary holding path. You can hold Start from its controls and release it after the motor runs.',
+    explanation: 'Start energises the coil and closes its holding contact. That contact keeps the coil supplied after your finger leaves the button.',
+    nextCheck: 'Check the coil and its holding contact. You can hold Start in the equipment controls, then release it once the motor runs.',
     action: params => params.pressed === false,
     before: result => isOff(result, 'motor') && result.deviceStates.starter?.closed === false,
     after: result => isOn(result, 'motor') && result.deviceStates.starter?.closed === true,
@@ -234,10 +234,10 @@ export function prepareQuickPractice(experiment: QuickPracticeExperiment, circui
   }
   const startingControl = authored.components.find(component => component.id === experiment.target)!.params;
   if (!isReady(result, circuit) || !experiment.before(result, circuit) || experiment.targetKeys.some(key => target.params[key] !== startingControl[key])) {
-    return { status: 'unresolved', message: 'The starting state is missing. Restart the experiment before operating the control.' };
+    return { status: 'unresolved', message: 'The circuit isn’t at its starting setting. Restart the experiment, then try the control.' };
   }
   const readings = readAll(experiment, result);
-  if (!readings) return { status: 'unresolved', message: 'The starting reading is unresolved. Restart to check the initial circuit.' };
+  if (!readings) return { status: 'unresolved', message: 'The meter couldn’t get a starting reading. Restart to check the example again.' };
   return { status: 'ready', baseline: { circuitId: circuit.id, revision: circuit.revision, graph, readings } };
 }
 
@@ -284,6 +284,6 @@ export function observeQuickPractice(experiment: QuickPracticeExperiment, baseli
   }
 
   const readings = readAll(experiment, result);
-  if (!readings || !experiment.after(result, baseline.readings)) return unresolved(`The expected comparison could not be verified. ${experiment.nextCheck}`);
+  if (!readings || !experiment.after(result, baseline.readings)) return unresolved(`The readings don’t yet show the expected change. ${experiment.nextCheck}`);
   return { status: 'complete', sequence, readings, revision: circuit.revision };
 }

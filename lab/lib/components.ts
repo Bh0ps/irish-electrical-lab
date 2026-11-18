@@ -2,47 +2,50 @@ import type { ComponentDefinition, ComponentInstance, TerminalDefinition, Termin
 import { getComponentTerminals } from './terminal-layout.ts';
 
 const purpose: Record<string, string> = {
-  L: 'Line conductor: the alternating supply relative to neutral.', N: 'Neutral: the normal return path. It is not a protective conductor.',
-  PE: 'Protective conductor: connects exposed conductive parts to the protective network; not a normal load return.',
-  L1: 'First phase of the three-phase supply.', L2: 'Second phase, displaced by 120 degrees.', L3: 'Third phase, displaced by 240 degrees.',
-  'DC+': 'Positive extra-low-voltage or DC output; keep separate from mains conductors.', 'DC-': 'DC return, electrically separate from mains neutral in an isolated supply.',
-  control: 'Control connection. Its function depends on the contact map and operating state.', output: 'Controlled output. Its potential follows the actual connected circuit.',
+  L: 'Line brings power to the fitting. Its usual marking is L.',
+  N: 'Neutral carries current back to the supply while the load is on.',
+  PE: 'PE means protective earth. It gives fault current a path back to the supply if a live wire touches exposed metal.',
+  L1: 'First phase of a three-phase supply.', L2: 'Second phase of a three-phase supply.', L3: 'Third phase of a three-phase supply.',
+  'DC+': 'Positive side of the DC supply. Look for the + mark.',
+  'DC-': 'Negative side of the DC supply. On an isolated output this is separate from mains neutral.',
+  control: 'This terminal carries a switch or control signal.',
+  output: 'The fitting sends power or a signal out through this terminal.',
 };
 function ports(ids: string[], roles?: TerminalRole[]): TerminalDefinition[] {
   return ids.map((id, i) => {
-    const role: TerminalRole = roles?.[i] ?? (id === 'PE' || id === 'PEOUT' ? 'PE' : id.startsWith('N') ? 'N' : id.startsWith('L3') ? 'L3' : id.startsWith('L2') ? 'L2' : id.startsWith('L1') ? 'L1' : id.startsWith('L') ? 'L' : id === '+' ? 'DC+' : id === '-' ? 'DC-' : 'control');
+    const role: TerminalRole = roles?.[i] ?? (id === 'PE' || id === 'PE2' || id === 'PEOUT' ? 'PE' : id.startsWith('N') ? 'N' : id.startsWith('L3') ? 'L3' : id.startsWith('L2') ? 'L2' : id.startsWith('L1') ? 'L1' : id.startsWith('L') ? 'L' : id === '+' ? 'DC+' : id === '-' ? 'DC-' : 'control');
     const row = Math.floor(i / 4), cols = Math.min(4, ids.length - row * 4);
     return { id, label: id, role, purpose: purpose[role], anchor: [(i % 4 - (cols - 1) / 2) * .25, .26 + row * .27, -.3] };
   });
 }
 const partText: Record<string, [string,string]> = {
-  test: ['Test button · T', 'The spring-return T button connects an internal test resistor across opposite sides of the sensing poles. With the device closed and a suitable supply connected, that imbalance trips the mechanism.'],
-  body: ['Housing', 'The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing.'],
-  cover: ['Removable cover', 'The cover limits access to internal connections. Opening it here is a virtual inspection operation.'],
-  terminals: ['Terminal clamps', 'Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires.'],
-  mounting: ['Mounting and fixings', 'Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections.'],
-  door:['Hinged outer door','Open the door to reach the breaker handles with the dead front still installed.'],
-  shield:['Removable front','The front shields the terminal wiring. Its windows leave the installed breakers accessible.'],
-  rail:['Device rail','A steel top-hat rail holds the devices in position. Their electrical connections follow the conductors and bars shown.'],
-  contacts: ['Switching contacts', 'Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions.'],
-  actuator: ['Operating mechanism', 'The mechanism translates a handle, button, coil or control demand into an operating state.'],
-  coil: ['Electromagnetic coil', 'Voltage across the coil produces a magnetic operating force. This simulation models coil demand and pickup, rather than magnetic field saturation or inrush.'],
-  sensing: ['Sensing element', 'The sensor converts an environmental condition or measured current into a control decision. Setpoints and input values can be changed in the inspector.'],
-  toroid: ['Residual-current sensing core', 'All monitored active conductors pass through the sensing core. An imbalance indicates current returning outside those conductors. The protective conductor is not a monitored active conductor.'],
-  thermal: ['Thermal protection', 'A thermal element responds to heating or sustained excess current. Timing is illustrative here; it is not a manufacturer trip curve.'],
-  magnetic: ['Magnetic release', 'The magnetic mechanism illustrates rapid response to high current. The displayed fault current depends on the source and circuit resistance assumptions.'],
-  rotor: ['Rotor and shaft', 'The rotating assembly performs mechanical work. Rotation animation indicates simulated operation; its speed is not a torque or inertia calculation.'],
-  winding: ['Windings', 'Conductive windings couple electrical and magnetic behaviour. Motor and transformer windings use documented steady-state educational models.'],
-  electronics: ['Electronic control board', 'This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware.'],
-  battery: ['Backup energy store', 'Stored energy can supply an output after a monitored mains supply disappears. Isolation of one source does not remove every energy source.'],
-  element: ['Heating element', 'Electrical resistance converts power to heat. For a fixed resistance, power changes with the square of voltage.'],
-  emitter: ['Light source', 'The bulb, LED module or emergency-light emitter converts electrical power into illumination. Visible brightness follows the actual emitting-load power relative to its rating. The display is an illustrative brightness scale; heat, measured optical output and colour rendering are outside the electrical model.'],
-  fuse: ['Fuse carrier and element', 'A fuse interrupts its protected path when the illustrative protection model trips. It is distinct from a switch or residual-current device.'],
-  isolation: ['Isolation boundary', 'The model separates the mains circuit from the output circuit. Voltage within a floating output can be meaningful while its voltage to earth is undetermined.'],
-  display: ['Display and indicators', 'The display reports the model operating state. Meter readings come from the connected circuit, not a pre-recorded picture.'],
-  pins: ['Contact pins', 'Pins and socket contacts have distinct identities. Matching physical equipment alone does not verify conductor assignment.'],
-  probes: ['Test probes and sockets', 'The red and black probes contact two circuit terminals for a voltage or resistance reading. Voltage is measured between those terminals; resistance and continuity require the simulated supply to be off. The probe sockets and insulated leads are separate from the mode selector.'],
-  sheath: ['Cable sheath and individual cores', 'The sheath provides mechanical protection around individual insulated conductors. Identification helps reading a circuit but does not prove that a conductor has been connected correctly.'],
+  test: ['Test button · T', 'With the device on and supplied, press T. A small test current trips it.'],
+  body: ['Housing', 'The case holds the working parts in place and keeps them apart.'],
+  cover: ['Removable cover', 'Lift the cover on the bench to see the connections underneath.'],
+  terminals: ['Terminal clamps', 'A clamp holds the bare end of a wire against the metal terminal.'],
+  mounting: ['Mounting and fixings', 'These keep the fitting in place. Look for the screws or clips that hold it.'],
+  door: ['Outer door', 'Open the door to reach the breaker handles. The front panel still covers the wiring.'],
+  shield: ['Removable front panel', 'The openings leave the breaker handles within reach while the panel covers the wires.'],
+  rail: ['Device rail', 'Breakers clip onto this metal rail. The wires and bars carry the current.'],
+  contacts: ['Contacts', 'These metal faces touch to carry current. Moving them apart opens the switch.'],
+  actuator: ['Operating mechanism', 'This part moves the contacts when you use the control.'],
+  coil: ['Coil', 'A coil is a length of wound wire. In a relay or contactor, current in the coil pulls the contacts into position.'],
+  sensing: ['Sensor', 'This part detects a change, such as a rise in temperature or current.'],
+  toroid: ['Current-sensing ring', 'Line and neutral pass through this ring. If some current returns by another route, the device senses the difference and can trip.'],
+  thermal: ['Thermal protection', 'A sustained overload heats this part until the protection trips. Trip times in the lab are approximate.'],
+  magnetic: ['Magnetic release', 'A large fault current makes this release open the breaker quickly.'],
+  rotor: ['Rotor and shaft', 'The rotor is the part that turns. The shaft carries that movement to the machine.'],
+  winding: ['Windings', 'These coils of wire create a magnetic field when current flows.'],
+  electronics: ['Control board', 'The board takes signals in and controls the outputs. The bench shows what the board does at its terminals.'],
+  battery: ['Backup battery', 'The battery can keep the equipment running when the mains supply goes off.'],
+  element: ['Heating element', 'Current heats the element. With the same resistance, doubling the voltage gives four times the heating power.'],
+  emitter: ['Light source', 'This is the part that gives off light. On the bench it gets brighter as it receives more power.'],
+  fuse: ['Fuse and carrier', 'Too much current melts the fuse element and breaks the circuit. The carrier holds the fuse.'],
+  isolation: ['Isolated output', 'Measure between the two output terminals. If neither is tied to earth, a reading from one terminal to earth may be unknown.'],
+  display: ['Display', 'Read the value or operating state here.'],
+  pins: ['Plug and socket contacts', 'The plug pins meet these contacts when the plug goes in. Each has its own job.'],
+  probes: ['Test probes', 'Touch the red and black tips to the two points you want to compare. Switch off all simulated supplies before checking resistance or continuity.'],
+  sheath: ['Cable sheath and cores', 'The sheath is the outer covering. Inside are separate wires, called cores. Trace each core to see where it goes.'],
 };
 const handToolParts: Record<string,Record<string,[string,string]>> = {
   forktester:{
@@ -65,25 +68,37 @@ const defs: ComponentDefinition[] = [];
 function explainTerminal(type:string,t:TerminalDefinition):void {
   const id=t.id;
   const set=(text:string)=>{t.purpose=text;};
-  if(type==='switch')return set(id==='COM'?'Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.':'Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.');
+  if(type==='shaveroutlet')return set('This is one end of the isolated shaver load. Measure across the two secondary contacts to read the outlet voltage.');
+  if(type==='rose') {
+    if(id.startsWith('LOOP'))return set('Permanent line loop. Its three entries share one brass terminal. This loop is separate from the two switched lamp-line entries.');
+    if(id.startsWith('N'))return set('One of the three joined neutral entries. This block remains separate from the two line groups and the earth block.');
+    if(id.startsWith('PE'))return set('Conductor entry at the common protective earth block. Both entries share one clamping screw.');
+    return set('One of two joined lamp-line entries, normally carrying the switched line to the pendant.');
+  }
+  if((type==='socket'||type==='fcu') && (id==='PE'||id==='PE2')) return set('The metal strap joins both earth terminals. Either terminal connects to the same earth path.');
+  if(type==='fcu') {
+    if(id==='LIN'||id==='NIN') return set((id==='LIN'?'Line':'Neutral')+' coming in from the supply. Look for IN on the back.');
+    if(id==='LOUT'||id==='NOUT') return set((id==='LOUT'?'Fused line':'Neutral')+' going to the appliance. Look for LOAD on the back.');
+  }
+  if(type==='switch')return set(id==='COM'?'Common terminal. The feed comes in here in the lighting lesson. The rocker joins COM to L1.':'In the lighting lesson this wire goes to the lamp. Switching off breaks its connection to COM.');
   if(type==='dimmer')return set(id==='COM'?'Common supply contact. The dimmer changes the effective resistance between COM and OUT in this study model.':'Switched, adjustable output to the lamp. Turn the dial to change the equivalent resistance between COM and OUT.');
-  if(type==='switch2')return set(id==='COM'?'Common contact. Moving the rocker connects COM to one of the two traveller terminals.':`Traveller marked ${id==='T1'?'L1':'L2'}. The lesson calls this path ${id}. The rocker chooses whether it is joined to COM.`);
-  if((type==='meter'||type==='source'||type==='source3')&&(id==='PE'||id==='PEOUT'))return set('Protective connection at the represented supply boundary. This separate earth path is drawn beside the metering equipment. The meter measures energy on the active supply path.');
-  if(id==='PE'||id==='PEOUT')return set(`${id==='PEOUT'?'Outgoing protective connection':'Protective connection'} to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.`);
+  if(type==='switch2')return set(id==='COM'?'Common contact. The rocker connects COM to either L1 or L2.':`Strapper terminal marked ${id==='T1'?'L1':'L2'}. The drawing calls this wire ${id}. Follow it to the other switch.`);
+  if((type==='meter'||type==='source'||type==='source3')&&(id==='PE'||id==='PEOUT'))return set('Supply earth. The earth connection runs alongside the meter.');
+  if(id==='PE'||id==='PEOUT')return set(`${id==='PEOUT'?'Outgoing earth connection':'Earth connection'} for the fitting. The earth path stays connected when the switch opens.`);
   if(['transformer','driver','dcsupply'].includes(type)&&['+','-'].includes(id)){
-    if(type==='transformer'){t.role='output';set(`Isolated AC secondary ${id==='+'?'first':'second'} winding end. The stable ${id} identifier is a software label, not fixed DC polarity. Measure AC voltage between the two secondary markings; secondary-to-earth common-mode voltage is undetermined without a reference connection.`);}
-    else set(`${id==='+'?'Positive output':'Negative output return'} of the regulated isolated DC pair. Measure + to −; the − terminal is not mains neutral. Output voltage and available power follow the declared converter limits.`);
+    if(type==='transformer'){t.role='output';set(`AC secondary ${id==='+'?'first':'second'} winding end. The ${id} mark identifies a winding end, not fixed DC polarity. Put one probe on each end of the secondary to read its AC voltage.`);}
+    else set(`${id==='+'?'Positive output':'Negative output return'} of the isolated DC supply. Measure between + and −. Keep the DC return separate from mains neutral.`);
     return;
   }
-  if(type==='led'&&['L','N'].includes(id))return set(`${id==='L'?'Positive LED input':'Negative LED return'} in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.`);
+  if(type==='led'&&['L','N'].includes(id))return set(`${id==='L'?'Positive LED input':'Negative LED return'} on this low-voltage light. It takes power from the DC driver.`);
   if(type==='chime'&&['L','N'].includes(id))return set(`${id==='L'?'First':'Second'} low-voltage sounder connection. The bell exercises specify an isolated AC winding. The door annunciator uses a DC sounder. Check the device rating before comparing its two terminals.`);
-  if(type==='motor3'&&/^[UVW][12]$/.test(id))return set(`${id[0]} winding ${id.endsWith('1')?'start':'end'}, paired with ${id[0]}${id.endsWith('1')?'2':'1'}. The solver places an actual impedance between this pair. External links determine star or delta; measure across the winding pair and compare with its declared winding-voltage parameter.`);
-  if(['contactor','relay'].includes(type)&&['A1','A2'].includes(id))return set(`Coil ${id==='A1'?'first connection':'return connection'}, paired with ${id==='A1'?'A2':'A1'}. Measure across A1–A2 to establish coil demand. This coil circuit is electrically separate from the switched contacts; its pickup/dropout follow the declared voltage thresholds.`);
+  if(type==='motor3'&&/^[UVW][12]$/.test(id))return set(`${id[0]} winding ${id.endsWith('1')?'start':'end'}, paired with ${id[0]}${id.endsWith('1')?'2':'1'}. Measure between these ends to see what voltage this winding receives with the links in star or delta.`);
+  if(['contactor','relay'].includes(type)&&['A1','A2'].includes(id))return set(`Coil ${id==='A1'?'first connection':'return connection'}, paired with ${id==='A1'?'A2':'A1'}. Measure across A1–A2 to see what voltage reaches the coil. The load current flows through separate contacts.`);
   if(type==='contactor'&&['1','2','3','4','5','6'].includes(id)){const odd=Number(id)%2===1,pair=odd?Number(id)+1:Number(id)-1;return set(`${odd?'Incoming':'Outgoing'} side of power-contact pair ${odd?id:pair}–${odd?pair:id}. This pair closes when the contactor operates and opens when it releases. It is separate from the coil and auxiliary contacts.`);}
-  if(type==='contactor'&&['13','14'].includes(id))return set(`Normally open auxiliary-contact pair 13–14: open with the contactor released, closed when it operates. It can maintain the coil request after START is released only if the actual control wires form that holding path.`);
-  if(type==='contactor'&&['21','22'].includes(id))return set('Normally closed auxiliary-contact pair 21–22: closed with the contactor released, open when it operates. It can provide a wired reversing permissive or pre-start feedback; the connected circuit determines its purpose.');
-  if(type==='overload'&&['1','2','3','4','5','6'].includes(id)){const odd=Number(id)%2===1,pair=odd?Number(id)+1:Number(id)-1;return set(`${odd?'Incoming':'Outgoing'} side of motor-current sensing path ${odd?id:pair}–${odd?pair:id}. This teaching overload measures the path current; its trip opens 95–96 rather than these power paths. The contactor must remove power through the wired control circuit.`);}
-  if(type==='overload'&&['95','96'].includes(id))return set('Normally closed overload control-contact pair 95–96. It opens after the represented overload trips. Place it in the coil permission path; a trip cannot stop an unrelated motor circuit automatically. Reset after removing the overload cause.');
+  if(type==='contactor'&&['13','14'].includes(id))return set(`Normally open auxiliary contacts. When the contactor pulls in, 13 joins 14. Wired across Start, this pair can keep the coil on after you let go.`);
+  if(type==='contactor'&&['21','22'].includes(id))return set('Normally closed auxiliary contacts. When the contactor pulls in, 21 separates from 22. In a reversing starter this can keep the other contactor off.');
+  if(type==='overload'&&['1','2','3','4','5','6'].includes(id)){const odd=Number(id)%2===1,pair=odd?Number(id)+1:Number(id)-1;return set(`${odd?'Incoming':'Outgoing'} side of motor-current sensing path ${odd?id:pair}–${odd?pair:id}. The overload checks the current through this pair. A trip opens the control contacts 95–96, allowing the contactor to cut the motor supply.`);}
+  if(type==='overload'&&['95','96'].includes(id))return set('Normally closed contacts 95–96. An overload trip opens them. When they are wired in series with the coil, the contactor drops out and the motor stops.');
   if(['relay','pushbutton'].includes(type)&&['COM','NO','NC'].includes(id))return set(id==='COM'?'Common connection of the separate changeover contact. This is a supplied contact circuit, not the coil or a neutral reference.':id==='NO'?`Normally open path from COM: closes when ${type==='relay'?'the coil operates':'the button is held pressed'} and opens on release.`:`Normally closed path from COM: opens when ${type==='relay'?'the coil operates':'the button is held pressed'} and closes on release. It can interrupt a maintained request if wired in that request path.`);
   if(type==='selector'&&['COM','A','B'].includes(id))return set(id==='COM'?'Common fed contact selecting A in the first position or B in the second. The two selected paths remain alternative connections.':`Selected contact ${id}: connected to COM in the ${id==='A'?'first':'second'} position. The selector does not energize this path without a real feed to COM.`);
   if(type==='changeover')return set(({A:'First supply active input, selected with AN in position zero.',B:'Alternative supply active input, selected with BN in position one.',AN:'First supply return, paired with input A.',BN:'Alternative supply return, paired with input B.',OUT:'Selected active output, joined to A or B through the interlocked model.',NOUT:'Selected return output, joined to AN or BN with its matching active input.'} as Record<string,string>)[id]+' The unselected pair remains separated; coordinated neutral/earthing design is equipment dependent.');
@@ -117,7 +132,7 @@ function explainTerminal(type:string,t:TerminalDefinition):void {
 }
 function add(type: string, name: string, group: string, model: string, description: string, ids: string[], defaults: Parameters = {}, parts: string[] = [], size: Vec3 = [1.1,1.35,.8], roles?: TerminalRole[], abstraction?: string) {
   const terminals=ports(ids,roles);
-  if(['switch','switch2','intermediate','dimmer'].includes(type))terminals.forEach(t=>{t.role='L';t.purpose=t.id==='COM'?'Common line-contact connection. The switch links this terminal to the selected output; it is not a neutral connection.':type==='switch2'?'Traveller connection selected by the common contact. T1/T2 are alternative switch paths, not separate supply phases.':type==='intermediate'?'Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.':'Controlled line output. Its potential follows the actual contact or dimmer state.';});
+  if(['switch','switch2','intermediate','dimmer'].includes(type))terminals.forEach(t=>{t.role='L';t.purpose=t.id==='COM'?'Common line-contact connection. The switch links this terminal to the selected output; it is not a neutral connection.':type==='switch2'?'Traveller connection selected by the common contact. T1/T2 are alternative switch paths, not separate supply phases.':type==='intermediate'?'Strapper connection. The switch either joins the two pairs straight through or crosses them over.':'Controlled line output. Its potential follows the actual contact or dimmer state.';});
   terminals.forEach(t=>explainTerminal(type,t));
   const definition:ComponentDefinition={ type,name,group,model,description,terminals,defaults,parts:['body','cover','terminals','mounting',...parts,...(['rcbo','rcd','rcd3'].includes(type)?['test']:[])].map(id=>({id,name:partText[id]?.[0]??id,purpose:partText[id]?.[1]??'Selectable functional part.'})),size,abstraction };
   if(handToolParts[type])definition.parts=Object.entries(handToolParts[type]).map(([id,[name,purpose]])=>({id,name,purpose}));
@@ -145,13 +160,14 @@ add('spd','Surge-protection device','Protection','protection','Parallel protecti
 add('isolator','Double-pole isolator','Protection','switch','Linked line and neutral contacts provide local isolation.',['LIN','NIN','LOUT','NOUT'],{closed:true},['actuator','contacts']);
 add('isolator3','Four-pole isolator','Protection','switch','Linked three-phase and neutral isolation contacts.',poles3,{closed:true},['actuator','contacts'],[1.5,1.2,.8]);
 add('changeover','Interlocked changeover','Protection','switch','Selects one supply path while separating the alternative.',['A','B','OUT','AN','BN','NOUT'],{position:0,closed:true},['actuator','contacts']);
-add('socket','Domestic socket outlet','Accessories','socket','An outlet supplies the connected illustrative appliance load.',load,{watts:100,closed:true},['pins','actuator']);
+add('socket','Domestic socket outlet','Accessories','socket','A double socket with an appliance plugged into the circuit. Both earth terminals share one metal strap.',['L','N','PE','PE2'],{watts:100,closed:true},['pins'],[1.465,.92,.4]);
 add('socket3','Industrial five-pole socket','Accessories','socket','Separate phase, neutral and protective contacts for industrial equipment.',['L1','L2','L3','N','PE'],{watts:900},['pins'],[1.2,1.2,1]);
 add('plug','Fused domestic plug','Accessories','plug','Three-pin plug with a separate line fuse and cord grip.',pass,{closed:true,currentRating:13},['pins','fuse','sheath']);
 add('plug3','Industrial plug','Accessories','plug','Five-pin industrial plug with separately identified contacts.',['L1IN','L2IN','L3IN','NIN','PE','L1OUT','L2OUT','L3OUT','NOUT','PEOUT'],{closed:true},['pins','sheath']);
 add('junction','Junction box','Accessories','junction','A four-way connector group. Each instance is one joined electrical group.',['1','2','3','4'],{},[],[1,.7,.8]);
-add('rose','Ceiling rose connector','Accessories','junction','Visible connection groups for a luminaire; line, neutral and protective groups are separate.',pass,{closed:true},[],[1,.7,.8]);
-add('fcu','Switched fused connection unit','Accessories','socket','Linked local switching with a protected line branch for a fixed appliance.',['LIN','NIN','LOUT','NOUT','PE'],{closed:true,currentRating:13,resetToken:0},['actuator','contacts','fuse']);
+add('rose','Ceiling rose connector','Accessories','junction','A spin-on pendant rose groups the neutral, permanent line loop, switched lamp line and protective conductors separately.',[...pass,'N3','LOOP1','LOOP2','LOOP3'],{closed:true},[],[1,.90,.8]);
+add('shaveroutlet','Shaver outlet · isolated 230 V side','Accessories','socket','A two-pin shaver outlet with a small shaver load connected. The transformer inside the supply unit is shown separately on the workbench.',['L','N'],{watts:15,ratedVoltage:230,doubleInsulated:true,classII:true},['pins'],[.86,1.52,.40],['output','output'],'The lesson uses the 230 V pair. The second plug position and its interlock are shown for recognition. The two secondary connections are exposed for study.');
+add('fcu','Switched fused connection unit','Accessories','socket','A switch and fuse for a fixed appliance. IN is the supply side. LOAD goes to the appliance.',['LIN','NIN','LOUT','NOUT','PE','PE2'],{closed:true,currentRating:13,resetToken:0},['actuator','contacts','fuse'],[.86,.92,.4]);
 add('switch','One-way switch','Lighting','switch','A maintained contact makes or breaks the line path.',['COM','OUT'],{closed:true},['actuator','contacts']);
 add('switch2','Two-way switch','Lighting','switch','The common terminal selects one of two travellers.',['COM','T1','T2'],{position:0,closed:true},['actuator','contacts']);
 add('intermediate','Intermediate switch','Lighting','switch','Selects straight-through or crossed traveller connections.',['A','B','C','D'],{position:0,closed:true},['actuator','contacts']);

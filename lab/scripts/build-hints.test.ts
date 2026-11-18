@@ -69,7 +69,7 @@ test('unresolved current calculations outrank protective and operating hints', (
   result.diagnostics.unshift({ id: 'overload', category: 'protection', severity: 'warning', title: 'Protection', explanation: 'Protection finding.' }, { id: 'solve', category: 'model', severity: 'error', title: 'Unresolved model', explanation: 'No reliable result.' });
   const hint = getBuildHint({ document, result, expected });
   assert.equal(hint?.id, 'solve'); assert.equal(hint?.kind, 'unresolved'); assert.equal(hint?.severity, 'error');
-  assert.match(hint!.nextCheck, /before interpreting readings/);
+  assert.match(hint!.nextCheck, /fix the first problem.*test again/i);
   result.diagnostics = [];
   assert.equal(getBuildHint({ document, result })?.kind, 'unresolved');
 });

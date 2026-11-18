@@ -7,16 +7,16 @@ are release downloads rather than Git history.
 
 ## Install
 
-1. Download `Irish-Electrical-Lab-1.5.0-Setup.exe` from the project's GitHub release.
-2. Optionally compare its hash with the published `Irish-Electrical-Lab-1.5.0-SHA256.txt`.
+1. Download `Irish-Electrical-Lab-1.6.0-Setup.exe` from the project's GitHub release.
+2. Optionally compare its hash with the published `Irish-Electrical-Lab-1.6.0-SHA256.txt`.
 
    ```powershell
-   Get-FileHash .\Irish-Electrical-Lab-1.5.0-Setup.exe -Algorithm SHA256
+   Get-FileHash .\Irish-Electrical-Lab-1.6.0-Setup.exe -Algorithm SHA256
    ```
 
 3. Run the installer for your Windows account and open **Irish Electrical Lab**
    from the Desktop or Start menu. No separate Node.js runtime is needed.
-4. Close the app window to stop it. Use **My builds → Export full backup** before
+4. Close the app window to stop it. Use **My builds → Files and backups → Export full backup** before
    moving study data to another PC or testing experimental storage changes.
 
 The installer is unsigned; its publisher is not verified by a signing

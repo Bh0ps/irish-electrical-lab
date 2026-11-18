@@ -5,6 +5,15 @@ content, procedural model definitions, Blender assemblies, generated equipment
 models, textures and project documentation. Third-party software retains its
 own license; the project license does not replace those terms.
 
+The site view also includes four Poly Haven assets released under CC0. Windows and the web build include local copies for offline use. [Poly Haven asset license](https://polyhaven.com/license) · [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+
+| Asset | Creator |
+| --- | --- |
+| [Potted Plant 04](https://polyhaven.com/a/potted_plant_04) | James Ray Cock |
+| [White Plaster 02](https://polyhaven.com/a/white_plaster_02) | Rob Tuytel |
+| [Wood Table 001](https://polyhaven.com/a/wood_table_001) | Dimitrios Savva and Rico Cilliers |
+| [Small Empty Room 1](https://polyhaven.com/a/small_empty_room_1) | Sergej Majboroda |
+
 - JavaScript dependencies and their exact resolved versions are recorded in
   `lab/package-lock.json`. `lab/scripts/collect-third-party-notices.mjs` collects
   the exact LICENSE/COPYING/NOTICE files from the installed production graph

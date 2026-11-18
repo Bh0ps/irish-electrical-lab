@@ -21,11 +21,24 @@ export const chapterFor = (id: number) => CHAPTERS.find(chapter => chapter.lesso
 export const nextCourseId = (id: number) => order[order.indexOf(id) + 1];
 export const courseTitle = (lesson: ConfigurationLesson) => COURSE_PAGES[lesson.id]?.title ?? lesson.title;
 
+const searchTerms: Record<string, string> = {
+  lamp: 'light', lamps: 'light', lights: 'light', lighting: 'light', bulb: 'light', bulbs: 'light',
+  leds: 'led', strips: 'strip', switches: 'switch', sockets: 'socket', landings: 'landing',
+  doorbells: 'doorbell', breakers: 'breaker', circuits: 'circuit', motors: 'motor', pumps: 'pump',
+  fuseboard: 'board', fuseboards: 'board', rcds: 'rcd', rcbos: 'rcbo', mcbs: 'mcb',
+};
+function searchWords(text: string) {
+  return text.toLowerCase().replace(/\bdoor[\s-]+bells?\b/g, 'doorbell')
+    .replace(/\b3[\s-]+phase\b/g, 'three phase').split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean).map(word => searchTerms[word] ?? word);
+}
 export function courseMatchesQuery(lesson: ConfigurationLesson, query: string): boolean {
+  if (!query.trim()) return true;
   const page = COURSE_PAGES[lesson.id];
-  const text = [lesson.id, lesson.title, lesson.category, lesson.summary, page?.title, page?.aliases, page?.situation].join(' ').toLowerCase();
-  const words = query.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
-  return words.every(word => text.includes(word));
+  const text = searchWords([lesson.id, lesson.title, lesson.category, lesson.summary, page?.title, page?.aliases, page?.situation, page?.idea].join(' '));
+  const phrase = query.replace(/^\s*how\s+(?:(?:do|can)\s+(?:i|we)|to)\s+(?:wire|connect|build|find)\s+/i, '');
+  const words = searchWords(phrase).filter(word => !['a', 'an', 'the', 'of'].includes(word));
+  return words.length > 0 && words.every(word => text.some(term => term.startsWith(word)));
 }
 
 export function courseBuildWires(lesson: ConfigurationLesson) {
@@ -34,7 +47,7 @@ export function courseBuildWires(lesson: ConfigurationLesson) {
   if (chapter.lessons.indexOf(lesson.id) < Math.ceil(chapter.lessons.length / 2)) return [];
   // A short wiring practical teaches a functional path without removing unrelated
   // supply wiring. The original example supplies the exact endpoints and markings.
-  const load = lesson.circuit.components.find(c => ['led','floatvalve','callchime','cctstrip','lamp','heater','socket','fan','motor','motor3','pump','emergency','valve','chime','boiler','ev','indicator','heatpump'].includes(c.type));
+  const load = lesson.circuit.components.find(c => ['led','floatvalve','callchime','cctstrip','lamp','heater','socket','shaveroutlet','fan','motor','motor3','pump','emergency','valve','chime','boiler','ev','indicator','heatpump'].includes(c.type));
   return (load ? lesson.circuit.wires.filter(w => w.from.component === load.id || w.to.component === load.id) : lesson.circuit.wires).slice(0, 2);
 }
 
@@ -62,17 +75,14 @@ export function getCoursebookActivities(lesson: ConfigurationLesson): LessonActi
     id: `book:${lesson.id}:${id}`, kind: 'inspect', title, instruction, explanation: page.idea,
     competency: 'coursebook', ...extra,
   });
-  const outcome = lesson.id === 7
-    ? 'You opened and closed the switch, then measured the voltage across the lamp.'
-    : `You demonstrated how to ${page.title.charAt(0).toLowerCase()}${page.title.slice(1)}.`;
-  const finish = book('finish', 'Lesson complete', outcome, { bookStep:'finish' });
+  const finish = book('finish', 'Lesson complete', page.outcome, { bookStep:'finish' });
   if (lesson.id === 7) return [
     {...key('operate:sequence:0'),title:page.title,instruction:'Turn the light off.',bookStep:'switch-off'},
     {...key('operate:sequence:1'),title:page.title,instruction:'Turn the light back on.',bookStep:'switch-on'},
     book('contact', 'Inside the wall switch', page.idea, { bookStep:'contact',component:'switch',part:'contacts' }),
     key('predict'),
-    book('meter-demo', 'What does a meter compare?', 'The two probe tips touch the lamp’s connection points, called terminals. A voltage reading compares those two points.', {bookStep:'meter-demo',component:'light'}),
-    {...key('measure:voltage'), instruction:'Choose the two terminals on the lamp for your own voltage reading. Then record it.', independentMeasurement:true},
+    book('meter-demo', 'Read the voltage across the lamp', 'The lamp has two connection points, or terminals. The meter compares the voltage at one probe with the voltage at the other.', {bookStep:'meter-demo',component:'light'}),
+    {...key('measure:voltage'), instruction:'Put one probe on L and the other on N at the lamp. Record your reading.', independentMeasurement:true},
     key('explain'), finish,
   ];
   const missing = new Set(courseBuildWires(lesson).map(w => w.id));

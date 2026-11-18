@@ -15,7 +15,7 @@ open source under the [MIT license](LICENSE).
   and a comparison of live simulated readings.
 - Walk through domestic, shop and industrial installations. Select a device by its drawing reference, follow a wire between terminals, or open it on the workbench.
 - Explore working extra-low-voltage systems including LED strips, bell pushes, DC sensors and isolated relay interfaces. Practise using a fork tester or preparing a connector in optional tool exercises.
-- Inspect **108 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
+- Inspect **109 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
 - Build freely with up to **80 components and 300 wires**, with individual terminal
   connections, undo/redo, selectable wires and editable equipment parameters.
 - Operate switches, timers, contactors, dimmers and motors. Correct guided wires
@@ -86,7 +86,7 @@ safety permission, conveyor holding contacts, a reversing mixer, duty/standby
 pumps, a VFD, staged heating, dimmed lighting and yard services.
 
 Import its [circuit JSON](lab/examples/industrial-plant/industrial-plant.circuit.json)
-through **Sandbox → My builds → Import circuit**, then choose **View → Fit**.
+through **Sandbox → My builds → Files and backups → Import circuit**, then choose **View → Fit**.
 The example guide explains its controls and records its source-solver checks.
 
 ## Educational scope

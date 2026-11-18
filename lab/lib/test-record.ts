@@ -28,3 +28,8 @@ export function validateTestRecord(value:unknown):TestRecord {
   return {version:1,fingerprint:value.fingerprint,recordedAt:Number(value.recordedAt),assessment:{revision:Number(a.revision),circuitId:a.circuitId,passed:a.passed,summary:a.summary,checks}};
 }
 export function testRecordMatches(record:TestRecord,document:CircuitDocument):boolean{return record.assessment.circuitId===document.id&&record.fingerprint===testFingerprint(document);}
+
+/** Older versions could report a pass before the learner had placed any wires. */
+export function obsoleteEmptyPass(record:TestRecord, document:CircuitDocument):boolean {
+  return !document.lessonId && !document.wires.length && record.assessment.passed && testRecordMatches(record,document);
+}

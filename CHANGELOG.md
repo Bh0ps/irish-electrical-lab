@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0 — A closer look at the fitting
+
+- Rewrote the coursebook, predictions, fault clues and worked answers across 80 lessons. Meter tasks name the fitting and terminal at each probe. Help explains trade words in the step where they appear.
+- Rebuilt the backs of the wall switches, lamp holder, ceiling rose, double socket and fused connection unit from manufacturer photographs and drawings. The double socket has a fixed earth link between its two earth entries. The ceiling rose has a separate permanent loop. The shaver lesson now uses a two-pin isolated outlet with its own model and measuring points.
+- Simplified My builds and the test report. An empty circuit now asks for equipment, an unwired circuit offers Connect, and an old empty-bench pass cannot reappear on reload.
+- Updated room finishes, equipment mounting and graphics recovery. The same course, wiring and meter work in the equipment list when 3D is unavailable.
+
 ## 1.5.0 — Follow the installation
 
 - Study 80 configurations in nine chapters. The extra-low-voltage chapter includes LED strips and drivers, two-entrance calls, three-wire proximity sensing, valve control and a mixed AC/DC practical.

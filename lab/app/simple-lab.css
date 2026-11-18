@@ -335,3 +335,14 @@ body:has(.mobile-lab) [data-slot=dialog-content] button { min-height: 44px; }
 
 .pulse-experiment,.elv-reading{display:block;margin:.5rem 0 .75rem;font-variant-numeric:tabular-nums}
 .pulse-experiment label,.pulse-experiment output{display:block}.pulse-experiment input{display:block;width:100%;min-height:44px;accent-color:var(--primary,#216453)}
+
+
+.simple-lab .technical-details .terminal-list button > span:last-child {
+  color: #384f5b;
+  font-size: .875rem;
+  line-height: 1.5;
+}
+.simple-lab .technical-details h3 {
+  margin-block: 1rem .5rem;
+  font: 650 1rem/1.35 system-ui, sans-serif;
+}

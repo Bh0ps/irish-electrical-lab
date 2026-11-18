@@ -1,6 +1,6 @@
 import manifest from '../public/models/manifest.json';
 import referenceMap from '../../authoring/blender/reference-map.json';
-import { equipmentVariant } from './terminal-layout';
+import { equipmentVariant,getComponentTerminals } from './terminal-layout';
 import type { ComponentDefinition, ComponentInstance } from './types';
 import { publicAssetUrl } from '../web/asset-url';
 import { workshopKey } from './workshop-variants';
@@ -26,7 +26,22 @@ export const EQUIPMENT_ASSETS = new Map(manifest.map(entry => [entry.galleryKey,
   lowUrl: publicAssetUrl(entry.lowUrl),
   thumbnailUrl: publicAssetUrl(entry.thumbnailUrl),
 }]));
-export function equipmentAsset(component:ComponentInstance,definition:ComponentDefinition){return EQUIPMENT_ASSETS.get(equipmentAssetKey(component,definition));}
+export function equipmentAsset(component:ComponentInstance,definition:ComponentDefinition){
+  const selected=EQUIPMENT_ASSETS.get(equipmentAssetKey(component,definition));
+  if(selected)return selected;
+  // A learner can give a switch any name (including “Start”). If legacy
+  // label matching names a nonexistent variant, use its type's named model
+  // only when every electrical mouth still occupies the exact same point.
+  const candidate=EQUIPMENT_ASSETS.get(equipmentAssetKey({...component,label:definition.name},definition));
+  if(!candidate)return undefined;
+  const terminals=getComponentTerminals(component,definition);
+  const sameLayout=candidate.terminals.length===terminals.length && terminals.every(t=>{
+    const found=candidate.terminals.find(other=>other.id===t.id);
+    return found && t.anchor.every((n,i)=>Math.abs(n-found.anchor[i])<1e-5)
+      && t.entryDirection?.every((n,i)=>Math.abs(n-found.entryDirection[i])<1e-5);
+  });
+  return sameLayout?candidate:undefined;
+}
 
 /** The source lists describe representative architecture. Equipment drawings,
  * mounting and actual circuit ratings continue to vary between products. */
@@ -36,6 +51,6 @@ export function equipmentReferences(component:ComponentInstance,definition:Compo
   if(component.type==='spd')ids=['schneider-spd'];
   if(component.type==='plug3'||component.type==='socket3')ids=['mennekes-plug','mennekes-contacts'];
   if(component.type==='socket'||component.type==='plug'||component.type==='fcu')ids=['mk-accessory'];
-  ids=(referenceMap.variantSources as Record<string,string[]>)[equipmentAssetKey(component,definition)]??ids;
+  ids=(referenceMap.variantSources as Record<string,string[]>)[equipmentAsset(component,definition)?.galleryKey??equipmentAssetKey(component,definition)]??ids;
   return ids.flatMap(id=>referenceMap.sources.filter(source=>source.id===id));
 }
