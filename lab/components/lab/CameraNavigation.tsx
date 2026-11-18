@@ -4,7 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { COMPONENTS } from '../../lib/components';
 import { getComponentTerminals } from '../../lib/terminal-layout';
-import { sceneBounds, selectedPartBounds } from '../../lib/workbench-presentation';
+import { sceneBounds, selectedPartBounds, snapWorkbenchPoint } from '../../lib/workbench-presentation';
 import {
   cameraFarPlane, cameraHasMotion, cameraLookQuaternion, createCameraNavigationState, createCameraTransition,
   DEFAULT_CAMERA_SPEED, queueCameraGesture, sampleCameraTransition, stepCameraNavigation, stopCameraNavigation,
@@ -12,12 +12,16 @@ import {
 } from '../../lib/camera-navigation';
 import type { CircuitRoutes } from '../../lib/routing';
 import type { CircuitDocument, Vec3 } from '../../lib/types';
+import { WorkbenchTouch, type WorkbenchTouchAction } from '../../lib/workbench-touch';
 
 export interface CameraNavigationProps {
   document:CircuitDocument; routing:CircuitRoutes; routingPending:boolean;
   selected?:string; selectedPart?:string; cameraCommand:{id:number;action:string};
   dragging:boolean; nodes:Map<string,THREE.Group>; mode?:CameraMode; speed?:number;
   tool:'select'|'place'|'wire'|'inspect'|'meter';
+  touchMove?:boolean;
+  onTouchMovePreview?:(preview?:{id:string;position:Vec3})=>void;
+  onTouchMoveCommit?:(id:string,position:Vec3)=>void;
 }
 const navigationKeys=new Set(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','ArrowUp','ArrowDown','ShiftLeft','ShiftRight']);
 const hasOpenModal=()=>!!document.querySelector('[role="dialog"]:not([data-state="closed"]),[role="alertdialog"]:not([data-state="closed"])');
@@ -47,35 +51,155 @@ export default function CameraNavigation(props:CameraNavigationProps) {
   const {camera,gl,invalidate,scene,get}=useThree(),latest=useRef(props),keys=useRef(new Set<string>()),gesture=useRef<{pointer:number;kind:'look'|'pan';x:number;y:number}|null>(null),transition=useRef<CameraTransition|null>(null),lastCommand=useRef(-1),lastFrame=useRef(0),modalOpen=useRef(false);
   const clippingBounds=useMemo(()=>{const box=sceneBounds(props.document,props.routing.routes);return {min:box.min.toArray() as Vec3,max:box.max.toArray() as Vec3};},[props.document,props.routing.routes]),clipping=useRef(clippingBounds);
   const navigation=useRef(createCameraNavigationState({position:camera.position.toArray() as Vec3,quaternion:camera.quaternion.toArray() as CameraQuaternion,target:new THREE.Vector3(0,0,-Math.max(1,camera.position.length())).applyQuaternion(camera.quaternion).add(camera.position).toArray() as Vec3}));
+  const cancelTouch = useRef<() => void>(() => {});
+  const touchNavigation = useRef(false);
   useLayoutEffect(()=>{latest.current=props;},[props]);
   useLayoutEffect(()=>{clipping.current=clippingBounds;},[clippingBounds]);
   useEffect(()=>{invalidate();},[props.cameraCommand,props.routingPending,invalidate]);
+  useEffect(() => { cancelTouch.current(); }, [props.document.id, props.tool, props.touchMove, props.selected, props.cameraCommand]);
   useLayoutEffect(()=>{
-    keys.current.clear();gesture.current=null;navigation.current=stopCameraNavigation(navigation.current);lastFrame.current=0;
+    keys.current.clear();gesture.current=null;touchNavigation.current=false;navigation.current=stopCameraNavigation(navigation.current);lastFrame.current=0;
     if(props.dragging)transition.current=null;
     invalidate();
   },[props.mode,props.dragging,invalidate]);
   useEffect(()=>{
     const canvas=gl.domElement,previousTabIndex=canvas.getAttribute('tabindex'),previousLabel=canvas.getAttribute('aria-label'),previousTouchAction=canvas.style.touchAction;
-    canvas.setAttribute('tabindex','0');canvas.setAttribute('aria-label','3D electrical workbench. Free camera: W A S D move, Q and E lower and raise, hold Shift to move faster. Right drag looks, middle drag pans.');canvas.style.setProperty('touch-action','none');
-    const clear=()=>{keys.current.clear();gesture.current=null;navigation.current=stopCameraNavigation(navigation.current);lastFrame.current=0;invalidate();};
+    canvas.setAttribute('tabindex','0');canvas.setAttribute('aria-label','3D electrical workbench. Tap to pick. Drag to orbit, pinch to zoom, or drag with two fingers to pan. Free camera: W A S D move, Q and E lower and raise.');canvas.style.setProperty('touch-action','none');
+    const touch = new WorkbenchTouch();
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const ray = new THREE.Raycaster();
+    let equipmentMove: { id: string; start: Vec3; offset: THREE.Vector3 } | undefined;
+    let lastTouch: { x: number; y: number; time: number } | undefined;
+    const clearMove = () => {
+      if (!equipmentMove) return;
+      equipmentMove = undefined;
+      latest.current.onTouchMovePreview?.();
+    };
+    cancelTouch.current = () => { touch.reset(); clearMove(); };
+    const clear=()=>{cancelTouch.current();keys.current.clear();gesture.current=null;touchNavigation.current=false;navigation.current=stopCameraNavigation(navigation.current);lastFrame.current=0;invalidate();};
     const wake=()=>{if(!transition.current&&!cameraHasMotion(navigation.current,heldInput(keys.current)))lastFrame.current=0;};
     const canNavigate=()=>!latest.current.dragging&&!document.hidden&&!hasOpenModal();
     const observeModal=()=>{const open=hasOpenModal();if(open&&!modalOpen.current){transition.current=null;clear();}modalOpen.current=open;};
     const modalObserver=new MutationObserver(observeModal);modalObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['role','data-state']});observeModal();
-    const isEquipmentHit=(event:PointerEvent)=>{
-      const rect=canvas.getBoundingClientRect(),ray=new THREE.Raycaster();camera.updateMatrixWorld(true);scene.updateMatrixWorld(true);
+    const setRay=(event:PointerEvent)=>{
+      const rect=canvas.getBoundingClientRect();
+      camera.updateMatrixWorld(true);
       ray.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/Math.max(1,rect.width)*2-1,1-(event.clientY-rect.top)/Math.max(1,rect.height)*2),camera);
+    };
+    const isEquipmentHit=(event:PointerEvent)=>{
+      setRay(event);scene.updateMatrixWorld(true);
       const hit=ray.intersectObjects(get().internal.interaction,true)[0];let owner:THREE.Object3D|undefined=hit?.object;
       while(owner){if(owner.userData.partId||owner.userData.terminalId||owner.userData.wireId)return true;owner=owner.parent??undefined;}
       return false;
+    };
+    const pickEquipmentToMove = (event: PointerEvent) => {
+      const current = latest.current;
+      if (!current.touchMove || current.tool !== 'select' || !current.selected) return;
+      const component = current.document.components.find(item => item.id === current.selected);
+      const selectedNode = component && current.nodes.get(component.id);
+      if (!component || !selectedNode) return;
+      setRay(event);
+      scene.updateMatrixWorld(true);
+      const hit = ray.intersectObjects(get().internal.interaction, true).find(candidate => {
+        for (let object: THREE.Object3D | null = candidate.object; object; object = object.parent) {
+          if (!object.visible) return false;
+        }
+        return true;
+      });
+      for (let object = hit?.object; object; object = object.parent ?? undefined) {
+        if (object.userData.partId === 'actuator' || object.userData.terminalId || object.userData.wireId) return;
+        if (object === selectedNode) {
+          const point = ray.ray.intersectPlane(plane, new THREE.Vector3());
+          if (point) equipmentMove = { id: component.id, start: component.position, offset: point.sub(new THREE.Vector3(...component.position)) };
+          return;
+        }
+      }
+    };
+    const touchAction = (event: PointerEvent, action?: WorkbenchTouchAction) => {
+      if (!action) return;
+      if (action.kind === 'cancel-move') { clearMove(); return; }
+      if (action.kind === 'tap') {
+        clearMove();
+        const bounds = canvas.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
+        // Only release-confirmed taps reach the usual Three.js hit handlers. The
+        // compatibility click from Safari is suppressed, so a relay flips once.
+        const handlers = get().events.handlers;
+        handlers?.onPointerDown(event);
+        handlers?.onPointerUp(event);
+        handlers?.onClick(event);
+        return;
+      }
+      if (action.kind === 'preview-move' || action.kind === 'commit-move') {
+        const moving = equipmentMove;
+        if (!moving) return;
+        setRay(event);
+        const point = ray.ray.intersectPlane(plane, new THREE.Vector3());
+        const position = point ? snapWorkbenchPoint(point.sub(moving.offset).toArray() as Vec3) : undefined;
+        if (action.kind === 'preview-move') {
+          if (position) latest.current.onTouchMovePreview?.({ id: moving.id, position });
+        } else {
+          clearMove();
+          if (position && moving.start.some((value, index) => value !== position[index])) latest.current.onTouchMoveCommit?.(moving.id, position);
+        }
+        return;
+      }
+      wake();
+      touchNavigation.current = true;
+      transition.current = null;
+      navigation.current = queueCameraGesture(navigation.current, action.kind === 'orbit'
+        ? { look: [action.dx * .006, action.dy * .006] }
+        : { pan: [action.dx, action.dy], wheel: THREE.MathUtils.clamp(-Math.log(action.scale) / .0015, -300, 300) });
+      invalidate();
+    };
+    const captureTouch = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch' && !touch.has(event.pointerId)) {
+        if (event.type === 'pointerdown') lastTouch = undefined;
+        return;
+      }
+      const sample = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      lastTouch = { x: sample.x, y: sample.y, time: performance.now() };
+      event.stopImmediatePropagation();
+      if (event.cancelable) event.preventDefault();
+      if (event.type === 'pointercancel' || event.type === 'lostpointercapture') {
+        if (touch.has(sample.id)) cancelTouch.current();
+        return;
+      }
+      if (!canNavigate()) { cancelTouch.current(); return; }
+      if (event.type === 'pointerdown') {
+        if (!touch.active) {
+          keys.current.clear();
+          gesture.current = null;
+          transition.current = null;
+          navigation.current = stopCameraNavigation(navigation.current);
+          pickEquipmentToMove(event);
+        }
+        try { canvas.setPointerCapture(event.pointerId); } catch { /* Cancelled touch or an inactive pointer. */ }
+        touchAction(event, touch.begin(sample, !!equipmentMove));
+      } else if (event.type === 'pointermove') touchAction(event, touch.update(sample));
+      else touchAction(event, touch.end(sample));
+    };
+    const touchClick = (event: MouseEvent) => {
+      const input = event as PointerEvent & { sourceCapabilities?: { firesTouchEvents?: boolean } };
+      const recentTouch = lastTouch && performance.now() - lastTouch.time < 800
+        && Math.hypot(event.clientX - lastTouch.x, event.clientY - lastTouch.y) < 24;
+      if (input.pointerType === 'touch' || input.sourceCapabilities?.firesTouchEvents || recentTouch) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+    const useMouseOrKeyboard = () => {
+      if (!touchNavigation.current) return;
+      touchNavigation.current = false;
+      navigation.current = stopCameraNavigation(navigation.current);
+      lastFrame.current = 0;
     };
     const pointerDown=(event:PointerEvent)=>{
       if(!canNavigate()||event.ctrlKey||event.metaKey||event.altKey)return;
       canvas.focus({preventScroll:true});const current=latest.current,mode=current.mode??'orbit';
       if(event.button===0&&(mode==='free'||!['select','inspect'].includes(current.tool)||isEquipmentHit(event)))return;
       if(![0,1,2].includes(event.button))return;
-      event.preventDefault();wake();transition.current=null;gesture.current={pointer:event.pointerId,kind:mode==='free'&&event.button===2||mode==='orbit'&&event.button===0?'look':'pan',x:event.clientX,y:event.clientY};
+      event.preventDefault();useMouseOrKeyboard();wake();transition.current=null;gesture.current={pointer:event.pointerId,kind:mode==='free'&&event.button===2||mode==='orbit'&&event.button===0?'look':'pan',x:event.clientX,y:event.clientY};
       canvas.setPointerCapture(event.pointerId);invalidate();
     };
     const pointerMove=(event:PointerEvent)=>{
@@ -86,19 +210,33 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     const pointerUp=(event:PointerEvent)=>{if(gesture.current?.pointer!==event.pointerId)return;gesture.current=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);};
     const wheel=(event:WheelEvent)=>{
       if(!canNavigate()||event.ctrlKey||event.metaKey)return;
-      event.preventDefault();wake();transition.current=null;const pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?Math.max(1,canvas.clientHeight):1);
+      event.preventDefault();useMouseOrKeyboard();wake();transition.current=null;const pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?Math.max(1,canvas.clientHeight):1);
       navigation.current=queueCameraGesture(navigation.current,{wheel:THREE.MathUtils.clamp(pixels,-1500,1500)});invalidate();
     };
     const keyDown=(event:KeyboardEvent)=>{
       if(event.target!==canvas||document.activeElement!==canvas||!canNavigate()||(latest.current.mode??'orbit')!=='free'||event.ctrlKey||event.metaKey||event.altKey||!navigationKeys.has(event.code))return;
-      event.preventDefault();event.stopPropagation();wake();keys.current.add(event.code);transition.current=null;invalidate();
+      event.preventDefault();event.stopPropagation();useMouseOrKeyboard();wake();keys.current.add(event.code);transition.current=null;invalidate();
     };
     const keyUp=(event:KeyboardEvent)=>{if(!keys.current.has(event.code))return;keys.current.delete(event.code);event.preventDefault();event.stopPropagation();invalidate();};
     const contextMenu=(event:MouseEvent)=>event.preventDefault();
     const visibility=()=>{if(document.hidden)clear();};
+    const touchEvents = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture'] as const;
+    for (const name of touchEvents) canvas.addEventListener(name, captureTouch, { capture: true, passive: false });
+    canvas.addEventListener('click', touchClick, true);
+    canvas.addEventListener('dblclick', touchClick, true);
+    canvas.addEventListener('contextmenu', touchClick, true);
+    canvas.addEventListener('webglcontextlost', clear);
+    window.addEventListener('orientationchange', clear);
     canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointermove',pointerMove);canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',pointerUp);canvas.addEventListener('lostpointercapture',pointerUp);canvas.addEventListener('wheel',wheel,{passive:false});canvas.addEventListener('keydown',keyDown);canvas.addEventListener('keyup',keyUp);canvas.addEventListener('blur',clear);canvas.addEventListener('contextmenu',contextMenu);window.addEventListener('blur',clear);document.addEventListener('visibilitychange',visibility);
     return()=>{
       canvas.removeEventListener('pointerdown',pointerDown);canvas.removeEventListener('pointermove',pointerMove);canvas.removeEventListener('pointerup',pointerUp);canvas.removeEventListener('pointercancel',pointerUp);canvas.removeEventListener('lostpointercapture',pointerUp);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('keydown',keyDown);canvas.removeEventListener('keyup',keyUp);canvas.removeEventListener('blur',clear);canvas.removeEventListener('contextmenu',contextMenu);window.removeEventListener('blur',clear);document.removeEventListener('visibilitychange',visibility);
+      for (const name of touchEvents) canvas.removeEventListener(name, captureTouch, true);
+      canvas.removeEventListener('click', touchClick, true);
+      canvas.removeEventListener('dblclick', touchClick, true);
+      canvas.removeEventListener('contextmenu', touchClick, true);
+      canvas.removeEventListener('webglcontextlost', clear);
+      window.removeEventListener('orientationchange', clear);
+      cancelTouch.current = () => {};
       modalObserver.disconnect();
       if(previousTabIndex===null)canvas.removeAttribute('tabindex');else canvas.setAttribute('tabindex',previousTabIndex);
       if(previousLabel===null)canvas.removeAttribute('aria-label');else canvas.setAttribute('aria-label',previousLabel);canvas.style.setProperty('touch-action',previousTouchAction);
@@ -128,7 +266,7 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     if(transition.current){
       transition.current.elapsed+=Math.min(dt,.1);navigation.current=createCameraNavigationState(sampleCameraTransition(transition.current,transition.current.elapsed));
       if(transition.current.elapsed>=transition.current.duration)transition.current=null;
-    } else navigation.current=stepCameraNavigation(navigation.current,current.mode??'orbit',heldInput(keys.current),dt,{height:gl.domElement.clientHeight,fov:(camera as THREE.PerspectiveCamera).fov??43},current.speed??DEFAULT_CAMERA_SPEED);
+    } else navigation.current=stepCameraNavigation(navigation.current,touchNavigation.current?'orbit':current.mode??'orbit',heldInput(keys.current),dt,{height:gl.domElement.clientHeight,fov:(camera as THREE.PerspectiveCamera).fov??43},current.speed??DEFAULT_CAMERA_SPEED);
     const next=navigation.current;frameCamera.position.set(...next.position);frameCamera.quaternion.set(...next.quaternion);frameCamera.updateMatrixWorld();
     // Imported workbenches may be much larger than the default lesson room.
     if(frameCamera instanceof THREE.PerspectiveCamera){const far=cameraFarPlane(next.position,clipping.current);if(Math.abs(far-frameCamera.far)>.1){frameCamera.far=far;frameCamera.updateProjectionMatrix();}}

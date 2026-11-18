@@ -6,11 +6,100 @@ import { equipmentAsset } from './equipment-assets';
 import { animateBlenderModel, prepareBlenderModel, presentBlenderModel, semanticOwner } from './blender-model';
 import type { EquipmentProps } from './Equipment';
 
-const assets=new Map<string,Promise<THREE.Group>>();
-function loadAsset(url:string):Promise<THREE.Group>{
-  let pending=assets.get(url);
-  if(!pending){pending=new GLTFLoader().loadAsync(url).then(gltf=>gltf.scene);assets.set(url,pending);}
-  return pending;
+interface CachedAsset {
+  pending: Promise<THREE.Group>;
+  source?: THREE.Group;
+  users: number;
+}
+
+const assets = new Map<string, CachedAsset>();
+const MAX_IDLE_ASSETS = 12;
+
+function trimIdleAssets() {
+  const idle = Array.from(assets.entries()).filter(([, entry]) => entry.users === 0 && entry.source);
+  for (const [url, entry] of idle.slice(0, Math.max(0, idle.length - MAX_IDLE_ASSETS))) {
+    const geometry = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    const textures = new Set<THREE.Texture>();
+    entry.source?.traverse(node => {
+      if (!(node instanceof THREE.Mesh)) return;
+      geometry.add(node.geometry);
+      const surfaces = Array.isArray(node.material) ? node.material : [node.material];
+      for (const material of surfaces) {
+        materials.add(material);
+        for (const value of Object.values(material)) if (value instanceof THREE.Texture) textures.add(value);
+      }
+    });
+    for (const item of geometry) item.dispose();
+    for (const item of materials) item.dispose();
+    for (const item of textures) item.dispose();
+    assets.delete(url);
+  }
+}
+
+function acquireAsset(url: string): CachedAsset {
+  let entry = assets.get(url);
+  if (!entry) {
+    const asset: CachedAsset = {
+      users: 0,
+      pending: new GLTFLoader().loadAsync(url).then(gltf => {
+        asset.source = gltf.scene;
+        trimIdleAssets();
+        return gltf.scene;
+      }).catch(error => {
+        if (assets.get(url) === asset) assets.delete(url);
+        throw error;
+      }),
+    };
+    entry = asset;
+  }
+  // Retain recently used objects and keep every asset which still has a consumer.
+  entry.users++;
+  assets.delete(url);
+  assets.set(url, entry);
+  return entry;
+}
+
+function useBlenderAsset(url?: string) {
+  const { invalidate } = useThree();
+  const [, refresh] = useState(0);
+  const [failedUrl, setFailedUrl] = useState<string>();
+  useEffect(() => {
+    if (!url) return;
+    let active = true;
+    let entry: CachedAsset;
+    const release = () => {
+      entry.users--;
+      trimIdleAssets();
+    };
+    const request = () => {
+      entry = acquireAsset(url);
+      entry.pending.then(() => {
+        if (active) {
+          refresh(value => value + 1);
+          invalidate();
+        }
+      }).catch(() => {
+        if (active) {
+          setFailedUrl(url);
+          invalidate();
+          window.addEventListener('online', retry, { once: true });
+        }
+      });
+    };
+    const retry = () => {
+      release();
+      request();
+    };
+    request();
+    return () => {
+      active = false;
+      window.removeEventListener('online', retry);
+      release();
+    };
+  }, [url, invalidate]);
+  const source = url ? assets.get(url)?.source : undefined;
+  return source ? { url: url!, source } : url && failedUrl === url ? { url, failed: true } : undefined;
 }
 function DisplayText({node,reading}:{node:THREE.Object3D;reading:string}){
   const map=useMemo(()=>{
@@ -32,17 +121,20 @@ function DisplayText({node,reading}:{node:THREE.Object3D;reading:string}){
 }
 
 export function BlenderEquipment(props:EquipmentProps&{fallback:React.ReactNode}){
-  const entry=equipmentAsset(props.component,props.definition),[loaded,setLoaded]=useState<{key:string;url:string;source:THREE.Group}>(),[far,setFar]=useState(false),{invalidate}=useThree();
-  const low=!!props.lowDetail||far,lowUrl=(entry as typeof entry&{lowUrl?:string})?.lowUrl,url=entry&&(low&&!props.selected&&lowUrl?lowUrl:entry.url);
-  useEffect(()=>{
-    if(!entry||!url)return;let cancelled=false;
-    loadAsset(url).then(source=>{if(!cancelled){setLoaded({key:entry.galleryKey,url,source});invalidate();}}).catch(error=>{if(!cancelled)window.dispatchEvent(new CustomEvent('electrical-lab-model-error',{detail:{asset:entry.galleryKey,message:String(error)}}));});
-    return()=>{cancelled=true;};
-  },[entry,url,invalidate]);
-  const presentation=useMemo(()=>loaded&&entry?.galleryKey===loaded.key?prepareBlenderModel(loaded.source):undefined,[loaded,entry]);
+  const entry=equipmentAsset(props.component,props.definition),[far,setFar]=useState(false),{invalidate}=useThree();
+  const lowUrl=entry?.lowUrl;
+  const lowOnly=!!lowUrl&&(props.preferLowAsset?!!props.lowDetail:!props.selected&&(!!props.lowDetail||far));
+  const full=useBlenderAsset(lowOnly?undefined:entry?.url);
+  const low=useBlenderAsset(lowOnly||props.preferLowAsset||full?.failed?lowUrl:undefined);
+  const loaded=full?.source?full:low;
+  const source=loaded?.source;
+  const presentation=useMemo(()=>source?prepareBlenderModel(source):undefined,[source]);
   useEffect(()=>()=>presentation?.owned.forEach(material=>material.dispose()),[presentation]);
   useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state);invalidate();}},[presentation,props.view,props.component,props.state,invalidate]);
-  useFrame(({camera},dt)=>{if(presentation){const distance=camera.position.distanceTo(presentation.scene.getWorldPosition(new THREE.Vector3())),next=distance>13;if(next!==far)setFar(next);if(props.animate!==false&&animateBlenderModel(presentation,props.component,props.state,dt))invalidate();}});
+  useFrame(({camera},dt)=>{if(presentation){
+    if(!props.preferLowAsset&&!props.selected&&!props.lowDetail){const distance=camera.position.distanceTo(presentation.scene.getWorldPosition(new THREE.Vector3())),next=distance>(far?12:14);if(next!==far)setFar(next);}
+    if(props.animate!==false&&animateBlenderModel(presentation,props.component,props.state,dt))invalidate();
+  }});
   if(!entry||!presentation)return props.fallback;
   const pick=(event:ThreeEvent<MouseEvent>)=>{
     const owner=semanticOwner(event.object);event.stopPropagation();

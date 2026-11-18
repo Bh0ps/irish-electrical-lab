@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 — iPhone and Quick practice
+
+- Add an iPhone Home Screen app with a compact 3D workbench, touch camera and
+  controls, searchable terminals, and a download for offline use.
+- Compare live simulator readings in six short Quick practice experiments.
+  Existing courses retain their stages, checks and progress.
+- Use full study backups to move drafts, builds and progress between devices.
+
 ## 1.2.1 — public source release
 
 - Correct guided connections automatically verify and advance one activity.

@@ -194,3 +194,88 @@
   .simple-lab .toolbar-spacer { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .testing-pulse { animation: none; } }
+
+.phone-sheet-heading, .phone-view-actions { display: none; }
+.point-picker { display: grid; gap: 8px; margin: 8px 0; }
+.point-list { display: grid; gap: 4px; max-height: 14rem; overflow: auto; overscroll-behavior: contain; }
+.point-list button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid #d5e0e7; border-radius: 6px; background: white; color: #25485c; text-align: left; }
+.point-list button[aria-expanded=true], .point-list button[aria-pressed=true] { background: #fff2d6; border-color: #caa970; }
+.point-list button > span { font-size: 12px; color: #526c80; }
+.point-list [aria-expanded] { justify-content: space-between; }
+.point-list-terminals { display: grid; gap: 4px; padding: 4px 0 4px 12px; }
+.quick-practice-entry { width: 100%; justify-content: flex-start; }
+.practice-comparison { width: 100%; margin: 12px 0; border-collapse: collapse; text-align: left; font-size: 12px; font-variant-numeric: tabular-nums; }
+.practice-comparison th, .practice-comparison td { padding: 8px 5px; border-bottom: 1px solid #dce5ed; }
+.practice-comparison thead { color: #536d81; }
+.offline-settings { padding: 9px 12px; border: 1px solid #d5e3ec; border-radius: 8px; background: #f4f8fb; }
+.offline-settings progress { width: 100%; accent-color: #367963; }
+
+.mobile-lab { height: var(--lab-visible-height, 100dvh); min-height: 0; overflow: hidden; }
+.mobile-lab .app-header { min-height: 0; height: auto; flex-wrap: nowrap; gap: 4px; padding: max(4px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) 4px max(7px, env(safe-area-inset-left)); }
+.mobile-lab .brand { margin-right: auto; min-width: 0; }
+.mobile-lab .brand > div { display: none; }
+.mobile-lab .brand-icon { display: grid; width: 29px; height: 34px; }
+.mobile-lab .brand-icon > svg { width: 17px; }
+.mobile-lab .simple-navigation { padding: 1px; gap: 0; }
+.mobile-lab .simple-navigation button { min-width: 0; min-height: 44px; gap: 4px; padding: 0 8px; font-size: 12px; }
+.mobile-lab .simple-navigation svg { display: none; }
+.mobile-lab .header-right { display: flex; gap: 2px; }
+.mobile-lab .header-right button { width: 44px; height: 44px; padding: 0; border-color: transparent; }
+.mobile-lab .header-action-name { display: none; }
+.mobile-lab .simple-workspace { grid-template: minmax(0, 1fr) auto / minmax(0, 1fr); min-height: 0; }
+.mobile-lab .work-area { min-height: 0; padding: 6px max(7px, env(safe-area-inset-right)) 4px max(7px, env(safe-area-inset-left)); gap: 5px; }
+.mobile-lab .workspace-heading { min-height: 44px; align-items: center; gap: 6px; flex: none; }
+.mobile-lab .workspace-heading h1 { font-size: 16px; overflow-wrap: anywhere; }
+.mobile-lab .workspace-heading .eyebrow { display: none; }
+.mobile-lab .heading-actions { gap: 5px; }
+.mobile-lab .simple-supply { min-height: 44px; justify-content: center; padding-inline: 3px; }
+.mobile-lab .test-circuit-button { min-width: 0; min-height: 44px; padding: 0 7px; font-size: 11px !important; }
+.mobile-lab .test-circuit-button > svg { display: none; }
+.phone-task { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; min-height: 44px; padding: 6px 8px; border: 1px solid #d9c69d; border-radius: 7px; background: #fff6e3; color: #3e5261; text-align: left; font-size: 12px; }
+.phone-task b { display: block; color: #5c4524; }
+.phone-task > span:first-child > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.phone-task > span:last-child { color: #5c4524; font-weight: 650; }
+.mobile-lab .canvas-wrap { border-radius: 8px; min-height: 0; }
+.mobile-lab .toolbar { flex-wrap: nowrap; height: 52px; padding: 2px; gap: 0; }
+.mobile-lab .toolbar > button { flex: 1; flex-direction: column; justify-content: center; gap: 2px !important; min-height: 44px; min-width: 44px; padding: 2px !important; font-size: 10px !important; }
+.mobile-lab .toolbar .desktop-bench-action, .mobile-lab .toolbar .toolbar-divider, .mobile-lab .toolbar .toolbar-spacer { display: none; }
+.desktop-bench-action { display: inline-flex; }
+.mobile-lab .canvas-top-label { top: 57px; left: 6px; font-size: 10px; }
+.mobile-lab .canvas-top-label .scene-caption { display: none; }
+.mobile-lab .canvas-bottom { inset: auto 6px 6px; font-size: 10px; text-shadow: none; }
+.mobile-lab .canvas-bottom span:first-child { display: block; font-size: 10px; }
+.mobile-lab .placement-caption { top: 78px; left: 6px; right: 6px; justify-content: space-between; padding: 1px 6px; }
+.mobile-lab .bench-status { flex: none; gap: 5px; font-size: 11px; }
+.mobile-lab .bench-status button { min-height: 32px; }
+.mobile-lab .bench-status .attached-lesson { display: none; }
+.mobile-lab .bench-status details[open] > span { width: min(285px, 74vw); right: 0; left: auto; z-index: 10; }
+.mobile-lab .wiring-hint { padding: 5px 7px; max-height: 85px; overflow: auto; }
+.mobile-lab .wiring-hint small { display: none; }
+.mobile-lab .learn-column, .mobile-lab .context-drawer { max-height: min(43dvh, calc(var(--lab-visible-height, 100dvh) * .44)); border: 1px solid #c5d4df; border-radius: 15px 15px 0 0; box-shadow: 0 -5px 18px #1c354616; }
+.mobile-lab .learn-column { padding: 0 max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left)); }
+.mobile-lab [data-sheet-open=false] { visibility: hidden; grid-row: 2; height: 0; padding: 0; margin: 0; border: 0; overflow: hidden; }
+.mobile-lab .phone-sheet-heading { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 4; background: white; min-height: 44px; border-bottom: 1px solid #ecf1f4; }
+.mobile-lab .lesson-heading { display: none; }
+.mobile-lab .lesson-stage-nav { margin: 7px 0 10px; }
+.mobile-lab .lesson-stage-button { min-width: 44px; padding: 5px; }
+.mobile-lab .task-instruction { position: static; padding: 0; }
+.mobile-lab .task-support-actions { flex-wrap: wrap; justify-content: flex-start; }
+.mobile-lab .learn-column button, .mobile-lab .context-drawer button, .mobile-lab .simple-view-menu button, .mobile-lab .placement-caption button { min-height: 44px; }
+.mobile-lab .context-drawer > .context-heading { padding: 2px max(12px, env(safe-area-inset-right)) 2px max(12px, env(safe-area-inset-left)); }
+.mobile-lab .context-content { padding: 10px max(12px, env(safe-area-inset-right)) 11px max(12px, env(safe-area-inset-left)); }
+.mobile-lab .context-content .choice, .mobile-lab .lesson-context .choice { min-height: 44px; }
+.mobile-lab input:not([type=range]), body:has(.mobile-lab) [data-slot=dialog-content] input:not([type=range]) { font-size: 16px !important; }
+.mobile-lab .app-footer { min-height: 20px; height: auto; padding: 2px max(7px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-left)); }
+.mobile-lab .app-footer > span:first-child { display: none; }
+.mobile-lab .notice { width: min(370px, 93vw); bottom: calc(env(safe-area-inset-bottom) + 25px); padding: 7px 10px; }
+.mobile-lab .notice button { min-width: 44px; min-height: 44px; }
+.mobile-lab .phone-view-actions { display: flex; }
+body:has(.mobile-lab) [data-slot=dialog-content] { top: calc(var(--lab-visible-top, 0px) + var(--lab-visible-height, 100dvh) / 2); width: calc(100% - max(24px, env(safe-area-inset-left) + env(safe-area-inset-right))); max-height: min(85dvh, calc(var(--lab-visible-height, 100dvh) - 24px)); overflow: auto; padding: 14px; }
+body:has(.mobile-lab) [data-slot=dialog-content] button { min-height: 44px; }
+@media (orientation: landscape) {
+  .mobile-lab .simple-workspace:has(> [data-sheet-open=true]) { grid-template: minmax(0, 1fr) / minmax(0, 1fr) minmax(250px, 40%); }
+  .mobile-lab .learn-column, .mobile-lab .context-drawer { max-height: none; border-radius: 9px 0 0 0; }
+  .mobile-lab .bench-status, .mobile-lab .app-footer { display: none; }
+  .mobile-lab .workspace-heading { min-height: 36px; }
+  .mobile-lab .work-area, .mobile-lab .learn-column, .mobile-lab .context-content { padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+}
