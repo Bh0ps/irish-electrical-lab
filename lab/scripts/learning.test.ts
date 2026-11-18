@@ -11,7 +11,7 @@ import type { CircuitDocument } from '../lib/types.ts';
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!;
 const copy=(id=7)=>structuredClone(lesson(id).circuit);
 const failed=(checks:ReturnType<typeof runLessonScenarios>)=>checks.filter(c=>c.status!=='pass');
-test('all 64 authored operating sequences pass at requested and nominal supplies without mutating graphs or states',()=>{
+test('all 80 authored operating sequences pass at requested and nominal supplies without mutating graphs or states',()=>{
   const failures:unknown[]=[];
   for(const l of LESSONS)for(const voltage of l.circuit.supply.phase==='single'?[230,240]:[400]){
     const doc=copy(l.id);doc.supply.voltage=voltage;const result=simulate(doc),before=structuredClone(doc),states=structuredClone(result.deviceStates);
@@ -23,12 +23,12 @@ test('all 64 authored operating sequences pass at requested and nominal supplies
   assert.deepEqual(failures,[]);
 });
 test('every activity is unique and references real equipment, physical parts and terminals',()=>{
-  for(const l of LESSONS){const activities=getLessonActivities(l);assert.equal(new Set(activities.map(a=>a.id)).size,activities.length);for(const a of activities){assert.ok(a.competency);if(a.component){const c=l.circuit.components.find(c=>c.id===a.component);assert.ok(c,`${l.id}:${a.id}`);if(a.part)assert.ok(COMPONENTS[c.type].parts.some(p=>p.id===a.part));}for(const e of a.endpoints??[]){const c=l.circuit.components.find(c=>c.id===e.component)!;assert.ok(COMPONENTS[c.type].terminals.some(t=>t.id===e.terminal));}if(a.kind==='operate')assert.doesNotMatch(a.instruction, /(?:closed|pressed|active|sensorValue|position|on)\s*=/);}assert.equal(activities.filter(a=>a.kind==='connect').length,l.circuit.wires.length);for(const k of ['inspect','predict','connect','operate','measure','explain','repair','retest'])assert.ok(activities.some(a=>a.kind===k),`${l.id} missing ${k}`);}
+  for(const l of LESSONS){const activities=getLessonActivities(l);assert.equal(new Set(activities.map(a=>a.id)).size,activities.length);for(const a of activities){assert.ok(a.competency);if(a.component){const c=l.circuit.components.find(c=>c.id===a.component);assert.ok(c,`${l.id}:${a.id}`);if(a.part)assert.ok(COMPONENTS[c.type].parts.some(p=>p.id===a.part));}for(const e of a.endpoints??[]){const c=l.circuit.components.find(c=>c.id===e.component)!;assert.ok(COMPONENTS[c.type].terminals.some(t=>t.id===e.terminal));}if(a.kind==='operate')assert.doesNotMatch(a.instruction, /(?:closed|pressed|active|sensorValue|position|on)\s*=/);}assert.equal(activities.filter(a=>a.kind==='connect').length,l.circuit.wires.filter(w=>w.id!=='course-enclosure-bond').length);for(const k of ['inspect','predict','connect','operate','measure','explain','repair','retest'])assert.ok(activities.some(a=>a.kind===k),`${l.id} missing ${k}`);}
 });
 test('stopped starters, chime and emergency standby pass declared outcomes instead of requiring an active load',()=>{
   for(const id of [40,43,44,55,56,57,60,61,64]){const d=copy(id),r=simulate(d);const report=assessBuild(d,r,lesson(id).circuit);assert.equal(report.passed,true,`${id}:${JSON.stringify(failed(report.checks))}`);}
 });
-test('all 64 intact configurations pass the combined connection and operating assessment',()=>{
+test('all 80 intact configurations pass the combined connection and operating assessment',()=>{
   const failures:unknown[]=[];for(const l of LESSONS){const d=copy(l.id),report=assessBuild(d,simulate(d),l.circuit);if(!report.passed)failures.push({id:l.id,checks:failed(report.checks)});}assert.deepEqual(failures,[]);
 });
 test('bypass and missing hold path fail real functional checks separately from matching connections',()=>{
@@ -56,7 +56,7 @@ function faultEvidence(){const d=copy();d.faults=[{type:'open-live',wire:lesson(
 test('actual distinct target readings establish a diagnosis without click-count credit',()=>{
   const {d,r,e}=faultEvidence();assert.equal(validateDiagnosisEvidence(d,r,e,lesson(7).challenge).accepted,true);assert.equal(assessFaultDiagnosis(d,r,'open-live',0,lesson(7).challenge,e).accepted,true);
 });
-test('all 64 challenge targets accept actual localized measurements with the required doorbell demand exposed',()=>{
+test('all 80 challenge targets accept actual localized measurements with the required doorbell demand exposed',()=>{
   for(const l of LESSONS){const d=copy(l.id);if(l.id===43)d.components.find(c=>c.id==='push')!.params.pressed=true;d.faults=[{type:l.challenge.fault,wire:l.challenge.wire,component:l.challenge.component,enabled:true}];const r=simulate(d,{},1);const supply=d.components.find(c=>['source','source3'].includes(c.type))!;
     const w=d.wires.find(w=>w.id===l.challenge.wire)||(l.challenge.component&&d.wires.find(w=>w.to.component===l.challenge.component&&['L','L1','DC+'].includes(w.role)));
     assert.ok(w,`${l.id}: target measurement path`);

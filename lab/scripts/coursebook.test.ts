@@ -39,12 +39,12 @@ test('the first practical starts with the lit lamp and uses real, fresh off and 
   assert.match(renderBook(7,'book:7:contact'),/two metal contacts touch/i);
   assert.match(renderBook(7,'book:7:meter-demo'),/volts \(V\)/);
 });
-test('eight chapters cover every course once with authored questions, distinct finishes and accessible entry points',()=>{
-  assert.equal(CHAPTERS.length,8);
+test('nine chapters cover every course once with authored questions, distinct finishes and accessible entry points',()=>{
+  assert.equal(CHAPTERS.length,9);
   assert.deepEqual(CHAPTERS.flatMap(c=>c.lessons).sort((a,b)=>a-b),LESSONS.map(l=>l.id));
   for (const chapter of CHAPTERS) assert.equal(chapter.lessons.at(-1),chapter.practical);
-  assert.equal(new Set(LESSONS.map(l=>COURSE_PAGES[l.id].prediction.prompt)).size,64);
-  assert.equal(new Set(LESSONS.map(l=>COURSE_PAGES[l.id].explanation.prompt)).size,64);
+  assert.equal(new Set(LESSONS.map(l=>COURSE_PAGES[l.id].prediction.prompt)).size,80);
+  assert.equal(new Set(LESSONS.map(l=>COURSE_PAGES[l.id].explanation.prompt)).size,80);
   assert.ok(courseMatchesQuery(lesson(9),'stairs light'));
   assert.ok(courseMatchesQuery(lesson(55),'motor stays on after Start'));
   for (const l of LESSONS) {

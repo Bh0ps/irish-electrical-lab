@@ -5,6 +5,8 @@ import { createBoundedWireCurve, WIRE_CORNER_RADIUS } from '../lib/Equipment.tsx
 import { LESSONS } from '../lib/lessons.ts';
 import { routeCircuit, SHEATH_RADIUS, WIRE_RADIUS } from '../lib/routing.ts';
 import { getComponentTerminals } from '../lib/terminal-layout.ts';
+import { isBoard, mountScale, mountRoll, dinBodyWidth } from '../lib/board-assembly.ts';
+import { Matrix4,Euler,Vector3 } from 'three';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from '../lib/types.ts';
 
 // This checks the exact ring centres used by TubeGeometry, independently of the
@@ -75,7 +77,7 @@ function physicalTerminal(document: CircuitDocument, endpoint: Endpoint): Vec3 {
   assert.ok(component, `Missing component ${endpoint.component}`);
   const terminal = getComponentTerminals(component, COMPONENTS[component.type]).find(t => t.id === endpoint.terminal);
   assert.ok(terminal, `Missing terminal ${endpoint.component}.${endpoint.terminal}`);
-  const [x, y, z] = terminal.anchor, cosine = Math.cos(component.rotation), sine = Math.sin(component.rotation);
+  const [x, y, z] = new Vector3(...terminal.anchor).applyMatrix4(seatingMatrix(component)).toArray(), cosine = Math.cos(component.rotation), sine = Math.sin(component.rotation);
   return [component.position[0] + x * cosine + z * sine, component.position[1] + y, component.position[2] - x * sine + z * cosine];
 }
 function sharedBores(document: CircuitDocument, a: RenderedWire, b: RenderedWire): Vec3[] {
@@ -97,9 +99,13 @@ function minimumWireGap(document: CircuitDocument, a: RenderedWire, b: RenderedW
   return minimum;
 }
 
+function seatingMatrix(component: ComponentInstance) {
+  return new Matrix4().makeRotationFromEuler(new Euler(0,0,mountRoll(component))).scale(new Vector3(...mountScale(component)));
+}
 function inLocal(component: ComponentInstance, point: Vec3): Vec3 {
   const [x, y, z] = difference(point, component.position), cosine = Math.cos(component.rotation), sine = Math.sin(component.rotation);
-  return [x * cosine - z * sine, y, x * sine + z * cosine];
+  const local:Vec3=[x * cosine - z * sine, y, x * sine + z * cosine];
+  return component.mount?new Vector3(...local).applyMatrix4(seatingMatrix(component).invert()).toArray():local;
 }
 function entersBox(a: Vec3, b: Vec3, low: Vec3, high: Vec3): boolean {
   let first = 0, last = 1;
@@ -135,8 +141,15 @@ function fixtureIssues(document: CircuitDocument, rendered: RenderedWire): Issue
     // own immediate entry segments can enter this radius-inflated envelope.
     const low: Vec3 = [-definition.size[0] / 2, -.015, Math.min(-definition.size[2] / 2, ...terminals.map(t => t.anchor[2] - .015))];
     const high: Vec3 = [definition.size[0] / 2, definition.size[1] * 1.05, definition.size[2] / 2];
+    const width=dinBodyWidth(component);
+    if(width){
+      low[0]=Math.min(-width/2,...terminals.map(t=>t.anchor[0]-.018));high[0]=Math.max(width/2,...terminals.map(t=>t.anchor[0]+.018));
+      low[1]=Math.min(definition.size[1]*.10,...terminals.map(t=>t.anchor[1]-.032));high[1]=Math.max(definition.size[1]*.86,...terminals.map(t=>t.anchor[1]+.032));
+    }
+    if(isBoard(component.type))high[2]=low[2]+.07;
     if (component.params.gangModule === 'left') { low[0] = Math.min(low[0], .23 - .565 * definition.size[0] / 1.3); high[0] = Math.max(high[0], .23 + .565 * definition.size[0] / 1.3); }
-    const inflatedLow = low.map(value => value - rendered.radius - EPSILON) as Vec3, inflatedHigh = high.map(value => value + rendered.radius + EPSILON) as Vec3;
+    const scale=mountScale(component);
+    const inflatedLow = low.map((value,i) => value - (rendered.radius + EPSILON)/scale[i]) as Vec3, inflatedHigh = high.map((value,i) => value + (rendered.radius + EPSILON)/scale[i]) as Vec3;
     const hit = rendered.segments.find(segment => !isTerminalAccess(document, rendered, segment, component) && entersBox(inLocal(component, segment.a), inLocal(component, segment.b), inflatedLow, inflatedHigh));
     if (hit) issues.push({ kind: 'rendered tube enters fixture clearance', wire: rendered.wire.id, other: component.id, position: hit.a });
   }
@@ -177,8 +190,8 @@ test('shared-bore clipping removes only the common joint neighbourhood', () => {
   assert.equal(minimumWireGap(document, one, { ...two, wire: { ...b, from: separate } }), 0);
 });
 
-test('all 64 configurations have non-overlapping rendered tubes and clear fixture paths', () => {
-  assert.equal(LESSONS.length, 64);
+test('all 80 configurations have non-overlapping rendered tubes and clear fixture paths', () => {
+  assert.equal(LESSONS.length, 80);
   const failures: { lesson: number; issues: Issue[] }[] = [];
   let wires = 0, meshSegments = 0;
   for (const lesson of LESSONS) {

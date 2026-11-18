@@ -1,3 +1,4 @@
+import { COURSE_BOARD_ID,COURSE_BOND_ID } from './board-examples';
 import { COMPONENTS } from './components';
 import { runLessonScenarios } from './scenarios';
 import { matchLessonWires } from './wire-connections';
@@ -23,8 +24,8 @@ function wireName(document: CircuitDocument, wire: Wire) {
 export function assessConnections(document: CircuitDocument, expected: CircuitDocument): AssessmentCheck[] {
   const checks: AssessmentCheck[] = [];
   const check = (id: string, passed: boolean, title: string, explanation: string, target: {component?: string; wire?: string} = {}) => checks.push({id, category:'objectives', status: passed ? 'pass' : 'fail', title, explanation, ...target});
-  for (const c of expected.components) check(`equipment:${c.id}`, document.components.some(x => x.id === c.id && x.type === c.type), `${c.label}: equipment`, document.components.some(x => x.id === c.id && x.type === c.type) ? 'The required lesson equipment is present.' : `Restore the required ${COMPONENTS[c.type]?.name ?? c.type}.`, {component:c.id});
-  const { matches, extras } = matchLessonWires(document.wires, expected.wires);
+  for (const c of expected.components.filter(c=>c.id!==COURSE_BOARD_ID)) check(`equipment:${c.id}`, document.components.some(x => x.id === c.id && x.type === c.type), `${c.label}: equipment`, document.components.some(x => x.id === c.id && x.type === c.type) ? 'The required lesson equipment is present.' : `Restore the required ${COMPONENTS[c.type]?.name ?? c.type}.`, {component:c.id});
+  const { matches, extras } = matchLessonWires(document.wires, expected.wires.filter(w=>w.id!==COURSE_BOND_ID||document.components.some(c=>c.id===COURSE_BOARD_ID)));
   for (const { expected: w, actual: present } of matches) {
     check(`connection:${w.id}`, !!present, 'Required terminal connection', present ? wireName(document, present) : `Missing: ${wireName(expected, w)}.`, {component:w.to.component, wire:present?.id});
     if (present && present.role !== w.role) check(`identity:${present.id}`, false, 'Conductor identification differs from the lesson', `${wireName(document, present)} is identified as ${present.role}; the lesson uses ${w.role}. Changing identification does not change the connected terminals or interrupt current.`, {wire:present.id});

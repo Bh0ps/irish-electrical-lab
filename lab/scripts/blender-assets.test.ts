@@ -12,6 +12,8 @@ import { enclosedTerminals,getComponentTerminals,terminalInspectionDirection } f
 import { animateBlenderModel,prepareBlenderModel,presentBlenderModel,semanticOwner } from '../lib/blender-model';
 import type { EquipmentView } from '../lib/Equipment';
 import type { ComponentInstance,DeviceState } from '../lib/types';
+import { getLesson } from '../lib/lessons';
+import { mountRoll, mountScale } from '../lib/board-assembly';
 
 const root=fileURLToPath(new URL('../../',import.meta.url)),loader=new GLTFLoader(),inventory=createGalleryInventory();
 const state:DeviceState={energized:false,closed:true,tripped:false,level:1,direction:1,elapsed:0,resetToken:0,details:'asset audit'};
@@ -20,8 +22,8 @@ async function load(url:string){let scene=scenes.get(url);if(!scene){const bytes
 function terminals(scene:THREE.Object3D){scene.updateMatrixWorld(true);const found=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.terminalId){const id=String(node.userData.terminalId);found.set(id,[...(found.get(id)??[]),node]);}});return found;}
 function geometryDigest(scene:THREE.Group,materials=false){const hash=createHash('sha256');scene.updateMatrixWorld(true);scene.traverse(node=>{if(node instanceof THREE.Mesh){hash.update(Buffer.from(node.geometry.getAttribute('position').array.buffer));hash.update(JSON.stringify(node.matrixWorld.toArray().map(n=>Math.round(n*1e6)/1e6)));if(materials)for(const material of Array.isArray(node.material)?node.material:[node.material])if(material instanceof THREE.MeshStandardMaterial)hash.update(JSON.stringify([material.color.toArray(),material.metalness,material.roughness]));}});return hash.digest('hex');}
 
-test('all 87 authored variants have original Blender sources and full/distance offline GLBs',async()=>{
-  assert.equal(inventory.length,87);const keys=new Set<string>();let total=0,lowTotal=0;
+test('all authored variants have original Blender sources and full/distance offline GLBs',async()=>{
+  assert.equal(inventory.length,108);const keys=new Set<string>();let total=0,lowTotal=0;
   for(const entry of inventory){
     const definition=COMPONENTS[entry.component.type],asset=equipmentAsset(entry.component,definition);assert.ok(asset,entry.key);assert.ok(!keys.has(asset.key));keys.add(asset.key);
     const source=root+'authoring/blender/models/'+asset.key+'.blend';assert.ok(existsSync(source),source);const header=readFileSync(source).subarray(0,4);assert.ok(header.subarray(0,2).toString()==='BL'||header[0]===0x1f&&header[1]===0x8b||header.equals(Buffer.from([0x28,0xb5,0x2f,0xfd])),'Blender, gzip or zstd-compressed Blender source');
@@ -65,6 +67,27 @@ test('authored forms differ in actual geometry or functional materials, rather t
   const groups=new Map<string,{key:string;digest:string}[]>();
   for(const entry of inventory){const asset=equipmentAsset(entry.component,COMPONENTS[entry.component.type])!;groups.set(entry.component.type,[...(groups.get(entry.component.type)??[]),{key:entry.key,digest:geometryDigest(await load(asset.url),true)}]);}
   for(const variants of groups.values())if(variants.length>1)assert.equal(new Set(variants.map(v=>v.digest)).size,variants.length,variants.map(v=>v.key).join(', '));
+});
+
+test('installed breakers present their real operating handles in front of the shield while cable terminals stay behind it',async()=>{
+  for(const id of [2,53]){
+    const doc=getLesson(id)!.circuit,board=doc.components.find(c=>c.id==='course-enclosure')!;
+    const shield=board.position[2]+(id===2?.64:.77);
+    for(const device of doc.components.filter(c=>c.mount&&COMPONENTS[c.type].model==='protection')){
+      const asset=equipmentAsset(device,COMPONENTS[device.type])!;
+      for(const url of [asset.url,asset.lowUrl]){
+        const model=prepareBlenderModel(await load(url));presentBlenderModel(model,'normal',device,state);
+        const mounted=new THREE.Group();mounted.add(model.scene);mounted.position.fromArray(device.position);
+        mounted.rotation.z=mountRoll(device);mounted.scale.fromArray(mountScale(device));mounted.updateMatrixWorld(true);
+        const levers=model.meshes.filter(m=>m.part==='actuator'&&m.node.visible);
+        assert.ok(levers.length,url+' has a visible operating handle');
+        const front=Math.max(...levers.map(m=>new THREE.Box3().setFromObject(m.node).max.z));
+        assert.ok(front>shield+.05,url+' protrudes through the dead front');
+        for(const points of terminals(model.scene).values())assert.ok(points[0].getWorldPosition(new THREE.Vector3()).z<shield-.045,url+' terminal remains protected');
+        model.owned.forEach(material=>material.dispose());
+      }
+    }
+  }
 });
 
 test('closed service compartments conceal installation hardware and opened compartments expose each physical contact to the picking ray',async()=>{

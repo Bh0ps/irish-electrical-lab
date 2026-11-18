@@ -2,11 +2,11 @@
   "id": "./",
   "name": "Irish Electrical Lab",
   "short_name": "Electrical Lab",
-  "description": "An offline 3D circuit study workbench with 64 courses and a sandbox.",
+  "description": "An offline 3D circuit study workbench with guided courses and a sandbox.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "theme_color": "#142b3b",
+  "theme_color": "#17392f",
   "background_color": "#e9eef2",
   "icons": [
     { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" },

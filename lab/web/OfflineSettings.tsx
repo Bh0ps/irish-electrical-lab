@@ -62,9 +62,9 @@ function OfflineDownload() {
   const size = status ? ` (about ${Math.ceil(status.bytes / 1024 ** 2)} MB)` : '';
   return <section className="offline-settings">
     <h3>Offline use</h3>
-    <p>Download the app, workers and simplified equipment for all 64 courses{size}. Keep the lab open until the download finishes. Full-detail models load when connected.</p>
+    <p>Download the app, workers and simplified equipment for every course{size}. Keep the lab open until the download finishes. Full-detail models load when connected.</p>
     <div aria-live="polite">
-      {ready && <p><strong>Offline ready</strong> · All 64 courses and Sandbox are available.</p>}
+      {ready && <p><strong>Offline ready</strong> · All courses and Sandbox are available.</p>}
       {downloading && <p>Downloading equipment… {status.completed} of {status.total}</p>}
       {error && <p>{error}</p>}
     </div>
@@ -77,5 +77,5 @@ function OfflineDownload() {
 }
 
 export default function OfflineSettings() {
-  return isHomeScreenBuild() ? <OfflineDownload /> : null;
+  return isHomeScreenBuild() && !import.meta.env.DEV ? <OfflineDownload /> : null;
 }

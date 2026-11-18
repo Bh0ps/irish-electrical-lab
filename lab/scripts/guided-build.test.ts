@@ -97,7 +97,7 @@ test('an unrelated or out-of-order addition does not skip the displayed step eve
   assert.equal(document.wires[0].id, event.wireId);
 });
 
-test('every authored connection in all 64 lessons accepts its own isolated addition, retaining exact roles and endpoints', () => {
+test('every authored connection in all 80 lessons accepts its own isolated addition, retaining exact roles and endpoints', () => {
   let checked = 0;
   for (const lesson of LESSONS) {
     const document: CircuitDocument = createIsolatedGuidedBuild(lesson.circuit, `guided-${lesson.id}`);
@@ -115,7 +115,7 @@ test('every authored connection in all 64 lessons accepts its own isolated addit
     }
     assert.equal(document.wires.length, lesson.circuit.wires.length);
   }
-  assert.equal(checked, 931);
+  assert.equal(checked, 1109);
 });
 
 test('guided setup isolates all represented sources without mutating equipment, examples or stored formats', () => {
@@ -124,7 +124,7 @@ test('guided setup isolates all represented sources without mutating equipment, 
     const document = createIsolatedGuidedBuild(lesson.circuit, `isolated-${lesson.id}`);
     assert.equal(document.id, `isolated-${lesson.id}`);
     assert.equal(document.supply.enabled, false);
-    assert.deepEqual(document.wires, []);
+    assert.deepEqual(document.wires, lesson.circuit.wires.filter(w=>w.id==='course-enclosure-bond'));
     assert.deepEqual(document.faults, []);
     assert.equal(document.version, lesson.circuit.version);
     assert.equal(document.revision, lesson.circuit.revision);
@@ -167,7 +167,7 @@ test('source instructions follow the original example availability instead of en
   assert.equal(document.components.find(component => component.id === local.id)!.params.on, false);
 });
 
-test('isolation instructions retain all 2021 existing activity IDs and only extend two source operating contracts', () => {
+test('isolation instructions retain all activity IDs and only extend two source operating contracts', () => {
   let count = 0;
   const localContracts: number[] = [];
   for (const lesson of LESSONS) {
@@ -179,6 +179,6 @@ test('isolation instructions retain all 2021 existing activity IDs and only exte
     assert.equal(new Set(activities.map(activity => activity.id)).size, activities.length);
     count += activities.length;
   }
-  assert.equal(count, 2021);
+  assert.equal(count, 2471);
   assert.deepEqual(localContracts, [47, 48]);
 });

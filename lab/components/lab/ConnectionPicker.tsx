@@ -15,6 +15,9 @@ const terminalNames: Record<string,string> = {
   T1:'First traveller', T2:'Second traveller', SL:'Switched line', '+':'Positive', '-':'Negative',
 };
 function shortRole(t:TerminalDefinition) {
+  if(t.role==='output'&&(t.id==='+'||t.id==='-'))return 'Isolated AC winding';
+  if(t.role==='DC+')return 'DC positive';if(t.role==='DC-')return 'DC return';
+  if(t.role==='output'&&(t.label==='1'||t.label==='2'))return 'Sounder connection';
   return terminalNames[t.id] ?? t.group ?? t.role;
 }
 
@@ -47,7 +50,7 @@ export function TerminalPicker({ circuit, label, onPick }: {
           </button>
           {open && <div className="point-list-terminals">{terminals.map(terminal =>
             <button type="button" key={terminal.id} onClick={() => onPick({ component: component.id, terminal: terminal.id })}>
-              <b>{terminal.label}</b><span>{shortRole(terminal)}{terminal.label!==terminal.id && <small> · {terminal.id}</small>}</span>
+              <b>{terminal.label}</b><span>{shortRole(terminal)}{!['+','-','L','N'].includes(terminal.id)&&terminal.label!==terminal.id && <small> · {terminal.id}</small>}</span>
             </button>)}</div>}
         </div>;
       })}
@@ -72,15 +75,15 @@ export function nextFreePosition(doc: CircuitDocument, type: string): Vec3 {
   return [Math.max(0,...doc.components.map(c=>c.position[0]+Math.max(...COMPONENTS[c.type].size)))+size[0],0,0];
 }
 
-export function EquipmentList({circuit,onSelect,onOperate,operable,states}:{circuit:CircuitDocument;
+export function EquipmentList({circuit,onSelect,onOperate,operable,states,tags,selected}:{circuit:CircuitDocument;tags?:Record<string,string>;selected?:string;
   onSelect:(id:string)=>void;onOperate:(c:ComponentInstance)=>void;operable:(c:ComponentInstance)=>boolean;
   states:Record<string,string|undefined>}) {
   const [query,setQuery]=useState('');
-  const items=circuit.components.filter(c=>matches(query,c.label,COMPONENTS[c.type].name));
+  const items=circuit.components.filter(c=>matches(query,c.label,COMPONENTS[c.type].name,tags?.[c.id]??''));
   return <section aria-label="Equipment on the bench" className="equipment-list-view">
     <h2>Equipment on the bench</h2>
     <Input type="search" aria-label="Find equipment on the bench" placeholder="Find equipment" value={query} onChange={e=>setQuery(e.target.value)}/>
-    <ul>{items.map(c=><li key={c.id}><div><strong>{c.label}</strong>{states[c.id]&&<small>{states[c.id]}</small>}</div>
+    <ul>{items.map(c=><li key={c.id} data-picked={selected===c.id}><div>{tags?.[c.id]&&<small className="installation-tag">{tags[c.id]}</small>}<strong>{c.label}</strong>{states[c.id]&&<small>{states[c.id]}</small>}</div>
       <button onClick={()=>onSelect(c.id)} aria-label={'Inspect '+c.label}>Inspect</button>
       {operable(c)&&<button onClick={()=>onOperate(c)} aria-label={'Operate '+c.label}>Operate</button>}</li>)}</ul>
     {!items.length&&<p>{circuit.components.length?'No matching equipment.':'Choose Add equipment to place your first item.'}</p>}

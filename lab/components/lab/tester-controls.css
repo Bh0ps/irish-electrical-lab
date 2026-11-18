@@ -1,0 +1,24 @@
+.instrument-type {display:grid; gap:.25rem; margin:.3rem 0 .65rem; font-weight:600;}
+.instrument-type select {width:100%; padding:.55rem; min-height:44px; font:inherit; border:1px solid #a1b4bb; border-radius:.4rem; background:#fff; color:#203743;}
+.tester-controls,.termination-practice { display:grid; gap:.6rem; min-width:0; }
+.tester-controls label,.termination-practice label { display:grid; gap:.25rem; font-weight:600; }
+.tester-controls select,.termination-practice select { border-radius:6px; border:1px solid #abbac2; background:#fff; color:#192e37; padding:.5rem; min-height:42px; max-width:100%; width:100%; font:inherit; }
+.tester-shortcuts,.tester-title,.sample-equipment { display:flex; align-items:center; gap:.55rem; flex-wrap:wrap; }
+.tester-title img,.sample-equipment img { width:65px; height:58px; object-fit:contain; border-radius:5px; background:#e5ebe7; }
+.tester-title small { display:block; font-size:.85em; }
+.tester-lcd { border:5px solid #374240; border-radius:7px; background:#ccd2b6; color:#1a241f; min-height:58px; text-align:right; padding:.25rem .65rem; font-variant-numeric:tabular-nums; }
+.tester-lcd.referenced { background:#baddaa; }
+.tester-lcd small { display:block; min-height:.9em; }
+.tester-lcd output { font:600 1.55rem/1.3 monospace; }
+.tester-lcd output span { font-size:1rem; }
+.tester-controls button:not(.book-primary),.termination-practice button:not(.book-primary) { min-height:40px; padding:.36rem .58rem; border:1px solid #98acb1; border-radius:.4rem; background:#f2f5f6; color:#17343b; }
+.tester-controls button[aria-pressed=true] { box-shadow:inset 0 0 0 2px #356d66; }
+.tester-controls button.tester-function { background:#f6c859; }
+.tester-controls button:disabled,.termination-practice button:disabled { opacity:.55; }
+.tester-controls details,.termination-practice details { margin:.22rem 0; padding:0; }
+.tester-controls summary,.termination-practice summary { cursor:pointer; padding:.5rem 0; font-weight:600; }
+.termination-practice { margin-top:.8rem; border-top:1px solid #b9c9cb; }
+.termination-practice[open]>* { margin-bottom:.55rem; }
+.sample-equipment { flex-wrap:nowrap; }
+.sample-equipment p { margin:.15rem 0; }
+@media(pointer:coarse){.tester-controls button,.termination-practice button,.tester-controls summary,.termination-practice summary{min-height:44px}.tester-controls select,.termination-practice select{font-size:16px;min-height:44px}}

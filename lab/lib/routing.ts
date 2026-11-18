@@ -1,7 +1,8 @@
 import { COMPONENTS } from './components.ts';
 import { getComponentTerminals } from './terminal-layout.ts';
+import { isBoard, mountVector, dinBodyWidth, boardSidePanels } from './board-assembly.ts';
 import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types.ts';
-import { CABLE_CORES, FLAT_CORE_ORDER } from './cables.ts';
+import { cableCores } from './cables.ts';
 
 // Shared with the renderer: selection changes colour, never the cable diameter.
 export const WIRE_RADIUS = .018;
@@ -40,7 +41,7 @@ function worldToLocal(c: ComponentInstance,p: Vec3): Vec3 {
 export function terminalPosition(doc:CircuitDocument,e:Endpoint):Vec3 {
   const c=doc.components.find(c=>c.id===e.component),def=c&&COMPONENTS[c.type];
   const t=c&&def&&getComponentTerminals(c,def).find(t=>t.id===e.terminal);
-  return c&&t?localToWorld(c,t.anchor):[0,0,0];
+  return c&&t?localToWorld(c,mountVector(c,t.anchor)):[0,0,0];
 }
 
 function rotateDirection(rotation:number, p:Vec3):Vec3 {
@@ -50,7 +51,8 @@ function rotateDirection(rotation:number, p:Vec3):Vec3 {
 export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
   const c=doc.components.find(c=>c.id===e.component),def=c&&COMPONENTS[c.type];
   const terminal=c&&def&&getComponentTerminals(c,def).find(t=>t.id===e.terminal);
-  return rotateDirection(c?.rotation??0, terminal?.entryDirection??[0,0,-1]);
+  const axis=terminal?.entryDirection??[0,0,-1] as Vec3;
+  return rotateDirection(c?.rotation??0,c?mountVector(c,axis):axis);
 }
 
 /** Closest distance between finite 3D segments, including parallel/zero-length cases. */
@@ -81,11 +83,40 @@ function obstaclesFor(doc:CircuitDocument):Obstacle[] {
   return doc.components.flatMap(component=>{
     const def=COMPONENTS[component.type];if(!def)return [];
     const terminals=getComponentTerminals(component,def);
-    const min:Vec3=[-def.size[0]/2,-.015,-def.size[2]/2].map((v,i)=>Math.min(v,...terminals.map(t=>t.anchor[i]-.015))) as Vec3;
-    const max:Vec3=[def.size[0]/2,def.size[1]*1.05,def.size[2]/2].map((v,i)=>Math.max(v,...terminals.map(t=>t.anchor[i]+.015))) as Vec3;
+    let min:Vec3=[-def.size[0]/2,-.015,-def.size[2]/2].map((v,i)=>Math.min(v,...terminals.map(t=>t.anchor[i]-.015))) as Vec3;
+    let max:Vec3=[def.size[0]/2,def.size[1]*1.05,def.size[2]/2].map((v,i)=>Math.max(v,...terminals.map(t=>t.anchor[i]+.015))) as Vec3;
+    if(component.mount){
+      const width=dinBodyWidth(component);
+      if(width){
+        min[0]=Math.min(-width/2,...terminals.map(t=>t.anchor[0]-.018));max[0]=Math.max(width/2,...terminals.map(t=>t.anchor[0]+.018));
+        min[1]=Math.min(def.size[1]*.10,...terminals.map(t=>t.anchor[1]-.032));max[1]=Math.max(def.size[1]*.86,...terminals.map(t=>t.anchor[1]+.032));
+      }
+      const points=[min[0],max[0]].flatMap(x=>[min[1],max[1]].flatMap(y=>[min[2],max[2]].map(z=>mountVector(component,[x,y,z]))));
+      min=[0,1,2].map(i=>Math.min(...points.map(p=>p[i]))) as Vec3;max=[0,1,2].map(i=>Math.max(...points.map(p=>p[i]))) as Vec3;
+    }
     if(component.params.gangModule==='left'){min[0]=Math.min(min[0],.23-.565*def.size[0]/1.3);max[0]=Math.max(max[0],.23+.565*def.size[0]/1.3);}
-    const corners=[min[0],max[0]].flatMap(x=>[min[1],max[1]].flatMap(y=>[min[2],max[2]].map(z=>localToWorld(component,[x,y,z]))));
-    return [{component,min,max,worldMin:[0,1,2].map(a=>Math.min(...corners.map(p=>p[a]))-BODY_CLEARANCE) as Vec3,worldMax:[0,1,2].map(a=>Math.max(...corners.map(p=>p[a]))+BODY_CLEARANCE) as Vec3}];
+    const regions:{min:Vec3;max:Vec3}[]=[{min,max}];
+    if(isBoard(component.type)){
+      const [w,h,d]=def.size, x=w/2,z=d/2;
+      // Model the back pan and sidewalls. Top/bottom entry zones remain open
+      // for the external circuits, independent of door and front presentation.
+      const front=component.type==='gammaboard'?.64:.77;
+      regions.splice(0,1,{min:[-x,0,-z+.06],max:[x,h,-z+.20]},
+        {min:[-x+.06,.025,front-.036],max:[x-.06,h-.025,front+.036]});
+      for(const [lo,hi,back,edge] of boardSidePanels(component.type,h,d))for(const left of [-x,x-.082]){
+        regions.push({min:[left,lo,back],max:[left+.082,hi,edge]});
+      }
+      for(const y of [0,h-.1])for(const xcenter of [-x+.20,0,x-.20]){
+        regions.push({min:[xcenter-.17,y,-z+.14],max:[xcenter+.17,y+.1,z]});
+      }
+      for(const y of [0,h-.10])for(const [lo,hi] of [[-z,-.34*z],[.34*z,z]]){
+        regions.push({min:[-x+.08,y,lo],max:[x-.08,y+.10,hi]});
+      }
+    }
+    return regions.map(({min,max})=>{
+      const corners=[min[0],max[0]].flatMap(x=>[min[1],max[1]].flatMap(y=>[min[2],max[2]].map(z=>localToWorld(component,[x,y,z]))));
+      return {component,min,max,worldMin:[0,1,2].map(a=>Math.min(...corners.map(p=>p[a]))-BODY_CLEARANCE) as Vec3,worldMax:[0,1,2].map(a=>Math.max(...corners.map(p=>p[a]))+BODY_CLEARANCE) as Vec3};
+    });
   });
 }
 function sharedGang(a:ComponentInstance|undefined,b:ComponentInstance):boolean {
@@ -327,7 +358,7 @@ function planHarness(doc:CircuitDocument,priority=new Set<string>()):CircuitRout
   function runway(normal:Vec3,b:Vec3,e:Endpoint):Vec3 {
     if(harness.heads.has(e.component))return b;
     const dominant=normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));
-    const p=[...b] as Vec3;p[dominant]+=Math.sign(normal[dominant])*GRID*3;
+    const p=[...b] as Vec3;p[dominant]+=Math.sign(normal[dominant])*GRID*(owners.get(e.component)?.mount?1:3);
     if(p[1]<.08)p[1]=.08;
     return p;
   }
@@ -337,7 +368,7 @@ function planHarness(doc:CircuitDocument,priority=new Set<string>()):CircuitRout
     const right=unit(sub(basis,scale(normal,dot(basis,normal)))),up=unit(cross(right,normal));
     const own=occupied.segments.filter(s=>s.joint===keyOf(e));
     // Allocate a compact cone around the physical cable-entry direction.
-    const depths=harness.heads.has(e.component)?[.22,.34,.5,.7]:priority.size?[.5,.34,.70,.94]:[.34,.50,.70,.94];
+    const depths=harness.heads.has(e.component)?[.22,.34,.5,.7]:owners.get(e.component)?.mount?[.20,.28,.34,.50,.70,.94]:priority.size?[.5,.34,.70,.94]:[.34,.50,.70,.94];
     for(const depth of depths)for(const radius of [0,.12,.18,.24,.32,.44,.60])for(let angle=0;angle<(radius?16:1);angle++) {
       const x=Math.cos(angle*Math.PI/8)*radius,y=Math.sin(angle*Math.PI/8)*radius;
       const offset=add(scale(normal,depth),add(scale(right,x),scale(up,y)));
@@ -383,6 +414,10 @@ function planHarness(doc:CircuitDocument,priority=new Set<string>()):CircuitRout
     const waypoints=[ea,...w.bends,eb],localMin=[0,1,2].map(axis=>Math.min(...waypoints.map(p=>p[axis]))),localMax=[0,1,2].map(axis=>Math.max(...waypoints.map(p=>p[axis])));
     if(localMax.some((v,i)=>v-localMin[i]>MAX_ROUTE_SPAN)){result.issues.push({wire:w.id,message:'This wire spans more than the 80-unit routing area. Bring the equipment and saved bends closer together.'});continue;}
     const wireCtx:Context={...ctx,low:localMin.map((v,i)=>Math.max(Math.min(low[i],v-.5),v-2)) as Vec3,high:localMax.map((v,i)=>Math.min(Math.max(high[i],v+.5),v+2)) as Vec3,rear:Math.max(ctx.rear,localMin[2]-1.5),anchors:w.bends.length?undefined:[a,b]};
+    // A conductor entering a panel may have to pass its top entry even if
+    // both electrical endpoints are lower down. Include the actual opening.
+    const inside=[w.from,w.to].map(e=>{const c=owners.get(e.component);return c?.mount?.board??(c&&isBoard(c.type)?c.id:undefined);});
+    if(inside[0]!==inside[1])for(const id of inside){const board=id&&owners.get(id);if(board)wireCtx.high[1]=Math.max(wireCtx.high[1],board.position[1]+COMPONENTS[board.type].size[1]+.5);}
     const path:Vec3[]=[a,ea];let failed=false;
     for(let i=1;i<waypoints.length;i++) {
       if(i>1){
@@ -423,9 +458,10 @@ function planHarness(doc:CircuitDocument,priority=new Set<string>()):CircuitRout
       for(const e of [trunk.from,trunk.to]) {
         const head=harness.heads.get(e.component)!;
         const back=scale(head.outward,-1),side=rotateDirection(head.rotation,[1,0,0]);
-        (run.kind==='flat'?FLAT_CORE_ORDER:CABLE_CORES).forEach((core,i)=>{
+        const cores=cableCores(run.kind);
+        cores.forEach((core,i)=>{
           if(used.has(core))return;
-          const end=add(head.point,add(scale(back,.13),scale(side,(i-1)*.07)));
+          const end=add(head.point,add(scale(back,.13),scale(side,(i-(cores.length-1)/2)*.07)));
           geometry.open.push({core,points:[head.point,end]});
         });
       }

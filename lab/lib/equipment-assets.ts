@@ -3,9 +3,11 @@ import referenceMap from '../../authoring/blender/reference-map.json';
 import { equipmentVariant } from './terminal-layout';
 import type { ComponentDefinition, ComponentInstance } from './types';
 import { publicAssetUrl } from '../web/asset-url';
+import { workshopKey } from './workshop-variants';
 
 /** One key is shared by the authoring inventory and the offline asset loader. */
 export function equipmentAssetKey(component: ComponentInstance, def: ComponentDefinition): string {
+  const specific=workshopKey(component);if(specific)return specific;
   const name=equipmentVariant(component,def), modes:string[]=[];
   if(def.model==='sensor')modes.push(`mode=${String(component.params.mode??def.defaults.mode??'PIR').toLowerCase()}`);
   if(def.model==='panel')modes.push(/industrial|three|cabinet/.test(name)?'industrial-cabinet':'domestic-enclosure');
@@ -34,5 +36,6 @@ export function equipmentReferences(component:ComponentInstance,definition:Compo
   if(component.type==='spd')ids=['schneider-spd'];
   if(component.type==='plug3'||component.type==='socket3')ids=['mennekes-plug','mennekes-contacts'];
   if(component.type==='socket'||component.type==='plug'||component.type==='fcu')ids=['mk-accessory'];
+  ids=(referenceMap.variantSources as Record<string,string[]>)[equipmentAssetKey(component,definition)]??ids;
   return ids.flatMap(id=>referenceMap.sources.filter(source=>source.id===id));
 }

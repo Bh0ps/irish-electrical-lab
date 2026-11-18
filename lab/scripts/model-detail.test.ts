@@ -17,8 +17,8 @@ function meshes(parent:THREE.Object3D){const result:THREE.Mesh[]=[];parent.trave
 function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)=>total+(m.geometry.index?.count??m.geometry.getAttribute('position').count)/3,0);}
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
-test('all 87 variants have actual family construction, original sources and local rendered icons',async()=>{
-  assert.equal(manifest.length,87);const families=new Set<string>(),report:unknown[]=[];
+test('all catalogue variants have actual family construction, original sources and local rendered icons',async()=>{
+  assert.equal(manifest.length,108);const families=new Set<string>(),report:unknown[]=[];
   for(const asset of manifest){
     assert.equal(asset.detailRevision,3,asset.key);families.add(asset.detailFamily);
     assert.ok(asset.sourceMeshCount>asset.meshCount,asset.key+' original source keeps separately editable details');
@@ -40,8 +40,8 @@ test('all 87 variants have actual family construction, original sources and loca
     }
     report.push({key:asset.key,family:asset.detailFamily,features:asset.detailFeatures,sourceMeshes:asset.sourceMeshCount,runtimeMeshes:asset.meshCount,triangles:triangles(scene),lowTriangles:triangles(low),icon:asset.thumbnailUrl});
   }
-  assert.equal(families.size,29);
-  mkdirSync(root+'verification/model-detail',{recursive:true});writeFileSync(root+'verification/model-detail/construction-audit.json',JSON.stringify({revision:3,variants:87,families:families.size,models:report},null,2));
+  assert.equal(families.size,30);
+  mkdirSync(root+'verification/model-detail',{recursive:true});writeFileSync(root+'verification/model-detail/construction-audit.json',JSON.stringify({revision:3,variants:manifest.length,families:families.size,models:report},null,2));
 });
 
 test('pressure-plate clamps have apertures, multiple materials and exactly one stable terminal identity',async()=>{
@@ -50,10 +50,10 @@ test('pressure-plate clamps have apertures, multiple materials and exactly one s
     for(const terminal of asset.terminals){
       const clamp=found.get('terminal-clamp:'+terminal.id);assert.equal(clamp?.length,1,asset.key+'.'+terminal.id);
       const form=clamp![0].parent!.userData.contactForm;
-      const parts=meshes(clamp![0]);assert.ok(parts.length>=(['pin','core end'].includes(form)?1:3),asset.key+' attachment hardware materials');
+      const parts=meshes(clamp![0]);assert.ok(parts.length>=(['pin','core end','solder pad','comb tooth'].includes(form)?1:3),asset.key+' attachment hardware materials');
       let identities=0;scene.traverse(node=>{if(node.userData.terminalId===terminal.id)identities++;});assert.equal(identities,1);
       const box=new THREE.Box3().setFromObject(clamp![0]);assert.ok(box.getSize(new THREE.Vector3()).length()>.04);
-      assert.ok(triangles(clamp![0])>(form==='pin'?8:form==='core end'?18:100),asset.key+' physical contact geometry');
+      assert.ok(triangles(clamp![0])>(form==='pin'||form==='solder pad'||form==='comb tooth'?8:form==='core end'?18:100),asset.key+' physical contact geometry');
     }
   }
 });
@@ -109,7 +109,7 @@ test('pump impeller and induction cage follow the real shaft animation while the
 });
 
 test('normal lamp and gang-module retaining hardware lies on its physical assembly',async()=>{
-  for(const asset of manifest.filter(a=>a.detailFamily==='lamp')){
+  for(const asset of manifest.filter(a=>a.detailFeatures.includes('lamp-mounting'))){
     const scene=await load(asset.url),hardware=details(scene).get('lamp-mounting')![0];
     const definition=COMPONENTS[asset.type],scaleY=definition.size[1]/1.45;
     const centre=new THREE.Box3().setFromObject(hardware).getCenter(new THREE.Vector3());

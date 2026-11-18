@@ -1,0 +1,65 @@
+/* Installed view, drawing cabinet and task navigation. */
+.installation-lab {--fir:#194638;--ink:#17362f;--paper:#f6f5ef;--line:#c7d0c5;color:var(--ink)}
+.installation-lab [hidden]{display:none!important}
+.installation-lab.simple-lab .app-header{background:#17392f;color:#fff;border-bottom:1px solid #46675a}
+.installation-lab .brand-icon{color:#ffcf83;background:#285341;border-color:#61816a;border-radius:8px}
+.installation-lab .brand{font-weight:600;letter-spacing:.075em}.installation-lab .brand b{color:#ffd08d}
+.installation-lab .simple-navigation button[aria-pressed=true]{color:#153b30;background:#e9efdf}
+.installation-lab .work-area{background:var(--paper)}.installation-lab.simple-lab .work-area{background:#efefe8}
+.installation-lab.simple-lab .canvas-wrap{background:#e6e9df;border:1px solid #bac5b8;border-radius:14px;box-shadow:0 2px 10px #23382712}
+.installation-lab .workspace-heading h1{color:var(--ink);font-family:Georgia,'Times New Roman',serif;font-weight:600;letter-spacing:-.035em}
+.installation-lab .eyebrow,.installation-lab .book-eyebrow{color:#53695c;letter-spacing:.08em}
+.installation-lab .learn-column,.installation-lab .context-content{background:#fcfbf6}
+.installation-lab .book-primary,.installation-lab .primary-button{background:#19553f!important;color:white!important;border-color:#19553f!important}
+.installation-lab .book-primary:hover,.installation-lab .primary-button:hover{background:#12442f!important}
+.installation-lab .book-link{color:#19553f}.installation-lab .book-home{max-width:36em}
+.installation-lab .surface-tabs{position:absolute;inset:0 0 auto;z-index:6;display:flex;align-items:center;gap:3px;height:46px;padding:4px 8px;background:#f8f8f1;border-bottom:1px solid var(--line)}
+.surface-tabs button,.site-actions button,.site-jump,.walking-pad button,.drawing-toolbar button,.drawing-toolbar select,.drawing-selection button,.drawing-selection select,.board-schedule button,.drawing-key button,.site-unavailable button{font:inherit;font-size:13px;font-weight:600;border:1px solid #becabe;border-radius:7px;color:var(--ink);background:#fbfcf6;cursor:pointer}
+.installation-lab .surface-tabs button{padding:6px 14px;min-height:36px;border:1px solid transparent;background:transparent;color:#516359}
+.installation-lab .surface-tabs button[aria-pressed=true],.drawing-tabs button[aria-pressed=true]{color:#fff;background:var(--fir);border-color:var(--fir)}
+.installation-lab button:focus-visible,.installation-lab select:focus-visible,.installation-lab input:focus-visible,.drawing-hot:focus-visible{outline:3px solid #bb711c;outline-offset:2px}
+.installation-lab .toolbar{top:46px}.installation-lab .canvas-top-label{top:103px}.installation-lab .simple-view-menu{top:94px}
+.installation-lab.surface-site .canvas-bottom,.installation-lab.surface-drawing .canvas-bottom{display:none}
+.installation-lab .equipment-list-view{padding-top:100px}
+.jobsite,.drawing-container{position:absolute;inset:46px 0 0;isolation:isolate;overflow:hidden}
+.site-camera,.site-camera>div{width:100%;height:100%;touch-action:none}
+.site-camera:focus-visible{outline:3px solid #b78735;outline-offset:-3px}
+.site-location,.site-actions,.walking-pad,.site-unavailable{position:absolute;z-index:2}
+.site-location{top:14px;left:14px;display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:5px;color:#fff;background:#193b31e8;font-size:12px;letter-spacing:.012em;pointer-events:none}
+.site-location span:not(.location-dot){color:#c8d6c7}.location-dot{width:7px;height:7px;border-radius:50%;background:#c6dfa8}
+.site-actions{bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:3px;padding:4px;border:1px solid #c3c9b9;border-radius:10px;background:#fcfcf4f5;box-shadow:0 3px 16px #17312124}
+.site-actions button,.site-jump,.walking-pad button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:6px 12px;white-space:nowrap;background:transparent;border:0}
+.site-actions .chosen,.site-actions button:hover,.site-jump:hover{background:#deeadb}
+.site-jump{position:relative}.site-jump select{opacity:0;cursor:pointer;position:absolute;inset:0;width:100%}.site-jump:focus-within{outline:2px solid #b16b22}
+.walking-pad{bottom:70px;left:14px;display:grid;grid-template-columns:repeat(3,44px);gap:2px}.walking-pad button{background:#fbfbf1ed;padding:0;min-height:44px;touch-action:none}.walking-pad button:first-child{grid-column:2/3}.walking-pad button:nth-child(2){grid-column:1/2}
+.site-unavailable{inset:0;display:flex;gap:12px;align-items:center;justify-content:center;background:#eef0e7}.site-unavailable button{padding:8px}
+.drawing-workspace{height:100%;display:flex;flex-direction:column;background:#f8f9ef;min-height:0}.drawing-toolbar,.drawing-selection{flex:none;display:flex;align-items:center;gap:8px;padding:8px 10px;background:#eeefe4}
+.drawing-toolbar{border-bottom:1px solid var(--line);flex-wrap:wrap}.drawing-tabs,.drawing-zoom{display:inline-flex;gap:2px}.drawing-zoom{margin-left:auto}
+.drawing-toolbar button,.drawing-toolbar select,.drawing-selection button,.drawing-selection select{min-height:34px;padding:4px 9px}.drawing-zoom button{display:grid;place-items:center}.drawing-zoom button:disabled{opacity:.4}
+.drawing-paper{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:18px;background-color:#fafbf3;background-image:radial-gradient(#b1c3ae63 .7px,transparent .7px);background-size:12px 12px}
+.drawing-legendhead{display:flex;flex-direction:column;gap:3px;font-family:Georgia,serif;color:var(--ink);padding-bottom:10px}
+.drawing-legendhead b{font-size:23px;font-weight:500}.drawing-legendhead span,.electrical-sheet text{font-family:Consolas,monospace;color:#324d40;fill:#324d40}.drawing-legendhead span{font-size:11px}
+.electrical-sheet{display:block;max-width:none;font-size:13px;flex:none}.floor-sheet{max-height:65vh}.room-caption{font-family:Georgia,serif!important;font-size:13px}
+.drawing-hot{cursor:pointer}.drawing-hot:hover>rect,.drawing-hot:focus>rect{stroke:#aa641f;stroke-width:2px}
+.drawing-selection{border-top:1px solid var(--line);min-height:47px}.drawing-selection>div{min-width:0;flex:1}.drawing-selection b,.drawing-selection small{display:block}.drawing-selection small{color:#435f51}.drawing-selection button{display:flex;align-items:center;gap:5px}.drawing-selection select{min-width:0;max-width:45%}
+.drawing-key{padding-top:16px;font-size:13px}.drawing-key summary{cursor:pointer;font-weight:600}.drawing-key button,.board-schedule button{padding:4px 7px;margin:2px;min-height:30px}
+.board-schedule{border-collapse:collapse;width:100%;text-align:left;font-size:13px}.board-schedule caption{text-align:left;margin-bottom:8px}.board-schedule td,.board-schedule th{padding:6px;border:1px solid var(--line);vertical-align:top}
+.pwm-controls label{display:block;margin:9px 0}.pwm-controls output{float:right}.pwm-controls input{display:block;width:100%;accent-color:var(--fir)}
+@media(max-width:760px),(max-height:550px) and (pointer:coarse){
+  .installation-lab .surface-tabs{height:44px;padding:0 3px;gap:0}.installation-lab .surface-tabs button{flex:1;min-height:44px;border-radius:4px;padding:5px 3px;font-size:13px}
+  .installation-lab .canvas-wrap .toolbar{top:44px}.installation-lab .canvas-wrap>.equipment-list-view{padding-top:94px}
+  .jobsite,.drawing-container{top:44px}.site-location{top:7px;left:7px;padding:4px 8px;font-size:11px}
+  .site-actions{bottom:6px;padding:1px;max-width:99%}.site-actions button,.site-jump{min-height:44px;padding:5px 10px;font-size:12px}
+  .walking-pad{bottom:58px;left:7px}.drawing-toolbar,.drawing-selection{gap:3px;padding:4px;flex-wrap:wrap}.drawing-toolbar select{max-width:140px}.drawing-toolbar button,.drawing-toolbar select,.drawing-selection button,.drawing-selection select{min-height:44px;padding:3px 6px;font-size:12px}.drawing-zoom{margin-left:0}.drawing-paper{padding:8px}.drawing-selection small{font-size:10px}.drawing-selection{min-height:44px}.drawing-legendhead b{font-size:18px}
+}
+.installation-lab.showing-equipment-list .canvas-wrap>.toolbar{position:absolute}.installation-lab .equipment-list{margin-top:44px}
+@media(prefers-reduced-motion:reduce){.installation-lab *{scroll-behavior:auto!important}}
+
+.installation-lab.surface-list .equipment-list-view{position:absolute;inset:96px 0 0;padding:12px 16px;overflow:auto}
+.installation-lab.surface-list.book-landing .equipment-list-view{top:46px}
+.installation-lab .equipment-list-view li[data-picked=true]{background:#e4eddf}
+.installation-tag{color:#476052;font-family:Consolas,monospace;font-size:11px}
+.installation-lab .board-controls{margin:12px 0;border-top:1px solid var(--line);padding-top:10px}
+.board-controls button,.board-controls select{border:1px solid #b3c2b5;border-radius:6px;background:#fbfcf6;padding:5px 9px;color:#17392f;font:inherit;min-height:36px;margin:3px}
+.board-controls label{display:block}.board-controls select{max-width:100%}
+@media(pointer:coarse){.board-controls button,.board-controls select{min-height:44px}}

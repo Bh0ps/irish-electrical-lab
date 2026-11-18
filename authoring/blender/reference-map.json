@@ -1,38 +1,861 @@
 {
-  "revision": 3,
+  "revision": 4,
   "classification": "Original representative training equipment. Each model illustrates an equipment architecture. Construction, circuit ratings and simplified interfaces are identified in the lesson. Product literature documents the features used for comparison.",
   "coordinateContract": "Recipe Y-up, +Z operating front. Each electrical ID has its own physical cable mouth and outward entry vector. Wall accessories are wired at the rear. DIN protective devices have upper and lower banks, motor boards face upward, and fronts opened for service have connection blocks behind their covers. Source and meter earth connections represent the separate protective path at the installation boundary. The valve flying lead ends in a separate connector strip. Circuit IDs stay fixed when inspecting or moving equipment.",
   "sources": [
-    {"id":"hager-accessory","title":"Hager Ireland WMPS12 wall switch","url":"https://hager.com/ie/catalogue/products/wmps12-10ax-1-gang-2-way-wall-switch","architecture":"Flush mounting, white gloss face, screw fixings, single operating rocker and marked rear switching contacts."},
-    {"id":"mennekes-plug","title":"MENNEKES 400 V five-pole PowerTOP 3821","url":"https://www.mennekes.org/industry/product-details/3821/","architecture":"Five nickel-plated mating pins, marked earth contact at six o’clock, separate screw terminations and cable gland."},
-    {"id":"mennekes-contacts","title":"MENNEKES protective conductor contact and clock positions","url":"https://www.mennekes.org/industry/knowledge/for-electrical-engineers/protective-conductor-contact-clock-position-and-plug-colours/","architecture":"The PE contact is larger. Front views of the complementary plug and socket mirror one another."},
-    {"id":"hager-rcbo","title":"Hager Ireland ADA532D product data","url":"https://assets.hager.com/step-content/P/PDS_160068113001EN/Document/std.lang.all/PDS_ADA532D_3001_en-GB.pdf","architecture":"Top and bottom screw connections, central operating handle, device identification and test button. Actual displayed ratings belong to the current simulated circuit. The bench opens out its lower approach so that it can be reached above the mat."},
-    {"id":"carkit-flat","title":"IE-N05VVH4-U and IE-N05VVH4-R flat Irish cable","url":"https://www.cesco.ie/sites/admin/plugins/elfinder/files/cesco2/pdfs/N05VVH4-U%20N05VVH4-R%20-%20T%26E.pdf","architecture":"Flat common sheath and individually insulated cores including the protective conductor."},
-    {"id":"eland-flex","title":"Eland H05VV-F flexible cable","url":"https://www.elandcables.com/media/524f1w5d/318y-h05vv-f-en-50525-2-11-flexible-cable-datasheet.pdf","architecture":"Round outer sheath, flexible copper cores and individually coloured insulation."},
-    {"id":"abb-mcb","title":"ABB miniature circuit breaker cutaway","url":"https://library.e.abb.com/public/ef5f3a6e43c99c288525758500534fe6/1SXU400142M0201.pdf","architecture":"Fixed/moving contacts, bimetal, magnetic solenoid, trip lever, separated arc plates and DIN clip."},
-    {"id":"phoenix-clamp","title":"Phoenix Contact screw connection technology","url":"https://www.phoenixcontact.com/en-us/technologies/connection-technologies/screw-connection","architecture":"Current cage, captive pressure plate and threaded actuator protect conductors from screw rotation. Exact tension sleeve design varies by product."},
-    {"id":"schneider-contactor","title":"Schneider TeSys Deca contactor data","url":"https://iportal.se.com/Contents/docs/LC1D126B7_DATASHEET.PDF","architecture":"Three main normally-open poles, AC coil and distinct auxiliary contacts. Teaching geometry uses double-break contacts and a laminated magnetic core."},
-    {"id":"abb-motor","title":"ABB low-voltage motor construction catalogue","url":"https://library.e.abb.com/public/21b6eba59e381c1ec1257b4b0051bb73/Motors%20for%20Explosive%20atmospheres_03-2013lowres.pdf","architecture":"Stator frame, rotor/shaft, bearings, end shields, terminal board, fan and fan cover. Generic motor architecture only: the models have no explosion-protection claim."},
-    {"id":"mk-accessory","title":"MK Logic Plus catalogue","url":"https://mkelectric.presti.media/uk/common/data/catalogue.pdf","architecture":"Domestic socket safety shutters, switch mechanisms and separated wiring chambers. Teaching accessory body is original."},
-    {"id":"resideo-valve","title":"Resideo motorised zone valve construction","url":"https://customer.resideo.com/resources/Techlit/TechLitDocuments/95-0000s/95-6983EF.pdf","architecture":"Motorised powerhead, spring return, manual lever and auxiliary end switch. Bench terminal layout is not the manufacturer's flying-lead termination."},
-    {"id":"triton-shower","title":"Triton T80 Easi-Fit Plus parts architecture","url":"https://www.tritonshowers.co.uk/showers-taps/electric-showers/t80-easi-fit-plus-duelec-electric-shower","architecture":"Heater can, pressure/flow module, solenoid, thermal cut-out and outlet. Generic physical architecture only."},
-    {"id":"myenergi-ev","title":"Myenergi zappi installation and operating manual","url":"https://www.myenergi.com/wp-content/uploads/2023/03/Zappi-2-Full-Manual-V1_6_4_T-March-2023.pdf","architecture":"Main power switching, core-balance sensing, control board, grid measurement input, enclosure seals and pilot interface. No model-specific protection certification is simulated."},
-    {"id":"siemens-plc","title":"Siemens S7-1200 system manual","url":"https://cache.industry.siemens.com/dl/files/940/109772940/att_1002391/v1/s71200_system_manual_en-US_en-US.pdf","architecture":"DIN mounting, keyed removable terminal connectors, CPU and separately identified I/O. CPU logic and safety processing remain abstract."},
-    {"id":"grundfos-pump","title":"Grundfos pump construction instructions","url":"https://api.grundfos.com/literature/Grundfosliterature-5104627.pdf","architecture":"Volute, impeller, shaft seal, O-ring and shaft fixing. Hydraulic behaviour is an educational operating block."},
-    {"id":"aico-alarm","title":"Aico Ei146e optical alarm","url":"https://www.aico.co.uk/product/ei146e-optical-smoke-alarm/","architecture":"Optical smoke chamber, backup cell and mains base; labyrinth, piezo sounder and circuit board are representative."},
-    {"id":"fluke-instrument","title":"Fluke tester fuse and shunt explanation","url":"https://www.fluke.com/en-us/learn/blog/digital-multimeters/choosing-the-correct-fuse-for-your-tester","architecture":"Current measurement uses a low-value shunt and correct input fuse. Input protection geometry is illustrative and carries no instrument CAT rating."},
-    {"id":"dimplex-storage","title":"Dimplex XLE storage heater instructions","url":"https://www.dimplex.co.uk/sites/g/files/emiian551/files/media_import/medias/docus/13/Dimplex%20XLE%20Instructions%20Series%20D%20-%20Issue%2012.pdf","architecture":"Refractory energy cells around sheathed elements, insulation, thermal controls and restrained wiring."},
-    {"id":"abb-drive","title":"ABB Review low-voltage variable-speed drive architecture","url":"https://library.e.abb.com/public/89a9b221d70e4950c12574d6005236b8/ABB%20Review%203_2008_72dpi.pdf","architecture":"Supply rectifier, capacitive DC link, semiconductor inverter and control electronics. Semiconductor switching, firmware and waveforms are simplified."},
-    {"id":"lapp-gland","title":"LAPP cable gland construction and functions","url":"https://www.lapp.com/en/se/SEK/products/cable-glands/c/113980","architecture":"Threaded body, compression nut, sealing insert, locknut and independent strain relief."},
-    {"id":"schneider-spd","title":"Schneider distribution fundamentals: system protection","url":"https://productinfo.se.com/0100db2301_elecdistfunddesignguide/0100db2301-electrical-distribution-fundamentals-design-guide/English/0100DB2301%20Electrical%20Distribution%20Fundamentals%20Design%20Guide%20%28bookmap%29_DD00648155.xml/%24/SystemProtection-A4A695C5","architecture":"MOV suppression and status indication. Transient physics and product coordination are not reproduced by the steady-state solver."}
+    {"id":"gamma-entries","title":"Hager Ireland residential enclosures · Gamma 13 cable entry and accessories","url":"https://assets.sc.hager.com/ie/-/media/project/hagerdeep/republic-of-ireland/hager/republic-of-ireland/at-a-glance-flyers/aag-residential-enclosures_ie.pdf","architecture":"Gamma provides pre-marked cable entries at the top, bottom and sides. The training example uses prepared entries and an optional transparent door."},
+    {
+      "id": "hager-accessory",
+      "title": "Hager Ireland WMPS12 wall switch",
+      "url": "https://hager.com/ie/catalogue/products/wmps12-10ax-1-gang-2-way-wall-switch",
+      "architecture": "Flush mounting, white gloss face, screw fixings, single operating rocker and marked rear switching contacts."
+    },
+    {
+      "id": "mennekes-plug",
+      "title": "MENNEKES 400 V five-pole PowerTOP 3821",
+      "url": "https://www.mennekes.org/industry/product-details/3821/",
+      "architecture": "Five nickel-plated mating pins, marked earth contact at six o’clock, separate screw terminations and cable gland."
+    },
+    {
+      "id": "mennekes-contacts",
+      "title": "MENNEKES protective conductor contact and clock positions",
+      "url": "https://www.mennekes.org/industry/knowledge/for-electrical-engineers/protective-conductor-contact-clock-position-and-plug-colours/",
+      "architecture": "The PE contact is larger. Front views of the complementary plug and socket mirror one another."
+    },
+    {
+      "id": "hager-rcbo",
+      "title": "Hager Ireland ADA532D product data",
+      "url": "https://assets.hager.com/step-content/P/PDS_160068113001EN/Document/std.lang.all/PDS_ADA532D_3001_en-GB.pdf",
+      "architecture": "Top and bottom screw connections, central operating handle, device identification and test button. Actual displayed ratings belong to the current simulated circuit. The bench opens out its lower approach so that it can be reached above the mat."
+    },
+    {
+      "id": "carkit-flat",
+      "title": "IE-N05VVH4-U and IE-N05VVH4-R flat Irish cable",
+      "url": "https://www.cesco.ie/sites/admin/plugins/elfinder/files/cesco2/pdfs/N05VVH4-U%20N05VVH4-R%20-%20T%26E.pdf",
+      "architecture": "Flat common sheath and individually insulated cores including the protective conductor."
+    },
+    {
+      "id": "eland-flex",
+      "title": "Eland H05VV-F flexible cable",
+      "url": "https://www.elandcables.com/media/524f1w5d/318y-h05vv-f-en-50525-2-11-flexible-cable-datasheet.pdf",
+      "architecture": "Round outer sheath, flexible copper cores and individually coloured insulation."
+    },
+    {
+      "id": "abb-mcb",
+      "title": "ABB miniature circuit breaker cutaway",
+      "url": "https://library.e.abb.com/public/ef5f3a6e43c99c288525758500534fe6/1SXU400142M0201.pdf",
+      "architecture": "Fixed/moving contacts, bimetal, magnetic solenoid, trip lever, separated arc plates and DIN clip."
+    },
+    {
+      "id": "phoenix-clamp",
+      "title": "Phoenix Contact screw connection technology",
+      "url": "https://www.phoenixcontact.com/en-us/technologies/connection-technologies/screw-connection",
+      "architecture": "Current cage, captive pressure plate and threaded actuator protect conductors from screw rotation. Exact tension sleeve design varies by product."
+    },
+    {
+      "id": "schneider-contactor",
+      "title": "Schneider TeSys Deca contactor data",
+      "url": "https://iportal.se.com/Contents/docs/LC1D126B7_DATASHEET.PDF",
+      "architecture": "Three main normally-open poles, AC coil and distinct auxiliary contacts. Teaching geometry uses double-break contacts and a laminated magnetic core."
+    },
+    {
+      "id": "abb-motor",
+      "title": "ABB low-voltage motor construction catalogue",
+      "url": "https://library.e.abb.com/public/21b6eba59e381c1ec1257b4b0051bb73/Motors%20for%20Explosive%20atmospheres_03-2013lowres.pdf",
+      "architecture": "Stator frame, rotor/shaft, bearings, end shields, terminal board, fan and fan cover. Generic motor architecture only: the models have no explosion-protection claim."
+    },
+    {
+      "id": "mk-accessory",
+      "title": "MK Logic Plus catalogue",
+      "url": "https://mkelectric.presti.media/uk/common/data/catalogue.pdf",
+      "architecture": "Domestic socket safety shutters, switch mechanisms and separated wiring chambers. Teaching accessory body is original."
+    },
+    {
+      "id": "resideo-valve",
+      "title": "Resideo motorised zone valve construction",
+      "url": "https://customer.resideo.com/resources/Techlit/TechLitDocuments/95-0000s/95-6983EF.pdf",
+      "architecture": "Motorised powerhead, spring return, manual lever and auxiliary end switch. Bench terminal layout is not the manufacturer's flying-lead termination."
+    },
+    {
+      "id": "triton-shower",
+      "title": "Triton T80 Easi-Fit Plus parts architecture",
+      "url": "https://www.tritonshowers.co.uk/showers-taps/electric-showers/t80-easi-fit-plus-duelec-electric-shower",
+      "architecture": "Heater can, pressure/flow module, solenoid, thermal cut-out and outlet. Generic physical architecture only."
+    },
+    {
+      "id": "myenergi-ev",
+      "title": "Myenergi zappi installation and operating manual",
+      "url": "https://www.myenergi.com/wp-content/uploads/2023/03/Zappi-2-Full-Manual-V1_6_4_T-March-2023.pdf",
+      "architecture": "Main power switching, core-balance sensing, control board, grid measurement input, enclosure seals and pilot interface. No model-specific protection certification is simulated."
+    },
+    {
+      "id": "siemens-plc",
+      "title": "Siemens S7-1200 system manual",
+      "url": "https://cache.industry.siemens.com/dl/files/940/109772940/att_1002391/v1/s71200_system_manual_en-US_en-US.pdf",
+      "architecture": "DIN mounting, keyed removable terminal connectors, CPU and separately identified I/O. CPU logic and safety processing remain abstract."
+    },
+    {
+      "id": "grundfos-pump",
+      "title": "Grundfos pump construction instructions",
+      "url": "https://api.grundfos.com/literature/Grundfosliterature-5104627.pdf",
+      "architecture": "Volute, impeller, shaft seal, O-ring and shaft fixing. Hydraulic behaviour is an educational operating block."
+    },
+    {
+      "id": "aico-alarm",
+      "title": "Aico Ei146e optical alarm",
+      "url": "https://www.aico.co.uk/product/ei146e-optical-smoke-alarm/",
+      "architecture": "Optical smoke chamber, backup cell and mains base; labyrinth, piezo sounder and circuit board are representative."
+    },
+    {
+      "id": "fluke-instrument",
+      "title": "Fluke tester fuse and shunt explanation",
+      "url": "https://www.fluke.com/en-us/learn/blog/digital-multimeters/choosing-the-correct-fuse-for-your-tester",
+      "architecture": "Current measurement uses a low-value shunt and correct input fuse. Input protection geometry is illustrative and carries no instrument CAT rating."
+    },
+    {
+      "id": "dimplex-storage",
+      "title": "Dimplex XLE storage heater instructions",
+      "url": "https://www.dimplex.co.uk/sites/g/files/emiian551/files/media_import/medias/docus/13/Dimplex%20XLE%20Instructions%20Series%20D%20-%20Issue%2012.pdf",
+      "architecture": "Refractory energy cells around sheathed elements, insulation, thermal controls and restrained wiring."
+    },
+    {
+      "id": "abb-drive",
+      "title": "ABB Review low-voltage variable-speed drive architecture",
+      "url": "https://library.e.abb.com/public/89a9b221d70e4950c12574d6005236b8/ABB%20Review%203_2008_72dpi.pdf",
+      "architecture": "Supply rectifier, capacitive DC link, semiconductor inverter and control electronics. Semiconductor switching, firmware and waveforms are simplified."
+    },
+    {
+      "id": "lapp-gland",
+      "title": "LAPP cable gland construction and functions",
+      "url": "https://www.lapp.com/en/se/SEK/products/cable-glands/c/113980",
+      "architecture": "Threaded body, compression nut, sealing insert, locknut and independent strain relief."
+    },
+    {
+      "id": "schneider-spd",
+      "title": "Schneider distribution fundamentals: system protection",
+      "url": "https://productinfo.se.com/0100db2301_elecdistfunddesignguide/0100db2301-electrical-distribution-fundamentals-design-guide/English/0100DB2301%20Electrical%20Distribution%20Fundamentals%20Design%20Guide%20%28bookmap%29_DD00648155.xml/%24/SystemProtection-A4A695C5",
+      "architecture": "MOV suppression and status indication. Transient physics and product coordination are not reproduced by the steady-state solver."
+    },
+    {
+      "id": "gamma-ie",
+      "title": "Hager Ireland Gamma SBE8101 · photograph and dimensions",
+      "url": "https://assets.hager.com/step-content/P/PDS_159097253001EN/Document/std.lang.all/SBE8101_3001_en-GB.pdf",
+      "architecture": "Two rows of thirteen modules, white insulating shell, translucent door and separate neutral/earth terminations. Reference envelope 250 × 375 × 103 mm. Our populated circuits are teaching layouts."
+    },
+    {
+      "id": "invicta-ie",
+      "title": "Hager Ireland Invicta JK104B · product photograph",
+      "url": "https://hager.com/ie/catalogue/products/jk104b-125a-4-way-tpn-board-plain",
+      "architecture": "Plain steel door with latch, facing outgoing phase banks, 125 A four-way TP&N chassis and independent glands. Mounting alone makes no electrical path in the lab."
+    },
+    {
+      "id": "invicta-drawing",
+      "title": "Hager Invicta 3 dimension drawing",
+      "url": "https://assets.hager.com/step-content/P/HA_22844591/Document/std.lang.all/PRIMARYBOARDSSIDEDINBOXES.pdf",
+      "architecture": "Drawing dimensions of JK104B, 465 × 500 × 132.5 mm. The study fixture keeps these exterior proportions."
+    },
+    {
+      "id": "ledvance-strip",
+      "title": "LEDVANCE tape and controller installation diagrams",
+      "url": "https://www.ledvance.com/00_Free_To_Use/asset-13063715_led_strip_system-assortment-ledvance-2022_03_-en-i.pdf",
+      "architecture": "Flexible circuit, copper cutting and solder lands, common positive and separate warm and cool returns. The bench simplifies the controller and terminal count."
+    },
+    {
+      "id": "tridonic-cc",
+      "title": "Tridonic 300/350 mA constant-current driver drawing",
+      "url": "https://resources.tridonic.com/PDB/Ressource/GroupPdf/en/Driver_LC_15W_300_350mA_fixC_SR_SNC2_28511.pdf",
+      "architecture": "Flat two-ended housing and separated line and LED terminations. The model’s extra protective endpoint is retained for compatible study circuits. The reference product is Class II."
+    },
+    {
+      "id": "tridonic-cv",
+      "title": "Tridonic 12/24 V constant-voltage driver",
+      "url": "https://resources.tridonic.com/PDB/GroupPdf/en/Driver_LCU_60W_12_24V_IP20_EXC_22593.pdf",
+      "architecture": "Separated mains and regulated DC output ends. The simulator uses the selected voltage and power parameters."
+    },
+    {
+      "id": "ifm-inductive",
+      "title": "ifm IES204 sensor drawing and cable connections",
+      "url": "https://media.ifm.com/dam/6b51459e-424b-40ce-9ce7-906f54ce0b84/Original/IES204-00_EN-GB.pdf",
+      "architecture": "Threaded proximity body, front sensing surface and three separate PNP leads."
+    },
+    {
+      "id": "belimo-float",
+      "title": "Belimo 24 V three-point rotary actuator",
+      "url": "https://www.belimo.com/mam/general-documents/datasheets/en-gb/belimo_LR24A-LA_datasheet_en-gb.pdf",
+      "architecture": "Three-point drive and external position indication. The lab uses shortened travel and legible training connection points."
+    },
+    {
+      "id": "mac-float",
+      "title": "MAC3 Key float switch",
+      "url": "https://mac3.it/en/products/key-floatswitch-clear-gray-waters/",
+      "architecture": "Buoyant sealed switch body pivoting on a weighted lead. The contact is brought out through the cable."
+    },
+    {
+      "id": "wago-lever",
+      "title": "WAGO 221 lever connector family",
+      "url": "https://www.wago.com/global/products/electrical-interconnections/discover-installation-terminal-blocks-and-connectors/221",
+      "architecture": "Orange operating levers, copper common bar and spring wire entries. The represented four-entry group is generic. WAGO lists two-, three- and five-conductor examples."
+    },
+    {
+      "id": "fluke-t6",
+      "title": "Fluke T6-600 · front/rear photographs and functions",
+      "url": "https://www.fluke.com/en-us/product/electrical-testing/basic-testers/fluke-t6-600",
+      "architecture": "Open fork, rotary selector, function/HOLD buttons, display, stowed leads and rear grounding contact."
+    },
+    {
+      "id": "knipex-tools",
+      "title": "KNIPEX tool catalogue · stripping and crimping jaws",
+      "url": "https://web-assets.knipex.com/sites/default/files/2026-02/KNIPEX_Pricelist_2026-27_EN-EUR_XS_12.pdf",
+      "architecture": "Original study-tool outlines use the grip, jaw and pivot forms shown. Exact individual product adjustments are illustrative."
+    },
+    {
+      "id": "wiha-torque",
+      "title": "Wiha torque screwdriver catalogue",
+      "url": "https://www.wiha.com/media/pdf/1d/a1/f6/2022_EN.pdf",
+      "architecture": "Adjustable insulated torque driver with replaceable slim bit and molded grip."
+    },
+    {
+      "id": "friedland-chime",
+      "title": "Friedland wired chime and front/rear call diagrams",
+      "url": "https://storage.electrika.com/flips/0290-fried-chime-13-a/files/assets/common/downloads/Friedland%20Chimes%20Catalogue.pdf",
+      "architecture": "Twin sound bars, electromagnetic striker and separate call inputs. The bench uses descriptive terminal IDs and an educational supply block."
+    },
+    {
+      "id": "ref-source-default",
+      "title": "ESB Networks cut-out and meter cabinet",
+      "url": "https://www.esbnetworks.ie/docs/default-source/publications/cut-outs-for-electrification-of-domestic-heat-and-transport.pdf",
+      "architecture": "Sealed service enclosure, customer isolation and metering boundary."
+    },
+    {
+      "id": "ref-isolator-red-isolator-rocker",
+      "title": "Schneider local control and changeover catalogue",
+      "url": "https://download.se.com/files?p_Doc_Ref=SE8863_Acti9_RTI&p_File_Ext=.PDF",
+      "architecture": "Pole separation and operating positions. The illustrated faceplate is generic."
+    },
+    {
+      "id": "ref-lamp-batten",
+      "title": "Philips CoreLine batten",
+      "url": "https://www.assets.signify.com/is/content/Signify/LP_CF_BN120C_EU.en_EG.PROF.CF",
+      "architecture": "Linear housing, light source and diffuser."
+    },
+    {
+      "id": "ref-timer-default",
+      "title": "Resideo heating controls",
+      "url": "https://www.resideo.com/gb/en/-/media/EMEA%20Site%20Cluster/Mastersite/Documents/Sales%20Literature/Resideo_HWHome_Wiring%20Guide_May24.pdf/",
+      "architecture": "Separate thermostats, programmer and valve controls with wiring diagrams."
+    },
+    {
+      "id": "ref-heater-mat",
+      "title": "Dimplex heating mat drawing",
+      "url": "https://www.dimplex.co.uk/sites/g/files/emiian551/files/media_import/medias/docus/7/Dimplex_DCF16070W_Montageanweisung_fd9911_en.pdf",
+      "architecture": "Heating cable on a mesh with a separate floor probe."
+    },
+    {
+      "id": "ref-fan-default",
+      "title": "Vent-Axia fan catalogue",
+      "url": "https://www.vent-axia.com/sites/default/files/2024-02/vent-axia_specification_brochure..pdf",
+      "architecture": "Grille, duct and humidity/timer controls."
+    },
+    {
+      "id": "ref-pushbutton-start-button",
+      "title": "Schneider Harmony control stations",
+      "url": "https://download.se.com/files?p_Doc_Ref=DIA5ED2130508EN&p_File_name=Harmony+XALD+XALK+plastic+control+stations+catalog.pdf",
+      "architecture": "Front operator, selector or lamp with separate rear contacts."
+    },
+    {
+      "id": "ref-overload-default",
+      "title": "Schneider TeSys overload",
+      "url": "https://www.se.com/us/en/faqs/FA100669/",
+      "architecture": "Reset and current adjustment mechanisms."
+    },
+    {
+      "id": "ref-dimmer-rotary",
+      "title": "Varilight V-Pro front and rear photographs",
+      "url": "https://www.varilight.co.uk/configurator/product.php?code=JEIP121",
+      "architecture": "Knob, faceplate and rear electronics. The study model uses equivalent resistance."
+    },
+    {
+      "id": "ref-transformer-default",
+      "title": "Hager ST303 bell transformer",
+      "url": "https://assets.hager.com/step-content/P/PDS_157649495101EN/Document/std.lang.all/ST303_5101_en-GB.pdf",
+      "architecture": "Separated primary and secondary windings. The teaching model exposes the core."
+    },
+    {
+      "id": "ref-heatpump-default",
+      "title": "Grant Ireland Aerona drawings",
+      "url": "https://grant.ie/media/1590/grant-aerona-installer-irl-doc0001-rev-10-july-2019.pdf",
+      "architecture": "Outdoor fan, heat exchanger and cabinet."
+    },
+    {
+      "id": "ref-sensor-mode-pressure",
+      "title": "Schneider XMP pressure switch",
+      "url": "https://www.se.com/uk/en/product-range/719-ftg-fsg-fyg-xmp/",
+      "architecture": "Mechanical inlet and switching mechanism. The bench adds an indicating gauge."
+    },
+    {
+      "id": "ref-motor-gate",
+      "title": "Benincà BULL sliding gate",
+      "url": "https://www.beninca.com/en/product/automations-for-sliding-gates/bull20m-s.html",
+      "architecture": "Geared drive, pinion and travel limits."
+    },
+    {
+      "id": "ref-pv-default",
+      "title": "Fronius inverter and battery connections",
+      "url": "https://www.fronius.com/en/~/downloads/Solar%20Energy/Operating%20Instructions/42%2C0426%2C0548%2CSL.pdf",
+      "architecture": "Separate inverter and energy-store interfaces. The bench power model is simplified."
+    },
+    {
+      "id": "ref-fuse-default",
+      "title": "Hager fuse carrier drawing",
+      "url": "https://assets.hager.com/step-content/P%2FHA_22827392%2FDocument%2Fstd.lang.all%2FL063M_SWITCH-DISCONNECTOR-FUSE_2021-02_MANUAL.pdf",
+      "architecture": "Cylindrical fuse and removable carrier."
+    },
+    {
+      "id": "ref-switch-door-contact",
+      "title": "CQR magnetic door contacts",
+      "url": "https://cqr.co.uk/wp-content/uploads/2025/06/Magnetic%20Contacts.pdf",
+      "architecture": "Separate reed body and magnet on frame and door."
+    },
+    {
+      "id": "ref-fuse-dc-fuse",
+      "title": "Littelfuse cartridge clips",
+      "url": "https://www.littelfuse.com/assetdocs/a-littelfuse-fuse-holder-cross-reference-organized-by-fuse-type?assetguid=4ceaccf9-3046-4c51-a269-6f91a00b21c9",
+      "architecture": "Cartridge retained between two conducting clips."
+    },
+    {
+      "id": "ref-boiler-default",
+      "title": "Grant Ireland boiler manuals",
+      "url": "https://grant.ie/professional/support/brochures-manuals/",
+      "architecture": "Enclosure, service cover and heating controls. Generic interface on the bench."
+    },
+    {
+      "id": "ref-cooker-default",
+      "title": "Electrolux ceramic cooker",
+      "url": "https://shop.electrolux.ie/model/m/EKC6049X",
+      "architecture": "Freestanding hob and oven controls."
+    },
+    {
+      "id": "ref-heater-immersion",
+      "title": "STIEBEL ELTRON immersion heater drawing",
+      "url": "https://www.stiebel-eltron.co.uk/content/dam/ste/cdbassets/current/bedienungs-_u_installationsanleitungen/instructionandinstallationmanual_doc-00060782.pdf",
+      "architecture": "Heating element, mounting flange and terminal cover."
+    },
+    {
+      "id": "ref-motor-shutter",
+      "title": "Somfy shutter drive limit controls",
+      "url": "https://www.somfy.co.uk/support/faq?question=how-to-set-the-end-limits-of-a-somfy-wired-roller-shutter-motor",
+      "architecture": "Tubular motor, shaft and limit adjustment."
+    },
+    {
+      "id": "ref-lamp-downlight",
+      "title": "Ansell recessed downlight",
+      "url": "https://ansell-lighting.com/en/products/twistlock-gu10-ip65-downlight?variation=12398",
+      "architecture": "Circular bezel, spring fixing and rear connector. ELV bench variant uses a driver."
+    },
+    {
+      "id": "ref-emergency-emergency-batten",
+      "title": "Ansell emergency bulkhead",
+      "url": "https://ansell-lighting.com/en/products/kite-emergency-bulkhead-maintained-non-maintained-white",
+      "architecture": "Diffuser, charge indicator and battery-backed lamp."
+    },
+    {
+      "id": "ref-sensor-mode-pir",
+      "title": "Timeguard lighting controls",
+      "url": "https://www.timeguard.com/assets/Uploads/2021-Product-Catalogue_Web_Version.pdf",
+      "architecture": "Different optics for daylight and occupancy sensing."
+    },
+    {
+      "id": "ref-dcsupply-default",
+      "title": "Phoenix Contact TRIO power supply",
+      "url": "https://www.phoenixcontact.com/en-us/products/power-supply-trio-ps1ac24dc-25-2866268?type=pdf",
+      "architecture": "Separate line and DC output connections."
+    },
+    {
+      "id": "ref-motor-compressor",
+      "title": "Einhell air compressor catalogue",
+      "url": "https://www.einhell.co.uk/fileadmin/corporate-media/services/catalogues/pdf-en/einhell-services-catalogue-power-tools-2024-en.pdf",
+      "architecture": "Motor, cylinder, receiver tank and pressure controls."
+    },
+    {
+      "id": "ref-safetyRelay-default",
+      "title": "Pilz PNOZ X3 safety relay",
+      "url": "https://www.pilz.com/download/open/OM_PNOZ_X3_20547-EN-16.pdf",
+      "architecture": "Reset and feedback connections and force-guided output contacts. The represented UI is generic."
+    },
+    {
+      "id": "ref-smartrelay-default",
+      "title": "Shelly Plus 1 terminals",
+      "url": "https://kb.shelly.cloud/knowledge-base/shelly-plus-1",
+      "architecture": "Separate switch input and relay contacts. The wall box is generic."
+    },
+    {
+      "id": "knipex-stripper",
+      "title": "KNIPEX 11 01 160 adjustable insulation stripper",
+      "url": "https://www.knipex.com/products/wire-strippers-and-stripping-tools/insulation-strippers-universal/insulation-strippers-universal/1101160",
+      "architecture": "V-cut opposing jaws and a knurled adjustment stop leave the copper intact on a matching conductor."
+    },
+    {
+      "id": "knipex-crimper",
+      "title": "KNIPEX 97 53 04 self-adjusting ferrule crimping pliers",
+      "url": "https://www.knipex.com/products/crimping-pliers/self-adjusting-crimping-pliers-for-wire-ferrules-with-lateral-access/self-adjusting-crimping-pliers-wire-ferrules-lateral-access/975304",
+      "architecture": "Closed four-sided die, lateral ferrule entry and ratchet handles produce a square ferrule profile."
+    }
   ],
   "familySources": {
-    "supply":["phoenix-clamp"], "meter":["phoenix-clamp"], "panel":["phoenix-clamp","siemens-plc"], "bar":["phoenix-clamp"],
-    "protection":["hager-rcbo","abb-mcb","schneider-spd"], "switch":["hager-accessory","mk-accessory"], "socket":["mk-accessory","mennekes-contacts"], "plug":["mk-accessory","mennekes-plug","mennekes-contacts"], "junction":["mk-accessory","lapp-gland"],
-    "lamp":["mk-accessory"], "sensor":["aico-alarm","siemens-plc"], "controller":["resideo-valve","siemens-plc"],
-    "heater":["dimplex-storage"], "appliance":["triton-shower","dimplex-storage","grundfos-pump"], "valve":["resideo-valve"],
-    "pump":["grundfos-pump","abb-motor"], "fan":["abb-motor"], "motor":["abb-motor"], "contactor":["schneider-contactor"], "overload":["abb-mcb","schneider-contactor"],
-    "vfd":["abb-drive"], "plc":["siemens-plc","schneider-contactor"], "inverter":["abb-drive"], "alarm":["aico-alarm"], "charger":["myenergi-ev"],
-    "transformer":["abb-drive"], "cable":["carkit-flat","eland-flex","lapp-gland"], "conduit":["lapp-gland"], "instrument":["fluke-instrument"]
+    "supply": [
+      "phoenix-clamp"
+    ],
+    "meter": [
+      "phoenix-clamp"
+    ],
+    "panel": [
+      "phoenix-clamp",
+      "siemens-plc"
+    ],
+    "bar": [
+      "phoenix-clamp"
+    ],
+    "protection": [
+      "hager-rcbo",
+      "abb-mcb",
+      "schneider-spd"
+    ],
+    "switch": [
+      "hager-accessory",
+      "mk-accessory"
+    ],
+    "socket": [
+      "mk-accessory",
+      "mennekes-contacts"
+    ],
+    "plug": [
+      "mk-accessory",
+      "mennekes-plug",
+      "mennekes-contacts"
+    ],
+    "junction": [
+      "mk-accessory",
+      "lapp-gland"
+    ],
+    "lamp": [
+      "mk-accessory"
+    ],
+    "sensor": [
+      "aico-alarm",
+      "siemens-plc"
+    ],
+    "controller": [
+      "resideo-valve",
+      "siemens-plc"
+    ],
+    "heater": [
+      "dimplex-storage"
+    ],
+    "appliance": [
+      "triton-shower",
+      "dimplex-storage",
+      "grundfos-pump"
+    ],
+    "valve": [
+      "resideo-valve"
+    ],
+    "pump": [
+      "grundfos-pump",
+      "abb-motor"
+    ],
+    "fan": [
+      "abb-motor"
+    ],
+    "motor": [
+      "abb-motor"
+    ],
+    "contactor": [
+      "schneider-contactor"
+    ],
+    "overload": [
+      "abb-mcb",
+      "schneider-contactor"
+    ],
+    "vfd": [
+      "abb-drive"
+    ],
+    "plc": [
+      "siemens-plc",
+      "schneider-contactor"
+    ],
+    "inverter": [
+      "abb-drive"
+    ],
+    "alarm": [
+      "aico-alarm"
+    ],
+    "charger": [
+      "myenergi-ev"
+    ],
+    "transformer": [
+      "abb-drive"
+    ],
+    "cable": [
+      "carkit-flat",
+      "eland-flex",
+      "lapp-gland"
+    ],
+    "conduit": [
+      "lapp-gland"
+    ],
+    "instrument": [
+      "fluke-instrument"
+    ],
+    "modular-board": [
+      "gamma-ie",
+      "invicta-ie",
+      "invicta-drawing"
+    ]
+  },
+  "variantSources": {
+    "gammaboard:default": [
+      "gamma-entries",
+      "gamma-ie"
+    ],
+    "panel:domestic-enclosure": [
+      "gamma-ie"
+    ],
+    "invictaboard:default": [
+      "invicta-ie",
+      "invicta-drawing"
+    ],
+    "panel:industrial-cabinet": [
+      "invicta-ie",
+      "invicta-drawing"
+    ],
+    "forktester:default": [
+      "fluke-t6"
+    ],
+    "stripper:default": [
+      "knipex-stripper"
+    ],
+    "crimper:default": [
+      "knipex-crimper"
+    ],
+    "torquedriver:default": [
+      "wiha-torque"
+    ],
+    "cctstrip:default": [
+      "ledvance-strip"
+    ],
+    "led:strip": [
+      "ledvance-strip"
+    ],
+    "led:series-module": [
+      "ledvance-strip"
+    ],
+    "pwmcontrol:single-channel": [
+      "ledvance-strip"
+    ],
+    "pwmcontrol:tunable-white": [
+      "ledvance-strip"
+    ],
+    "callchime:default": [
+      "friedland-chime"
+    ],
+    "chime:default": [
+      "friedland-chime"
+    ],
+    "pushbutton:bell-push": [
+      "friedland-chime"
+    ],
+    "floatvalve:default": [
+      "belimo-float"
+    ],
+    "selector:float-changeover": [
+      "mac-float"
+    ],
+    "sensor:mode=float": [
+      "mac-float"
+    ],
+    "proximity:default": [
+      "ifm-inductive"
+    ],
+    "driver:constant-current": [
+      "tridonic-cc"
+    ],
+    "driver:default": [
+      "tridonic-cv"
+    ],
+    "terminal:lever-connector": [
+      "wago-lever"
+    ],
+    "terminal:comb-busbar": [
+      "gamma-ie",
+      "invicta-ie"
+    ],
+    "neutralbar:default": [
+      "gamma-ie",
+      "invicta-ie"
+    ],
+    "earthbar:default": [
+      "gamma-ie",
+      "invicta-ie"
+    ],
+    "fuse:dc-fuse": [
+      "ref-fuse-dc-fuse"
+    ],
+    "switch:door-contact": [
+      "ref-switch-door-contact"
+    ],
+    "source:default": [
+      "ref-source-default"
+    ],
+    "source3:default": [
+      "ref-source-default"
+    ],
+    "meter:default": [
+      "ref-source-default"
+    ],
+    "isolator:red-isolator-rocker": [
+      "ref-isolator-red-isolator-rocker"
+    ],
+    "isolator3:red-isolator-rocker": [
+      "ref-isolator-red-isolator-rocker"
+    ],
+    "changeover:red-isolator-rocker": [
+      "ref-isolator-red-isolator-rocker"
+    ],
+    "lamp:batten": [
+      "ref-lamp-batten"
+    ],
+    "timer:default": [
+      "ref-timer-default"
+    ],
+    "thermostat:default": [
+      "ref-timer-default"
+    ],
+    "cutout:default": [
+      "ref-timer-default"
+    ],
+    "sensor:mode=temperature": [
+      "ref-timer-default"
+    ],
+    "valve:two-port": [
+      "ref-timer-default"
+    ],
+    "valve3:three-port": [
+      "ref-timer-default"
+    ],
+    "heater:mat": [
+      "ref-heater-mat"
+    ],
+    "fan:default": [
+      "ref-fan-default"
+    ],
+    "sensor:mode=humidity": [
+      "ref-fan-default"
+    ],
+    "pushbutton:start-button": [
+      "ref-pushbutton-start-button"
+    ],
+    "pushbutton:stop-button": [
+      "ref-pushbutton-start-button"
+    ],
+    "selector:rotary": [
+      "ref-pushbutton-start-button"
+    ],
+    "indicator:indicator": [
+      "ref-pushbutton-start-button"
+    ],
+    "overload:default": [
+      "ref-overload-default"
+    ],
+    "dimmer:rotary": [
+      "ref-dimmer-rotary"
+    ],
+    "transformer:default": [
+      "ref-transformer-default"
+    ],
+    "heatpump:default": [
+      "ref-heatpump-default"
+    ],
+    "sensor:mode=pressure": [
+      "ref-sensor-mode-pressure"
+    ],
+    "motor:gate": [
+      "ref-motor-gate"
+    ],
+    "pv:default": [
+      "ref-pv-default"
+    ],
+    "battery:default": [
+      "ref-pv-default"
+    ],
+    "fuse:default": [
+      "ref-fuse-default"
+    ],
+    "boiler:default": [
+      "ref-boiler-default"
+    ],
+    "cooker:default": [
+      "ref-cooker-default"
+    ],
+    "heater:immersion": [
+      "ref-heater-immersion"
+    ],
+    "motor:shutter": [
+      "ref-motor-shutter"
+    ],
+    "lamp:downlight": [
+      "ref-lamp-downlight"
+    ],
+    "led:downlight": [
+      "ref-lamp-downlight"
+    ],
+    "emergency:emergency-batten": [
+      "ref-emergency-emergency-batten"
+    ],
+    "sensor:mode=pir": [
+      "ref-sensor-mode-pir"
+    ],
+    "sensor:mode=photocell": [
+      "ref-sensor-mode-pir"
+    ],
+    "dcsupply:default": [
+      "ref-dcsupply-default"
+    ],
+    "motor:compressor": [
+      "ref-motor-compressor"
+    ],
+    "safetyRelay:default": [
+      "ref-safetyRelay-default"
+    ],
+    "smartrelay:default": [
+      "ref-smartrelay-default"
+    ],
+    "rose:default": [
+      "mk-accessory"
+    ],
+    "switch:single-rocker": [
+      "hager-accessory",
+      "mk-accessory"
+    ],
+    "lamp:bulb": [
+      "mk-accessory"
+    ],
+    "terminal:default": [
+      "phoenix-clamp"
+    ],
+    "mcb:default": [
+      "abb-mcb"
+    ],
+    "mcb3:default": [
+      "abb-mcb"
+    ],
+    "rcd:default": [
+      "hager-rcbo",
+      "abb-mcb"
+    ],
+    "rcbo:default": [
+      "hager-rcbo",
+      "abb-mcb"
+    ],
+    "rcd3:default": [
+      "hager-rcbo",
+      "abb-mcb"
+    ],
+    "spd:default": [
+      "schneider-spd"
+    ],
+    "socket:default": [
+      "mk-accessory"
+    ],
+    "socket3:default": [
+      "mennekes-plug",
+      "mennekes-contacts"
+    ],
+    "plug:default": [
+      "mk-accessory"
+    ],
+    "plug3:default": [
+      "mennekes-plug",
+      "mennekes-contacts"
+    ],
+    "junction:default": [
+      "mk-accessory"
+    ],
+    "fcu:default": [
+      "mk-accessory"
+    ],
+    "switch2:single-rocker": [
+      "hager-accessory",
+      "mk-accessory"
+    ],
+    "intermediate:single-rocker": [
+      "hager-accessory",
+      "mk-accessory"
+    ],
+    "heater:storage": [
+      "dimplex-storage"
+    ],
+    "shower:default": [
+      "triton-shower",
+      "dimplex-storage",
+      "grundfos-pump"
+    ],
+    "pump:default": [
+      "grundfos-pump",
+      "abb-motor"
+    ],
+    "motor:motor": [
+      "abb-motor"
+    ],
+    "motor3:motor": [
+      "abb-motor"
+    ],
+    "contactor:default": [
+      "schneider-contactor"
+    ],
+    "relay:default": [
+      "schneider-contactor"
+    ],
+    "vfd:default": [
+      "abb-drive"
+    ],
+    "plc:default": [
+      "siemens-plc",
+      "schneider-contactor"
+    ],
+    "alarm:default": [
+      "aico-alarm"
+    ],
+    "ev:default": [
+      "myenergi-ev"
+    ],
+    "cable:three-core": [
+      "eland-flex"
+    ],
+    "conduit:conduit-gland": [
+      "lapp-gland"
+    ],
+    "multimeter:default": [
+      "fluke-instrument"
+    ],
+    "clamp:default": [
+      "fluke-instrument"
+    ],
+    "switch:gang-module-left": [
+      "hager-accessory",
+      "mk-accessory"
+    ],
+    "switch:gang-module-right": [
+      "hager-accessory",
+      "mk-accessory"
+    ],
+    "sensor:mode=load": [
+      "myenergi-ev"
+    ],
+    "cable:five-core": [
+      "eland-flex"
+    ],
+    "conduit:slotted-trunking": [
+      "lapp-gland"
+    ]
   }
 }

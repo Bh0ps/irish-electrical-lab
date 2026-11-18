@@ -3,8 +3,14 @@ import type { CableCore, CableKind, CableRun, CircuitDocument, TerminalRole, Wir
 export const CABLE_CORES: readonly CableCore[] = ['brown', 'blue', 'green-yellow'];
 // The illustrated Irish flat sample places its insulated protective core in the middle.
 export const FLAT_CORE_ORDER: readonly CableCore[] = ['brown','green-yellow','blue'];
-export const CABLE_CORE_LABEL: Record<CableCore, string> = {brown: 'Brown', blue: 'Blue', 'green-yellow': 'Green/yellow'};
-export const CABLE_LABEL: Record<CableKind, string> = {single:'Insulated single', flat:'Flat twin and earth', flex:'Round flex'};
+export const CABLE_CORE_LABEL: Record<CableCore, string> = {red:'Red',white:'White',yellow:'Yellow',black:'Black',brown: 'Brown', blue: 'Blue', 'green-yellow': 'Green/yellow'};
+export const CABLE_LABEL: Record<CableKind, string> = {single:'Insulated single', flat:'Flat twin and earth', flex:'Round flex','bell-pair':'Two-core bell cable','led-pair':'Flexible LED pair','multi-strip':'Multichannel strip cable'};
+export const CORE_COLOUR:Record<CableCore,string>={red:'#b82927',white:'#f6f1e6',black:'#202126',yellow:'#e0b52b',brown:'#74452d',blue:'#286db0','green-yellow':'#72852f'};
+const coreSets:Record<CableKind,readonly CableCore[]>={single:['brown'],flex:CABLE_CORES,flat:FLAT_CORE_ORDER,'bell-pair':['red','white'],'led-pair':['red','black'],'multi-strip':['red','white','yellow','black']};
+export const cableCores=(kind:CableKind)=>coreSets[kind];
+export const cableKinds=Object.keys(coreSets) as CableKind[];
+export const isSheathKind=(value:unknown):value is CableRun['kind']=>typeof value==='string'&&value!=='single'&&Object.hasOwn(coreSets,value);
+export const sheathStyle=(kind:CableKind)=>({flat:kind==='flat'||kind==='led-pair'||kind==='multi-strip',stranded:['flex','led-pair','multi-strip'].includes(kind),radius:kind==='bell-pair'?.68:kind==='led-pair'?.80:1,colour:kind==='flat'?'#919998':kind==='multi-strip'?'#dad9d3':kind==='led-pair'?'#31353a':'#e5e0d4'});
 export interface CableChoice { kind: CableKind; runId?: string; core?: CableCore; newRun?: boolean }
 
 function sameHousings(run: CableRun, wire: Wire) {
@@ -15,6 +21,7 @@ function nominalCore(role: TerminalRole): CableCore {
   return role === 'PE' ? 'green-yellow' : role === 'N' ? 'blue' : 'brown';
 }
 export function markedRole(core: CableCore, intended: TerminalRole): TerminalRole {
+  if (['red','white','yellow','black'].includes(core))return intended;
   if (core === 'green-yellow') return 'PE';
   if (core === 'blue') return 'N';
   return intended === 'N' || intended === 'PE' ? 'L' : intended;
@@ -51,7 +58,9 @@ export function addCableConnection(document: CircuitDocument, wire: Wire, choice
     return {document:{...document,wires:[...document.wires,single]},choice};
   }
   const runs = document.cableRuns ?? [];
-  const core = choice.core ?? nominalCore(wire.role);
+  const cores=cableCores(choice.kind);
+  const core=choice.core??(choice.kind==='bell-pair'?(wire.from.terminal==='-'||wire.to.terminal==='AC2'?'white':'red'):choice.kind==='led-pair'||choice.kind==='multi-strip'?(wire.role==='DC-'?'black':wire.role==='control'?choice.kind==='multi-strip'?(wire.to.terminal==='C'?'yellow':'white'):'black':'red'):nominalCore(wire.role));
+  if(!cores.includes(core))throw Error('Choose a core present in this cable.');
   const inUse = (run: CableRun) => document.wires.some(w => w.cable?.runId === run.id && w.cable.core === core);
   let run = runs.find(r => r.id === choice.runId && r.kind === choice.kind);
   if (!run && !choice.newRun) run = runs.find(r => r.kind === choice.kind && sameHousings(r,wire) && !inUse(r));
@@ -97,6 +106,18 @@ export function cleanCableRuns(document: CircuitDocument): CircuitDocument {
  * the wire list. Saved examples from earlier versions still load as drawn. */
 export function furnishCableExamples(document:CircuitDocument):CircuitDocument {
   const sockets=[17,18,19].includes(document.lessonId??0),flex=document.lessonId===20;
+  const id=document.lessonId??0;
+  if(id>=65){
+    let next:CircuitDocument={...document,wires:[]};
+    for(const wire of document.wires){
+      const from=wire.from.component,to=wire.to.component;
+      const two=(from==='near'&&to==='far')||(from==='pwm'&&to==='strip')||(['pwm','controller'].includes(to)&&from==='driver');
+      const multi=from==='controller'&&to==='tape',bell=from==='tx'&&to==='chime';
+      if(two||multi||bell) next=addCableConnection(next,wire,{kind:multi?'multi-strip':bell?'bell-pair':'led-pair'}).document;
+      else next.wires.push(wire);
+    }
+    return next;
+  }
   if(!sockets&&!flex)return document;
   let next:CircuitDocument={...document,wires:[]},lead:string|undefined;
   for(const wire of document.wires){

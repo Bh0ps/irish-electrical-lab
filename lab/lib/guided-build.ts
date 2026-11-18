@@ -1,3 +1,4 @@
+import { COURSE_BOND_ID } from './board-examples.ts';
 import { evaluateActivity, type ActivityOutcome, type LessonActivity } from './learning.ts';
 import { connectionKey } from './wire-connections.ts';
 import type { CircuitDocument } from './types.ts';
@@ -15,7 +16,7 @@ export function createIsolatedGuidedBuild(example: CircuitDocument, id: string):
   const document = structuredClone(example);
   document.id = id;
   document.supply.enabled = false;
-  document.wires = [];
+  document.wires = document.wires.filter(w=>w.id===COURSE_BOND_ID);
   delete document.cableRuns;
   document.faults = [];
   for (const component of document.components) if (component.type === 'pv' || component.type === 'battery') {

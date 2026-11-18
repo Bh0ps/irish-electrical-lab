@@ -8975,5 +8975,1458 @@
     "bytes": 248772,
     "lowBytes": 69936,
     "bespokeBlender": true
+  },
+  {
+    "key": "gammaboard_default",
+    "galleryKey": "gammaboard:default",
+    "type": "gammaboard",
+    "name": "Two-row domestic consumer unit",
+    "url": "/models/gammaboard_default.glb",
+    "lowUrl": "/models/gammaboard_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/gammaboard_default.png",
+    "detailRevision": 3,
+    "detailFamily": "modular-board",
+    "detailFeatures": [
+      "slotted-dead-front",
+      "hinged-panel-door",
+      "enclosure-with-cable-entry",
+      "top-hat-device-rails"
+    ],
+    "sourceMeshCount": 142,
+    "meshCount": 14,
+    "triangles": 15264,
+    "lowTriangles": 2732,
+    "terminals": [],
+    "bytes": 273644,
+    "lowBytes": 72484,
+    "bespokeBlender": true
+  },
+  {
+    "key": "invictaboard_default",
+    "galleryKey": "invictaboard:default",
+    "type": "invictaboard",
+    "name": "Three-phase distribution board",
+    "url": "/models/invictaboard_default.glb",
+    "lowUrl": "/models/invictaboard_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/invictaboard_default.png",
+    "detailRevision": 3,
+    "detailFamily": "modular-board",
+    "detailFeatures": [
+      "terminal-clamp:PE",
+      "individual-electrical-terminations",
+      "hinged-panel-door",
+      "enclosure-with-cable-entry",
+      "top-hat-device-rails",
+      "slotted-dead-front"
+    ],
+    "sourceMeshCount": 157,
+    "meshCount": 20,
+    "triangles": 21296,
+    "lowTriangles": 3932,
+    "terminals": [
+      {
+        "id": "PE",
+        "label": "PE",
+        "role": "PE",
+        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "anchor": [
+          3.7200000000000006,
+          8.5,
+          -0.954
+        ],
+        "group": "Connections",
+        "scale": 1,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "bytes": 452828,
+    "lowBytes": 114872,
+    "bespokeBlender": true
+  },
+  {
+    "key": "forktester_default",
+    "galleryKey": "forktester:default",
+    "type": "forktester",
+    "name": "Open-fork tester \u00b7 T6-600 study model",
+    "url": "/models/forktester_default.glb",
+    "lowUrl": "/models/forktester_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/forktester_default.png",
+    "detailRevision": 3,
+    "detailFamily": "instrument",
+    "detailFeatures": [
+      "forktester-body",
+      "forktester-sensing",
+      "forktester-display",
+      "forktester-mode",
+      "forktester-hold",
+      "forktester-actuator",
+      "forktester-ground",
+      "forktester-probes"
+    ],
+    "sourceMeshCount": 49,
+    "meshCount": 23,
+    "triangles": 13568,
+    "lowTriangles": 2433,
+    "terminals": [],
+    "bytes": 241624,
+    "lowBytes": 70160,
+    "bespokeBlender": true
+  },
+  {
+    "key": "stripper_default",
+    "galleryKey": "stripper:default",
+    "type": "stripper",
+    "name": "Wire stripper",
+    "url": "/models/stripper_default.glb",
+    "lowUrl": "/models/stripper_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/stripper_default.png",
+    "detailRevision": 3,
+    "detailFamily": "instrument",
+    "detailFeatures": [
+      "stripper-body",
+      "stripper-actuator",
+      "stripper-mechanism"
+    ],
+    "sourceMeshCount": 29,
+    "meshCount": 16,
+    "triangles": 7796,
+    "lowTriangles": 1459,
+    "terminals": [],
+    "bytes": 117476,
+    "lowBytes": 41704,
+    "bespokeBlender": true
+  },
+  {
+    "key": "crimper_default",
+    "galleryKey": "crimper:default",
+    "type": "crimper",
+    "name": "Ferrule crimper",
+    "url": "/models/crimper_default.glb",
+    "lowUrl": "/models/crimper_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/crimper_default.png",
+    "detailRevision": 3,
+    "detailFamily": "instrument",
+    "detailFeatures": [
+      "crimper-actuator",
+      "crimper-body",
+      "crimper-mechanism"
+    ],
+    "sourceMeshCount": 31,
+    "meshCount": 15,
+    "triangles": 6968,
+    "lowTriangles": 1252,
+    "terminals": [],
+    "bytes": 109192,
+    "lowBytes": 38456,
+    "bespokeBlender": true
+  },
+  {
+    "key": "torquedriver_default",
+    "galleryKey": "torquedriver:default",
+    "type": "torquedriver",
+    "name": "Adjustable torque screwdriver",
+    "url": "/models/torquedriver_default.glb",
+    "lowUrl": "/models/torquedriver_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/torquedriver_default.png",
+    "detailRevision": 3,
+    "detailFamily": "instrument",
+    "detailFeatures": [
+      "torquedriver-mechanism",
+      "torquedriver-body",
+      "torquedriver-actuator"
+    ],
+    "sourceMeshCount": 8,
+    "meshCount": 6,
+    "triangles": 2400,
+    "lowTriangles": 432,
+    "terminals": [],
+    "bytes": 41976,
+    "lowBytes": 16040,
+    "bespokeBlender": true
+  },
+  {
+    "key": "pwmcontrol_single-channel",
+    "galleryKey": "pwmcontrol:single-channel",
+    "type": "pwmcontrol",
+    "name": "Low-voltage pulse controller",
+    "url": "/models/pwmcontrol_single-channel.glb",
+    "lowUrl": "/models/pwmcontrol_single-channel.low.glb",
+    "thumbnailUrl": "/models/thumbnails/pwmcontrol_single-channel.png",
+    "detailRevision": 3,
+    "detailFamily": "controller",
+    "detailFeatures": [
+      "terminal-clamp:+",
+      "terminal-clamp:-",
+      "terminal-clamp:W",
+      "terminal-clamp:C",
+      "individual-electrical-terminations",
+      "control-housing-and-terminals",
+      "output-driver-board",
+      "channel-adjustment"
+    ],
+    "sourceMeshCount": 89,
+    "meshCount": 32,
+    "triangles": 23388,
+    "lowTriangles": 5226,
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Shared positive DC connection.",
+        "anchor": [
+          -0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "DC supply return for the pulse controller.",
+        "anchor": [
+          -0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "W",
+        "label": "W",
+        "role": "control",
+        "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "C",
+        "label": "C",
+        "role": "control",
+        "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "bytes": 533980,
+    "lowBytes": 165468,
+    "bespokeBlender": true
+  },
+  {
+    "key": "cctstrip_default",
+    "galleryKey": "cctstrip:default",
+    "type": "cctstrip",
+    "name": "Warm / cool tape",
+    "url": "/models/cctstrip_default.glb",
+    "lowUrl": "/models/cctstrip_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/cctstrip_default.png",
+    "detailRevision": 3,
+    "detailFamily": "lamp",
+    "detailFeatures": [
+      "terminal-clamp:+",
+      "terminal-clamp:W",
+      "terminal-clamp:C",
+      "individual-electrical-terminations",
+      "smd-led-packages",
+      "flexible-copper-tracks"
+    ],
+    "sourceMeshCount": 39,
+    "meshCount": 28,
+    "triangles": 7308,
+    "lowTriangles": 1252,
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Shared positive DC connection.",
+        "anchor": [
+          -0.903,
+          0.5040000000000001,
+          0.027200000000000002
+        ],
+        "group": "Connections",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "W",
+        "label": "W",
+        "role": "control",
+        "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          -0.903,
+          0.387,
+          0.027200000000000002
+        ],
+        "group": "Connections",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "C",
+        "label": "C",
+        "role": "control",
+        "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          -0.903,
+          0.27,
+          0.027200000000000002
+        ],
+        "group": "Connections",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "bytes": 175596,
+    "lowBytes": 50568,
+    "bespokeBlender": true
+  },
+  {
+    "key": "callchime_default",
+    "galleryKey": "callchime:default",
+    "type": "callchime",
+    "name": "Two-input AC door chime",
+    "url": "/models/callchime_default.glb",
+    "lowUrl": "/models/callchime_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/callchime_default.png",
+    "detailRevision": 3,
+    "detailFamily": "alarm",
+    "detailFeatures": [
+      "terminal-clamp:AC1",
+      "terminal-clamp:AC2",
+      "terminal-clamp:FRONT",
+      "terminal-clamp:REAR",
+      "individual-electrical-terminations",
+      "two-note-sound-bars"
+    ],
+    "sourceMeshCount": 72,
+    "meshCount": 30,
+    "triangles": 36308,
+    "lowTriangles": 4910,
+    "terminals": [
+      {
+        "id": "AC1",
+        "label": "AC1",
+        "role": "output",
+        "purpose": "One side of the continuously supplied AC winding; compare AC1 with AC2.",
+        "anchor": [
+          -0.31350000000000006,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "AC2",
+        "label": "AC2",
+        "role": "output",
+        "purpose": "One side of the continuously supplied AC winding; compare AC1 with AC2.",
+        "anchor": [
+          -0.10450000000000001,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "FRONT",
+        "label": "FRONT",
+        "role": "control",
+        "purpose": "Switched call input from the corresponding push, referenced to AC2.",
+        "anchor": [
+          0.10450000000000001,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "REAR",
+        "label": "REAR",
+        "role": "control",
+        "purpose": "Switched call input from the corresponding push, referenced to AC2.",
+        "anchor": [
+          0.31350000000000006,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "bytes": 867412,
+    "lowBytes": 152880,
+    "bespokeBlender": true
+  },
+  {
+    "key": "floatvalve_default",
+    "galleryKey": "floatvalve:default",
+    "type": "floatvalve",
+    "name": "Three-point valve actuator",
+    "url": "/models/floatvalve_default.glb",
+    "lowUrl": "/models/floatvalve_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/floatvalve_default.png",
+    "detailRevision": 3,
+    "detailFamily": "valve",
+    "detailFeatures": [
+      "terminal-clamp:COM",
+      "terminal-clamp:OPEN",
+      "terminal-clamp:CLOSE",
+      "individual-electrical-terminations",
+      "three-point-valve-drive",
+      "position-indicator"
+    ],
+    "sourceMeshCount": 49,
+    "meshCount": 21,
+    "triangles": 30412,
+    "lowTriangles": 3558,
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "DC-",
+        "purpose": "Common return for both direction inputs.",
+        "anchor": [
+          -0.207,
+          0.5750000000000001,
+          -0.248
+        ],
+        "group": "Connections",
+        "scale": 0.74,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "OPEN",
+        "label": "OPEN",
+        "role": "control",
+        "purpose": "Apply the declared supply between OPEN and COM to request travel in this direction.",
+        "anchor": [
+          0,
+          0.5750000000000001,
+          -0.248
+        ],
+        "group": "Connections",
+        "scale": 0.74,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "CLOSE",
+        "label": "CLOSE",
+        "role": "control",
+        "purpose": "Apply the declared supply between CLOSE and COM to request travel in this direction.",
+        "anchor": [
+          0.207,
+          0.5750000000000001,
+          -0.248
+        ],
+        "group": "Connections",
+        "scale": 0.74,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "bytes": 741136,
+    "lowBytes": 118740,
+    "bespokeBlender": true
+  },
+  {
+    "key": "proximity_default",
+    "galleryKey": "proximity:default",
+    "type": "proximity",
+    "name": "Three-wire PNP proximity sensor",
+    "url": "/models/proximity_default.glb",
+    "lowUrl": "/models/proximity_default.low.glb",
+    "thumbnailUrl": "/models/thumbnails/proximity_default.png",
+    "detailRevision": 3,
+    "detailFamily": "sensor",
+    "detailFeatures": [
+      "terminal-clamp:+",
+      "terminal-clamp:OUT",
+      "terminal-clamp:-",
+      "individual-electrical-terminations",
+      "threaded-proximity-barrel"
+    ],
+    "sourceMeshCount": 44,
+    "meshCount": 9,
+    "triangles": 7860,
+    "lowTriangles": 1750,
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Brown lead. Positive DC powers the sensing electronics.",
+        "anchor": [
+          -0.1184,
+          0.09899999999999999,
+          0.033299999999999996
+        ],
+        "group": "Connections",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          -0.4500114754389374,
+          0.8930227723710469
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "OUT",
+        "role": "control",
+        "purpose": "Black PNP output. With power and a target present it supplies the load from positive.",
+        "anchor": [
+          0,
+          0.09899999999999999,
+          0.033299999999999996
+        ],
+        "group": "Connections",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          -0.4500114754389374,
+          0.8930227723710469
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "Blue lead. Return to the negative DC supply terminal.",
+        "anchor": [
+          0.1184,
+          0.09899999999999999,
+          0.033299999999999996
+        ],
+        "group": "Connections",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          -0.4500114754389374,
+          0.8930227723710469
+        ]
+      }
+    ],
+    "bytes": 197064,
+    "lowBytes": 69800,
+    "bespokeBlender": true
+  },
+  {
+    "key": "switch_door-contact",
+    "galleryKey": "switch:door-contact",
+    "type": "switch",
+    "name": "Cupboard door contact \u00b7 closed with door open",
+    "url": "/models/switch_door-contact.glb",
+    "lowUrl": "/models/switch_door-contact.low.glb",
+    "thumbnailUrl": "/models/thumbnails/switch_door-contact.png",
+    "detailRevision": 3,
+    "detailFamily": "switch",
+    "detailFeatures": [
+      "terminal-clamp:COM",
+      "terminal-clamp:OUT",
+      "individual-electrical-terminations",
+      "reed-and-door-magnet"
+    ],
+    "sourceMeshCount": 44,
+    "meshCount": 20,
+    "triangles": 15376,
+    "lowTriangles": 2600,
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "L",
+        "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
+        "anchor": [
+          -0.30250000000000005,
+          0.243,
+          -0.2
+        ],
+        "group": "Common",
+        "scale": 0.58,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "L1",
+        "role": "L",
+        "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
+        "anchor": [
+          -0.1375,
+          0.243,
+          -0.2
+        ],
+        "group": "Switched line",
+        "scale": 0.58,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "bytes": 368932,
+    "lowBytes": 92748,
+    "bespokeBlender": true
+  },
+  {
+    "key": "led_strip",
+    "galleryKey": "led:strip",
+    "type": "led",
+    "name": "Cupboard strip",
+    "url": "/models/led_strip.glb",
+    "lowUrl": "/models/led_strip.low.glb",
+    "thumbnailUrl": "/models/thumbnails/led_strip.png",
+    "detailRevision": 3,
+    "detailFamily": "lamp",
+    "detailFeatures": [
+      "terminal-clamp:L",
+      "terminal-clamp:N",
+      "individual-electrical-terminations",
+      "smd-led-packages",
+      "flexible-copper-tracks"
+    ],
+    "sourceMeshCount": 25,
+    "meshCount": 11,
+    "triangles": 3180,
+    "lowTriangles": 826,
+    "terminals": [
+      {
+        "id": "L",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/\u2212 output pair rather than a mains supply.",
+        "anchor": [
+          -0.43,
+          0.55,
+          0.085
+        ],
+        "group": "Permanent supply",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "N",
+        "label": "\u2212",
+        "role": "DC-",
+        "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/\u2212 output pair rather than a mains supply.",
+        "anchor": [
+          -0.43,
+          0.31,
+          0.085
+        ],
+        "group": "Permanent supply",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "bytes": 77628,
+    "lowBytes": 31312,
+    "bespokeBlender": true
+  },
+  {
+    "key": "pwmcontrol_tunable-white",
+    "galleryKey": "pwmcontrol:tunable-white",
+    "type": "pwmcontrol",
+    "name": "Warm / cool controller",
+    "url": "/models/pwmcontrol_tunable-white.glb",
+    "lowUrl": "/models/pwmcontrol_tunable-white.low.glb",
+    "thumbnailUrl": "/models/thumbnails/pwmcontrol_tunable-white.png",
+    "detailRevision": 3,
+    "detailFamily": "controller",
+    "detailFeatures": [
+      "terminal-clamp:+",
+      "terminal-clamp:-",
+      "terminal-clamp:W",
+      "terminal-clamp:C",
+      "individual-electrical-terminations",
+      "control-housing-and-terminals",
+      "output-driver-board",
+      "channel-adjustment"
+    ],
+    "sourceMeshCount": 91,
+    "meshCount": 34,
+    "triangles": 23592,
+    "lowTriangles": 5260,
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Shared positive DC connection.",
+        "anchor": [
+          -0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "DC supply return for the pulse controller.",
+        "anchor": [
+          -0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "W",
+        "label": "W",
+        "role": "control",
+        "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "C",
+        "label": "C",
+        "role": "control",
+        "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "bytes": 541436,
+    "lowBytes": 167360,
+    "bespokeBlender": true
+  },
+  {
+    "key": "driver_constant-current",
+    "galleryKey": "driver:constant-current",
+    "type": "driver",
+    "name": "350 mA constant-current driver",
+    "url": "/models/driver_constant-current.glb",
+    "lowUrl": "/models/driver_constant-current.low.glb",
+    "thumbnailUrl": "/models/thumbnails/driver_constant-current.png",
+    "detailRevision": 3,
+    "detailFamily": "transformer",
+    "detailFeatures": [
+      "terminal-clamp:L",
+      "terminal-clamp:N",
+      "terminal-clamp:PE",
+      "terminal-clamp:+",
+      "terminal-clamp:-",
+      "individual-electrical-terminations",
+      "control-housing-and-terminals",
+      "output-driver-board"
+    ],
+    "sourceMeshCount": 102,
+    "meshCount": 36,
+    "triangles": 26948,
+    "lowTriangles": 6390,
+    "terminals": [
+      {
+        "id": "L",
+        "label": "L",
+        "role": "L",
+        "purpose": "Line conductor: the alternating supply relative to neutral.",
+        "anchor": [
+          -0.517,
+          0.3375,
+          -0.016
+        ],
+        "group": "Mains input",
+        "scale": 0.66,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "N",
+        "label": "N",
+        "role": "N",
+        "purpose": "Neutral: the normal return path. It is not a protective conductor.",
+        "anchor": [
+          -0.517,
+          0.621,
+          -0.016
+        ],
+        "group": "Mains input",
+        "scale": 0.66,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "PE",
+        "label": "PE",
+        "role": "PE",
+        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "anchor": [
+          -0.517,
+          0.9045,
+          -0.016
+        ],
+        "group": "Mains input",
+        "scale": 0.66,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Positive output of the regulated isolated DC pair. Measure + to \u2212; the \u2212 terminal is not mains neutral. Output voltage and available power follow the declared converter limits.",
+        "anchor": [
+          0.517,
+          0.3375,
+          -0.016
+        ],
+        "group": "Isolated output",
+        "scale": 0.66,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "Negative output return of the regulated isolated DC pair. Measure + to \u2212; the \u2212 terminal is not mains neutral. Output voltage and available power follow the declared converter limits.",
+        "anchor": [
+          0.517,
+          0.621,
+          -0.016
+        ],
+        "group": "Isolated output",
+        "scale": 0.66,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "bytes": 612260,
+    "lowBytes": 206072,
+    "bespokeBlender": true
+  },
+  {
+    "key": "led_series-module",
+    "galleryKey": "led:series-module",
+    "type": "led",
+    "name": "First series module",
+    "url": "/models/led_series-module.glb",
+    "lowUrl": "/models/led_series-module.low.glb",
+    "thumbnailUrl": "/models/thumbnails/led_series-module.png",
+    "detailRevision": 3,
+    "detailFamily": "lamp",
+    "detailFeatures": [
+      "terminal-clamp:L",
+      "terminal-clamp:N",
+      "individual-electrical-terminations",
+      "aluminium-led-board",
+      "central-emitter-module"
+    ],
+    "sourceMeshCount": 12,
+    "meshCount": 11,
+    "triangles": 1584,
+    "lowTriangles": 582,
+    "terminals": [
+      {
+        "id": "L",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/\u2212 output pair rather than a mains supply.",
+        "anchor": [
+          -0.31,
+          0.46,
+          0.095
+        ],
+        "group": "LED connection",
+        "scale": 0.5,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "N",
+        "label": "\u2212",
+        "role": "DC-",
+        "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/\u2212 output pair rather than a mains supply.",
+        "anchor": [
+          0.31,
+          0.46,
+          0.095
+        ],
+        "group": "LED connection",
+        "scale": 0.5,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "bytes": 49452,
+    "lowBytes": 25572,
+    "bespokeBlender": true
+  },
+  {
+    "key": "pushbutton_bell-push",
+    "galleryKey": "pushbutton:bell-push",
+    "type": "pushbutton",
+    "name": "front bell push",
+    "url": "/models/pushbutton_bell-push.glb",
+    "lowUrl": "/models/pushbutton_bell-push.low.glb",
+    "thumbnailUrl": "/models/thumbnails/pushbutton_bell-push.png",
+    "detailRevision": 3,
+    "detailFamily": "switch",
+    "detailFeatures": [
+      "terminal-clamp:COM",
+      "terminal-clamp:NO",
+      "terminal-clamp:NC",
+      "individual-electrical-terminations",
+      "bell-push-weather-plate"
+    ],
+    "sourceMeshCount": 52,
+    "meshCount": 23,
+    "triangles": 23848,
+    "lowTriangles": 3640,
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "control",
+        "purpose": "Common connection of the separate changeover contact. This is a supplied contact circuit, not the coil or a neutral reference.",
+        "anchor": [
+          -0.198,
+          0.5805,
+          -0.22400000000000003
+        ],
+        "group": "Common",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NO",
+        "label": "NO",
+        "role": "N",
+        "purpose": "Normally open path from COM: closes when the button is held pressed and opens on release.",
+        "anchor": [
+          0,
+          0.5805,
+          -0.22400000000000003
+        ],
+        "group": "Auxiliary contacts",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NC",
+        "label": "NC",
+        "role": "N",
+        "purpose": "Normally closed path from COM: opens when the button is held pressed and closes on release. It can interrupt a maintained request if wired in that request path.",
+        "anchor": [
+          0.198,
+          0.5805,
+          -0.22400000000000003
+        ],
+        "group": "Auxiliary contacts",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "bytes": 574920,
+    "lowBytes": 118816,
+    "bespokeBlender": true
+  },
+  {
+    "key": "selector_float-changeover",
+    "galleryKey": "selector:float-changeover",
+    "type": "selector",
+    "name": "Condensate float \u00b7 normal / high",
+    "url": "/models/selector_float-changeover.glb",
+    "lowUrl": "/models/selector_float-changeover.low.glb",
+    "thumbnailUrl": "/models/thumbnails/selector_float-changeover.png",
+    "detailRevision": 3,
+    "detailFamily": "switch",
+    "detailFeatures": [
+      "terminal-clamp:COM",
+      "terminal-clamp:A",
+      "terminal-clamp:B",
+      "individual-electrical-terminations",
+      "float-and-cable-pivot"
+    ],
+    "sourceMeshCount": 25,
+    "meshCount": 6,
+    "triangles": 6204,
+    "lowTriangles": 1456,
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "control",
+        "purpose": "Common fed contact selecting A in the first position or B in the second. The two selected paths remain alternative connections.",
+        "anchor": [
+          -0.09350000000000001,
+          0.0702,
+          -0.096
+        ],
+        "group": "Common",
+        "scale": 0.52,
+        "entryDirection": [
+          0,
+          -0.5000110003630133,
+          -0.866019052628739
+        ]
+      },
+      {
+        "id": "A",
+        "label": "A",
+        "role": "control",
+        "purpose": "Selected contact A: connected to COM in the first position. The selector does not energize this path without a real feed to COM.",
+        "anchor": [
+          0,
+          0.0702,
+          -0.096
+        ],
+        "group": "Selected paths",
+        "scale": 0.52,
+        "entryDirection": [
+          0,
+          -0.5000110003630133,
+          -0.866019052628739
+        ]
+      },
+      {
+        "id": "B",
+        "label": "B",
+        "role": "control",
+        "purpose": "Selected contact B: connected to COM in the second position. The selector does not energize this path without a real feed to COM.",
+        "anchor": [
+          0.09350000000000001,
+          0.0702,
+          -0.096
+        ],
+        "group": "Selected paths",
+        "scale": 0.52,
+        "entryDirection": [
+          0,
+          -0.5000110003630133,
+          -0.866019052628739
+        ]
+      }
+    ],
+    "bytes": 165304,
+    "lowBytes": 60888,
+    "bespokeBlender": true
+  },
+  {
+    "key": "terminal_lever-connector",
+    "galleryKey": "terminal:lever-connector",
+    "type": "terminal",
+    "name": "Positive distribution connector",
+    "url": "/models/terminal_lever-connector.glb",
+    "lowUrl": "/models/terminal_lever-connector.low.glb",
+    "thumbnailUrl": "/models/thumbnails/terminal_lever-connector.png",
+    "detailRevision": 3,
+    "detailFamily": "bar",
+    "detailFeatures": [
+      "terminal-clamp:1",
+      "terminal-clamp:2",
+      "terminal-clamp:3",
+      "terminal-clamp:4",
+      "individual-electrical-terminations",
+      "lever-spring-connector"
+    ],
+    "sourceMeshCount": 42,
+    "meshCount": 25,
+    "triangles": 11972,
+    "lowTriangles": 1820,
+    "terminals": [
+      {
+        "id": "1",
+        "label": "1",
+        "role": "control",
+        "purpose": "Terminal 1 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.36,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "2",
+        "label": "2",
+        "role": "control",
+        "purpose": "Terminal 2 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.12,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "3",
+        "label": "3",
+        "role": "control",
+        "purpose": "Terminal 3 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.12,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "4",
+        "label": "4",
+        "role": "control",
+        "purpose": "Terminal 4 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.36,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      }
+    ],
+    "bytes": 289112,
+    "lowBytes": 62948,
+    "bespokeBlender": true
+  },
+  {
+    "key": "fuse_dc-fuse",
+    "galleryKey": "fuse:dc-fuse",
+    "type": "fuse",
+    "name": "instrument branch carrier \u00b7 1 A",
+    "url": "/models/fuse_dc-fuse.glb",
+    "lowUrl": "/models/fuse_dc-fuse.low.glb",
+    "thumbnailUrl": "/models/thumbnails/fuse_dc-fuse.png",
+    "detailRevision": 3,
+    "detailFamily": "protection",
+    "detailFeatures": [
+      "terminal-clamp:IN",
+      "terminal-clamp:OUT",
+      "individual-electrical-terminations",
+      "dc-cartridge-and-holder"
+    ],
+    "sourceMeshCount": 34,
+    "meshCount": 16,
+    "triangles": 13756,
+    "lowTriangles": 2414,
+    "terminals": [
+      {
+        "id": "IN",
+        "label": "IN",
+        "role": "L",
+        "purpose": "First end of the modelled series protected path, paired with OUT. Opening or tripping the device separates this pair.",
+        "anchor": [
+          0,
+          0.11050000000000001,
+          -0.072
+        ],
+        "group": "Supply",
+        "scale": 0.71,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "OUT",
+        "role": "L",
+        "purpose": "Second end of the modelled series protected path, paired with IN. Opening or tripping the device separates this pair.",
+        "anchor": [
+          0,
+          1.092,
+          -0.072
+        ],
+        "group": "Load",
+        "scale": 0.71,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      }
+    ],
+    "bytes": 354228,
+    "lowBytes": 85368,
+    "bespokeBlender": true
+  },
+  {
+    "key": "terminal_comb-busbar",
+    "galleryKey": "terminal:comb-busbar",
+    "type": "terminal",
+    "name": "Insulated single-phase comb",
+    "url": "/models/terminal_comb-busbar.glb",
+    "lowUrl": "/models/terminal_comb-busbar.low.glb",
+    "thumbnailUrl": "/models/thumbnails/terminal_comb-busbar.png",
+    "detailRevision": 3,
+    "detailFamily": "bar",
+    "detailFeatures": [
+      "terminal-clamp:1",
+      "terminal-clamp:2",
+      "terminal-clamp:3",
+      "terminal-clamp:4",
+      "individual-electrical-terminations",
+      "common-copper-teeth"
+    ],
+    "sourceMeshCount": 17,
+    "meshCount": 14,
+    "triangles": 8152,
+    "lowTriangles": 1022,
+    "terminals": [
+      {
+        "id": "1",
+        "label": "1",
+        "role": "control",
+        "purpose": "Terminal 1 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.36,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      },
+      {
+        "id": "2",
+        "label": "2",
+        "role": "control",
+        "purpose": "Terminal 2 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.12,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      },
+      {
+        "id": "3",
+        "label": "3",
+        "role": "control",
+        "purpose": "Terminal 3 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.12,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      },
+      {
+        "id": "4",
+        "label": "4",
+        "role": "control",
+        "purpose": "Terminal 4 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.36,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      }
+    ],
+    "bytes": 213600,
+    "lowBytes": 37160,
+    "bespokeBlender": true
   }
 ]

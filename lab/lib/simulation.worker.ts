@@ -1,5 +1,6 @@
 import { simulate } from './simulation';
 import { assessBuild } from './assessment';
+import { forkRead, type ForkSetup } from './fork-tester';
 import { assessFaultDiagnosis } from './fault-diagnosis';
 import { captureMeasurement, needsSimulationTick } from './learning';
 import type { CircuitDocument, DeviceState, Endpoint } from './types';
@@ -9,9 +10,14 @@ self.onmessage=(event:MessageEvent)=>{
   try {
     const doc=m.document as CircuitDocument;
     if(doc.id!==circuitId||m.reset){states={};circuitId=doc.id;}
+    if(m.kind==='instrument-preview'){
+      const result=simulate(doc,states,0);
+      const reading=forkRead(doc,result,m.setup as ForkSetup,undefined,true);
+      self.postMessage({kind:'instrument-preview',key:m.key,circuitId:doc.id,revision:doc.revision,reading});return;
+    }
     if(m.kind==='measure'){
       const result=simulate(doc,states,0);
-      const evidence=captureMeasurement(doc,result,{mode:m.mode??'resistance',a:m.a as Endpoint,b:m.b as Endpoint,wire:m.wire});
+      const evidence=captureMeasurement(doc,result,{mode:m.mode??'resistance',a:m.a as Endpoint,b:m.b as Endpoint,wire:m.wire,instrument:m.instrument});
       if(m.assisted!==undefined)evidence.assisted=m.assisted===true;
       self.postMessage({kind:'measurement',requestId:m.requestId,electricalGeneration:m.electricalGeneration,circuitId:doc.id,revision:doc.revision,mode:evidence.mode,a:evidence.a,b:evidence.b,wire:evidence.wire,value:evidence.value,explanation:evidence.explanation,evidence});return;
     }

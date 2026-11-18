@@ -9,7 +9,8 @@ export function equipmentVariant(component: Pick<ComponentInstance, 'type' | 'la
 
 /** The lid or terminal door must be opened to reach these installation contacts. */
 export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'variant'|'label'>): boolean {
-  return ['source','source3','meter','panel','rose','junction','shower','boiler','heatpump','chime','ev','vfd','plc','safetyRelay','driver','dcsupply'].includes(component.type) ||
+  if(component.type==='driver'&&component.variant==='constant-current')return false;
+  return ['source','source3','meter','panel','rose','junction','shower','boiler','heatpump','chime','callchime','ev','vfd','plc','safetyRelay','driver','dcsupply'].includes(component.type) ||
     component.type==='heater' && /immersion/i.test(component.variant??component.label);
 }
 
@@ -122,6 +123,23 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
   };
   return definition.terminals.map(t=>{
     const {anchor:[x,y,z],group}=placements.get(t.id)!;
+    const [w,h,d]=definition.size;
+    const scaled=(px:number,py:number,pz:number,dir:Vec3,scale=.66)=>make(t,[px*w,py*h,pz*d],dir.map(a=>a/Math.hypot(...dir)) as Vec3,scale);
+    const f=component.variant, k=component.type;
+    if(k==='invictaboard')return scaled(.40,.85,-.36,[0,0,1],1);
+    if(k==='cctstrip'||k==='led'&&f==='strip')return scaled(-.43,.43+(k==='cctstrip'?[.13,0,-.13]:[.12,-.12])[ids.indexOf(t.id)],.085,[0,0,1],.40);
+    if(k==='led'&&f==='series-module')return scaled(t.id==='L'?-.31:.31,.46,.095,[0,0,1],.50);
+    if(k==='proximity')return scaled((ids.indexOf(t.id)-1)*.16,.06,.045,[0,-.45,.893],.44);
+    if(k==='pwmcontrol'){const left=t.id==='+'||t.id==='-';return scaled(left?-.48:.48,(t.id==='+'||t.id==='W')?.62:.33,0,[left?-1:1,0,0],.64);}
+    if(k==='floatvalve')return scaled((ids.indexOf(t.id)-1)*.18,.46,-.31,[0,0,-1],.74);
+    if(k==='callchime')return scaled((ids.indexOf(t.id)-1.5)*.19,.21,-.095,[0,0,1],.68);
+    if(k==='terminal'&&f==='comb-busbar')return scaled((ids.indexOf(t.id)-1.5)*.24,.84,.02,[0,1,0],.65);
+    if(k==='terminal'&&f==='lever-connector')return scaled((ids.indexOf(t.id)-1.5)*.24,.15,-.025,[0,-.55,.835],.65);
+    if(k==='selector'&&f==='float-changeover')return scaled((ids.indexOf(t.id)-1)*.085,.052,-.12,[0,-.5,-.866],.52);
+    if(k==='switch'&&f==='door-contact')return scaled(-.20+(t.id==='COM'?-.075:.075),.18,-.25,[0,0,-1],.58);
+    if(k==='pushbutton'&&f==='bell-push')return scaled((ids.indexOf(t.id)-1)*.18,.43,-.28,[0,0,-1],.65);
+    if(k==='driver'&&f==='constant-current'){const ac=['L','N','PE'].includes(t.id),i=(ac?['L','N','PE']:['+','-']).indexOf(t.id);return scaled(ac?-.47:.47,.25+i*.21,-.02,[ac?-1:1,0,0],.66);}
+    if(k==='fuse'&&f==='dc-fuse')return scaled(0,t.id==='IN'?.085:.84,-.09,t.id==='IN'?[0,-.55,.835]:[0,1,0],.71);
     const center = (row: string[], spacing: number) => (row.indexOf(t.id)-(row.length-1)/2)*spacing;
     const din = (upper: boolean, width=x) => make(t,[width,(upper?1.23:.235)*sy,.23*sz],
       upper?[0,.8,.6]:[0,-.35,Math.sqrt(1-.35**2)]);

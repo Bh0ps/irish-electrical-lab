@@ -13,7 +13,7 @@ import type {DeviceState,SimulationResult} from '../lib/types';
 
 const loader=new GLTFLoader();
 const state:DeviceState={energized:true,closed:true,tripped:false,level:1,direction:1,elapsed:0,resetToken:0,details:'shadow evidence',lightOutputPower:60};
-const lampInventory=createGalleryInventory().filter(item=>['lamp','led','emergency'].includes(item.component.type));
+const lampInventory=createGalleryInventory().filter(item=>['lamp','led','cctstrip','emergency'].includes(item.component.type));
 async function load(url:string){const bytes=readFileSync(new URL('../public'+url,import.meta.url));return (await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'')).scene;}
 const materials=(value:THREE.Material|THREE.Material[])=>Array.isArray(value)?value:[value];
 
@@ -31,8 +31,8 @@ test('luminous and transmitting surfaces do not occlude their own light while op
   }finally{[opaque,glass,clearPhysical,status].forEach(material=>material.dispose());}
 });
 
-test('all five real full/distance lamp assets retain opaque shadows and remove emitter/envelope self-shadow in every view',async()=>{
-  assert.equal(lampInventory.length,5);
+test('all eight real full/distance lamp assets retain opaque shadows and remove emitter/envelope self-shadow in every view',async()=>{
+  assert.equal(lampInventory.length,8);
   for(const entry of lampInventory){
     const asset=equipmentAsset(entry.component,COMPONENTS[entry.component.type])!;
     for(const url of [asset.url,asset.lowUrl]){

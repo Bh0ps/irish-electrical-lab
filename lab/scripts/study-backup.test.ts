@@ -28,7 +28,7 @@ test('every published circuit can be backed up and restored without changing con
   for(const lesson of LESSONS){const backup=exportStudyBackup(lesson.circuit,[],EMPTY_PROGRESS);assert.deepEqual(validateStudyBackup(JSON.stringify(backup)).draft,lesson.circuit);}
 });
 test('unsupported backup versions, malformed circuits and invalid progress reject before restore',()=>{
-  for(const mutate of [(b:ReturnType<typeof fixture>)=>b.version=2 as 1,(b:ReturnType<typeof fixture>)=>b.draft!.wires[0].to.component='missing',(b:ReturnType<typeof fixture>)=>b.progress.lessons=[65],(b:ReturnType<typeof fixture>)=>b.progress.scores={'1':Infinity}]){
+  for(const mutate of [(b:ReturnType<typeof fixture>)=>b.version=2 as 1,(b:ReturnType<typeof fixture>)=>b.draft!.wires[0].to.component='missing',(b:ReturnType<typeof fixture>)=>b.progress.lessons=[81],(b:ReturnType<typeof fixture>)=>b.progress.scores={'1':Infinity}]){
     const backup=fixture();mutate(backup);assert.throws(()=>validateStudyBackup(backup));
   }
   assert.throws(()=>validateStudyBackup('{bad-json'));assert.throws(()=>validateStudyBackup({version:1}));

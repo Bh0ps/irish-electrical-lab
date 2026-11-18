@@ -4,7 +4,7 @@ The installed app contains its own Electron runtime, the production 3D workbench
 
 ## Install and use
 
-Run `release/Irish-Electrical-Lab-1.2.1-Setup.exe` from the `lab` directory. Installation is for your Windows account and creates **Irish Electrical Lab** shortcuts on the Desktop and Start menu. Start with either shortcut. Close the app window to stop the application and its private local server. Use **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** to switch fullscreen.
+Run `release/Irish-Electrical-Lab-1.5.0-Setup.exe` from the `lab` directory. Installation is for your Windows account and creates **Irish Electrical Lab** shortcuts on the Desktop and Start menu. Start with either shortcut. Close the app window to stop the application and its private local server. Use **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** to switch fullscreen.
 
 This is a locally built, unsigned installer, so Windows may identify its publisher as unknown. The installer does not require administrator privileges.
 

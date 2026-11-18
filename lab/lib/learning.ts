@@ -1,5 +1,8 @@
+import { COURSE_BOARD_ID,COURSE_BOND_ID } from './board-examples.ts';
+import { elvProbePair } from './elv-coursebook.ts';
 import { COURSE_PAGES } from './coursebook-content.ts';
 import { COMPONENTS } from './components.ts';
+import { forkMode, forkRead, instrumentData, type InstrumentEvidence } from './fork-tester.ts';
 import { getScenario, lessonCompetency, evaluateScenarioExpectation, type ScenarioExpectation } from './scenarios.ts';
 import { measureResistance, measureVoltage } from './simulation.ts';
 import { endpointKey, type CircuitDocument, type ConfigurationLesson, type Endpoint, type SimulationResult } from './types.ts';
@@ -13,11 +16,12 @@ export interface MeasurementEvidence {
   status?:'value'|'open'|'unresolved';
   /** True for a meter setup that supplied the points to the learner. */
   assisted?:boolean;
+  instrument?:InstrumentEvidence;
 }
 export interface LessonActivity {
   id:string;kind:'inspect'|'predict'|'connect'|'operate'|'measure'|'explain'|'repair'|'retest';title:string;instruction:string;explanation:string;
   component?:string;part?:string;endpoints?:Endpoint[];options?:{id:string;label:string}[];answer?:string;
-  measurement?:{mode:'voltage'|'current'|'resistance';a?:Endpoint;b?:Endpoint;wire?:string};competency:string;
+  measurement?:{mode:'voltage'|'current'|'resistance';a?:Endpoint;b?:Endpoint;wire?:string;instrument?:InstrumentEvidence};competency:string;
   bookStep?:'intro'|'switch-off'|'switch-on'|'contact'|'meter-demo'|'dimmer'|'finish';
   independentMeasurement?:boolean;
   wire?:string;expectedRole?:string;expectedParams?:Record<string,string|number|boolean>;expectedSupplyEnabled?:boolean;expectedObservations?:ScenarioExpectation[];
@@ -32,15 +36,25 @@ export function controlSnapshot(doc:CircuitDocument):Record<string,string|number
 }
 export function captureMeasurement(document:CircuitDocument,result:SimulationResult|undefined,request:NonNullable<LessonActivity['measurement']>,recordedAt=Date.now()):MeasurementEvidence {
   let value:number|null=null,explanation='Select valid measuring points.';const unit=request.mode==='voltage'?'V':request.mode==='current'?'A':'Ω';
-  if(request.mode==='resistance'&&knownEndpoint(document,request.a)&&knownEndpoint(document,request.b))({value,explanation}=measureResistance(document,request.a!,request.b!));
+  let instrument:InstrumentEvidence|undefined;
+  if(request.instrument){
+    const t=request.instrument;
+    if(t.method.startsWith('fork-'))request={...request,a:undefined,b:t.method==='fork-voltage'&&t.reference==='black'?request.b:undefined};
+    const setup={method:t.method,reference:t.reference,a:request.a,b:request.b,wire:request.wire};
+    if(t.model==='T6-600'&&t.held===false&&forkMode(t.method)===request.mode){
+      const reading=forkRead(document,result,setup,undefined,true);
+      value=reading.value;explanation=reading.status==='open'?'Open circuit: '+reading.explanation:reading.explanation;
+      instrument=instrumentData(setup,reading);
+    }
+  }else if(request.mode==='resistance'&&knownEndpoint(document,request.a)&&knownEndpoint(document,request.b))({value,explanation}=measureResistance(document,request.a!,request.b!));
   else if(result?.revision===document.revision&&result.converged){
     if(request.mode==='voltage'&&knownEndpoint(document,request.a)&&knownEndpoint(document,request.b))({value,explanation}=measureVoltage(result,request.a!,request.b!));
     else if(request.mode==='current'&&document.wires.some(w=>w.id===request.wire)){const c=result.wireCurrents[request.wire!];value=c?Math.hypot(c.re,c.im):null;explanation=c?'RMS current through the selected actual conductor.':'This conductor has no resolved current.';}
   }else if(request.mode!=='resistance')explanation='Wait for a current, converged electrical result before recording this reading.';
   const status=Number.isFinite(value)?'value':request.mode==='resistance'&&explanation.startsWith('Open circuit:')?'open':'unresolved';
-  return {id:`measurement-${recordedAt}-${request.mode}-${request.wire??[request.a&&endpointKey(request.a),request.b&&endpointKey(request.b)].join(':')}`,lessonId:document.lessonId,circuitId:document.id,revision:document.revision,...structuredClone(request),value:Number.isFinite(value)?value:null,unit,explanation,recordedAt,controlState:controlSnapshot(document),status};
+  return {id:`measurement-${recordedAt}-${request.mode}-${request.wire??[request.a&&endpointKey(request.a),request.b&&endpointKey(request.b)].join(':')}`,lessonId:document.lessonId,circuitId:document.id,revision:document.revision,...structuredClone(request),value:Number.isFinite(value)?value:null,unit,explanation,recordedAt,controlState:controlSnapshot(document),status,...(request.instrument?{instrument}:{})};
 }
-function identity(e:MeasurementEvidence){return e.mode==='current'?`current:${e.wire}`:`${e.mode}:${[e.a&&endpointKey(e.a),e.b&&endpointKey(e.b)].sort().join('|')}`;}
+function identity(e:MeasurementEvidence){if(e.instrument?.method==='fork-voltage')return 'fork-voltage:'+e.wire;return e.mode==='current'?`current:${e.wire}`:`${e.mode}:${[e.a&&endpointKey(e.a),e.b&&endpointKey(e.b)].sort().join('|')}`;}
 /** Only actual, current measurements count. Opposite probe order is the same observation. */
 export function currentEvidence(document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[]):MeasurementEvidence[]{
   const snapshot=controlSnapshot(document),seen=new Set<string>();
@@ -48,20 +62,21 @@ export function currentEvidence(document:CircuitDocument,result:SimulationResult
   // choosing their own probes after seeing a worked reading.
   return [...evidence].reverse().filter(e=>{
     if(!e||e.circuitId!==document.id||e.revision!==document.revision||e.lessonId!==document.lessonId||!Number.isFinite(e.recordedAt)||(e.value===null?e.status!=='open':!Number.isFinite(e.value))||!['voltage','current','resistance'].includes(e.mode)||!e.controlState||Object.keys(snapshot).some(k=>e.controlState[k]!==snapshot[k]))return false;
-    const actual=captureMeasurement(document,result,e,e.recordedAt);if(actual.unit!==e.unit||e.status!==undefined&&actual.status!==e.status)return false;if(e.value===null){if(actual.status!=='open'||e.mode!=='resistance')return false;}else if(actual.value===null||Math.abs(actual.value-e.value)>Math.max(1e-6,Math.abs(actual.value)*1e-5))return false;
+    const actual=captureMeasurement(document,result,e,e.recordedAt);if(e.instrument&&(!actual.instrument||e.instrument.held!==false||actual.instrument.displayed!==e.instrument.displayed||actual.instrument.signal!==e.instrument.signal))return false;if(actual.unit!==e.unit||e.status!==undefined&&actual.status!==e.status)return false;if(e.value===null){if(actual.status!=='open'||e.mode!=='resistance')return false;}else if(actual.value===null||Math.abs(actual.value-e.value)>Math.max(1e-6,Math.abs(actual.value)*1e-5))return false;
     const key=identity(e);if(seen.has(key))return false;seen.add(key);return true;
   });
 }
 export function validateDiagnosisEvidence(document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[],target:{wire?:string;component?:string}):{accepted:boolean;explanation:string}{
   const readings=currentEvidence(document,result,evidence),wire=document.wires.find(w=>w.id===target.wire);
-  const pair=(e:MeasurementEvidence)=>!!wire&&(eq(e.a,wire.from)&&eq(e.b,wire.to)||eq(e.a,wire.to)&&eq(e.b,wire.from));
+  const pair=(e:MeasurementEvidence)=>e.instrument?.method!=='fork-voltage'&&!!wire&&(eq(e.a,wire.from)&&eq(e.b,wire.to)||eq(e.a,wire.to)&&eq(e.b,wire.from));
   const relevant=readings.some(e=>target.wire?(e.mode==='current'&&e.wire===target.wire||pair(e)):(e.a?.component===target.component||e.b?.component===target.component||document.wires.find(w=>w.id===e.wire)&&[document.wires.find(w=>w.id===e.wire)!.from.component,document.wires.find(w=>w.id===e.wire)!.to.component].includes(target.component??'')));
   if(readings.length<2)return {accepted:false,explanation:'Record at least two distinct, current measurements. Repeated clicks, old readings and unresolved values do not establish evidence.'};
   if(!relevant)return {accepted:false,explanation:'Measure the investigated conductor itself or the affected equipment. Readings elsewhere do not localize this defect.'};
   return {accepted:true,explanation:'Current target measurements are recorded; the electrical comparison will now check the diagnosis.'};
 }
-function display(lesson:ConfigurationLesson,e:Endpoint){return `${lesson.circuit.components.find(c=>c.id===e.component)?.label??e.component} · ${e.terminal}`;}
+function display(lesson:ConfigurationLesson,e:Endpoint){const item=lesson.circuit.components.find(c=>c.id===e.component);const marking=item&&COMPONENTS[item.type].terminals.find(t=>t.id===e.terminal)?.label;return (item?.label??e.component)+' · '+(marking??e.terminal);}
 function loadPair(lesson:ConfigurationLesson):{a:Endpoint;b:Endpoint}|undefined {
+  const extra=elvProbePair(lesson.id);if(extra)return extra;
   const candidates=lesson.circuit.components.filter(c=>['lamp','led','socket','socket3','heater','motor','motor3','pump','fan','cooker','shower','boiler','heatpump','chime','emergency','alarm','indicator','ev'].includes(c.type));
   for(const c of candidates){const ports=COMPONENTS[c.type]?.terminals.map(t=>t.id)??[];if(ports.includes('L')&&ports.includes('N'))return {a:{component:c.id,terminal:'L'},b:{component:c.id,terminal:'N'}};if(ports.includes('U1')&&ports.includes('U2'))return {a:{component:c.id,terminal:'U1'},b:{component:c.id,terminal:'U2'}};if(ports.includes('L1')&&ports.includes('N'))return {a:{component:c.id,terminal:'L1'},b:{component:c.id,terminal:'N'}};}
   const source=lesson.circuit.components.find(c=>c.type==='source'||c.type==='source3');return source?{a:{component:source.id,terminal:source.type==='source3'?'L1':'L'},b:{component:source.id,terminal:'N'}}:undefined;
@@ -70,6 +85,9 @@ function operateLanguage(lesson:ConfigurationLesson,component:string,params:Reco
   const item=lesson.circuit.components.find(c=>c.id===component),label=item?.label??component;
   const name=prediction?`“${label.split(' · ')[0]}”`:label;
   return Object.entries(params).map(([key,value])=>{
+    if(item?.variant==='door-contact'&&key==='closed')return (value?'Open ':'Close ')+(lesson.id===65?'the cupboard':'the door');
+    if(item?.type==='proximity'&&key==='active')return value?'Bring metal near the sensor':'Move the metal away';
+    if(key==='mix')return 'Set the cool share to '+Math.round(Number(value)*100)+'%';
     if(key==='closed')return `${value?'Close':'Open'} ${name}`;
     if(key==='pressed')return `${value?'Press':'Release'} ${name}`;
     if(key==='position')return `Move ${name} to its ${value===0?'first':value===1?'second':'selected'} position`;
@@ -92,7 +110,7 @@ function predictionOrder(lessonId: number, answer: string, options: NonNullable<
 /** Each configuration has concrete terminal targets, not a disconnected text checklist. */
 export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]{
   const competency=lessonCompetency(lesson.id),base=(id:string,kind:LessonActivity['kind'],title:string,instruction:string,explanation:string):LessonActivity=>({id:`lesson:${lesson.id}:${id}`,kind,title,instruction,explanation,competency});
-  const activities:LessonActivity[]=lesson.circuit.components.map(c=>({...base(`inspect:${c.id}`,'inspect',`Inspect ${c.label}`,`Select ${c.label}. Open its terminal view and identify the normal operating terminals and any protective terminal.`,`${COMPONENTS[c.type].description} ${COMPONENTS[c.type].abstraction??''}`),component:c.id,part:'terminals',endpoints:COMPONENTS[c.type].terminals.map(t=>({component:c.id,terminal:t.id}))}));
+  const activities:LessonActivity[]=lesson.circuit.components.filter(c=>c.id!==COURSE_BOARD_ID).map(c=>({...base(`inspect:${c.id}`,'inspect',`Inspect ${c.label}`,`Select ${c.label}. Open its terminal view and identify the normal operating terminals and any protective terminal.`,`${COMPONENTS[c.type].description} ${COMPONENTS[c.type].abstraction??''}`),component:c.id,part:'terminals',endpoints:COMPONENTS[c.type].terminals.map(t=>({component:c.id,terminal:t.id}))}));
   const scenario=getScenario(lesson.id);
   const page=COURSE_PAGES[lesson.id];
   function questionActivity(kind:'predict'|'explain'):LessonActivity {
@@ -102,7 +120,7 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
       answer:'expected',options:predictionOrder(lesson.id+(kind==='explain'?1:0),'expected',options)};
   }
   activities.push(questionActivity('predict'));
-  for(const w of lesson.circuit.wires){const from=lesson.circuit.components.find(c=>c.id===w.from.component)!,to=lesson.circuit.components.find(c=>c.id===w.to.component)!;const ft=COMPONENTS[from.type].terminals.find(t=>t.id===w.from.terminal)!,tt=COMPONENTS[to.type].terminals.find(t=>t.id===w.to.terminal)!;activities.push({...base(`connect:${w.id}`,'connect',`Connect ${display(lesson,w.from)} to ${display(lesson,w.to)}`,`With the simulated supply off, connect ${display(lesson,w.from)} to ${display(lesson,w.to)}. Use the core marked ${w.role}.`,`${ft.purpose} → ${tt.purpose}. The connection is determined by its endpoints. Colour or visual proximity cannot change its electrical path.`),component:to.id,part:'terminals',endpoints:[structuredClone(w.from),structuredClone(w.to)],wire:w.id,expectedRole:w.role});}
+  for(const w of lesson.circuit.wires.filter(w=>w.id!==COURSE_BOND_ID)){const from=lesson.circuit.components.find(c=>c.id===w.from.component)!,to=lesson.circuit.components.find(c=>c.id===w.to.component)!;const ft=COMPONENTS[from.type].terminals.find(t=>t.id===w.from.terminal)!,tt=COMPONENTS[to.type].terminals.find(t=>t.id===w.to.terminal)!;activities.push({...base(`connect:${w.id}`,'connect',`Connect ${display(lesson,w.from)} to ${display(lesson,w.to)}`,`With the simulated supply off, connect ${display(lesson,w.from)} to ${display(lesson,w.to)}. Use the core marked ${w.role}.${w.resistance>.1?' This supplied length has '+w.resistance+' Ω of conductor resistance.':''}`,`${ft.purpose} → ${tt.purpose}. The connection is determined by its endpoints. Colour or visual proximity cannot change its electrical path.`),component:to.id,part:'terminals',endpoints:[structuredClone(w.from),structuredClone(w.to)],wire:w.id,expectedRole:w.role});}
   const source=lesson.circuit.components.find(c=>c.type==='source'||c.type==='source3');
   const localSources=lesson.circuit.components.filter(c=>['pv','battery'].includes(c.type)&&Boolean(c.params.on??COMPONENTS[c.type].defaults.on??true));
   const enableLocal=localSources.map(c=>`Select ${c.label} and use Operate to enable its local source.`).join(' ');
@@ -112,7 +130,7 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
   // physical press/release task; the resulting maintained response must be seen.
   for(let index=0;index<(scenario?.steps.length??0);index++){
     const step=scenario!.steps[index],next=scenario!.steps[index+1];
-    const pulse=step.patches.length===1&&step.patches[0].params.pressed===true&&next?.patches.length===1&&next.patches[0].component===step.patches[0].component&&next.patches[0].params.pressed===false;
+    const pulse=(lesson.id<=64||step.expectations.length===0)&&step.patches.length===1&&step.patches[0].params.pressed===true&&next?.patches.length===1&&next.patches[0].component===step.patches[0].component&&next.patches[0].params.pressed===false;
     let outcomeIndex=index;
     if(pulse){outcomeIndex=index+1;for(let i=index+2;i<scenario!.steps.length;i++){if(scenario!.steps[i].patches.length||scenario!.steps[i].supplyEnabled!==undefined||scenario!.steps[i].openSignal)break;if(scenario!.steps[i].expectations.length){outcomeIndex=i;break;}}}
     const observed=scenario!.steps[outcomeIndex],controls=pulse?next.patches:step.patches;
@@ -166,11 +184,11 @@ export function evaluateActivity(activity:LessonActivity,document:CircuitDocumen
     if(params&&supply&&signalOpen&&unresolved)return outcome('unresolved','Run Test to resolve the sequence comparison at this operating point. A single snapshot cannot establish a change from an earlier reading.');
     return outcome(params&&supply&&signalOpen&&observed?'pass':'not-run',params&&supply&&signalOpen&&observed?activity.explanation:'Perform every stated control action and wait for its measured response. A released pushbutton alone does not demonstrate that the holding circuit operated.');
   }
-  if(activity.kind==='measure'){const m=activity.measurement;if(!m)return outcome('unresolved','This activity has no measurement contract.');const [a,b]=activity.endpoints??[];const actualWire=document.wires.find(w=>eq(w.from,a)&&eq(w.to,b)||eq(w.from,b)&&eq(w.to,a));const found=currentEvidence(document,result,evidence).some(e=>(!activity.independentMeasurement||e.assisted===false)&&e.mode===m.mode&&(m.mode==='current'?e.wire===(actualWire?.id??m.wire):eq(e.a,m.a)&&eq(e.b,m.b)||eq(e.a,m.b)&&eq(e.b,m.a)));return outcome(found?'pass':'not-run',found?activity.explanation:activity.independentMeasurement?'Choose each measuring point yourself and record a fresh reading.':'Record a fresh reading at the specified points.');}
+  if(activity.kind==='measure'){const m=activity.measurement;if(!m)return outcome('unresolved','This activity has no measurement contract.');const [a,b]=activity.endpoints??[];const actualWire=document.wires.find(w=>eq(w.from,a)&&eq(w.to,b)||eq(w.from,b)&&eq(w.to,a));const found=currentEvidence(document,result,evidence).some(e=>(!activity.independentMeasurement||e.assisted===false)&&e.mode===m.mode&&(m.mode==='current'?e.wire===(actualWire?.id??m.wire):e.instrument?.method!=='fork-voltage'&&(eq(e.a,m.a)&&eq(e.b,m.b)||eq(e.a,m.b)&&eq(e.b,m.a))));return outcome(found?'pass':'not-run',found?activity.explanation:activity.independentMeasurement?'Choose each measuring point yourself and record a fresh reading.':'Record a fresh reading at the specified points.');}
   if(activity.kind==='repair'){if(!context.challengeStarted||!context.diagnosisAccepted)return outcome('not-run','Start this fault exercise and establish an accepted, measured diagnosis before claiming a repair.');return outcome(document.faults.some(f=>f.enabled)||context.repairVerified===false?'not-run':'pass',document.faults.some(f=>f.enabled)?'The injected defect is still active. Record the evidence, remove its cause, then reset interrupted protection.':activity.explanation);}
   const a=context.assessment;return !a?outcome('not-run','Run the lesson test.'):a.circuitId!==document.id||a.revision!==document.revision?outcome('not-run','The circuit changed after that test; retest the current graph.'):outcome(a.passed?'pass':'fail',a.summary);
 }
 /** A worker can stop continuous polling once all represented time processes settle. */
 export function needsSimulationTick(document:CircuitDocument,result:SimulationResult):boolean{
-  return document.components.some(c=>{const s=result.deviceStates[c.id],p={...COMPONENTS[c.type]?.defaults,...c.params};if(!s)return false;if((c.type==='valve'||c.type==='valve3')&&s.moving)return true;if(c.type==='battery'&&s.energized&&s.level>.01&&!s.gridPresent&&Number(s.outputPower)>1e-4)return true;const delay=Number(p.delay??0);if(['timer','sensor','smartrelay'].includes(c.type)&&s.energized&&delay>0){if(c.type==='timer'&&p.mode==='off-delay')return !s.command&&s.closed&&s.elapsed<delay;if(c.type==='timer'&&p.mode==='pulse')return !!s.command&&s.closed&&s.elapsed<delay;return !!s.command&&!s.closed&&s.elapsed<delay;}return ['mcb','mcb3','fuse','fcu','plug','overload','rcbo'].includes(c.type)&&!s.tripped&&s.level>1.05;});
+  return document.components.some(c=>{const s=result.deviceStates[c.id],p={...COMPONENTS[c.type]?.defaults,...c.params};if(!s)return false;if(['valve','valve3','floatvalve'].includes(c.type)&&s.moving)return true;if(c.type==='battery'&&s.energized&&s.level>.01&&!s.gridPresent&&Number(s.outputPower)>1e-4)return true;const delay=Number(p.delay??0);if(['timer','sensor','smartrelay'].includes(c.type)&&s.energized&&delay>0){if(c.type==='timer'&&p.mode==='off-delay')return !s.command&&s.closed&&s.elapsed<delay;if(c.type==='timer'&&p.mode==='pulse')return !!s.command&&s.closed&&s.elapsed<delay;return !!s.command&&!s.closed&&s.elapsed<delay;}return ['mcb','mcb3','fuse','fcu','plug','overload','rcbo'].includes(c.type)&&!s.tripped&&s.level>1.05;});
 }

@@ -20,7 +20,8 @@ test('every registry, lesson and gallery terminal has one finite physical mouth 
     for(const t of resolved){
       assert.ok(t.anchor.every(Number.isFinite),`${c.id}.${t.id} has invalid coordinates`);
       assert.ok(Math.abs(Math.hypot(...t.entryDirection!)-1)<1e-8,`${c.id}.${t.id} invalid access direction`);
-      if(['switch','switch2','socket','fcu','dimmer','selector','pushbutton'].includes(c.type))assert.deepEqual(t.entryDirection,[0,0,-1],c.id+' installation terminals behind the faceplate');
+      if(c.variant==='float-changeover')assert.ok(t.entryDirection![1]<0&&t.entryDirection![2]<0,'Float contacts are on the downward cable tails');
+      else if(['switch','switch2','socket','fcu','dimmer','selector','pushbutton'].includes(c.type))assert.deepEqual(t.entryDirection,[0,0,-1],c.id+' installation terminals behind the faceplate');
       assert.ok(t.group?.length,`${c.id}.${t.id} has no physical bank`);
     }
     for(let i=0;i<resolved.length;i++)for(let j=i+1;j<resolved.length;j++){

@@ -1,3 +1,4 @@
+import { ELV_PAGES } from './elv-coursebook.ts';
 export interface CourseQuestion {
   prompt: string;
   right: string;
@@ -16,6 +17,7 @@ const page = (title: string, aliases: string, situation: string, prediction: Cou
   ({ title, aliases, situation, prediction, explanation, idea });
 
 export const COURSE_PAGES: Record<number, CoursePage> = {
+  ...Object.fromEntries(ELV_PAGES.map(p=>[p.id,p])),
   1: page('Follow power from the meter to a light', 'mains electricity house switch fuse board meter', 'Start at the supply and follow the route to a lamp on the outgoing circuit.',
     question('Open the main switch after the meter. What happens to the outgoing light?', 'It goes out', 'It keeps drawing power through the meter'),
     question('Which part lets you disconnect the board in this example?', 'The main isolator', 'The meter display'),
