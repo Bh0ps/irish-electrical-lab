@@ -14,6 +14,7 @@
     { "from": "build/sites-vite-plugin.LICENSE", "to": "licenses/sites-vite-plugin.LICENSE" },
     { "from": "desktop/assets/THIRD_PARTY_DEPENDENCIES.txt", "to": "licenses/THIRD_PARTY_DEPENDENCIES.txt" },
     { "from": "../docs/usage.md", "to": "guides/usage.md" },
+    { "from": "../docs/iphone.md", "to": "guides/iphone.md" },
     { "from": "examples/industrial-plant", "to": "examples/industrial-plant", "filter": ["*.json", "README.md"] }
   ],
   "asar": true,

@@ -1,12 +1,16 @@
 # Irish Electrical Lab for Windows
 
-An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **64 configurations** remain available. Version **1.2.1** checks each newly added guided connection automatically and corrects conductor identification for control circuits. Smooth free-camera movement, four modelled environments, local lighting and shader effects, detailed Blender equipment, illustrated menus and working dimmer resistance remain available in the **Learn** and **Sandbox** workspaces.
+An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **64 configurations** are available in **Learn** and **Sandbox**. Version **1.3.0** adds six Quick practice experiments with live readings and a touch workbench for iPhone. The full courses retain automatic guided wiring checks and their operating and fault exercises.
 
 ## Start and stop
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Installer: `lab/release/Irish-Electrical-Lab-1.2.1-Setup.exe`. It bundles Electron, both workers and assets; the installed app needs no separate Node.js or internet connection. Optional references open in your browser.
+Installer: `lab/release/Irish-Electrical-Lab-1.3.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
+
+For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
+
+Open **Courses → Quick practice** for an experiment on a working example. Pick a prediction, operate the real control, and compare the readings. **Back to lesson** takes you to the full course.
 
 The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a port conflict shows a startup error. Work lives in `%APPDATA%\Irish Electrical Lab`, outside installation files, and replacement installers preserve it.
 
