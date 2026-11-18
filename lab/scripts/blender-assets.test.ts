@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createGalleryInventory } from '../components/lab/ModelGallery';
 import { COMPONENTS } from '../lib/components';
+import { fittingDetails } from '../lib/fitting-details';
 import { equipmentAsset } from '../lib/equipment-assets';
 import { enclosedTerminals,getComponentTerminals,terminalInspectionDirection } from '../lib/terminal-layout';
 import { animateBlenderModel,prepareBlenderModel,presentBlenderModel,semanticOwner } from '../lib/blender-model';
@@ -23,7 +24,7 @@ function terminals(scene:THREE.Object3D){scene.updateMatrixWorld(true);const fou
 function geometryDigest(scene:THREE.Group,materials=false){const hash=createHash('sha256');scene.updateMatrixWorld(true);scene.traverse(node=>{if(node instanceof THREE.Mesh){hash.update(Buffer.from(node.geometry.getAttribute('position').array.buffer));hash.update(JSON.stringify(node.matrixWorld.toArray().map(n=>Math.round(n*1e6)/1e6)));if(materials)for(const material of Array.isArray(node.material)?node.material:[node.material])if(material instanceof THREE.MeshStandardMaterial)hash.update(JSON.stringify([material.color.toArray(),material.metalness,material.roughness]));}});return hash.digest('hex');}
 
 test('all authored variants have original Blender sources and full/distance offline GLBs',async()=>{
-  assert.equal(inventory.length,108);const keys=new Set<string>();let total=0,lowTotal=0;
+  assert.equal(inventory.length,109);const keys=new Set<string>();let total=0,lowTotal=0;
   for(const entry of inventory){
     const definition=COMPONENTS[entry.component.type],asset=equipmentAsset(entry.component,definition);assert.ok(asset,entry.key);assert.ok(!keys.has(asset.key));keys.add(asset.key);
     const source=root+'authoring/blender/models/'+asset.key+'.blend';assert.ok(existsSync(source),source);const header=readFileSync(source).subarray(0,4);assert.ok(header.subarray(0,2).toString()==='BL'||header[0]===0x1f&&header[1]===0x8b||header.equals(Buffer.from([0x28,0xb5,0x2f,0xfd])),'Blender, gzip or zstd-compressed Blender source');
@@ -115,6 +116,55 @@ test('closed service compartments conceal installation hardware and opened compa
         assert.ok(reachable,url+' open access to '+t.id);
       }
       model.owned.forEach(material=>material.dispose());
+    }
+  }
+});
+
+test('renaming a custom one-way switch to Start preserves its compatible rocker and terminal layout',()=>{
+  const entry=inventory.find(e=>e.key==='switch:single-rocker')!;
+  const model=equipmentAsset({...entry.component,label:'Kitchen Start'},COMPONENTS.switch);
+  assert.equal(model?.galleryKey,'switch:single-rocker');
+});
+
+test('each named fitting detail maps to a real selectable assembly and its original parent at either detail level',async()=>{
+  const identified=inventory.filter(e=>fittingDetails(e.component,COMPONENTS[e.component.type]).length);
+  assert.equal(identified.length,9);
+  for(const entry of identified){
+    const c=entry.component,def=COMPONENTS[c.type],asset=equipmentAsset(c,def)!;
+    for(const url of [asset.url,asset.lowUrl]){
+      const source=await load(url),parts=new Map<string,string>();
+      source.traverse(node=>{
+        if(!(node instanceof THREE.Mesh))return;
+        const hit=semanticOwner(node);
+        if(hit.detail&&hit.part)parts.set(hit.detail,hit.part);
+      });
+      for(const detail of fittingDetails(c,def)){
+        assert.equal(parts.get(detail.id),detail.part,url+' '+detail.id);
+        assert.ok(def.parts.some(p=>p.id===detail.part),'same manual inspection credit');
+      }
+    }
+  }
+});
+
+test('rear switch and lamp entries remain physically pickable on the complete fixture at both detail levels',async()=>{
+  const keys=['switch:single-rocker','switch2:single-rocker','intermediate:single-rocker','switch:gang-module-left','switch:gang-module-right','lamp:bulb'];
+  for(const entry of inventory.filter(e=>keys.includes(e.key))){
+    const c=entry.component,def=COMPONENTS[c.type],asset=equipmentAsset(c,def)!;
+    for(const url of [asset.url,asset.lowUrl]){
+      const model=prepareBlenderModel(await load(url));presentBlenderModel(model,'normal',c,state);
+      const visible=model.meshes.filter(m=>m.node.visible).map(m=>m.node);
+      for(const t of getComponentTerminals(c,def)){
+        const direction=new THREE.Vector3(...terminalInspectionDirection(c,def,t.id));
+        const centre=new THREE.Vector3(...t.anchor);
+        const offsets=[-.018,-.009,0,.009,.018];
+        const reachable=offsets.some(x=>offsets.some(y=>{
+          const origin=centre.clone().add(new THREE.Vector3(x,y,0)).addScaledVector(direction,3);
+          const hit=new THREE.Raycaster(origin,direction.clone().negate()).intersectObjects(visible,false)[0];
+          return hit&&semanticOwner(hit.object).terminal===t.id;
+        }));
+        assert.ok(reachable,url+' visible clamp for '+t.id);
+      }
+      model.owned.forEach(m=>m.dispose());
     }
   }
 });

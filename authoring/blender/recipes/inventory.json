@@ -4126,7 +4126,7 @@
       "name": "Domestic socket outlet",
       "group": "Accessories",
       "model": "socket",
-      "description": "An outlet supplies the connected illustrative appliance load.",
+      "description": "A double socket with an appliance plugged into the circuit. Both earth terminals share one metal strap.",
       "terminals": [
         {
           "id": "L",
@@ -4134,12 +4134,12 @@
           "role": "L",
           "purpose": "Line conductor: the alternating supply relative to neutral.",
           "anchor": [
-            0.1819230769230769,
-            0.5754827586206898,
-            -0.353529411764706
+            0.265,
+            0.5800000000000001,
+            -0.17800000000000002
           ],
           "group": "Line and neutral",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -4152,12 +4152,12 @@
           "role": "N",
           "purpose": "Neutral: the normal return path. It is not a protective conductor.",
           "anchor": [
-            -0.1819230769230769,
-            0.5754827586206898,
-            -0.353529411764706
+            -0.265,
+            0.5800000000000001,
+            -0.17800000000000002
           ],
           "group": "Line and neutral",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -4166,16 +4166,34 @@
         },
         {
           "id": "PE",
-          "label": "PE",
+          "label": "E",
           "role": "PE",
-          "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+          "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
           "anchor": [
-            0,
-            0.8920344827586207,
-            -0.353529411764706
+            0.375,
+            0.5800000000000001,
+            -0.18899999999999997
           ],
           "group": "Earth",
-          "scale": 1,
+          "scale": 0.42,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "PE2",
+          "label": "E2",
+          "role": "PE",
+          "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
+          "anchor": [
+            -0.375,
+            0.5800000000000001,
+            -0.18899999999999997
+          ],
+          "group": "Connections",
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -4212,17 +4230,12 @@
           "id": "pins",
           "name": "Contact pins",
           "purpose": "Pins and socket contacts have distinct identities. Matching physical equipment alone does not verify conductor assignment."
-        },
-        {
-          "id": "actuator",
-          "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
         }
       ],
       "size": [
-        1.1,
-        1.35,
-        0.8
+        1.465,
+        0.92,
+        0.4
       ]
     },
     "terminals": [
@@ -4232,12 +4245,12 @@
         "role": "L",
         "purpose": "Line conductor: the alternating supply relative to neutral.",
         "anchor": [
-          0.1819230769230769,
-          0.5754827586206898,
-          -0.353529411764706
+          0.265,
+          0.5800000000000001,
+          -0.17800000000000002
         ],
         "group": "Line and neutral",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -4250,12 +4263,12 @@
         "role": "N",
         "purpose": "Neutral: the normal return path. It is not a protective conductor.",
         "anchor": [
-          -0.1819230769230769,
-          0.5754827586206898,
-          -0.353529411764706
+          -0.265,
+          0.5800000000000001,
+          -0.17800000000000002
         ],
         "group": "Line and neutral",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -4264,16 +4277,34 @@
       },
       {
         "id": "PE",
-        "label": "PE",
+        "label": "E",
         "role": "PE",
-        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
         "anchor": [
-          0,
-          0.8920344827586207,
-          -0.353529411764706
+          0.375,
+          0.5800000000000001,
+          -0.18899999999999997
         ],
         "group": "Earth",
-        "scale": 1,
+        "scale": 0.42,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "PE2",
+        "label": "E2",
+        "role": "PE",
+        "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
+        "anchor": [
+          -0.375,
+          0.5800000000000001,
+          -0.18899999999999997
+        ],
+        "group": "Connections",
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -4281,8 +4312,8 @@
         ]
       }
     ],
-    "meshNodes": 90,
-    "vertices": 18313
+    "meshNodes": 104,
+    "vertices": 20101
   },
   {
     "key": "socket3_default",
@@ -5488,20 +5519,20 @@
       "name": "Ceiling rose connector",
       "group": "Accessories",
       "model": "junction",
-      "description": "Visible connection groups for a luminaire; line, neutral and protective groups are separate.",
+      "description": "A spin-on pendant rose groups the neutral, permanent line loop, switched lamp line and protective conductors separately.",
       "terminals": [
         {
           "id": "L",
           "label": "L",
           "role": "L",
-          "purpose": "Line conductor: the alternating supply relative to neutral.",
+          "purpose": "One of two joined lamp-line entries, normally carrying the switched line to the pendant.",
           "anchor": [
-            -0.1846153846153846,
-            0.33755172413793105,
-            0.11764705882352942
+            0.21900000000000003,
+            0.664,
+            0.125
           ],
-          "group": "Line",
-          "scale": 1,
+          "group": "Lamp line",
+          "scale": 0.55,
           "entryDirection": [
             0,
             0,
@@ -5512,14 +5543,14 @@
           "id": "N",
           "label": "N",
           "role": "N",
-          "purpose": "Neutral: the normal return path. It is not a protective conductor.",
+          "purpose": "One of the three joined neutral entries. This block remains separate from the two line groups and the earth block.",
           "anchor": [
-            0,
-            0.33755172413793105,
-            0.11764705882352942
+            -0.30100000000000005,
+            0.664,
+            0.125
           ],
           "group": "Neutral",
-          "scale": 1,
+          "scale": 0.55,
           "entryDirection": [
             0,
             0,
@@ -5530,14 +5561,14 @@
           "id": "PE",
           "label": "PE",
           "role": "PE",
-          "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+          "purpose": "Conductor entry at the common protective earth block. Both entries share one clamping screw.",
           "anchor": [
-            0.1846153846153846,
-            0.33755172413793105,
-            0.11764705882352942
+            -0.027,
+            0.148,
+            0.125
           ],
-          "group": "Earth",
-          "scale": 1,
+          "group": "Protective earth",
+          "scale": 0.35,
           "entryDirection": [
             0,
             0,
@@ -5548,14 +5579,14 @@
           "id": "LOUT",
           "label": "LOUT",
           "role": "L",
-          "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "One of two joined lamp-line entries, normally carrying the switched line to the pendant.",
           "anchor": [
-            -0.1846153846153846,
-            0.21203448275862066,
-            0.11764705882352942
+            0.30100000000000005,
+            0.664,
+            0.125
           ],
-          "group": "Line",
-          "scale": 1,
+          "group": "Lamp line",
+          "scale": 0.55,
           "entryDirection": [
             0,
             0,
@@ -5566,14 +5597,14 @@
           "id": "NOUT",
           "label": "NOUT",
           "role": "N",
-          "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "One of the three joined neutral entries. This block remains separate from the two line groups and the earth block.",
           "anchor": [
-            0,
-            0.21203448275862066,
-            0.11764705882352942
+            -0.21900000000000003,
+            0.664,
+            0.125
           ],
           "group": "Neutral",
-          "scale": 1,
+          "scale": 0.55,
           "entryDirection": [
             0,
             0,
@@ -5584,14 +5615,86 @@
           "id": "PEOUT",
           "label": "PEOUT",
           "role": "PE",
-          "purpose": "Outgoing protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+          "purpose": "Conductor entry at the common protective earth block. Both entries share one clamping screw.",
           "anchor": [
-            0.1846153846153846,
-            0.21203448275862066,
-            0.11764705882352942
+            0.027,
+            0.148,
+            0.125
           ],
-          "group": "Earth",
-          "scale": 1,
+          "group": "Protective earth",
+          "scale": 0.35,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "N3",
+          "label": "N3",
+          "role": "N",
+          "purpose": "One of the three joined neutral entries. This block remains separate from the two line groups and the earth block.",
+          "anchor": [
+            -0.137,
+            0.664,
+            0.125
+          ],
+          "group": "Neutral",
+          "scale": 0.55,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "LOOP1",
+          "label": "LOOP1",
+          "role": "L",
+          "purpose": "Permanent line loop. Its three entries share one brass terminal. This loop is separate from the two switched lamp-line entries.",
+          "anchor": [
+            -0.041,
+            0.664,
+            0.125
+          ],
+          "group": "Permanent loop",
+          "scale": 0.55,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "LOOP2",
+          "label": "LOOP2",
+          "role": "L",
+          "purpose": "Permanent line loop. Its three entries share one brass terminal. This loop is separate from the two switched lamp-line entries.",
+          "anchor": [
+            0.041,
+            0.664,
+            0.125
+          ],
+          "group": "Permanent loop",
+          "scale": 0.55,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "LOOP3",
+          "label": "LOOP3",
+          "role": "L",
+          "purpose": "Permanent line loop. Its three entries share one brass terminal. This loop is separate from the two switched lamp-line entries.",
+          "anchor": [
+            0.123,
+            0.664,
+            0.125
+          ],
+          "group": "Permanent loop",
+          "scale": 0.55,
           "entryDirection": [
             0,
             0,
@@ -5626,7 +5729,7 @@
       ],
       "size": [
         1,
-        0.7,
+        0.9,
         0.8
       ]
     },
@@ -5635,14 +5738,14 @@
         "id": "L",
         "label": "L",
         "role": "L",
-        "purpose": "Line conductor: the alternating supply relative to neutral.",
+        "purpose": "One of two joined lamp-line entries, normally carrying the switched line to the pendant.",
         "anchor": [
-          -0.1846153846153846,
-          0.33755172413793105,
-          0.11764705882352942
+          0.21900000000000003,
+          0.664,
+          0.125
         ],
-        "group": "Line",
-        "scale": 1,
+        "group": "Lamp line",
+        "scale": 0.55,
         "entryDirection": [
           0,
           0,
@@ -5653,14 +5756,14 @@
         "id": "N",
         "label": "N",
         "role": "N",
-        "purpose": "Neutral: the normal return path. It is not a protective conductor.",
+        "purpose": "One of the three joined neutral entries. This block remains separate from the two line groups and the earth block.",
         "anchor": [
-          0,
-          0.33755172413793105,
-          0.11764705882352942
+          -0.30100000000000005,
+          0.664,
+          0.125
         ],
         "group": "Neutral",
-        "scale": 1,
+        "scale": 0.55,
         "entryDirection": [
           0,
           0,
@@ -5671,14 +5774,14 @@
         "id": "PE",
         "label": "PE",
         "role": "PE",
-        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "purpose": "Conductor entry at the common protective earth block. Both entries share one clamping screw.",
         "anchor": [
-          0.1846153846153846,
-          0.33755172413793105,
-          0.11764705882352942
+          -0.027,
+          0.148,
+          0.125
         ],
-        "group": "Earth",
-        "scale": 1,
+        "group": "Protective earth",
+        "scale": 0.35,
         "entryDirection": [
           0,
           0,
@@ -5689,14 +5792,14 @@
         "id": "LOUT",
         "label": "LOUT",
         "role": "L",
-        "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "One of two joined lamp-line entries, normally carrying the switched line to the pendant.",
         "anchor": [
-          -0.1846153846153846,
-          0.21203448275862066,
-          0.11764705882352942
+          0.30100000000000005,
+          0.664,
+          0.125
         ],
-        "group": "Line",
-        "scale": 1,
+        "group": "Lamp line",
+        "scale": 0.55,
         "entryDirection": [
           0,
           0,
@@ -5707,14 +5810,14 @@
         "id": "NOUT",
         "label": "NOUT",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "One of the three joined neutral entries. This block remains separate from the two line groups and the earth block.",
         "anchor": [
-          0,
-          0.21203448275862066,
-          0.11764705882352942
+          -0.21900000000000003,
+          0.664,
+          0.125
         ],
         "group": "Neutral",
-        "scale": 1,
+        "scale": 0.55,
         "entryDirection": [
           0,
           0,
@@ -5725,14 +5828,86 @@
         "id": "PEOUT",
         "label": "PEOUT",
         "role": "PE",
-        "purpose": "Outgoing protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "purpose": "Conductor entry at the common protective earth block. Both entries share one clamping screw.",
         "anchor": [
-          0.1846153846153846,
-          0.21203448275862066,
-          0.11764705882352942
+          0.027,
+          0.148,
+          0.125
         ],
-        "group": "Earth",
-        "scale": 1,
+        "group": "Protective earth",
+        "scale": 0.35,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "N3",
+        "label": "N3",
+        "role": "N",
+        "purpose": "One of the three joined neutral entries. This block remains separate from the two line groups and the earth block.",
+        "anchor": [
+          -0.137,
+          0.664,
+          0.125
+        ],
+        "group": "Neutral",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "LOOP1",
+        "label": "LOOP1",
+        "role": "L",
+        "purpose": "Permanent line loop. Its three entries share one brass terminal. This loop is separate from the two switched lamp-line entries.",
+        "anchor": [
+          -0.041,
+          0.664,
+          0.125
+        ],
+        "group": "Permanent loop",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "LOOP2",
+        "label": "LOOP2",
+        "role": "L",
+        "purpose": "Permanent line loop. Its three entries share one brass terminal. This loop is separate from the two switched lamp-line entries.",
+        "anchor": [
+          0.041,
+          0.664,
+          0.125
+        ],
+        "group": "Permanent loop",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "LOOP3",
+        "label": "LOOP3",
+        "role": "L",
+        "purpose": "Permanent line loop. Its three entries share one brass terminal. This loop is separate from the two switched lamp-line entries.",
+        "anchor": [
+          0.123,
+          0.664,
+          0.125
+        ],
+        "group": "Permanent loop",
+        "scale": 0.55,
         "entryDirection": [
           0,
           0,
@@ -5740,8 +5915,8 @@
         ]
       }
     ],
-    "meshNodes": 77,
-    "vertices": 4700
+    "meshNodes": 121,
+    "vertices": 4796
   },
   {
     "key": "fcu_default",
@@ -5769,20 +5944,20 @@
       "name": "Switched fused connection unit",
       "group": "Accessories",
       "model": "socket",
-      "description": "Linked local switching with a protected line branch for a fixed appliance.",
+      "description": "A switch and fuse for a fixed appliance. IN is the supply side. LOAD goes to the appliance.",
       "terminals": [
         {
           "id": "LIN",
           "label": "LIN",
           "role": "L",
-          "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Line coming in from the supply. Look for IN on the back.",
           "anchor": [
-            -0.12269230769230768,
-            0.8082413793103449,
-            -0.353529411764706
+            0.09,
+            0.56,
+            -0.10400000000000001
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -5793,14 +5968,14 @@
           "id": "NIN",
           "label": "NIN",
           "role": "N",
-          "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Neutral coming in from the supply. Look for IN on the back.",
           "anchor": [
-            0.12269230769230768,
-            0.8082413793103449,
-            -0.353529411764706
+            0.18,
+            0.26,
+            -0.10400000000000001
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -5811,14 +5986,14 @@
           "id": "LOUT",
           "label": "LOUT",
           "role": "L",
-          "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Fused line going to the appliance. Look for LOAD on the back.",
           "anchor": [
-            -0.12269230769230768,
-            0.3892758620689656,
-            -0.353529411764706
+            -0.13,
+            0.5900000000000001,
+            -0.10400000000000001
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -5829,14 +6004,14 @@
           "id": "NOUT",
           "label": "NOUT",
           "role": "N",
-          "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Neutral going to the appliance. Look for LOAD on the back.",
           "anchor": [
-            0.12269230769230768,
-            0.3892758620689656,
-            -0.353529411764706
+            0.19,
+            0.56,
+            -0.10400000000000001
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -5845,16 +6020,34 @@
         },
         {
           "id": "PE",
-          "label": "PE",
+          "label": "E",
           "role": "PE",
-          "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+          "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
           "anchor": [
-            0.2876923076923077,
-            0.6127241379310344,
-            -0.353529411764706
+            -0.27,
+            0.53,
+            -0.06
           ],
           "group": "Earth",
-          "scale": 1,
+          "scale": 0.42,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "PE2",
+          "label": "E2",
+          "role": "PE",
+          "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
+          "anchor": [
+            -0.27,
+            0.39,
+            -0.06
+          ],
+          "group": "Connections",
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -5905,9 +6098,9 @@
         }
       ],
       "size": [
-        1.1,
-        1.35,
-        0.8
+        0.86,
+        0.92,
+        0.4
       ]
     },
     "terminals": [
@@ -5915,14 +6108,14 @@
         "id": "LIN",
         "label": "LIN",
         "role": "L",
-        "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Line coming in from the supply. Look for IN on the back.",
         "anchor": [
-          -0.12269230769230768,
-          0.8082413793103449,
-          -0.353529411764706
+          0.09,
+          0.56,
+          -0.10400000000000001
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -5933,14 +6126,14 @@
         "id": "NIN",
         "label": "NIN",
         "role": "N",
-        "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Neutral coming in from the supply. Look for IN on the back.",
         "anchor": [
-          0.12269230769230768,
-          0.8082413793103449,
-          -0.353529411764706
+          0.18,
+          0.26,
+          -0.10400000000000001
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -5951,14 +6144,14 @@
         "id": "LOUT",
         "label": "LOUT",
         "role": "L",
-        "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Fused line going to the appliance. Look for LOAD on the back.",
         "anchor": [
-          -0.12269230769230768,
-          0.3892758620689656,
-          -0.353529411764706
+          -0.13,
+          0.5900000000000001,
+          -0.10400000000000001
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -5969,14 +6162,14 @@
         "id": "NOUT",
         "label": "NOUT",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Neutral going to the appliance. Look for LOAD on the back.",
         "anchor": [
-          0.12269230769230768,
-          0.3892758620689656,
-          -0.353529411764706
+          0.19,
+          0.56,
+          -0.10400000000000001
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -5985,16 +6178,34 @@
       },
       {
         "id": "PE",
-        "label": "PE",
+        "label": "E",
         "role": "PE",
-        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
         "anchor": [
-          0.2876923076923077,
-          0.6127241379310344,
-          -0.353529411764706
+          -0.27,
+          0.53,
+          -0.06
         ],
         "group": "Earth",
-        "scale": 1,
+        "scale": 0.42,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "PE2",
+        "label": "E2",
+        "role": "PE",
+        "purpose": "The metal strap joins both earth terminals. Either terminal connects to the same earth path.",
+        "anchor": [
+          -0.27,
+          0.39,
+          -0.06
+        ],
+        "group": "Connections",
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -6002,8 +6213,8 @@
         ]
       }
     ],
-    "meshNodes": 94,
-    "vertices": 21108
+    "meshNodes": 110,
+    "vertices": 24660
   },
   {
     "key": "switch_single-rocker",
@@ -6038,11 +6249,11 @@
           "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
           "anchor": [
             0,
-            0.8268620689655173,
-            -0.353529411764706
+            0.766,
+            -0.14
           ],
           "group": "Common",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6055,12 +6266,12 @@
           "role": "L",
           "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
           "anchor": [
-            0,
-            0.3985862068965518,
-            -0.353529411764706
+            -0.058,
+            0.516,
+            -0.14
           ],
           "group": "Switched line",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6107,6 +6318,12 @@
         1.1,
         1.35,
         0.8
+      ],
+      "variants": [
+        {
+          "id": "door-contact",
+          "name": "Door-operated contact"
+        }
       ]
     },
     "terminals": [
@@ -6117,11 +6334,11 @@
         "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
         "anchor": [
           0,
-          0.8268620689655173,
-          -0.353529411764706
+          0.766,
+          -0.14
         ],
         "group": "Common",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6134,12 +6351,12 @@
         "role": "L",
         "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
         "anchor": [
-          0,
-          0.3985862068965518,
-          -0.353529411764706
+          -0.058,
+          0.516,
+          -0.14
         ],
         "group": "Switched line",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6184,11 +6401,11 @@
           "purpose": "Common contact. Moving the rocker connects COM to one of the two traveller terminals.",
           "anchor": [
             0,
-            0.8361724137931035,
-            -0.353529411764706
+            0.766,
+            -0.14
           ],
           "group": "Common",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6201,12 +6418,12 @@
           "role": "L",
           "purpose": "Traveller marked L1. The lesson calls this path T1. The rocker chooses whether it is joined to COM.",
           "anchor": [
-            -0.09730769230769232,
-            0.40789655172413797,
-            -0.353529411764706
+            -0.059,
+            0.516,
+            -0.14
           ],
           "group": "Travellers",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6219,12 +6436,12 @@
           "role": "L",
           "purpose": "Traveller marked L2. The lesson calls this path T2. The rocker chooses whether it is joined to COM.",
           "anchor": [
-            0.09730769230769232,
-            0.40789655172413797,
-            -0.353529411764706
+            0.059,
+            0.516,
+            -0.14
           ],
           "group": "Travellers",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6282,11 +6499,11 @@
         "purpose": "Common contact. Moving the rocker connects COM to one of the two traveller terminals.",
         "anchor": [
           0,
-          0.8361724137931035,
-          -0.353529411764706
+          0.766,
+          -0.14
         ],
         "group": "Common",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6299,12 +6516,12 @@
         "role": "L",
         "purpose": "Traveller marked L1. The lesson calls this path T1. The rocker chooses whether it is joined to COM.",
         "anchor": [
-          -0.09730769230769232,
-          0.40789655172413797,
-          -0.353529411764706
+          -0.059,
+          0.516,
+          -0.14
         ],
         "group": "Travellers",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6317,12 +6534,12 @@
         "role": "L",
         "purpose": "Traveller marked L2. The lesson calls this path T2. The rocker chooses whether it is joined to COM.",
         "anchor": [
-          0.09730769230769232,
-          0.40789655172413797,
-          -0.353529411764706
+          0.059,
+          0.516,
+          -0.14
         ],
         "group": "Travellers",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6362,16 +6579,16 @@
       "terminals": [
         {
           "id": "A",
-          "label": "A",
+          "label": "L1 (A)",
           "role": "L",
           "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
           "anchor": [
-            -0.09730769230769232,
-            0.8268620689655173,
-            -0.353529411764706
+            -0.067,
+            0.766,
+            -0.14
           ],
           "group": "Traveller pair A",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6380,16 +6597,16 @@
         },
         {
           "id": "B",
-          "label": "B",
+          "label": "L1 (B)",
           "role": "L",
           "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
           "anchor": [
-            0.09730769230769232,
-            0.8268620689655173,
-            -0.353529411764706
+            0.067,
+            0.766,
+            -0.14
           ],
           "group": "Traveller pair A",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6398,16 +6615,16 @@
         },
         {
           "id": "C",
-          "label": "C",
+          "label": "L2 (C)",
           "role": "L",
           "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
           "anchor": [
-            -0.09730769230769232,
-            0.40789655172413797,
-            -0.353529411764706
+            -0.067,
+            0.516,
+            -0.14
           ],
           "group": "Traveller pair B",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6416,16 +6633,16 @@
         },
         {
           "id": "D",
-          "label": "D",
+          "label": "L2 (D)",
           "role": "L",
           "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
           "anchor": [
-            0.09730769230769232,
-            0.40789655172413797,
-            -0.353529411764706
+            0.067,
+            0.516,
+            -0.14
           ],
           "group": "Traveller pair B",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6441,32 +6658,32 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "actuator",
           "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "contacts",
-          "name": "Switching contacts",
-          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
         }
       ],
       "size": [
@@ -6478,16 +6695,16 @@
     "terminals": [
       {
         "id": "A",
-        "label": "A",
+        "label": "L1 (A)",
         "role": "L",
         "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
         "anchor": [
-          -0.09730769230769232,
-          0.8268620689655173,
-          -0.353529411764706
+          -0.067,
+          0.766,
+          -0.14
         ],
         "group": "Traveller pair A",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6496,16 +6713,16 @@
       },
       {
         "id": "B",
-        "label": "B",
+        "label": "L1 (B)",
         "role": "L",
         "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
         "anchor": [
-          0.09730769230769232,
-          0.8268620689655173,
-          -0.353529411764706
+          0.067,
+          0.766,
+          -0.14
         ],
         "group": "Traveller pair A",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6514,16 +6731,16 @@
       },
       {
         "id": "C",
-        "label": "C",
+        "label": "L2 (C)",
         "role": "L",
         "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
         "anchor": [
-          -0.09730769230769232,
-          0.40789655172413797,
-          -0.353529411764706
+          -0.067,
+          0.516,
+          -0.14
         ],
         "group": "Traveller pair B",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6532,16 +6749,16 @@
       },
       {
         "id": "D",
-        "label": "D",
+        "label": "L2 (D)",
         "role": "L",
         "purpose": "Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.",
         "anchor": [
-          0.09730769230769232,
-          0.40789655172413797,
-          -0.353529411764706
+          0.067,
+          0.516,
+          -0.14
         ],
         "group": "Traveller pair B",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6735,12 +6952,12 @@
           "role": "L",
           "purpose": "Line conductor: the alternating supply relative to neutral.",
           "anchor": [
-            -0.1076923076923077,
-            0.12237931034482757,
-            -0.43117647058823527
+            -0.067,
+            0.269,
+            -0.18
           ],
           "group": "Lamp contacts",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6753,12 +6970,12 @@
           "role": "N",
           "purpose": "Neutral: the normal return path. It is not a protective conductor.",
           "anchor": [
-            0.1076923076923077,
-            0.12237931034482757,
-            -0.43117647058823527
+            0.067,
+            0.269,
+            -0.18
           ],
           "group": "Lamp contacts",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6772,11 +6989,11 @@
           "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
           "anchor": [
             0,
-            0.3196206896551725,
-            -0.43117647058823527
+            0.38,
+            -0.18
           ],
           "group": "Mounting-base earth",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -6857,12 +7074,12 @@
         "role": "L",
         "purpose": "Line conductor: the alternating supply relative to neutral.",
         "anchor": [
-          -0.1076923076923077,
-          0.12237931034482757,
-          -0.43117647058823527
+          -0.067,
+          0.269,
+          -0.18
         ],
         "group": "Lamp contacts",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6875,12 +7092,12 @@
         "role": "N",
         "purpose": "Neutral: the normal return path. It is not a protective conductor.",
         "anchor": [
-          0.1076923076923077,
-          0.12237931034482757,
-          -0.43117647058823527
+          0.067,
+          0.269,
+          -0.18
         ],
         "group": "Lamp contacts",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -6894,11 +7111,11 @@
         "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
         "anchor": [
           0,
-          0.3196206896551725,
-          -0.43117647058823527
+          0.38,
+          -0.18
         ],
         "group": "Mounting-base earth",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -15719,7 +15936,7 @@
     "galleryKey": "switch:gang-module-left",
     "name": "Gang A · left module",
     "component": {
-      "id": "gallery-68",
+      "id": "gallery-79",
       "type": "switch",
       "label": "Gang A",
       "position": [
@@ -15748,11 +15965,11 @@
           "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
           "anchor": [
             0,
-            0.8268620689655173,
-            -0.353529411764706
+            0.766,
+            -0.14
           ],
           "group": "Common",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -15765,12 +15982,12 @@
           "role": "L",
           "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
           "anchor": [
-            0,
-            0.3985862068965518,
-            -0.353529411764706
+            -0.058,
+            0.516,
+            -0.14
           ],
           "group": "Switched line",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -15817,6 +16034,12 @@
         1.1,
         1.35,
         0.8
+      ],
+      "variants": [
+        {
+          "id": "door-contact",
+          "name": "Door-operated contact"
+        }
       ]
     },
     "terminals": [
@@ -15827,11 +16050,11 @@
         "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
         "anchor": [
           0,
-          0.8268620689655173,
-          -0.353529411764706
+          0.766,
+          -0.14
         ],
         "group": "Common",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -15844,12 +16067,12 @@
         "role": "L",
         "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
         "anchor": [
-          0,
-          0.3985862068965518,
-          -0.353529411764706
+          -0.058,
+          0.516,
+          -0.14
         ],
         "group": "Switched line",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -15866,7 +16089,7 @@
     "galleryKey": "switch:gang-module-right",
     "name": "Gang B · right module",
     "component": {
-      "id": "gallery-69",
+      "id": "gallery-80",
       "type": "switch",
       "label": "Gang B",
       "position": [
@@ -15895,11 +16118,11 @@
           "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
           "anchor": [
             0,
-            0.8268620689655173,
-            -0.353529411764706
+            0.766,
+            -0.14
           ],
           "group": "Common",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -15912,12 +16135,12 @@
           "role": "L",
           "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
           "anchor": [
-            0,
-            0.3985862068965518,
-            -0.353529411764706
+            -0.058,
+            0.516,
+            -0.14
           ],
           "group": "Switched line",
-          "scale": 1,
+          "scale": 0.58,
           "entryDirection": [
             0,
             0,
@@ -15964,6 +16187,12 @@
         1.1,
         1.35,
         0.8
+      ],
+      "variants": [
+        {
+          "id": "door-contact",
+          "name": "Door-operated contact"
+        }
       ]
     },
     "terminals": [
@@ -15974,11 +16203,11 @@
         "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
         "anchor": [
           0,
-          0.8268620689655173,
-          -0.353529411764706
+          0.534,
+          -0.14
         ],
         "group": "Common",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -15991,12 +16220,12 @@
         "role": "L",
         "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
         "anchor": [
-          0,
-          0.3985862068965518,
-          -0.353529411764706
+          0.058,
+          0.784,
+          -0.14
         ],
         "group": "Switched line",
-        "scale": 1,
+        "scale": 0.58,
         "entryDirection": [
           0,
           0,
@@ -22782,5 +23011,152 @@
     ],
     "meshNodes": 17,
     "vertices": 748
+  },
+  {
+    "key": "shaveroutlet_default",
+    "file": "shaveroutlet_default.json",
+    "galleryKey": "shaveroutlet:default",
+    "name": "Shaver outlet · isolated 230 V side",
+    "component": {
+      "id": "gallery-shaveroutlet",
+      "type": "shaveroutlet",
+      "label": "Shaver outlet · isolated 230 V side",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 15,
+        "ratedVoltage": 230,
+        "doubleInsulated": true,
+        "classII": true
+      }
+    },
+    "definition": {
+      "type": "shaveroutlet",
+      "name": "Shaver outlet · isolated 230 V side",
+      "group": "Accessories",
+      "model": "socket",
+      "description": "A two-pin shaver outlet with a small shaver load connected. The transformer inside the supply unit is shown separately on the workbench.",
+      "terminals": [
+        {
+          "id": "L",
+          "label": "SEC 1",
+          "role": "output",
+          "purpose": "This is one end of the isolated shaver load. Measure across the two secondary contacts to read the outlet voltage.",
+          "anchor": [
+            0.14,
+            1,
+            -0.135
+          ],
+          "group": "Inside the isolated 230 V outlet",
+          "scale": 0.43,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "N",
+          "label": "SEC 2",
+          "role": "output",
+          "purpose": "This is one end of the isolated shaver load. Measure across the two secondary contacts to read the outlet voltage.",
+          "anchor": [
+            -0.14,
+            1,
+            -0.135
+          ],
+          "group": "Inside the isolated 230 V outlet",
+          "scale": 0.43,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "watts": 15,
+        "ratedVoltage": 230,
+        "doubleInsulated": true,
+        "classII": true
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The case holds the working parts in place and keeps them apart."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "Lift the cover on the bench to see the connections underneath."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "pins",
+          "name": "Plug and socket contacts",
+          "purpose": "The plug pins meet these contacts when the plug goes in. Each has its own job."
+        }
+      ],
+      "size": [
+        0.86,
+        1.52,
+        0.4
+      ],
+      "abstraction": "The lesson uses the 230 V pair. The second plug position and its interlock are shown for recognition. The two secondary connections are exposed for study."
+    },
+    "terminals": [
+      {
+        "id": "L",
+        "label": "SEC 1",
+        "role": "output",
+        "purpose": "This is one end of the isolated shaver load. Measure across the two secondary contacts to read the outlet voltage.",
+        "anchor": [
+          0.14,
+          1,
+          -0.135
+        ],
+        "group": "Inside the isolated 230 V outlet",
+        "scale": 0.43,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "N",
+        "label": "SEC 2",
+        "role": "output",
+        "purpose": "This is one end of the isolated shaver load. Measure across the two secondary contacts to read the outlet voltage.",
+        "anchor": [
+          -0.14,
+          1,
+          -0.135
+        ],
+        "group": "Inside the isolated 230 V outlet",
+        "scale": 0.43,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 81,
+    "vertices": 24027
   }
 ]

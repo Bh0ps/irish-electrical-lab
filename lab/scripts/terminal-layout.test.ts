@@ -4,6 +4,7 @@ import { COMPONENTS, COMPONENT_LIST } from '../lib/components.ts';
 import { getComponentTerminals, terminalInspectionDirection } from '../lib/terminal-layout.ts';
 import { createGalleryInventory } from '../components/lab/ModelGallery.tsx';
 import { LESSONS } from '../lib/lessons.ts';
+import { measureResistance } from '../lib/simulation.ts';
 import { routeWire, terminalPosition } from '../lib/routing.ts';
 import type { ComponentInstance, CircuitDocument, Vec3 } from '../lib/types.ts';
 
@@ -45,7 +46,7 @@ test('the camera approaches documented physical access banks and real fixture in
 test('bulb, downlight and batten connectors follow their different housing heights',()=>{
   const bulb=layout('lamp','bulb'),downlight=layout('lamp','downlight'),batten=layout('lamp','batten');
   const sy=COMPONENTS.lamp.size[1]/1.45;
-  assert.equal(bulb.find(t=>t.id==='L')!.anchor[1],.18*sy-.039);
+  assert.equal(bulb.find(t=>t.id==='L')!.anchor[1],.269);
   assert.equal(bulb.find(t=>t.id==='PE')!.group,'Mounting-base earth');
   assert.ok(downlight.every(t=>t.anchor[1]===.70*sy-.039));
   assert.ok(batten.every(t=>t.anchor[1]===.72*sy-.039));
@@ -63,7 +64,7 @@ test('switch, FCU, rose, isolated converter and motor banks keep their electrica
   assert.notEqual(fcu.find(t=>t.id==='LIN')!.group,fcu.find(t=>t.id==='LOUT')!.group);
   const rose=layout('rose');
   for(const [a,b] of [['L','LOUT'],['N','NOUT'],['PE','PEOUT']])assert.equal(rose.find(t=>t.id===a)!.group,rose.find(t=>t.id===b)!.group);
-  assert.equal(new Set(rose.map(t=>t.group)).size,3);
+  assert.equal(new Set(rose.map(t=>t.group)).size,4);
   assert.notEqual(layout('driver').find(t=>t.id==='L')!.group,layout('driver').find(t=>t.id==='+')!.group);
   const motor=layout('motor3');
   assert.equal(motor.filter(t=>t.group==='Winding starts').length,3);
@@ -74,10 +75,10 @@ test('switch, FCU, rose, isolated converter and motor banks keep their electrica
 test('complete clamp bodies fit compact rose, indicator, batten and lampholder silhouettes',()=>{
   for(const type of ['rose','indicator']){
     const d=COMPONENTS[type],sx=d.size[0]/1.3,sy=d.size[1]/1.45;
-    const radius=type==='rose'?.42:.29,cy=(type==='rose'?.65:.61)*sy;
+    const radiusX=type==='rose'?.439:.29*sx,radiusY=type==='rose'?.439:.29*sy,cy=type==='rose'?.449:.61*sy;
     for(const t of layout(type))for(const signX of [-1,1])for(const signY of [-1,1]){
       const scale=t.scale??1,x=t.anchor[0]+signX*.0675*scale,y=t.anchor[1]+.039*scale+signY*.055*scale;
-      assert.ok((x/(radius*sx))**2+((y-cy)/(radius*sy))**2<=1.001,`${type}.${t.id} protrudes past the circular fixture`);
+      assert.ok((x/radiusX)**2+((y-cy)/radiusY)**2<=1.001,`${type}.${t.id} protrudes past the circular fixture`);
     }
   }
   for(const [type,variant] of [['lamp','batten'],['emergency',undefined]] as const){
@@ -119,4 +120,14 @@ test('fixture-form and inspection changes preserve circuit topology and terminal
     assert.deepEqual(resolved.map(t=>t.anchor),getComponentTerminals({...presented,params:c.params},d).map(t=>t.anchor));
   }
   assert.deepEqual(c,before);
+});
+
+test('ceiling rose brass links join only the entries on their own block',()=>{
+  const doc:CircuitDocument={version:1,id:'rose-test',name:'Rose',revision:0,supply:{enabled:false,phase:'single',voltage:240,frequency:50,sourceResistance:.12},components:[sample('rose')],wires:[],faults:[]};
+  const resistance=(a:string,b:string)=>measureResistance(doc,{component:'rose',terminal:a},{component:'rose',terminal:b});
+  for(const [a,b] of [['N','N3'],['NOUT','N3'],['LOOP1','LOOP3'],['LOOP2','LOOP3'],['L','LOUT'],['PE','PEOUT']]) {
+    const measured=resistance(a,b);
+    assert.ok(measured.value!==null && measured.value < .02,a+' and '+b+' share brass');
+  }
+  for(const [a,b] of [['LOOP2','N3'],['L','LOOP2'],['PE','N'],['PE','L']])assert.equal(resistance(a,b).reason,'open');
 });

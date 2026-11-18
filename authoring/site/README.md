@@ -1,0 +1,24 @@
+# Installed fixture models
+
+The site camera uses the same local equipment GLBs and simulation state as the workbench. A site fixing converts the magnified bench part into the installed envelope. Mounted breakers and bars inherit the scale of the board they occupy. Opening a shield, changing camera, lifting the cupboard door or selecting a diagram pin preserves the underlying circuit.
+
+| Detail | Reference and scope |
+| --- | --- |
+| Domestic and commercial boards | The Gamma shell measures 250 × 375 × 103 mm. The Invicta shell measures 465 × 500 × 132.5 mm. Handles, hinges and an open door can extend past the shell. Both sit against the wall. [Hager SBE8101](https://assets.hager.com/step-content/P/PDS_159097253001EN/Document/std.lang.all/SBE8101_3001_en-GB.pdf) · [Hager JK104B](https://assets.hager.com/step-content/P/PDS_159865522001EN/Document/std.lang.all/JK104B_2001_en-GB.pdf) |
+| Wall switches | The installed one-gang face occupies 86 × 86 mm. The body and wiring chamber extend behind the plaster. Terminal and switch-cassette details are specific to the model shown in the equipment reference list. [Hager one-gang face dimensions](https://assets.hager.com/step-content/P/PDS_158558123001EN/Document/std.lang.all/PDS_WMPS12_3001_en-GB.pdf) |
+| Socket and fused outlet | BG 824 and 851 plates sit with their rear mouldings in the wall. The double socket face is 146.5 × 86 mm. The fused connection unit is 86 × 86 mm. [BG 824](https://www.bgelectrical.uk/uk/wiring-devices/800-series/13a-sockets/824-01) · [Equipment reference map](../blender/reference-map.json) |
+| Isolated shaver outlet | The MK Logic Plus K701WHI face is 86 × 146 mm with 120.6 mm vertical fixing centres. The 115 V and 230 V apertures identify an isolated supply unit. Course 24 uses its 230 V pair and models a connected 15 W appliance. In the room the transformer sits inside the wall unit. On the workbench it can be probed separately. The two secondary tags are educational access points. [MK face photograph](https://buildings.honeywell.com/gb/en/products/by-category/electrical-and-wiring/wiring-devices/sockets/shaver-sockets/logic-plus-shaver-socket) · [MK catalogue, page 39](https://ws.buildings.honeywell.com/content/dam/hbtbt/en/documents/document-lists/mk-electric/catalogues/MK-Electric-N0-49_Catalogue_UKMK003-0116-EN.pdf) |
+| Batten lamp | The earthed S. Lilley 3015E holder sits on a 48 mm flange and carries the bulb at 45°. The clear envelope measures 55 mm across, matching the Radium A55 60 W B22d example. The point light sits at the filament shown in inspection. [S. Lilley catalogue](https://s-lilley.co.uk/wp-content/uploads/2023/10/catalogue.pdf) · [Radium A55 bulb](https://www.radium.de/en/products/standard-lamp-clear-60w230cb22d-ex) |
+| Cupboard contact | The surface housings follow the 65 mm CQR slimline form. The fixed half retains both wire endpoints. The magnet travels with the door. The study load is 12 W at 24 V, with the sensing and load switch represented by one ideal contact. The Lightdream LD2022 documents a real combined sensor and rated switching output. The alarm housing reference describes the shape only. [CQR housing](https://cqr.co.uk/product/sc517-surface-contact-grade-1-white-non-resistored/) · [Lightdream lighting control](https://lightdream.com.au/shop/sensor-switch/) |
+| LED tape | Connected segments repeat the workbench's copper lands, insulator and chip packages. The visible run has five 100 mm sections. On the tunable-white example, the strip is 10 mm wide and 1.2 mm high. Its independent rows follow the simulated warm and cool channel power. The study model illustrates the arrangement of emitters and solder lands. Product-specific chip counts, cut intervals and current ratings vary. [LEDVANCE 24 V tunable-white tape](https://www.ledvance.com/en-int/professional-lighting/products/led-strips--modules-and-drivers/led-strips/led-strips-tunable-white/led-strips-tw-superior-class/tunable-white-led-strips-with-2000-lmm-for-professional-applications-with-very-good-color-rendering-and-lifetime-c8376?productId=46623) |
+
+## Scene materials
+
+Four CC0 source assets provide the tabletop plant, plaster, wood finish and captured light reflections. The mesh keeps its real dimensions, UVs and material assignments. Locally packed material maps are 512 px. The site applies photographed finish maps in metres, and layers the room's paint colour over the plaster. Surface finishes and room illumination illustrate the installation. [Asset credits](../../THIRD_PARTY_NOTICES.md)
+
+To reproduce the bundled assets, install Python 3 with Pillow and run the following commands from the repository root. Each script checks its source files against the pinned revision before writing the output.
+
+```powershell
+python authoring/site/pack_plant.py
+python authoring/site/pack_finishes.py
+```

@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Cable, CheckCircle2, Eye, Gauge, Lightbulb, Power, Wrench, type LucideIcon } from 'lucide-react';
 import { Button } from '../ui/button';
+import { TermsInThisStep } from './TermsInThisStep';
 import { getLessonActivities, evaluateActivity, type LessonActivity, type MeasurementEvidence } from '../../lib/learning';
 import { activityCheckKey, getActivityStage, getLessonPrimaryAction, getStageProgress, groupLessonActivities, type LessonStageId } from '../../lib/lesson-stages';
 import type { LearningRecord } from '../../lib/progress';
@@ -43,6 +44,7 @@ export default function LearningPanel(props: Props) {
   const [index, setIndex] = useState(() => Math.max(0, activities.findIndex(a => a.id === props.initialActivityId))), [answer, setAnswer] = useState(''), [feedback, setFeedback] = useState(''), [accepted, setAccepted] = useState(false);
   const [helpLevel, setHelpLevel] = useState(0);
   const taskHeading = useRef<HTMLHeadingElement>(null);
+  const focusNextTask = useRef(false);
   const previousPointButton = useRef<HTMLElement | null>(null);
   const benchBaseline = useRef<{ activity: string; circuit: string; revision: number; rest: string } | undefined>(undefined);
   const claimedSwitch = useRef('');
@@ -59,8 +61,10 @@ export default function LearningPanel(props: Props) {
   useLayoutEffect(() => {
     const previous = previousPointButton.current;
     previousPointButton.current = null;
-    if (previous && (!previous.isConnected || window.document.activeElement === window.document.body)) {
+    if (focusNextTask.current || (previous && (!previous.isConnected || window.document.activeElement === window.document.body))) {
+      focusNextTask.current = false;
       taskHeading.current?.focus({preventScroll:true});
+      taskHeading.current?.closest('.learn-column')?.scrollTo({ top: 0 });
     }
   }, [activity?.id]);
   const stageId = activity ? getActivityStage(activity) : 'look';
@@ -72,7 +76,28 @@ export default function LearningPanel(props: Props) {
   const measurementRecorded = useMemo(() => canRecord && activity?.kind === 'measure'
     && evaluateActivity(activity, props.document, props.result, props.evidence).status === 'pass',
   [canRecord, activity, props.document, props.result, props.evidence]);
+  // Only a reading recorded during this step can advance its primary action
+  // automatically. Earlier evidence stays available for an explicit check.
+  const previousReadings = useRef({ key: stateKey, evidence: props.evidence });
+  useEffect(() => {
+    const previous = previousReadings.current;
+    previousReadings.current = { key: stateKey, evidence: props.evidence };
+    if (activity?.kind !== 'measure' || currentAccepted || previous.key !== stateKey || previous.evidence === props.evidence) return;
+    const seen = new Set(previous.evidence.map(reading => reading.id));
+    const added = props.evidence.filter(reading => !seen.has(reading.id));
+    if (!added.length) return;
+    const checked = evaluateActivity(activity, props.document, props.result, added);
+    if (checked.status === 'pass') {
+      onAttempt(activity, true);
+      setAccepted(true);
+      setCheckedState(stateKey);
+      setFeedback('Reading checked and saved.');
+    } else {
+      setFeedback(checked.explanation);
+    }
+  }, [activity, currentAccepted, onAttempt, props.document, props.evidence, props.result, stateKey]);
   const lampVoltage = bookLampVoltage(props.document, props.result);
+  const lampReadingPending = !props.result || props.result.revision !== props.document.revision;
   const switchClosed = props.document.components.find(c => c.id === 'switch')?.params.closed;
   const switchStep = activity?.bookStep === 'switch-on' || activity?.bookStep === 'switch-off';
   const startingClosed = activity?.bookStep === 'switch-off';
@@ -158,6 +183,7 @@ export default function LearningPanel(props: Props) {
 
   function go(next: number) {
     navigationSequence.current++;
+    focusNextTask.current = true;
     setIndex(Math.max(0, Math.min(next, activities.length - 1)));
     setAnswer(''); setFeedback(''); setAccepted(false); setCheckedState('');
     setConnectionNotice(''); setHelpLevel(0); benchBaseline.current = undefined;
@@ -187,7 +213,11 @@ export default function LearningPanel(props: Props) {
       diagnosisAccepted: props.diagnosisAccepted, repairVerified: props.challengeRepaired,
     });
     const success = evaluated.status === 'pass';
-    setFeedback(evaluated.explanation); setAccepted(success); setCheckedState(stateKey);
+    const question = activity.kind === 'predict' || activity.kind === 'explain';
+    setFeedback(question && evaluated.status === 'fail'
+      ? `Try again. ${evaluated.explanation}`
+      : question && success ? `That’s right. ${evaluated.explanation}` : evaluated.explanation);
+    setAccepted(success); setCheckedState(stateKey);
     if (evaluated.status === 'pass' || evaluated.status === 'fail') props.onAttempt(activity, success);
   }
   if (!activity) return <p>No guided activity is available.</p>;
@@ -199,6 +229,10 @@ export default function LearningPanel(props: Props) {
     ? (startingClosed ? 'Turn the light off' : 'Turn the light on')
     : (startingClosed ? 'Turn on to try again' : 'Turn off to try again'));
   const bookReading = activity.bookStep === 'intro' || activity.bookStep === 'contact' || activity.bookStep === 'meter-demo';
+  const question = activity.kind === 'predict' || activity.kind === 'explain';
+  const taskTitle = switchStep ? 'Try the wall switch' : question ? activity.instruction : activity.title;
+  const stepNumber = course ? index + 1 : stage.activities.findIndex(candidate => candidate.id === activity.id) + 1;
+  const stepCount = course ? activities.length : stage.activities.length;
   const primaryLabel = activity.bookStep === 'finish' ? (nextLesson ? `Next: ${COURSE_PAGES[nextLesson].title}` : 'Return to the first chapter')
     : starterText || (measuringDimmer && !currentAccepted ? (low ? 'Set dimmer to 90%' : 'Set dimmer to 25%')
     : bookReading ? (activity.bookStep === 'intro' ? 'Try the circuit' : 'Continue')
@@ -224,16 +258,23 @@ export default function LearningPanel(props: Props) {
     else verify();
   }
   const savedAchievement = props.record.activityIds.includes(activity.id);
-  const stageStep = stage.activities.findIndex(candidate => candidate.id === activity.id) + 1;
   const completed = activities.filter(candidate => props.record.activityIds.includes(candidate.id)).length;
   const visibleSections = props.lesson.sections.filter(section => !props.challengeStarted || props.diagnosisAccepted || !section.title.toLowerCase().includes('fault'));
-  const clue = activity.kind === 'connect' ? 'Read the small marking beside each connection point. The two ends must match the names in this step.'
-    : activity.kind === 'measure' ? 'Voltage compares two points. Choose the first probe, then the second one, and record the result.'
-    : switchStep ? 'Look for the wall switch beside the lamp. You can also operate it using the labelled button.'
-    : activity.kind === 'predict' ? 'Picture which equipment will change and which equipment can still get power.'
-    : 'Focus on the one part that changes in this step. You can open the equipment list to find it by name.';
+  const targetName = props.document.components.find(component => component.id === activity.component)?.label;
+  const canLocate = Boolean(targetName || activity.endpoints?.length);
+  const clue = activity.kind === 'connect' ? 'Find the first piece of equipment, then the marking beside its terminal. The named list works too.'
+    : activity.measurement?.mode === 'current' ? 'Choose one conductor. The current reading tells you how much is flowing in that wire.'
+    : activity.measurement?.mode === 'resistance' ? 'Turn off every simulated source, including any battery supply. Put the probes at opposite ends of the wire.'
+    : activity.measurement?.mode === 'voltage' ? 'Choose a terminal for each probe. The number on the meter is the voltage between those two points.'
+    : switchStep ? 'Look for the rocker on the wall beside the lamp. You can click it or use the lesson’s on/off button.'
+    : activity.kind === 'predict' ? 'You can try the circuit first if you’re unsure.'
+    : activity.kind === 'explain' ? 'Think back to which control you moved and what changed on the bench.'
+    : activity.kind === 'repair' ? 'Start with the symptom in the fault report. Use the meter to narrow down where the change happens.'
+    : activity.kind === 'retest' ? 'Run the test again after the repair. An earlier report describes the earlier circuit.'
+    : targetName ? `Look for ${targetName} in the equipment list.`
+    : 'Use the equipment list to find a part by its name.';
   const showHelp = () => {
-    const next = Math.min(3,helpLevel + 1);
+    const next = helpLevel === 1 && !canLocate ? 3 : Math.min(3,helpLevel + 1);
     setHelpLevel(next);
     if (next === 2 && (activity.component || activity.endpoints?.length)) props.onTarget(activity);
     if (next === 3 && activity.kind === 'measure') props.onMeasure(activity);
@@ -252,33 +293,38 @@ export default function LearningPanel(props: Props) {
         </button>;
       })}
     </nav>}
-    <section className="active-task" aria-label="Active lesson activity" data-stage-id={stageId} data-activity-id={activity.id} data-activity-kind={activity.kind}>
-      <div className="task-topline"><span>{course ? chapterFor(props.lesson.id).title : stage.title}</span><b>{course ? `${index + 1} / ${activities.length}` : `Step ${stageStep} of ${stage.activities.length}`}</b></div>
-      <h3 ref={taskHeading} tabIndex={-1}>{activity.title}</h3><p className="task-instruction">{activity.instruction}</p>
-      {!!activity.options?.length && <div className="prediction-options">{activity.options.map(option => <button type="button" key={option.id} aria-pressed={answer === option.id} className={answer === option.id ? 'chosen' : ''} onClick={() => { setAnswer(option.id); setAccepted(false); setFeedback(''); }}>{option.label}</button>)}</div>}
+    <section className="active-task" aria-label="Active lesson activity" data-stage-id={stageId} data-activity-id={activity.id} data-activity-kind={activity.kind} data-reading-step={activity.bookStep}>
+      <div className="task-topline"><span>{course ? chapterFor(props.lesson.id).title : stage.title}</span><b>Step {stepNumber} of {stepCount}</b></div>
+      <progress className="course-position" aria-label={course ? 'Position in this lesson' : `Position in the ${stage.title} stage`} value={stepNumber} max={stepCount}/>
+      <h3 id="current-task-title" ref={taskHeading} tabIndex={-1}>{taskTitle}</h3>
+      {!question && !switchStep && <p className="task-instruction">{activity.instruction}</p>}
+      {switchStep && !currentAccepted && !props.document.supply.enabled && <p className="task-feedback attention" role="status">Turn on the simulated supply to try the lamp.</p>}
+      {switchStep && !currentAccepted && props.document.supply.enabled && lampVoltage === null && <p className="task-feedback" role="status">{lampReadingPending ? 'Waiting for a reading across the lamp.' : 'The meter can’t get a reading across the lamp. Test the circuit and check its line and neutral.'}</p>}
+      {!!activity.options?.length && <div className="prediction-options" role="group" aria-labelledby="current-task-title">{activity.options.map(option => <button type="button" key={option.id} aria-pressed={answer === option.id} className={answer === option.id ? 'chosen' : ''} onClick={() => { if (answer !== option.id) { setAnswer(option.id); setAccepted(false); setFeedback(''); } }}>{option.label}</button>)}</div>}
       {props.lesson.id>=65&&activity.kind==='operate'&&!!activity.expectedObservations?.length&&<ExtraLowVoltageReading lesson={props.lesson.id} activity={activity} doc={props.document} result={props.result} change={props.onPulseSetting}/>}
       {activity.bookStep === 'contact' && <ContactDiagram closed={switchClosed === true} onOperate={()=>props.onOperateComponent?.('switch')}/>}
       {measuringDimmer && <p className="meter-demo"><b>Lamp power</b><br/>25% · {low ? low.watts.toFixed(1)+' W' : 'Waiting for reading'}<br/>90% · {low && Math.abs(dimmerLevel-.9)<.001 && dimmerWatts!==undefined ? dimmerWatts.toFixed(1)+' W' : 'Waiting for reading'}</p>}
       {activity.bookStep === 'meter-demo' && <div className="meter-demo"><p><strong>L</strong> · lamp line &nbsp; ↔ &nbsp; <strong>N</strong> · lamp neutral</p>
-        <output>{lampVoltage === null ? 'Reading unavailable' : `${lampVoltage.toLocaleString('en-IE',{maximumFractionDigits:1})} volts (V)`}</output>
-        <p>{lampVoltage === null ? 'The simulator cannot compare these points in the current circuit. Check the connections.' : lampVoltage <= 1 ? 'These points are at about the same voltage.' : 'These points have a voltage difference.'}</p>
-        <details><summary>Zero, OL and an unavailable reading</summary><p>Zero volts means the meter found no voltage difference between these points. In the resistance range, OL means it found an open path. An unavailable reading means the simulator could not establish a value.</p></details></div>}
+        <output>{lampVoltage === null ? lampReadingPending ? 'Waiting for the meter' : 'Reading unavailable' : `${lampVoltage.toLocaleString('en-IE',{maximumFractionDigits:1})} volts (V)`}</output>
+        {!lampReadingPending && <p>{lampVoltage === null ? 'The circuit has no settled voltage between these points. Check the connections.' : lampVoltage <= 1 ? 'The two probe tips are at about the same voltage.' : 'This is the voltage between the two probe tips.'}</p>}
+        <details><summary>Zero, OL and an unavailable reading</summary><p>Zero volts means the meter found no voltage difference between the probes. On a resistance range, OL can mean a broken path or a resistance above the meter’s range. If the lab can’t establish a value, it shows Reading unavailable.</p></details></div>}
       {props.context && (!course || !activity.bookStep) && <div className="lesson-context">{props.context}</div>}
-      <Button onClick={primary} disabled={!!starterText && (lampVoltage === null || !props.document.supply.enabled)} className="primary-button full" data-learning-primary={primaryAction}>
-        {primaryAction === 'next' ? <ArrowRight size={15} /> : <CheckCircle2 size={15} />}{primaryLabel}
+      {connectionNotice && <div className="task-feedback success" role="status" data-guided-connection-checked>{connectionNotice}<span className="sr-only"> Next step: {activity.title}</span></div>}
+      {feedback && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
+        {accepted && !currentAccepted ? 'The circuit has changed. Check this step again.' : feedback}
+      </div>}
+      <Button onClick={primary} disabled={question && !answer || !!starterText && (lampVoltage === null || !props.document.supply.enabled)} className="primary-button full" data-learning-primary={primaryAction}>
+        {primaryLabel}{primaryAction === 'next' || bookReading ? <ArrowRight size={15} aria-hidden="true"/> : null}
       </Button>
       <div className="task-support-actions">
         {index > 0 && <Button onClick={() => go(index - 1)} variant="ghost" size="sm"><ArrowLeft size={14} />Back</Button>}
-        {activity.bookStep !== 'finish' && <Button variant="ghost" size="sm" onClick={showHelp}><Eye size={14}/>{helpLevel === 0 ? 'Help' : helpLevel === 1 ? 'Show me where' : 'Worked example'}</Button>}
+        {activity.bookStep !== 'finish' && <Button variant="ghost" size="sm" onClick={helpLevel === 3 ? () => setHelpLevel(0) : showHelp}><Eye size={14}/>{helpLevel === 0 ? 'Help' : helpLevel === 1 && canLocate ? 'Show me where' : helpLevel < 3 ? 'Worked example' : 'Hide help'}</Button>}
         {activity.kind === 'predict' && !currentAccepted && <Button variant="link" size="sm" onClick={() => go(index+1)}>I’m not sure — let me try</Button>}
       </div>
-      {helpLevel > 0 && <p className="task-feedback" role="status">{helpLevel === 1 ? clue : helpLevel === 2 ? (activity.component || activity.endpoints?.length ? 'Find the selected part on the bench or in the list.' : props.lesson.context) : activity.explanation}</p>}
-      {connectionNotice && <div className="task-feedback success" role="status" data-guided-connection-checked>{connectionNotice}<span className="sr-only"> Next step: {activity.title}</span></div>}
-      {feedback && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
-        {accepted && !currentAccepted ? 'The circuit changed. Check this step again with its current state.' : feedback}
-      </div>}
+      {helpLevel > 0 && <p className="task-feedback" role="status">{helpLevel === 1 ? clue : helpLevel === 2 ? (targetName ? `Look for the highlighted part on ${targetName}.` : 'Look for the highlighted terminal.') : activity.explanation}</p>}
+      {helpLevel > 0 && <TermsInThisStep text={activity.title + ' ' + activity.instruction}/>}
       {props.context && course && activity.bookStep && <div className="lesson-context">{props.context}</div>}
-      {savedAchievement && !currentAccepted && <p className="task-saved-progress">Previously demonstrated. Check the current circuit to continue.</p>}
+      {savedAchievement && !currentAccepted && <p className="task-saved-progress">You’ve done this before. Check it on this circuit to continue.</p>}
     </section>
     <details className="lesson-more-detail">
       <summary>More detail</summary>
@@ -313,11 +359,11 @@ export default function LearningPanel(props: Props) {
 }
 
 function ContactDiagram({closed,onOperate}:{closed:boolean;onOperate:()=>void}) {
-  return <div className="contact-demonstration">
+  return <div className="contact-demonstration contact-row">
     <div className="contact-diagram" role="img" aria-label={closed ? 'The two metal contacts touch.' : 'The two metal contacts are apart.'}>
       <span className="contact-pin"/><span className={'contact-leaf'+(closed?' closed':'')}/><span className="contact-pin"/>
     </div>
-    <p>{closed ? 'The contacts touch. The path is closed.' : 'There is a gap. The path is open.'}</p>
+    <p>{closed ? 'Closed · touching' : 'Open · gap'}</p>
     <Button variant="outline" size="sm" onClick={onOperate}>Move the switch</Button>
   </div>;
 }

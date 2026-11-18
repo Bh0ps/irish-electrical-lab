@@ -1,12 +1,12 @@
 # Irish Electrical Lab for Windows
 
-An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **80 configurations** are available in **Learn** and **Sandbox**. Version **1.5.0** adds installed equipment, interactive drawings and a chapter on extra-low-voltage circuits.
+An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **80 configurations** are available in **Learn** and **Sandbox**. Version **1.6.0** updates the lesson instructions, meter feedback and close-up views of lighting and power accessories.
 
 ## Start and stop
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Installer: `lab/release/Irish-Electrical-Lab-1.5.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
+Installer: `lab/release/Irish-Electrical-Lab-1.6.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -38,7 +38,7 @@ In Sandbox you can place a domestic or three-phase distribution board, fit its w
 
 Choose **Start learning**, then **Turn the light off** on the first bench. Turn it back on and see the contact inside the wall switch. **Continue learning** restores your coursebook step and working circuit. **Chapters** lets you browse all nine chapters, search by a trade name or everyday phrase, or try a chapter practical directly. The early examples work immediately. Later lessons leave individual connections for you to complete. A chapter practical begins with an isolated, unwired bench.
 
-The six-stage exercises remain available in course details. **Help** starts with a clue. A worked meter example shows the two points and the voltage between them. For a probe-placement exercise, choose both points yourself in 3D or through **Equipment list** and record the reading. A predicted result, an observed result and a demonstrated measurement are tracked separately. Ordinary fault practice allows hints. Choose the scored challenge in the test panel if you want a score.
+If a trade word is new to you, open **Help → What do these words mean?** The definitions follow the current step. The six-stage exercises remain available in course details. **Help** starts with a clue. A worked meter example shows the two points and the voltage between them. For a probe-placement exercise, choose both points yourself in 3D or through **Equipment list** and record the reading. A predicted result, an observed result and a demonstrated measurement are tracked separately. Ordinary fault practice allows hints. Choose the scored challenge in the test panel if you want a score.
 
 A guided Build begins with equipment laid out, wires removed and every represented external, PV or battery source isolated. Adding the correct wire for the displayed step checks its endpoints and conductor identification, records that demonstration and moves to the next step automatically. A wrong connection remains on the bench for investigation and does not advance the instruction. **Check connection** remains available when revisiting an existing connection or continuing after reload. Stage navigation, Undo/Redo and previously drawn wires do not automatically award new demonstrations.
 
@@ -49,7 +49,7 @@ Try operates controls; Measure records readings; Fix investigates, diagnoses, re
 Choose **Sandbox**, then **My builds → New circuit** or **Start from example**.
 
 - **Add equipment:** search or choose a category, then click the bench. A snapped ghost shows size and occupied space. Placement returns to Select.
-- **Select:** click a rocker, lever or button to operate it; drag the housing to move it. Selected equipment offers Rotate, Duplicate, Delete and **Operate / toggle control**.
+- **Select:** click a rocker, lever or button to operate it; drag the housing to move it. Selected equipment offers Rotate, Duplicate, Delete and **Operate**.
 - **Connect:** choose two terminals on the device or in the named list. Expand **Cable** to choose an insulated single, flat twin and earth, round flex, bell pair, two-core LED cable or multi-core strip cable. A shared sheath holds individual cores. Select the core you want to connect, inspect or remove. Undo restores that edit. The context describes source and hovered destination. For an attached lesson, the exact terminal pair sets the default conductor identification in either click order, including control wires fed from a line terminal. A manual identification choice takes priority for that pending wire, allowing deliberate mistakes. Existing wires keep their identification. Escape or **Cancel connection** cancels the pending wire.
 - **Measure:** click terminals for probes, or a conductor for current.
 
@@ -79,7 +79,7 @@ Use Undo/Redo or Ctrl+Z / Ctrl+Shift+Z to recover edits. **Reset trips** preserv
 
 ## Save, replace and migrate
 
-Drafts, progress and the last test autosave. **My builds → Save build** keeps a named snapshot. The menu also contains **Saved builds**, **Import circuit** and **Export circuit**, using existing JSON formats and Windows file dialogs. Limits remain **80 components, 300 wires, 512 solver unknowns** and **256 named builds**.
+Drafts, progress and the last test autosave. **My builds → Save build** keeps a named snapshot. Your saved builds appear below it. Open **Files and backups** to import or export a circuit or back up your study progress. Limits remain **80 components, 300 wires, 512 solver unknowns** and **256 named builds**.
 
 Replacing changed work offers **Save and continue**, **Discard and continue**, or **Cancel**. Discard replaces the working circuit; named snapshots remain available. For a backup restore, Save and continue also keeps the current circuit as a named snapshot in the restored build collection.
 
@@ -87,7 +87,9 @@ Replacing changed work offers **Save and continue**, **Discard and continue**, o
 
 ## Models and educational limits
 
-Equipment ratings, terminal definitions and teaching-model notes are in `lab/lib/components.ts`, rendering code in `lab/lib/Equipment.tsx`, editable Blender assemblies and pipeline in `authoring/blender`, and runtime assets in `lab/public/models`. All **108 equipment variants** have detailed original construction: device-specific terminal entries and pressure clamps, threaded fixings and washers, appropriate contacts, thermal elements, windings, circuit boards and process mechanisms. Editable Blender sources retain individual construction objects; static decorative geometry is combined by part and material for the app. Full and distance models share stable terminals and selectable functional parts. Real model thumbnails identify equipment in menus. These are representative study models, with conceptual internals labelled; the authoring guide records their architectural references and assumptions.
+Use **Show terminals** to turn the workbench to the wiring side. On the updated switches, lamp holder, rose, socket and fused connection unit, select a detail or look under **Recognise this fitting** to find out what it does. On the double socket, for example, the pressed metal strap joins the two earth terminals. On the ceiling rose, the permanent loop terminals stay separate from the switched feed to the lamp. The shaver lesson shows the transformer separately on the bench so you can measure its input and output.
+
+There are 109 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
 
 The environments use locally generated albedo, roughness and normal textures with local reflections. Contact shading, restrained emitter bloom and antialiasing run while frames are needed; **More → Graphics and supply settings → Graphics quality** selects automatic, high or economy settings. Each lamp's dynamic light follows its actual emitting power. Available dynamic-light slots are bounded for performance; all lamps retain their own power-driven surface brightness. Optical output is an illustrative proxy, not a lighting-design calculation.
 

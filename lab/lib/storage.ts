@@ -164,6 +164,17 @@ export function validateCircuit(value:unknown):CircuitDocument {
   const document:CircuitDocument={version:1,id,name,revision,supply:{enabled,phase,voltage,frequency,sourceResistance},components,wires,faults};
   if(cableRuns!==undefined)document.cableRuns=cableRuns;
   if(d.lessonId!==undefined)document.lessonId=integer(d.lessonId,'lessonId',1,lessonIdLimit);
+  if(document.lessonId===24){
+    const legacy=components.find(c=>c.id==='shaver'&&c.type==='socket'&&c.params.doubleInsulated===true&&c.params.classII===true);
+    if(legacy){
+      // A learner may have explicitly used the old socket's earth contacts. Keep those edits and the socket they belong to.
+      const attachedEarth=[...wires,...(cableRuns??[])].some(w=>[w.from,w.to].some(e=>e.component===legacy.id&&['PE','PE2'].includes(e.terminal)));
+      if(!attachedEarth){
+        legacy.type='shaveroutlet';
+        if(legacy.label==='Separated shaver outlet · no PE output')legacy.label='Shaver outlet · isolated 230 V pair';
+      }
+    }
+  }
   return normalizeBoardMounts(document);
 }
 export function downloadCircuit(doc:CircuitDocument){const blob=new Blob([JSON.stringify(doc,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=doc.name.replace(/[^a-z0-9]+/gi,'-')+'.electrical.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

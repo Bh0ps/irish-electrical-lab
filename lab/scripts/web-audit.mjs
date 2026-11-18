@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Worker } from 'node:worker_threads';
@@ -73,8 +73,10 @@ try {
   for (const icon of appManifest.icons) assert.ok((await fetch(new URL(icon.src, scope))).ok);
   assert.equal((await fetch(`${origin}/models/manifest.json`)).status, 404, 'Mount test must reject root assets');
 
-  assert.equal(info.pack.length, manifest.length * 2 + 1);
-  assert.deepEqual(new Set(info.pack.map(asset => asset.path)), new Set(['models/manifest.json', ...manifest.flatMap(entry => [entry.lowUrl.slice(1), entry.thumbnailUrl.slice(1)])]));
+  const siteAssets=(await readdir(path.join(build,'site-assets'))).map(file=>'site-assets/'+file);
+  assert.ok(siteAssets.includes('site-assets/daylight.hdr') && siteAssets.includes('site-assets/potted-plant.glb'));
+  assert.equal(info.pack.length, manifest.length * 2 + 1 + siteAssets.length);
+  assert.deepEqual(new Set(info.pack.map(asset => asset.path)), new Set([...siteAssets,'models/manifest.json', ...manifest.flatMap(entry => [entry.lowUrl.slice(1), entry.thumbnailUrl.slice(1)])]));
   assert.equal(info.bytes, [...info.shell, ...info.pack].reduce((total, asset) => total + asset.bytes, 0));
   for (const entry of manifest) assert.ok(await readFile(getLocal(`${WEB_BASE}${entry.url.slice(1)}`)), `Missing full detail ${entry.url}`);
   const assets = [...info.shell, ...info.pack];

@@ -29,6 +29,8 @@ export function tracePresentationPaths(document: CircuitDocument): Map<string, S
     const connect = (...ids: string[]) => { const present = ids.filter(id => terminals.some(t => t.id === id)); for (let i=1;i<present.length;i++) link(key(component.id,present[0]),key(component.id,present[i])); };
     if (['terminal','neutralbar','earthbar','junction'].includes(component.type)) connect(...terminals.map(t=>t.id));
     if (['panel','meter','plug','rose'].includes(component.type)) { connect('L','LOUT'); connect('N','NOUT'); connect('PE','PEOUT'); }
+    if (component.type==='socket'||component.type==='fcu') connect('PE','PE2');
+    if (component.type==='rose') { connect('N','N3'); connect('LOOP1','LOOP2','LOOP3'); }
     if (['mcb','fuse'].includes(component.type)) connect('IN','OUT');
     if (['rcd','rcbo','isolator','fcu'].includes(component.type)) { connect('LIN','LOUT'); connect('NIN','NOUT'); }
     if (['mcb3','rcd3','isolator3','plug3'].includes(component.type)) { for(const phase of ['L1','L2','L3','N']) connect(phase+'IN',phase+'OUT'); connect('PE','PEOUT'); }
@@ -61,10 +63,29 @@ export function sceneBounds(document:CircuitDocument,routes?:Map<string,Vec3[]>)
   const bounds=new THREE.Box3();for(const c of document.components)bounds.union(componentBounds(c));for(const points of routes?.values()??[])for(const p of points)bounds.expandByPoint(new THREE.Vector3(...p));
   if(bounds.isEmpty())bounds.set(new THREE.Vector3(-3,0,-2),new THREE.Vector3(3,1,2));return bounds;
 }
+/** Distance for the whole selected 3D bounds at the actual viewing angle.
+ * The nearest corner needs extra depth as well as horizontal/vertical room. */
+export function inspectionDistance(bounds:THREE.Box3, direction:THREE.Vector3, aspect:number, verticalFov:number):number {
+  const normal=direction.clone().normalize();
+  const right=new THREE.Vector3(normal.z,0,-normal.x);
+  if(right.lengthSq()<1e-10)right.set(1,0,0);
+  right.normalize();
+  const up=new THREE.Vector3().crossVectors(normal,right);
+  const half=bounds.getSize(new THREE.Vector3()).multiplyScalar(.5);
+  const frustum=Math.tan(verticalFov/2)*.79;
+  let distance=.48;
+  for(const x of [-half.x,half.x]) for(const y of [-half.y,half.y]) for(const z of [-half.z,half.z]) {
+    const corner=new THREE.Vector3(x,y,z);
+    const projected=Math.max(Math.abs(corner.dot(right))/aspect,Math.abs(corner.dot(up)));
+    distance=Math.max(distance,corner.dot(normal)+projected/frustum);
+  }
+  return distance;
+}
+
 export function selectedPartBounds(component:ComponentInstance,part:string|undefined,root?:THREE.Object3D):THREE.Box3 {
   const definition=COMPONENTS[component.type], semantic=new THREE.Box3();
   root?.updateWorldMatrix(true,true);
-  if(root&&part)root.traverse(node=>{if(node.userData.partId===part||node.name===`part:${part}`||node.userData.terminalId===part||node.name===`terminal:${part}`)semantic.union(new THREE.Box3().setFromObject(node));});
+  if(root&&part)root.traverse(node=>{if((node.userData.detailId&&part==='detail:'+node.userData.detailId)||node.userData.partId===part||node.name===`part:${part}`||node.userData.terminalId===part||node.name===`terminal:${part}`)semantic.union(new THREE.Box3().setFromObject(node));});
   if(!semantic.isEmpty())return semantic;
   if(definition&&part&&(part==='terminals'||definition.terminals.some(t=>t.id===part))){const anchors=getComponentTerminals(component,definition).filter(t=>part==='terminals'||t.id===part);const matrix=new THREE.Matrix4().makeRotationY(component.rotation);matrix.setPosition(...component.position);for(const t of anchors)semantic.expandByPoint(new THREE.Vector3(...t.anchor).applyMatrix4(matrix));if(!semantic.isEmpty())return semantic.expandByScalar(.1);}
   return componentBounds(component);

@@ -428,7 +428,23 @@ function planHarness(doc:CircuitDocument,priority=new Set<string>()):CircuitRout
           if(length<=remaining){earlier.pop();remaining-=length;}else{earlier[earlier.length-1]=end.map((v,axis)=>v+(start[axis]-v)*remaining/length) as Vec3;remaining=0;}}
         wireCtx.selfSegments=earlier.slice(1).map((end,index)=>[earlier[index],end]);
       }
-      const section=search(waypoints[i-1],waypoints[i],wireCtx,w.id);
+      let section=search(waypoints[i-1],waypoints[i],wireCtx,w.id);
+      // An overhead gland can be behind the starting direction of a high
+      // neutral bar. A long single A* search chases the lamp below the board
+      // and exhausts its budget before it climbs back to the opening.
+      if(!section&&!w.bends.length&&inside.filter(Boolean).length===1){
+        const board=owners.get((inside[0]||inside[1])!)!;
+        const entry=inside[0]?ea:eb,local=worldToLocal(board,entry);
+        const height=COMPONENTS[board.type].size[1];
+        const gland=localToWorld(board,[local[0],height+.40,0]);
+        const via={...wireCtx,anchors:undefined};
+        const first=search(ea,gland,via,w.id);
+        const last=first&&search(gland,eb,via,w.id);
+        if(first&&last){
+          const detour=simplify([...first,...last.slice(1)]);
+          if(!selfOverlap([a,...detour,b]))section=detour;
+        }
+      }
       if(!section){failed=true;break;}path.push(...section.slice(1));
     }
     if(failed){result.issues.push({wire:w.id,message:w.bends.length?'Saved bends leave no clear path or make this wire double back. Move those bends.':'No clear route was found within the workbench. Space the equipment out or add clear bend waypoints.'});continue;}

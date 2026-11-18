@@ -53,6 +53,7 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
     case 'dimmer': bank(['COM','OUT'],.62,-.28,.28); break;
     case 'pushbutton': bank(['COM'],.94,-.28,.22,0,'Common'); bank(['NO','NC'],.48,-.28,.25,0,'Auxiliary contacts'); break;
     case 'selector': bank(['COM'],.94,-.28,.22,0,'Common'); bank(['A','B'],.48,-.28,.25,0,'Selected paths'); break;
+    case 'shaveroutlet': bank(['L','N'],.95,-.14,.21,0,'Inside the isolated 230 V outlet'); break;
     case 'socket': bank(['N','L'],.66,-.28,.43,0,'Line and neutral'); bank(['PE'],1.0,-.28,.22,0,'Earth'); break;
     case 'socket3': bank(['L1','L2','L3'],.84,-.18,.22,0,'Phases'); bank(['N','PE'],.49,-.18,.26,0,'Neutral and earth'); break;
     case 'fcu': bank(['LIN','NIN'],.91,-.28,.29,0,'Supply'); bank(['LOUT','NOUT'],.46,-.28,.29,0,'Load'); bank(['PE'],.70,-.28,.22,.34,'Earth'); break;
@@ -114,8 +115,9 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
   const remaining=ids.filter(id=>!placements.has(id));
   for(let i=0;i<remaining.length;i+=3) bank(remaining.slice(i,i+3),.46+Math.floor(i/3)*.28,-.25,.23,0,'Connections');
   const make = (t: TerminalDefinition, anchor: Vec3, entryDirection: Vec3, scale=terminalScale) => {
-    const label = (component.type==='switch' && t.id==='OUT')?'L1':
+    const label = component.type==='shaveroutlet'?(t.id==='L'?'SEC 1':'SEC 2'):(component.type==='socket'||component.type==='fcu') && t.id==='PE2'?'E2':(component.type==='socket'||component.type==='fcu') && t.id==='PE'?'E':(component.type==='switch' && t.id==='OUT')?'L1':
       component.type==='switch2' && t.id.startsWith('T')?t.id.replace('T','L'):
+      component.type==='intermediate'?(['A','B'].includes(t.id)?'L1':'L2')+' ('+t.id+')':
       component.type==='transformer' && ['+','-'].includes(t.id)?(t.id==='+'?'SEC 1':'SEC 2'):
       component.type==='led'?(t.id==='L'?'+':t.id==='N'?'−':t.label):
       component.type==='chime'?(t.id==='L'?'1':t.id==='N'?'2':t.label):t.label;
@@ -126,6 +128,16 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
     const [w,h,d]=definition.size;
     const scaled=(px:number,py:number,pz:number,dir:Vec3,scale=.66)=>make(t,[px*w,py*h,pz*d],dir.map(a=>a/Math.hypot(...dir)) as Vec3,scale);
     const f=component.variant, k=component.type;
+    // BG 824 and 851. Coordinates in millimetres from the plate centre, seen
+    // from the front. The two earth entries are electrically common.
+    if(k==='shaveroutlet')return make(t,[t.id==='L'?.14:-.14,1,-.135],[0,0,-1],.43);
+    if (k==='socket'||k==='fcu') {
+      const positions:Record<string,Vec3> = k==='socket'
+        ? {PE:[37.5,12,-18.9],L:[26.5,12,-17.8],N:[-26.5,12,-17.8],PE2:[-37.5,12,-18.9]}
+        : {NOUT:[19,10,-10.4], LIN:[9,10,-10.4], LOUT:[-13,13,-10.4], NIN:[18,-20,-10.4], PE:[-27,7,-6], PE2:[-27,-7,-6]};
+      const point=positions[t.id];
+      if(point)return make(t,[point[0]/100,.46+point[1]/100,point[2]/100],[0,0,-1],.42);
+    }
     if(k==='invictaboard')return scaled(.40,.85,-.36,[0,0,1],1);
     if(k==='cctstrip'||k==='led'&&f==='strip')return scaled(-.43,.43+(k==='cctstrip'?[.13,0,-.13]:[.12,-.12])[ids.indexOf(t.id)],.085,[0,0,1],.40);
     if(k==='led'&&f==='series-module')return scaled(t.id==='L'?-.31:.31,.46,.095,[0,0,1],.50);
@@ -177,9 +189,28 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
         if(t.id==='PE'||t.id==='PEOUT')return make(t,[.54*sx,(t.id==='PE'?.47:.27)*sy,.218*sz],[0,0,1],.79);
         return make(t,[center(['L','LOUT','N','NOUT'],.18*sx),.28*sy,.282*sz],[0,0,1],.79);
       }
+      case 'switch':case 'switch2':case 'intermediate': {
+        const side=component.params.gangModule;
+        const upsideDown=side==='right'?-1:1;
+        const top=['COM','A','B'].includes(t.id);
+        const xOffset=component.type==='switch'?(t.id==='OUT'?-.058:0):component.type==='switch2'?(t.id==='COM'?0:t.id==='T1'?-.059:.059):['A','C'].includes(t.id)?-.067:.067;
+        return make(t,[xOffset*upsideDown,.65+(top?.116:-.134)*upsideDown,-.14],[0,0,-1],.58);
+      }
+      case 'lamp':
+        if(!/batten|strip|sign|fluorescent|downlight|spot|\bled\b/.test(variant)||/bulb/.test(variant))
+          return make(t,[t.id==='L'?-.067:t.id==='N'?.067:0,t.id==='PE'?.38:.269,-.180],[0,0,-1],.58);
+        break;
       case 'source':case 'source3':return front(.284);
       case 'panel':return front(.175);
-      case 'rose':case 'junction':return front(.125);
+      case 'rose': {
+        const row=['N','NOUT','N3','LOOP1','LOOP2','LOOP3','L','LOUT'];
+        const i=row.indexOf(t.id);
+        const group=i<0?'Protective earth':i<3?'Neutral':i<6?'Permanent loop':'Lamp line';
+        // The transparent 80 mm rose has three separate brass links in one row.
+        const coordinate:Vec3=i<0?[t.id==='PE'?-.027:.027,.148,.125]:[(i-3.5)*.082+(i<3?-.014:i>5?.014:0),.664,.125];
+        return {...make(t,coordinate,[0,0,1],i<0?.35:.55),group};
+      }
+      case 'junction':return front(.125);
       case 'terminal':case 'neutralbar':case 'earthbar':return front(.135);
       case 'vfd':case 'plc':case 'safetyRelay':return front(.31);
       case 'shower':case 'chime':return front(.18);

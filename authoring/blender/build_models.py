@@ -12,6 +12,9 @@ from mathutils import Vector, Matrix
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from detail_library import enrich, REVISION, FAMILY_REQUIREMENTS
 from service_details import add_service_details
+from lighting_backs import add_lighting_back
+from power_accessories import build_power_accessory
+from shaver_face import build_shaver_face
 from png_metadata import strip_text_metadata
 from portable_source import clear_browser_locations
 
@@ -413,7 +416,7 @@ def add_terminal_legends(recipe,root):
         white=material('Terminal marking pad '+terminal['id'],(.80,.82,.75),0,.55)
         form=node.get('contactForm','pressure plate')
         z=-.105 if form=='winding stud' else -.38 if form=='pin' else .001
-        if form!='core end':
+        if form!='core end' and not node.get('fieldLegendModelled'):
             box('Moulded terminal legend pad',(0,.082*scale,z*scale),(.145*scale,.038*scale,.006*scale),node,white,.004)
             label(terminal['label'],(0,.082*scale,(z+.004)*scale),node,dark,min(.038,.162/max(1,len(terminal['label'])))*scale)
         node['canonicalAnchor']=terminal['anchor'];node['role']=terminal['role'];node['purpose']=terminal['purpose'];node['group']=terminal.get('group','')
@@ -583,12 +586,20 @@ def main():
         recipe=json.loads((HERE/'recipes'/entry['file']).read_text());root=reconstruct(recipe);authored_first_fixture(recipe,root);authored_library_variants(recipe,root)
         api=SimpleNamespace(**{name:globals()[name] for name in ('empty','material','box','cyl','torus','semantic','ancestors','setmesh','boolean_difference','label')})
         workshop=any(o.get('detailId') for o in root.children_recursive) or recipe['component']['type'] in ('forktester','stripper','crimper','torquedriver')
-        features=enrich(recipe,root,api,workshop=workshop)
-        if not workshop:features.append(add_service_details(recipe,root,api))
+        if recipe['component']['type'] == 'shaveroutlet':
+            features=build_shaver_face(recipe,root,api)
+        elif recipe['component']['type'] in ('fcu','socket'):
+            features=build_power_accessory(recipe,root,api)
+        else:
+            features=enrich(recipe,root,api,workshop=workshop)
+            if not workshop:features.append(add_service_details(recipe,root,api))
         # Persist the physical-reference inventory on both exported detail levels.
         root['referenceIds']=references.get('variantSources',{}).get(recipe['galleryKey'],references['familySources'].get(recipe['definition']['model'],[]))
         root['detailFeatures']=features
-        add_terminal_legends(recipe,root);tag_inspection_shells(root)
+        add_terminal_legends(recipe,root)
+        features=add_lighting_back(recipe,root,api,list(features))
+        root['detailFeatures']=features
+        tag_inspection_shells(root)
         root['source']='Original typed recipe refined in Blender 4.5 LTS';root['galleryKey']=entry['galleryKey'];root['conceptualInternals']=True
         source_meshes=sum(o.type=='MESH' for o in root.children_recursive)
         # Save the original authoring objects before export batching: gear teeth,

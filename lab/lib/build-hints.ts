@@ -52,21 +52,21 @@ type Finding = Pick<AssessmentCheck, 'id' | 'category' | 'status' | 'title' | 'e
 /** A next inspection or measurement, never an automatic repair or inferred trip. */
 export function nextCheckForFinding(finding: Finding): string {
   const id = finding.id;
-  if (id === 'scenario:unassigned') return 'Use live readings to investigate this free build, or choose an example to add lesson objectives.';
-  if (finding.status === 'unresolved' || finding.category === 'model') return 'Inspect the model finding first, then run the test again before interpreting readings.';
-  if (id.includes('neutralEarth:')) return 'Turn the simulated supply off and inspect the neutral and protective connections at the highlighted terminals.';
-  if (id.includes('cpc:')) return 'Trace the equipment PE terminal back to the supply earth. A load can operate with this path missing.';
-  if (id.includes('polarity:')) return 'Compare the L and N terminal labels with their actual supply paths; illumination alone does not confirm polarity.';
-  if (id.includes('tripped:')) return 'Inspect the affected wiring and the event log before resetting protection. Retest to see whether the fault remains.';
-  if (id.includes('mechanical:') || id.includes('interlock')) return 'Inspect both control requests and the actual interlock connections before attempting the opposite direction.';
-  if (id.includes('neutral:')) return 'Measure across the load, then inspect its neutral or return path; an unlit load can still have live terminals.';
+  if (id === 'scenario:unassigned') return 'Open Live readings to check your own circuit.';
+  if (finding.status === 'unresolved' || finding.category === 'model') return 'Open the circuit test, fix the first problem it shows and test again.';
+  if (id.includes('neutralEarth:')) return 'Turn the simulated supply off. Follow the highlighted wire between neutral and earth.';
+  if (id.includes('cpc:')) return 'Follow the wire from the earth terminal (PE) back to the supply earth.';
+  if (id.includes('polarity:')) return 'Trace L back to line and N back to neutral.';
+  if (id.includes('tripped:')) return 'Check the wiring and read what tripped. Repair the fault, reset the device and test again.';
+  if (id.includes('mechanical:') || id.includes('interlock')) return 'Check which contactor is on before trying the other direction.';
+  if (id.includes('neutral:')) return 'Measure across the load, then trace its return wire.';
   if (id.includes('phase:') || id.includes('windingVoltage:')) return 'Compare the actual phase paths and winding connections with the equipment rating.';
   if (id.startsWith('equipment:')) return 'Add or select the named lesson equipment, then inspect its purpose before connecting it.';
-  if (id.startsWith('connection:')) return 'Inspect the two named terminals. The connection is still to be built; use Connect when you are ready.';
+  if (id.startsWith('connection:')) return 'Choose Connect and select the two terminals named above.';
   if (id.startsWith('extra:')) return 'Select this conductor and compare both endpoints with the lesson. Keep it if you want to investigate its effect.';
-  if (id.startsWith('identity:')) return 'Inspect the conductor identification and its actual endpoints. Changing the label does not change the electrical path.';
-  if (id.startsWith('fault:')) return 'Investigate the injected defect, record useful measurements and retest after a repair.';
-  if (id === 'supply') return 'Choose the intended simulated supply state, then run the test again.';
+  if (id.startsWith('identity:')) return 'Compare the marking on the wire with the one in the lesson.';
+  if (id.startsWith('fault:')) return 'Take a reading at the fault. Repair it and test again.';
+  if (id === 'supply') return 'Turn the bench supply on and test again.';
   if (finding.status === 'not-run') return 'Complete the required operating state or resolve the current calculation, then retest.';
   if (finding.category === 'protection') return 'Inspect the highlighted protective path and compare it with the operating current before resetting or retesting.';
   if (finding.category === 'operation') return 'Check the intended control state, then measure at the affected equipment and follow its supply and return paths.';
@@ -105,12 +105,12 @@ export function getBuildHint({ document, result, expected }: BuildHintInput): Bu
   if (diagnostic) return diagnosticHint(diagnostic);
   if (current && !current.converged) return {
     id: 'hint:unresolved', kind: 'unresolved', severity: 'error', title: 'Calculation is unresolved',
-    explanation: 'Current readings cannot establish circuit operation until the electrical result resolves.',
-    nextCheck: 'Inspect the model findings, then test again. No operating result is being assumed.',
+    explanation: 'The bench could not calculate a reliable reading.',
+    nextCheck: 'Open Test circuit to find out why.',
   };
   if (!document.components.length) return {
     id: 'hint:empty', kind: 'incomplete', severity: 'info', title: 'Start with your equipment',
-    explanation: 'The empty bench is ready for a new configuration.', nextCheck: 'Choose Add equipment and place a supply, then add the equipment you want to study.',
+    explanation: 'Start with a supply.', nextCheck: 'Choose Add equipment to place it on the bench.',
   };
   if (!expected || document.lessonId === undefined || document.lessonId !== expected.lessonId) return undefined;
   const checks = assessConnections(document, expected).filter(check => check.status !== 'pass');

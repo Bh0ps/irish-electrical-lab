@@ -123,7 +123,7 @@ test('practice starts with one-way lighting, follows eligible reviews and leaves
   assert.equal(chooseQuickPractice(allRecent).id, QUICK_PRACTICE_EXPERIMENTS.at(-1)?.id);
 });
 
-test('the 64 lesson prediction cards keep stable IDs and vary answer position', () => {
+test('lesson prediction cards keep stable IDs and vary answer position', () => {
   const positions = new Set<number>();
   for (const lesson of LESSONS) {
     const prediction = getLessonActivities(lesson).find(activity => activity.kind === 'predict');
@@ -135,6 +135,7 @@ test('the 64 lesson prediction cards keep stable IDs and vary answer position', 
   }
   assert.deepEqual([...positions].sort(), [0, 1]);
   const oneWay = getLessonActivities(LESSONS[6]).find(activity => activity.kind === 'predict')!;
-  assert.match(oneWay.instruction, /Open “One-way switch”/);
-  assert.doesNotMatch(oneWay.instruction, /lamp stops/i);
+  assert.match(oneWay.instruction, /wall switch off/i);
+  assert.match(oneWay.instruction, /voltage.*lamp/i);
+  assert.doesNotMatch(oneWay.instruction, /lamp stops|zero volts|lamp goes (out|dark)/i);
 });

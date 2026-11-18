@@ -54,13 +54,14 @@ export interface AssetPresentation {
   owned:THREE.Material[];
   initialized:boolean;
 }
-export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:string}{
-  let part:string|undefined;
+export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:string;detail?:string}{
+  let part:string|undefined,detail:string|undefined;
   for(let current:THREE.Object3D|null=node;current;current=current.parent){
     if(current.userData.terminalId)return {terminal:String(current.userData.terminalId),part:'terminals'};
+    detail??=current.userData.detailId?String(current.userData.detailId):undefined;
     part??=current.userData.partId?String(current.userData.partId):undefined;
   }
-  return {part};
+  return {part,detail};
 }
 /** Clone transforms and selectable identity while sharing immutable mesh data. */
 export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
@@ -112,7 +113,7 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
   if(component.type==='dimmer')return component.params.closed!==false;
   return state?.closed??component.params.closed!==false;
 }
-export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState):void{
+export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet'):void{
   for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
   for(const door of presentation.doors)door.node.quaternion.copy(door.rest).multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),component.params.doorOpen!==false||view!=='normal'?-1.69:0));
   for(const shield of presentation.shields)shield.visible=view==='normal'&&!component.params.frontOff;
@@ -124,14 +125,25 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
   }
   const active=!!state?.energized;
   const brightness=lampBrightness(component,state);
+  const clearBulb=component.type==='lamp'&&presentation.meshes.some(m=>m.node.userData.lampEnvelope);
   for(const mesh of presentation.meshes){
-    const conceptualInternal=mesh.conceptualInternal||['electronics','coil','thermal','magnetic'].includes(mesh.part)||mesh.part==='winding'&&!['transformer','dcsupply'].includes(component.type);
+    const visibleBulbStem=clearBulb&&mesh.part==='electronics';
+    const conceptualInternal=!visibleBulbStem&&(mesh.conceptualInternal||['electronics','coil','thermal','magnetic'].includes(mesh.part)||mesh.part==='winding'&&!['transformer','dcsupply'].includes(component.type));
     mesh.node.visible=!(view==='cutaway'&&mesh.coverAssembly||view==='normal'&&(conceptualInternal||mesh.serviceChamber));
+    if(component.variant==='door-contact' && contactPiece){
+      mesh.node.visible &&= (mesh.part==='actuator')===(contactPiece==='magnet');
+    }
     mesh.node.material=view==='cutaway'&&mesh.cutaway?mesh.cutaway:mesh.light??mesh.material;
     mesh.node.castShadow=castsEquipmentShadow(mesh.node.material,!!mesh.lampOutput,!!mesh.node.userData.lampEnvelope);
     if(mesh.light){
       if(mesh.lampOutput){
-        if(component.type==='cctstrip'){
+        if(mesh.node.userData.lampEnvelope && component.type==='lamp' && mesh.light.transparent){
+          // A clear GLS bulb emits at the tungsten coil. Keep the glass
+          // transparent and allow a small reflection when the coil is hot.
+          mesh.light.userData.lampBrightness=brightness;
+          mesh.light.color.setRGB(.76+brightness*.15,.84+brightness*.10,.87+brightness*.08);
+          mesh.light.emissive.set(brightness>0?'#ffe4ac':'#000000');mesh.light.emissiveIntensity=brightness*.24;
+        }else if(component.type==='cctstrip'){
           let channel:string|undefined;for(let n:THREE.Object3D|null=mesh.node;n&&!channel;n=n.parent)channel=n.userData.ledChannel;
           const level=THREE.MathUtils.clamp(Number(state?.[channel==='C'?'coolWatts':'warmWatts']??0)/Math.max(.001,Number(component.params.channelWatts??12)),0,1);
           applyLampBrightness(mesh.light,level);if(level>0&&channel==='C')mesh.light.emissive.set('#c3deff');
@@ -142,6 +154,7 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
       else mesh.light.emissiveIntensity=active?1.1:0;
     }
   }
+  presentation.scene.userData.splitContact=contactPiece;
   animateBlenderModel(presentation,component,state,0,!presentation.initialized);presentation.initialized=true;
   presentation.scene.updateMatrixWorld(true);
 }
@@ -154,6 +167,7 @@ export function animateBlenderModel(presentation:AssetPresentation,component:Com
       if(active){motion.current+=Math.min(dt,.05)*Number(data.speed??6)*(Number(state?.direction)||1);motion.node.quaternion.copy(motion.quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(axis,motion.current-motion.angle));moving=dt>0;}
       continue;
     }
+    if(animation==='translate' && presentation.scene.userData.splitContact){motion.node.position.copy(motion.position);continue;}
     if(animation==='translate'){
       const target=sourceVector(((data.useEnergized?active:closed)?data.onPosition:data.offPosition)??[0,0,0]);
       const destination=motion.position.clone().add(target);

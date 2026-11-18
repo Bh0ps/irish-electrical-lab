@@ -1,16 +1,17 @@
 'use client';
-import React,{Suspense,useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
+import React,{useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import { Canvas,useFrame,useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ArrowUp,ArrowLeft,ArrowRight,ArrowDown,Footprints,LocateFixed,PanelTopOpen } from 'lucide-react';
-import { mountScale,mountRoll,mountVector,filledWays } from '../../lib/board-assembly';
+import { mountScale,mountRoll,filledWays } from '../../lib/board-assembly';
 import { DRAWING_INK } from '../../lib/installation-drawing';
 import { COMPONENTS } from '../../lib/components';
-import { Equipment } from '../../lib/Equipment';
+import { Equipment, type EquipmentProps } from '../../lib/Equipment';
 import { getComponentTerminals } from '../../lib/terminal-layout';
 import { walkStep,type JobSite,type SiteItem } from '../../lib/job-site';
-import type { CircuitDocument,ComponentInstance,DeviceState,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
-import InstallationRoom,{ContactHalf} from './InstallationRoom';
+import type { CircuitDocument,ComponentInstance,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
+import InstallationRoom from './InstallationRoom';
+import { BATTEN_FILAMENT, CUPBOARD_HINGE, CUPBOARD_SWING, fixturePoint, TAPE_SECTION_LENGTH, TAPE_SECTIONS } from '../../lib/site-fixtures';
 
 export interface SitePose {position:Vec3;yaw:number;pitch:number}
 interface Rig {keys:Set<string>; turn:[number,number];zoom:number; wake:()=>void; pose?:SitePose}
@@ -19,29 +20,40 @@ interface Props {
   jump:{id:number;component?:string}; pose:React.MutableRefObject<SitePose|undefined>;
   onPart:(id:string,part:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
 }
-const installedTape=(c:ComponentInstance)=>c.type==='cctstrip'||c.type==='led'&&c.variant==='strip';
-function tapePin(c:ComponentInstance,pin:string,scale:number):Vec3{
-  const pins=c.type==='cctstrip'?['+','W','C']:['L','N'];
-  return [-.224/scale,(.007-pins.indexOf(pin)*.008)/scale,.004/scale];
-}
-function TapeDetails({points,size,y,z,body,glow,level=0}:{points:number[];size:Vec3;y:number;z:number;body:string;glow?:string;level?:number}){
-  const mesh=useRef<THREE.InstancedMesh>(null);
-  useLayoutEffect(()=>{const batch=mesh.current;if(!batch)return;const m=new THREE.Matrix4();points.forEach((x,i)=>batch.setMatrixAt(i,m.makeTranslation(x,y,z)));batch.instanceMatrix.needsUpdate=true;batch.computeBoundingSphere();},[points,y,z]);
-  return <instancedMesh ref={mesh} args={[undefined,undefined,points.length]}><boxGeometry args={size}/><meshStandardMaterial color={body} emissive={glow??'#000'} emissiveIntensity={level}/></instancedMesh>;
-}
-const chipPositions=Array.from({length:18},(_,i)=>-.195+i*.023),warmChips=chipPositions.filter((_,i)=>i%2===0),coolChips=chipPositions.filter((_,i)=>i%2===1),resistors=chipPositions.filter((_,i)=>i%3===1).map(x=>x+.009);
-function InstalledTape({component:c,scale,state,power,part,terminal}:{component:ComponentInstance;scale:number;state?:DeviceState;power:number;part:(name:string)=>void;terminal:(id:string)=>void}){
-  const isCct=c.type==='cctstrip',pins=isCct?['+','W','C']:['L','N'];
-  const warm=isCct?Math.max(0,Number(state?.warmWatts??0)/Number(c.params.channelWatts??12)):power;
-  const cool=isCct?Math.max(0,Number(state?.coolWatts??0)/Number(c.params.channelWatts??12)):0;
-  return <group scale={1/scale} onClick={e=>{e.stopPropagation();part('emitter');}}>
-    <mesh><boxGeometry args={[.46,.023,.003]}/><meshStandardMaterial color="#e6ddd1" roughness={.63}/></mesh>
-    {[-.0085,.0085].map(y=><mesh key={y} position={[0,y,.0018]}><boxGeometry args={[.45,.001,.0005]}/><meshStandardMaterial color="#bd8d52" metalness={.42} roughness={.38}/></mesh>)}
-    <TapeDetails points={chipPositions} size={[.0058,.0062,.0018]} y={0} z={.003} body="#f4f0df"/>
-    <TapeDetails points={isCct?warmChips:chipPositions} size={[.004,.0048,.0012]} y={0} z={.0041} body="#f2bf66" glow="#ffdf9c" level={Math.min(2.5,2.5*warm)}/>
-    {isCct&&<TapeDetails points={coolChips} size={[.004,.0048,.0012]} y={0} z={.0041} body="#f2edce" glow="#e5f2ff" level={Math.min(2.5,2.5*cool)}/>}
-    <TapeDetails points={resistors} size={[.003,.005,.0015]} y={0} z={.003} body="#514d47"/>
-    {pins.map(id=><mesh key={id} position={tapePin(c,id,1)} onClick={e=>{e.stopPropagation();terminal(id);}}><boxGeometry args={[.008,.005,.0008]}/><meshStandardMaterial color="#bb884d" metalness={.45}/></mesh>)}
+function InstalledFixture({item, equipment, cupboardDoor, optical, pin}:{
+  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:Vec3;
+}){
+  const {component:c,definition:def,state}=equipment;
+  const {fixture,position}=item;
+  const scale=fixture?.scale??[item.scale,item.scale,item.scale] as Vec3;
+  const rotation:Vec3=[fixture?.tilt??0,item.rotation,fixture?.roll??0];
+  const count=fixture?.tape?TAPE_SECTIONS:1;
+  // The two halves share one component and two terminals. Only the magnet rides the leaf.
+  const magnet=cupboardDoor&&<group position={CUPBOARD_HINGE} rotation={[0,c.params.closed?CUPBOARD_SWING:0,0]}>
+    <group position={position.map((x,i)=>x-CUPBOARD_HINGE[i]) as Vec3} rotation={rotation} scale={[.011/.318,scale[1],scale[2]]}>
+      <Equipment {...equipment} animate={false} contactPiece="magnet" />
+    </group>
+  </group>;
+  const hasLight=['lamp','led','emergency','cctstrip'].includes(c.type);
+  const illuminated=optical>0&&state?.energized&&hasLight;
+  const emitter:Vec3=fixture?.tape?[0,0,.027]:fixture?.batten
+    ? BATTEN_FILAMENT.map((axis,i)=>axis*scale[i]) as Vec3
+    : [0,def.size[1]*scale[1]*.65,.055];
+  const warm=Number(state?.warmWatts??0),cool=Number(state?.coolWatts??0);
+  const tint=useMemo(()=>new THREE.Color('#ffe9bd').lerp(new THREE.Color('#d9eaff'),cool/Math.max(.001,warm+cool)),[warm,cool]);
+  return <group userData={{siteComponent:item.id}}>
+    {magnet}
+    <group position={position} rotation={rotation}>
+      {Array.from({length:count},(_,i)=><group key={i} position={[(i-(count-1)/2)*TAPE_SECTION_LENGTH,0,0]} scale={scale}>
+        <group rotation={[0,0,mountRoll(c)]} scale={mountScale(c)}>
+          <Equipment {...equipment} animate={!cupboardDoor} contactPiece={cupboardDoor?'reed':undefined} />
+        </group>
+      </group>)}
+      {illuminated&&<pointLight position={emitter} color={c.type==='cctstrip'?tint:'#fff0d0'} intensity={.34*optical} distance={2.9}/>}
+    </group>
+    {pin&&<mesh position={fixturePoint(position,item.scale,fixture,c,pin)} renderOrder={15} raycast={()=>{}}>
+      <sphereGeometry args={[Math.max(.0018,Math.min(.008,.065*item.scale)),12,8]}/><meshBasicMaterial color="#ffb34a" depthTest={false}/>
+    </mesh>}
   </group>;
 }
 function WireTrace({doc,site,id}:{doc:CircuitDocument;site:JobSite;id?:string}){
@@ -49,7 +61,7 @@ function WireTrace({doc,site,id}:{doc:CircuitDocument;site:JobSite;id?:string}){
     const wire=doc.wires.find(w=>w.id===id);if(!wire)return;
     const endpoint=(e:Endpoint)=>{const c=doc.components.find(c=>c.id===e.component),item=site.items.find(i=>i.id===e.component);
       if(!c||!item)return;const t=getComponentTerminals(c,COMPONENTS[c.type]).find(t=>t.id===e.terminal);if(!t)return;
-      const v=installedTape(c)?tapePin(c,t.id,item.scale):mountVector(c,t.anchor);return new THREE.Vector3(...item.position).add(new THREE.Vector3(...v).multiplyScalar(item.scale));};
+      return new THREE.Vector3(...fixturePoint(item.position,item.scale,item.fixture,c,t.anchor));};
     const a=endpoint(wire.from),b=endpoint(wire.to);if(!a||!b)return;
     const points=[a,new THREE.Vector3(a.x,a.y,a.z+.03),new THREE.Vector3(a.x,2.52,a.z+.03),new THREE.Vector3(b.x,2.52,a.z+.03),new THREE.Vector3(b.x,2.52,b.z+.03),new THREE.Vector3(b.x,b.y,b.z+.03),b];
     const geometry=new THREE.BufferGeometry().setFromPoints(points);
@@ -61,7 +73,15 @@ function WireTrace({doc,site,id}:{doc:CircuitDocument;site:JobSite;id?:string}){
 }
 function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15):SitePose{
   const p=item?.position??[0,1.3,-2.5];
-  if(!close&&id===7&&item?.id==='switch')return {position:[p[0]-.55,p[1]+.32,p[2]+1.75],yaw:-.36,pitch:0};
+  if(id===24&&item?.id==='shaver')return {position:[p[0]-.09,p[1]+.098,p[2]+(close?.31:.51)],yaw:close?-.27:-.17,pitch:-.03};
+  if(item?.fixture?.board){
+    const distance=height*(close?1.63:2.28);
+    return {position:[p[0]+distance*.13,p[1]+height*.53,p[2]+distance],yaw:.13,pitch:-.01};
+  }
+  if(!close&&id===7&&item?.id==='switch')return {position:[p[0]-.60,1.54,p[2]+1.83],yaw:-.39,pitch:.012};
+  if(close&&item?.fixture?.batten)return {position:[p[0]-.155,p[1]+.085,p[2]+.34],yaw:-.43,pitch:-.045};
+  if(close&&item?.fixture?.tape&&item.fixture.tilt)return {position:[p[0]-.08,p[1]-.24,p[2]+.43],yaw:-.17,pitch:.49};
+  if(!close&&id!==undefined&&[13,66,68,69].includes(id))return {position:[-4.97,1.32,-.89],yaw:-.28,pitch:.08};
   if(!close&&id===65)return {position:[-4.14,1.76,-.88],yaw:.30,pitch:.08};
   if(!close&&id===80)return {position:[.56,1.65,4.64],yaw:-.29,pitch:.04};
   if(!close&&height<.40&&item?.room!==3)return {position:[p[0]-.35,Math.max(1.34,p[1]+.28),p[2]+1.63],yaw:-.20,pitch:p[1]>.95?-.085:-.36};
@@ -72,6 +92,7 @@ function CameraRig({rig,walking,target,pose,jobKey,site,onRoom}:{site:JobSite;on
   const {camera,invalidate}=useThree();
   const roomRef=useRef(-1);const position=useRef(new THREE.Vector3()),rotation=useRef({yaw:0,pitch:0});
   useLayoutEffect(()=>{rig.wake=invalidate;return()=>{rig.wake=()=>{};rig.keys.clear();};},[invalidate,rig]);
+  useLayoutEffect(()=>{roomRef.current=-1;},[jobKey]);
   useLayoutEffect(()=>{position.current.set(...target.position);rotation.current={yaw:target.yaw,pitch:target.pitch};rig.turn=[0,0];rig.zoom=0;invalidate();},[target,jobKey,invalidate,rig]);
   useFrame((_,dt)=>{
     const p=position.current,r=rotation.current,keys=rig.keys;
@@ -93,6 +114,24 @@ function CameraRig({rig,walking,target,pose,jobKey,site,onRoom}:{site:JobSite;on
   });
   return null;
 }
+function ContextRecovery({onChange}:{onChange:(lost:boolean)=>void}){
+  const {gl}=useThree();
+  useEffect(()=>{
+    const canvas=gl.domElement;
+    const lost=(event:Event)=>{
+      event.preventDefault();
+      if(!canvas.isConnected)return;
+      // GPU handles belong to this context. Release them before the driver restores it.
+      gl.dispose();
+      onChange(true);
+    };
+    const restored=()=>{if(canvas.isConnected)onChange(false);};
+    canvas.addEventListener('webglcontextlost',lost);
+    canvas.addEventListener('webglcontextrestored',restored);
+    return ()=>{canvas.removeEventListener('webglcontextlost',lost);canvas.removeEventListener('webglcontextrestored',restored);};
+  },[gl,onChange]);
+  return null;
+}
 class SiteBoundary extends React.Component<{children:React.ReactNode;onList:()=>void},{failed:boolean}>{
   state={failed:false};static getDerivedStateFromError(){return {failed:true};}
   render(){return this.state.failed?<div className="site-unavailable"><b>The 3D site could not open</b><button onClick={this.props.onList}>Use equipment list</button></div>:this.props.children;}
@@ -103,18 +142,25 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const rig=useMemo<Rig>(()=>({keys:new Set(),turn:[0,0],zoom:0,wake:()=>{}}),[]);
   const [walkRoom,setWalkRoom]=useState(site.room);const [walking,setWalking]=useState(false),[lost,setLost]=useState(false),[loadedKey,setLoadedKey]=useState(0);
 
+  const recoverGraphics=useCallback((paused:boolean)=>{setLost(paused);if(!paused)setLoadedKey(n=>n+1);},[]);
+  const [unavailable,setUnavailable]=useState<Set<string>>(()=>new Set());
+  const modelAvailability=useCallback((id:string,missing:boolean)=>setUnavailable(previous=>{
+    if(previous.has(id)===missing)return previous;
+    const next=new Set(previous);if(missing)next.add(id);else next.delete(id);return next;
+  }),[]);
   const input=useRef<HTMLDivElement>(null),pointers=useRef(new Map<number,{x:number;y:number;startX:number;startY:number}>()),blockTap=useRef(false);
   const selectedId=selected??site.first;
   const jobKey=site.kind+':'+(doc.lessonId??doc.id);
   const target=useMemo(()=>{
     const id=jump.component??site.first,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
     return pose.current??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined);
-  },[jobKey,jump.id]);
+  },[jobKey,jump.id,loadedKey]);
   const stop=useCallback(()=>{rig.keys.clear();pointers.current.clear();blockTap.current=true;},[rig]);
   useEffect(()=>{window.addEventListener('blur',stop);window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
     function release(e:PointerEvent){pointers.current.delete(e.pointerId);}
     return()=>{window.removeEventListener('blur',stop);window.removeEventListener('pointerup',release);window.removeEventListener('pointercancel',release);stop();};},[stop]);
   useEffect(()=>{setWalking(false);stop();},[jump.id,jobKey,tool,stop]);
+  useEffect(()=>{setWalkRoom(site.room);},[jobKey,site.room]);
   function toggleWalk(){stop();setWalking(!walking);rig.wake();input.current?.focus({preventScroll:true});}
   function jumpTo(id:string){stop();setWalking(false);onFocus(id);}
   const fixtureMap=new Map(doc.components.map(c=>[c.id,c]));
@@ -134,28 +180,26 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
       onPointerCancelCapture={()=>{stop();}} onClickCapture={e=>{if(blockTap.current){e.stopPropagation();e.preventDefault();}}}
       onWheel={e=>{rig.zoom+=Math.max(-.18,Math.min(.18,-e.deltaY*.001));rig.wake();}}>
       <SiteBoundary key={loadedKey} onList={onList}><Canvas shadows={!touch} frameloop="demand" dpr={touch?1:[1,1.5]} camera={{fov:49,near:.012,far:55}} gl={{antialias:!touch,powerPreference:'default'}}
-        onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=.99;gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setLost(true);},{once:true});}}>
-        <color attach="background" args={['#cddedd']}/><hemisphereLight args={['#fff8e5','#a0a998',1.40]}/>
-        <directionalLight castShadow={!touch} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-.0006} shadow-normalBias={.009} position={[-3.3,2.62,2.9]} intensity={1.55} color="#fff2db"/>
-        <directionalLight position={[-4,2,1]} intensity={.55} color="#c2ddf4"/>
+        onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=.99;}}>
+        <ContextRecovery onChange={recoverGraphics}/>{!lost&&<><color attach="background" args={['#cddedd']}/><hemisphereLight args={['#edf3ff','#b0a697',.88]}/>
+        <directionalLight castShadow={!touch} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-.0006} shadow-normalBias={.0015} position={[-2.6,2.7,1.3]} intensity={1.12} color="#fff6e7"/>
+        <directionalLight position={[-4,2,1]} intensity={.27} color="#c2ddf4"/>
         <InstallationRoom site={site} economy={touch} cupboardOpen={!!fixtureMap.get('door')?.params.closed} operateCupboard={()=>{if(!blockTap.current&&!walking&&fixtureMap.has('door'))onPart('door','actuator');}}/>
         {visible.map(item=>{const c=fixtureMap.get(item.id)!,def=COMPONENTS[c.type];if(!def)return null;
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
-          const focus=item.id===selectedId;const t=focus&&getComponentTerminals(c,def).find(t=>t.id===terminalId);
-          return <group key={item.id} position={item.position} rotation={[0,item.rotation,0]} scale={item.scale} userData={{siteComponent:item.id}}>
-            <group rotation={[0,0,mountRoll(c)]} scale={mountScale(c)}>{doc.lessonId===65&&c.id==='door'?<group scale={1/item.scale} onClick={e=>{e.stopPropagation();if(!blockTap.current&&!walking)onPart(c.id,'actuator');}}><ContactHalf/></group>:installedTape(c)?<InstalledTape component={c} scale={item.scale} state={result?.deviceStates[c.id]} power={optical} part={part=>{if(!blockTap.current&&!walking)onPart(c.id,part);}} terminal={id=>{if(!blockTap.current&&!walking)onTerminal({component:c.id,terminal:id});}}/>:<Suspense fallback={null}><Equipment filledWays={filledWays(c,doc.components)} component={c} definition={def} state={result?.deviceStates[c.id]} selected={focus} lowDetail={!focus} preferLowAsset={touch}
-              view="normal" showLabels={false} onPart={part=>{if(!blockTap.current&&!walking)onPart(c.id,part==='body'&&['switch','switch2','pushbutton'].includes(c.type)?'actuator':part);}} onTerminal={id=>{if(!blockTap.current&&!walking)onTerminal({component:c.id,terminal:id});}}/></Suspense>}
-            {t&&<mesh position={installedTape(c)?tapePin(c,t.id,item.scale):t.anchor} renderOrder={15} raycast={()=>{}}><sphereGeometry args={[.065,12,8]}/><meshBasicMaterial color="#ffb34a" depthTest={false}/></mesh>}
-            {c.type==='lamp'&&site.kind==='home'&&<group position={[0,.84,.015]} onClick={e=>{e.stopPropagation();if(!blockTap.current&&!walking)onPart(c.id,'lamp');}}>
-              <mesh position={[0,-.21,-.48]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.43,.43,.09,32]}/><meshStandardMaterial color="#ad9670" roughness={.46} metalness={.42}/></mesh>
-              <mesh position={[0,.36,0]}><cylinderGeometry args={[.32,.49,.66,36,1,true]}/><meshStandardMaterial color="#f7f1d9" side={THREE.DoubleSide} emissive="#ffe8b5" emissiveIntensity={.61*Math.sqrt(optical)} roughness={.84}/></mesh>
-              {[[.32,.69],[.49,.03]].map(([r,h])=><mesh key={r} position={[0,h,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[r,.012,6,36]}/><meshStandardMaterial color="#baa37d" roughness={.55}/></mesh>)}
-            </group>}
-            {result?.deviceStates[c.id]?.energized&&/^(lamp|led|emergency|ledstrip|cctstrip)$/.test(c.type)&&<pointLight position={[0,def.size[1]*.75,.25]} color="#fff1cd" intensity={.48*optical} distance={2.6}/>}
-          </group></group>;})}
-        <WireTrace id={wire} doc={doc} site={site}/><CameraRig rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom}/>
+          const focus=item.id===selectedId;const t=focus?getComponentTerminals(c,def).find(t=>t.id===terminalId):undefined;
+          const cupboardDoor=doc.lessonId===65&&c.id==='door';
+          return <InstalledFixture key={item.id} item={item} optical={optical} pin={t?.anchor} cupboardDoor={cupboardDoor} equipment={{
+            filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
+            lowDetail:!focus,preferLowAsset:touch,view:'normal',showLabels:false,onModelAvailability:modelAvailability,
+            onPart:part=>{if(!blockTap.current&&!walking)onPart(c.id,cupboardDoor||part==='body'&&['switch','switch2','pushbutton'].includes(c.type)?'actuator':part);},
+            onTerminal:id=>{if(!blockTap.current&&!walking)onTerminal({component:c.id,terminal:id});}
+          }}/>;
+        })}
+        <WireTrace id={wire} doc={doc} site={site}/><CameraRig rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom}/></>}
       </Canvas></SiteBoundary>
     </div>
+    {!lost&&visible.some(item=>unavailable.has(item.id))&&<div className="site-model-error" role="status" aria-live="polite">Equipment model unavailable. <button onClick={onList}>Use equipment list</button></div>}
     {lost&&<div className="site-unavailable" role="status"><p>Graphics paused. Your circuit is saved in the workbench.</p><button onClick={()=>{setLost(false);setLoadedKey(n=>n+1);}}>Restart site</button><button onClick={onList}>Equipment list</button></div>}
     <div className="site-location"><span className="location-dot"/>{site.building.name} <span> / </span> {site.location(walking?walkRoom:(selectedItem?.room??site.room))}{wire&&<span> · Connection trace</span>}</div>
     <div className="site-actions">
