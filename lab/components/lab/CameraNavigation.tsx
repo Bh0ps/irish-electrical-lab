@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { COMPONENTS } from '../../lib/components';
-import { getComponentTerminals } from '../../lib/terminal-layout';
+import { getComponentTerminals, terminalInspectionDirection } from '../../lib/terminal-layout';
 import { sceneBounds, selectedPartBounds, snapWorkbenchPoint } from '../../lib/workbench-presentation';
 import {
   cameraFarPlane, cameraHasMotion, cameraLookQuaternion, createCameraNavigationState, createCameraTransition,
@@ -16,7 +16,7 @@ import { WorkbenchTouch, type WorkbenchTouchAction } from '../../lib/workbench-t
 
 export interface CameraNavigationProps {
   document:CircuitDocument; routing:CircuitRoutes; routingPending:boolean;
-  selected?:string; selectedPart?:string; cameraCommand:{id:number;action:string};
+  selected?:string; selectedPart?:string; selectedWire?:string; cameraCommand:{id:number;action:string};
   dragging:boolean; nodes:Map<string,THREE.Group>; mode?:CameraMode; speed?:number;
   tool:'select'|'place'|'wire'|'inspect'|'meter';
   touchMove?:boolean;
@@ -33,14 +33,17 @@ const heldInput=(keys:Set<string>):CameraInput=>({
 });
 function presetPose(props:CameraNavigationProps,camera:THREE.Camera):CameraPose {
   const action=props.cameraCommand.action,selected=props.document.components.find(c=>c.id===props.selected),focus=!!selected&&['focus','rear'].includes(action);
-  const bounds=focus?selectedPartBounds(selected!,action==='rear'?'terminals':props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
+  const starter=action==='first-light'&&props.document.lessonId===7;
+  const wirePoints=action==='focus-wire'&&props.selectedWire?props.routing.routes.get(props.selectedWire):undefined;
+  const bounds=wirePoints?.length?new THREE.Box3().setFromPoints(wirePoints.map(p=>new THREE.Vector3(...p))):starter?sceneBounds({...props.document,components:props.document.components.filter(c=>c.id==='switch'||c.id==='light')}):focus?selectedPartBounds(selected!,action==='rear'?'terminals':props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
   const target=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),perspective=camera as THREE.PerspectiveCamera,aspect=perspective.aspect||1,fov=THREE.MathUtils.degToRad(perspective.fov||43);
-  const distance=focus?Math.max(.8,Math.max(size.x/aspect,size.y,size.z)*1.55/Math.tan(fov/2)):Math.max(6.3,Math.max(size.x/aspect,size.z,size.y)*1.75);
+  const distance=starter||wirePoints?.length?Math.max(2.6,Math.max(size.x/aspect,size.y,size.z)*.69/Math.tan(fov/2)):focus?Math.max(.8,Math.max(size.x/aspect,size.y,size.z)*1.55/Math.tan(fov/2)):Math.max(6.3,Math.max(size.x/aspect,size.z,size.y)*1.75);
   const offset=new THREE.Vector3(3.7,5.8,9).normalize().multiplyScalar(distance);
+  if(starter)offset.set(.12,.42,1).normalize().multiplyScalar(distance);
   if(action==='top')offset.set(0,distance,.01);
   if(action==='front')offset.set(0,distance*.25,distance);
   const definition=selected&&COMPONENTS[selected.type],rear=action==='rear'||action==='focus'&&selected&&definition&&getComponentTerminals(selected,definition).some(t=>props.selectedPart==='terminals'||t.id===props.selectedPart);
-  if(focus){offset.set(action==='rear'?.12:.28,.2,rear?-1:1).normalize().multiplyScalar(distance);offset.applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);}
+  if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else offset.set(.28,.2,1);offset.normalize().multiplyScalar(distance);offset.applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);}
   else if(action==='rear')offset.set(0,distance*.25,-distance);
   const position=target.clone().add(offset).toArray() as Vec3,to=target.toArray() as Vec3;
   return {position,target:to,quaternion:cameraLookQuaternion(position,to)};
@@ -89,7 +92,7 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     const isEquipmentHit=(event:PointerEvent)=>{
       setRay(event);scene.updateMatrixWorld(true);
       const hit=ray.intersectObjects(get().internal.interaction,true)[0];let owner:THREE.Object3D|undefined=hit?.object;
-      while(owner){if(owner.userData.partId||owner.userData.terminalId||owner.userData.wireId)return true;owner=owner.parent??undefined;}
+      while(owner){if(owner.userData.partId||owner.userData.terminalId||owner.userData.wireId||owner.userData.cableId)return true;owner=owner.parent??undefined;}
       return false;
     };
     const pickEquipmentToMove = (event: PointerEvent) => {
@@ -107,7 +110,7 @@ export default function CameraNavigation(props:CameraNavigationProps) {
         return true;
       });
       for (let object = hit?.object; object; object = object.parent ?? undefined) {
-        if (object.userData.partId === 'actuator' || object.userData.terminalId || object.userData.wireId) return;
+        if (object.userData.partId === 'actuator' || object.userData.terminalId || object.userData.wireId || object.userData.cableId) return;
         if (object === selectedNode) {
           const point = ray.ray.intersectPlane(plane, new THREE.Vector3());
           if (point) equipmentMove = { id: component.id, start: component.position, offset: point.sub(new THREE.Vector3(...component.position)) };
@@ -261,7 +264,10 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     const current=latest.current,now=performance.now(),dt=lastFrame.current?(now-lastFrame.current)/1000:1/60;lastFrame.current=now;
     if(modalOpen.current||current.dragging)return;
     if(current.cameraCommand.id!==lastCommand.current&&!(current.routingPending&&current.cameraCommand.action==='fit')) {
-      lastCommand.current=current.cameraCommand.id;keys.current.clear();navigation.current=stopCameraNavigation(navigation.current);transition.current=createCameraTransition(navigation.current,presetPose(current,frameCamera));invalidate();
+      lastCommand.current=current.cameraCommand.id;keys.current.clear();navigation.current=stopCameraNavigation(navigation.current);const pose=presetPose(current,frameCamera);
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){transition.current=null;navigation.current=createCameraNavigationState(pose);}
+      else transition.current=createCameraTransition(navigation.current,pose);
+      invalidate();
     }
     if(transition.current){
       transition.current.elapsed+=Math.min(dt,.1);navigation.current=createCameraNavigationState(sampleCameraTransition(transition.current,transition.current.elapsed));

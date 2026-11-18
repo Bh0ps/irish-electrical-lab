@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0 — Electrical coursebook
+
+- Open the first lesson with a working switch and lamp. Eight searchable chapters lead from working examples through partial builds to complete practicals.
+- Restore a bookmarked lesson and its circuit after visiting Sandbox, closing the lab or transferring a full backup.
+- Choose equipment, terminals, probes and conductors by name. Learn from a worked reading and practise placing the probes independently.
+- Choose a single conductor, flat twin and earth, or round flex. Shared sheaths contain individually connected cores.
+- Inspect equipment through its device-specific access positions and markings.
+
 ## 1.3.0 — iPhone and Quick practice
 
 - Add an iPhone Home Screen app with a compact 3D workbench, touch camera and

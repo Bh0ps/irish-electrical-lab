@@ -8,7 +8,7 @@ import math
 import bpy
 from mathutils import Vector
 
-REVISION=2
+REVISION=3
 FAMILY_REQUIREMENTS={
  'supply':['sealed-service-entry','cable-termination'], 'meter':['meter-current-path','meter-isolation'],
  'panel':['din-rail-profile','comb-busbar','enclosure-bond'], 'bar':['copper-current-bar','insulating-support'],
@@ -95,13 +95,38 @@ def enrich(recipe,root,api):
         for o in list(root.children_recursive)[::-1]:
             if o.type=='MESH' and not any(p.get('terminalId') for p in A.ancestors(o)) and any(p.get('partId') in targets for p in A.ancestors(o)):
                 bpy.data.objects.remove(o,do_unlink=True)
-    # All rear ports receive real cage/pressure plate/shank construction. Their
-    # parent matrix, ID, rotation and local wire-bore origin are never changed.
+    # Fit the connection hardware to its stable, oriented electrical port.
     for terminal in recipe['terminals']:
         node=next(o for o in root.children_recursive if o.get('terminalId')==terminal['id'])
         for child in list(node.children_recursive)[::-1]:bpy.data.objects.remove(child,do_unlink=True)
-        clamp=feature('terminal-clamp:'+terminal['id'],'Screw and captive pressure plate clamp the conductor against a brass current cage. Bore origin is the immutable connection anchor.',node)
+        pin=model=='plug' and terminal['entryDirection']==[0,0,1]
+        form='pin' if pin else 'winding stud' if kind=='motor3' else 'core end' if kind=='cable' else 'pressure plate'
+        purpose={'pin':'Exposed mating contact on the plug. The cable is connected to the separate cord-side terminals.',
+                 'winding stud':'The ring lug and link plate are clamped to the threaded motor terminal by a washer and hex nut.',
+                 'core end':'An individual copper end makes this sample conductor accessible for the learning circuit.',
+                 'pressure plate':'The screw drives a captive pressure plate against the conductor inside a brass current cage.'}
+        node['contactForm']=form
+        clamp=feature('terminal-clamp:'+terminal['id'],purpose[form],node)
         scale=float(terminal.get('scale',1));clamp.scale=(scale,scale,scale)
+        if form=='winding stud':
+            A.cyl('Terminal board insulator',(0,0,-.098),.074,.094,clamp,M['black'])
+            A.cyl('Threaded connection post',(0,0,-.023),.022,.105,clamp,M['brass'])
+            for z in (-.051,-.040,-.029,-.018,-.007,.004):A.torus('Visible stud thread',(0,0,z),.022,.0025,clamp,M['brass'])
+            ring('Copper ring lug',(0,0,-.059),.060,.024,.009,clamp,M['copper'])
+            ring('Terminal locking washer',(0,0,-.043),.049,.024,.013,clamp,M['zinc'])
+            A.cyl('Hexagonal terminal nut',(0,0,-.015),.045,.037,clamp,M['brass'],vertices=6)
+            continue
+        if pin:
+            # The projecting body of the pin is already on the plug. Its end is
+            # a single interactive contact, with no added screw or cable clamp.
+            if kind=='plug3':A.cyl('Nickel mating tip',(0,0,-.006),.055,.018,clamp,M['zinc'])
+            else:A.box('Machined flat pin tip',(0,0,-.009),(.08,.052,.016),clamp,M['brass'],.003)
+            continue
+        if form=='core end':
+            for i in range(7):
+                a=i*math.tau/6
+                A.cyl('Copper strand tip',(math.sin(a)*.016 if i<6 else 0,math.cos(a)*.016 if i<6 else 0,-.043),.008,.086,clamp,M['copper'],vertices=10)
+            continue
         # Split insulated sidewalls expose the actual conductor entry, never a
         # fictitious terminal on the front of the equipment.
         for x in (-.058,.058):A.box('Insulated cage side',(x,.025,-.055),(.017,.11,.112),clamp,M['black'],.004)
@@ -114,7 +139,7 @@ def enrich(recipe,root,api):
         role=terminal['role'];color='green' if role=='PE' else 'blue' if role=='N' else 'black' if role in ('L2','DC-') else 'grey' if role=='L3' else 'red' if role=='DC+' else 'brown'
         A.box('Moulded conductor identification',(0,-.043,-.014),(.13,.022,.032),clamp,M[color],.003)
         if role=='PE':A.box('Protective green yellow stripe',(-.020,-.043,.003),(.027,.022,.003),clamp,M['yellow'],.001)
-    if recipe['terminals']:features.append('rear-pressure-plate-terminals')
+    if recipe['terminals']:features.append('individual-electrical-terminations')
 
     if model in ('supply','meter'):
         p=part('electronics')
@@ -221,8 +246,8 @@ def enrich(recipe,root,api):
         f=feature('socket-contact-system' if model=='socket' else 'plug-contact-system','Spring contact sockets, insulating partitions and protective contact construction appropriate to the accessory family.',part('contacts'))
         if kind in ('socket3','plug3'):
             for i in range(5):
-                a=i*math.tau/5;p=(math.sin(a)*.13,.7+math.cos(a)*.13,.328)
-                if model=='socket':ring('Female contact sleeve',p,.037,.023,.085,f,M['brass'])
+                a=math.pi+i*math.tau/5;p=(math.sin(a)*.13,.7+math.cos(a)*.13,.328)
+                if model=='socket':ring('Female contact sleeve',p,.041 if i==0 else .037,.029 if i==0 else .023,.085,f,M['brass'])
                 else:ring('Pin retention shoulder',(p[0],p[1],.27),.031,.025,.025,f,M['brass'])
             A.box('CEE keyway rib',(0,.46,.27),(.038,.07,.06),f,M['black'],.004)
         elif kind=='fcu' or model=='plug':

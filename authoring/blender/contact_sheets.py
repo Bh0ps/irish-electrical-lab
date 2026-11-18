@@ -1,5 +1,5 @@
 """Assemble locally rendered original assets for visual inspection."""
-import json, math
+import json, math, sys
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont
 
@@ -9,6 +9,22 @@ inventory=json.loads((ROOT/'lab/public/models/manifest.json').read_text())
 inventory.sort(key=lambda entry:entry['key'])
 try:font=ImageFont.truetype('C:/Windows/Fonts/segoeui.ttf',16)
 except OSError:font=ImageFont.load_default()
+if '--access' in sys.argv:
+    # Show the shipped front thumbnail beside the open installation face.
+    target=IMAGES/'service-access'
+    for i in range(0,len(inventory),15):
+        entries=inventory[i:i+15];sheet=Image.new('RGB',(1008,math.ceil(len(entries)/3)*185),'#e3e9e5')
+        draw=ImageDraw.Draw(sheet)
+        for j,entry in enumerate(entries):
+            x=j%3*336;y=j//3*185
+            draw.text((x+4,y+2),entry['key'],font=font,fill='#20302d')
+            for view,path in enumerate((ROOT/'lab/public'/entry['thumbnailUrl'].lstrip('/'),target/(entry['key']+'.png'))):
+                with Image.open(path) as source:
+                    image=source.convert('RGBA').resize((160,160),Image.Resampling.LANCZOS)
+                    sheet.paste(image,(x+view*165+2,y+24),image)
+        sheet.save(target/f'sheet-{i//15+1}.jpg',quality=89)
+    print(f"{len(inventory)} equipment fronts and {len(inventory)} open connection views.")
+    sys.exit(0)
 reports=[]
 for family,views,columns,per_page,tile in [('faces',('front','rear'),4,16,200),('inspection',('open','exploded','cutaway'),3,12,180),('inspection-front',('open-front','exploded-front','cutaway-front'),3,12,180)]:
     for index in range(math.ceil(len(inventory)/per_page)):

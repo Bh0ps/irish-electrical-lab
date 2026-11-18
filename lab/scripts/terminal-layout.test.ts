@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { COMPONENTS, COMPONENT_LIST } from '../lib/components.ts';
-import { getComponentTerminals } from '../lib/terminal-layout.ts';
+import { getComponentTerminals, terminalInspectionDirection } from '../lib/terminal-layout.ts';
 import { createGalleryInventory } from '../components/lab/ModelGallery.tsx';
 import { LESSONS } from '../lib/lessons.ts';
 import { routeWire, terminalPosition } from '../lib/routing.ts';
@@ -10,7 +10,7 @@ import type { ComponentInstance, CircuitDocument, Vec3 } from '../lib/types.ts';
 const sample=(type:string,variant?:string):ComponentInstance=>({id:type,type,label:COMPONENTS[type].name,variant,params:{...COMPONENTS[type].defaults},position:[0,0,0],rotation:0});
 const layout=(type:string,variant?:string)=>getComponentTerminals(sample(type,variant),COMPONENTS[type]);
 
-test('every registry, lesson and gallery installation terminal belongs to the rear, exactly once',()=>{
+test('every registry, lesson and gallery terminal has one finite physical mouth and a unit entry direction',()=>{
   const instances=[...COMPONENT_LIST.map(d=>sample(d.type)),...createGalleryInventory().flatMap(e=>[e.component,...e.companions??[]]),...LESSONS.flatMap(l=>l.circuit.components)];
   for(const c of instances){
     const d=COMPONENTS[c.type],resolved=getComponentTerminals(c,d);
@@ -19,7 +19,8 @@ test('every registry, lesson and gallery installation terminal belongs to the re
     assert.deepEqual(resolved.map(t=>[t.id,t.role,t.purpose]),d.terminals.map(t=>[t.id,t.role,t.purpose]));
     for(const t of resolved){
       assert.ok(t.anchor.every(Number.isFinite),`${c.id}.${t.id} has invalid coordinates`);
-      assert.ok(t.anchor[2]<0,`${c.id}.${t.id} was placed on the operating face`);
+      assert.ok(Math.abs(Math.hypot(...t.entryDirection!)-1)<1e-8,`${c.id}.${t.id} invalid access direction`);
+      if(['switch','switch2','socket','fcu','dimmer','selector','pushbutton'].includes(c.type))assert.deepEqual(t.entryDirection,[0,0,-1],c.id+' installation terminals behind the faceplate');
       assert.ok(t.group?.length,`${c.id}.${t.id} has no physical bank`);
     }
     for(let i=0;i<resolved.length;i++)for(let j=i+1;j<resolved.length;j++){
@@ -29,6 +30,15 @@ test('every registry, lesson and gallery installation terminal belongs to the re
       assert.ok(Math.abs(a[0]-b[0])>=.14*Math.max(resolved[i].scale??1,resolved[j].scale??1)||Math.abs(a[1]-b[1])>=.12*Math.max(resolved[i].scale??1,resolved[j].scale??1)||Math.abs(a[2]-b[2])>=.14,`${c.id}: ${resolved[i].id}/${resolved[j].id} overlap`);
     }
   }
+});
+
+test('the camera approaches documented physical access banks and real fixture inscriptions resolve to stable IDs',()=>{
+  const sw=sample('switch2'),breaker=sample('rcbo'),motor=sample('motor3');
+  assert.ok(terminalInspectionDirection(sw,COMPONENTS.switch2)[2]<-.8);
+  assert.ok(terminalInspectionDirection(breaker,COMPONENTS.rcbo,'LIN')[1]>.6);
+  assert.ok(terminalInspectionDirection(motor,COMPONENTS.motor3,'U1')[1]>.8);
+  assert.deepEqual(layout('switch2').map(t=>[t.id,t.label]),[['COM','COM'],['T1','L1'],['T2','L2']]);
+  assert.ok(layout('rcbo').find(t=>t.id==='LOUT')!.entryDirection![1]<0);
 });
 
 test('bulb, downlight and batten connectors follow their different housing heights',()=>{

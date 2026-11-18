@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { BlenderEquipment } from './BlenderEquipment';
 import { applyLampBrightness, lampBrightness } from './blender-model';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { equipmentVariant, getComponentTerminals } from './terminal-layout';
+import { enclosedTerminals, equipmentVariant, getComponentTerminals } from './terminal-layout';
 import { WIRE_RADIUS } from './routing';
 import type { ComponentDefinition, ComponentInstance, DeviceState, TerminalDefinition, Vec3 } from './types';
 
@@ -68,7 +68,9 @@ function Part({ id, children, position, rotation, restPosition }: { id: string; 
   const semanticId = props.definition.parts.some(p => p.id === id) ? id : aliases[id] ?? id;
   const chosen = props.definition.parts.find(p => p.id === semanticId)?.id
     ?? props.definition.parts.find(p => p.id === 'body')?.id ?? props.definition.parts[0]?.id ?? id;
-  return <PartContext.Provider value={id}><group name={`part:${chosen}`} userData={{partId:chosen,...(restPosition?{restPosition,restRotation:[0,0,0]}:{})}} position={position} rotation={rotation} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); props.onPart(chosen); }}>{children}</group></PartContext.Provider>;
+  const chamber=id==='terminals'&&enclosedTerminals(props.component);
+  if(chamber&&!props.authoring&&props.view==='normal')return null;
+  return <PartContext.Provider value={id}><group name={`part:${chosen}`} userData={{partId:chosen,...(chamber?{serviceChamber:true}:{}),...(restPosition?{restPosition,restRotation:[0,0,0]}:{})}} position={position} rotation={rotation} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); props.onPart(chosen); }}>{children}</group></PartContext.Provider>;
 }
 function B({ p = [0, 0, 0], s = [1, 1, 1], m = 'white', r = [0, 0, 0], material }: { p?: Vec3; s?: Vec3; m?: MaterialKey; r?: Vec3; material?: THREE.Material }) {
   const { internal, props } = useModel();
@@ -191,7 +193,8 @@ function LED({ p, active, color = 'green' }: { p: Vec3; active?: boolean; color?
 function Cover({ children, round = false, p = [0, .72, .3], s = [1, 1.1, .065], custom = false }: { children?: ReactNode; round?: boolean; p?: Vec3; s?: Vec3; custom?: boolean }) {
   const { props } = useModel();
   if (props.view === 'cutaway') return null;
-  const offset: Vec3 = props.view === 'exploded' ? [p[0] + .5, p[1] + .5, p[2] + .65] : props.view === 'open' ? [p[0] + .55, p[1] + .08, p[2] + .15] : p;
+  const travel=enclosedTerminals(props.component)?1.0:.55;
+  const offset: Vec3 = props.view === 'exploded' ? [p[0] + .5, p[1] + .5, p[2] + .65] : props.view === 'open' ? [p[0] + travel, p[1] + .08, p[2] + .15] : p;
   return <Part id="cover" position={offset} restPosition={p} rotation={props.view === 'open' ? [0, Math.PI / 2.5, 0] : [0, 0, 0]}>
     {!custom && (round ? <C radius={s[0] / 2} length={s[2]} r={[Math.PI / 2, 0, 0]} material={props.view === 'normal' || props.authoring ? mat.white : transparent} /> : <B s={s} material={props.view === 'normal' || props.authoring ? mat.white : transparent} />)}
     {children}
@@ -226,14 +229,14 @@ function PanelModel() {
   </>;
 }
 function SupplyModel() {
-  const { variant, internal, detailed, active, props } = useModel();
+  const { variant, internal, active, props } = useModel();
   const studyVoltage = Number(props.component.params.studyVoltage ?? (props.component.type === 'source3' ? 400 : 240));
   return <>
     <Part id="body"><B p={[0, .76, -.02]} s={[.91, 1.03, .34]} m="cream" /><B p={[0, .22, .03]} s={[.75, .26, .43]} m="black" /></Part>
     <Part id="sensingcore"><C p={[0, .7, .2]} radius={.31} length={.08} r={[Math.PI / 2, 0, 0]} m="steel" /><C p={[0, .7, .25]} radius={.23} length={.012} r={[Math.PI / 2, 0, 0]} m="cream" /></Part>
     <Cover p={[0, .77, .25]} s={[.86, .92, .05]}><Display p={[0, .16, .044]} value={active ? `${Number.isFinite(studyVoltage) ? studyVoltage : 240} V` : 'SUPPLY'} width={.54} height={.16} /><T p={[0, -.11, .04]} radius={.255} tube={.012} m="black" /><LED p={[.28, .16, .062]} /></Cover>
     {internal && <PCB p={[0, 1.02, .12]} width={.68} height={.23} />}
-    {detailed && <Part id="fuse"><B p={[-.19, .18, .27]} s={[.12, .17, .06]} m="red" /><B p={[.19, .18, .27]} s={[.12, .17, .06]} m="blue" /></Part>}
+    <Cover p={[0,.23,.326]} s={[.77,.245,.035]}><Part id="mounting"><Screw p={[-.313,.05,.023]}/><Screw p={[.313,.05,.023]}/></Part></Cover>
     <Fixings width={.9} bottom={.32} top={1.18} z={.21} />
     {/entry|service/.test(variant) && <Part id="cable"><LineTube points={[[0, .1, 0], [0, -.15, 0], [.3, -.3, 0]]} radius={.065} m="black" /></Part>}
   </>;
@@ -243,13 +246,14 @@ function ProtectionModel() {
   const residual = /rcd|rccb|rcbo|residual/.test(variant);
   const three = /mcb3|rcd3|three-pole|four-pole/.test(variant);
   const fuse = /fuse/.test(variant);
+  const surge = props.component.type==='spd';
   const wide = residual || three || /changeover|isolator|surge/.test(variant);
   const width = wide ? .8 : .56;
   return <>
     <Part id="body"><B p={[0, .74, -.05]} s={[width, .95, .34]} /><B p={[0, 1.13, .08]} s={[width - .08, .18, .27]} /><B p={[0, .33, .08]} s={[width - .08, .18, .27]} /><B p={[0, .67, -.27]} s={[width - .09, .17, .1]} m="dark" /></Part>
-    <Cover p={[0, .72, .22]} s={[width - .04, .63, .035]}><B p={[0, .22, .025]} s={[width - .15, .095, .01]} m="dark" />
-      {fuse ? <Part id="fuse"><B p={[0, -.02, .062]} s={[.24, .28, .08]} m="cream" /><B p={[0, -.02, .11]} s={[.13, .19, .018]} m="dark" /></Part> : three ? <Part id="actuator">{[-.23, 0, .23].map(x => <Toggle key={x} p={[x, -.01, .04]} width={.14} />)}<B p={[0, -.01, .147]} s={[.68, .033, .045]} m="black" /></Part> : <Toggle p={[0, -.01, .04]} width={width * .53} color={/isolator|changeover/.test(variant) ? 'red' : 'black'} />}
-      {residual && <Part id="test"><C p={[width * .29, -.21, .043]} radius={.047} length={.04} m="blue" r={[Math.PI / 2, 0, 0]} /></Part>}
+    <Cover p={[0, .72, .22]} s={[width - .04, .63, .035]}><RB p={[0, .22, .025]} s={[width - .15, .098, .014]} m="white" radius={.008} />
+      {surge ? <group><RB p={[0, -.025, .043]} s={[.53,.32,.069]} m="cream" radius={.018}/><B p={[0,-.09,.084]} s={[.20,.04,.009]} m={props.component.params.healthy===false?'red':'green'}/></group> : fuse ? <Part id="fuse"><B p={[0, -.02, .062]} s={[.24, .28, .08]} m="cream" /><B p={[0, -.02, .11]} s={[.13, .19, .018]} m="dark" /></Part> : three ? <Part id="actuator">{[-.23, 0, .23].map(x => <Toggle key={x} p={[x, -.01, .04]} width={.14} />)}<B p={[0, -.01, .147]} s={[.68, .033, .045]} m="black" /></Part> : <Toggle p={[0, -.01, .04]} width={width * .36} color={/isolator|changeover/.test(variant) ? 'red' : 'black'} />}
+      {residual && <Part id="test"><RB p={[width * .27, -.205, .039]} s={[.156,.087,.032]} radius={.015} m="dark"/><RB p={[width * .27, -.205, .060]} s={[.131,.067,.036]} radius={.014} m="blue"/></Part>}
       {/surge/.test(variant) && <B p={[0, -.19, .036]} s={[width * .5, .08, .02]} material={props.state?.tripped ? redLight : greenLight} />}
     </Cover>
     {internal && <>
@@ -335,7 +339,7 @@ function PlugModel() {
   const industrial = /industrial|three|5pin|cee/.test(variant);
   return industrial ? <>
     <Part id="body"><C p={[0, .75, .03]} radius={.29} length={.65} m="red" r={[Math.PI / 2, 0, 0]} /><C p={[0, .75, -.3]} radius={.17} length={.16} m="black" r={[Math.PI / 2, 0, 0]} /><T p={[0, .75, .27]} radius={.26} tube={.055} m="grey" /></Part>
-    <Part id="contacts">{[0, 1, 2, 3, 4].map(i => { const a = i * Math.PI * 2 / 5; return <C key={i} p={[Math.sin(a) * .14, .75 + Math.cos(a) * .14, .39]} radius={.026} length={.2} m="brass" r={[Math.PI / 2, 0, 0]} />; })}</Part>
+    <Part id="contacts">{[0, 1, 2, 3, 4].map(i => { const a = Math.PI+i*Math.PI*2/5; return <C key={i} p={[Math.sin(a) * .14, .75 + Math.cos(a) * .14, .39]} radius={i===0?.033:.026} length={.2} m="steel" r={[Math.PI / 2, 0, 0]} />; })}</Part>
     <Part id="cable"><LineTube points={[[0, .75, -.39], [0, .4, -.55], [.3, .12, -.6]]} radius={.065} m="black" /></Part>
   </> : <>
     <Part id="body"><B p={[0, .71, -.03]} s={[.77, .71, .4]} /><B p={[0, .3, -.04]} s={[.2, .2, .25]} m="black" /></Part>
@@ -434,12 +438,12 @@ function HeaterModel() {
     <Part id="sensingcore"><S p={[.21, .145, -.1]} radius={.027} m="black" /><LineTube points={[[.21, .145, -.1], [.21, .145, -.36], [.6, .15, -.4]]} radius={.011} m="black" /></Part>
   </>;
   if (/immersion/.test(variant)) return <>
-    <Part id="body"><C p={[0, .90, 0]} radius={.36} length={.10} m="brass" /><C p={[0, 1.00, 0]} radius={.25} length={.10} m="black" /><C p={[0, 1.145, 0]} radius={.23} length={.30} m="white" /></Part>
+    <Part id="body"><C p={[0, .90, 0]} radius={.36} length={.10} m="brass" /><C p={[0, 1.00, 0]} radius={.25} length={.10} m="black" /><C p={[0, 1.132, 0]} radius={.23} length={.18} m="dark" /></Part>
     <Part id="mounting">{[.868, .904, .94].map(y => <T key={y} p={[0, y, 0]} radius={.32} tube={.013} m="brass" r={[Math.PI / 2, 0, 0]} />)}</Part>
     <Part id="heater"><LineTube points={[[-.14, .92, 0], [-.15, .46, 0], [-.1, .13, 0], [.1, .13, 0], [.15, .46, 0], [.14, .92, 0]]} radius={.037} material={active ? orangeLight : mat.copper} /></Part>
     <Part id="sensingcore"><C p={[0, .52, 0]} radius={.023} length={.83} m="steel" /></Part>
     {internal && <Part id="safetycutout"><B p={[0, 1.17, .14]} s={[.18, .1, .08]} m="red" /><Screw p={[0, 1.16, .19]} /></Part>}
-    <Cover round p={[0, 1.145, .235]} s={[.46, .46, .03]} />
+    <Cover custom p={[0,1.196,0]}><C p={[0,.038,0]} radius={.285} length={.33} m="cream"/><T p={[0,-.096,0]} radius={.277} tube={.011} m="grey" r={[Math.PI/2,0,0]}/><C p={[0,.209,0]} radius={.027} length={.013} m="steel"/><B p={[0,.216,0]} s={[.036,.002,.006]} m="dark"/></Cover>
   </>;
   return <>
     <Part id="body"><B p={[0, .69, -.04]} s={[1.12, 1.04, .44]} m="cream" /><B p={[0, .16, -.04]} s={[1.03, .12, .52]} m="dark" /></Part>
@@ -721,12 +725,37 @@ function RearTerminalCarriers({ terminals }: { terminals: TerminalDefinition[] }
   })}</group>;
 }
 
+function entryRotation(terminal: TerminalDefinition): Vec3 {
+  const [x,y,z]=terminal.entryDirection??[0,0,-1];
+  return [-Math.asin(y),Math.atan2(x,z),0];
+}
+
+function TerminalMountings({terminals}:{terminals:TerminalDefinition[]}) {
+  const {props}=useModel();
+  const rear=terminals.filter(t=>t.entryDirection?.[2]===-1);
+  const exposed=terminals.filter(t=>t.entryDirection?.[2]!==-1);
+  const valve=props.definition.model==='valve';
+  const board=exposed.filter(t=>t.entryDirection?.[1]===1);
+  return <>
+    {rear.length>0&&<RearTerminalCarriers terminals={rear}/>}
+    {board.length>0&&<RB p={[(Math.min(...board.map(t=>t.anchor[0]))+Math.max(...board.map(t=>t.anchor[0])))/2,board[0].anchor[1]-.095,0]} s={[Math.max(...board.map(t=>t.anchor[0]))-Math.min(...board.map(t=>t.anchor[0]))+.18,.12,.39]} radius={.025} m="dark"/>}
+    {valve&&<Part id="cable"><LineTube points={[[0,.67,-.12],[.35,.58,.03],[.43,.31,.17],[.28,.23,.26]]} radius={.053} m="white"/></Part>}
+    {exposed.map((t,i)=><group key={t.id}>
+      {props.definition.model!=='plug'&&props.definition.model!=='cable'&&<group position={t.anchor} rotation={entryRotation(t)} scale={t.scale??1}><RB p={[0,.038,-.102]} s={[.165,.148,.095]} radius={.013} m={valve?'cream':'dark'}/></group>}
+      {valve&&<LineTube points={[[.28,.23,.26],[t.anchor[0],.18+i*.017,.34],[t.anchor[0],t.anchor[1],t.anchor[2]-.075]]} radius={.014} m={t.role==='PE'?'green':t.role==='N'?'blue':i%2?'grey':'brown'}/>}
+    </group>)}
+  </>;
+}
+
 function Terminal({ terminal }: { terminal: TerminalDefinition }) {
   const { props, detailed } = useModel();
   const [hover, setHover] = useState(false);
   const color = terminalColors[terminal.role] ?? '#9faeb7';
-  return <group name={`terminal:${terminal.id}`} userData={{terminalId:terminal.id}} position={terminal.anchor} rotation={[0, terminal.anchor[2] < 0 ? Math.PI : 0, 0]} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); props.onTerminal(terminal.id); }} onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHover(true); }} onPointerOut={() => setHover(false)}>
+  const pin=props.definition.model==='plug'&&terminal.entryDirection?.[2]===1;
+  const strand=props.component.type==='cable',stud=props.component.type==='motor3';
+  return <group name={`terminal:${terminal.id}`} userData={{terminalId:terminal.id}} position={terminal.anchor} rotation={entryRotation(terminal)} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); props.onTerminal(terminal.id); }} onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHover(true); }} onPointerOut={() => setHover(false)}>
     <group scale={terminal.scale ?? 1}>
+    {pin||strand||stud?<C p={[0,0,-.008]} radius={stud?.046:pin?.045:.02} length={.018} m={strand?'copper':stud?'brass':'steel'} segments={stud?6:16} r={[Math.PI/2,0,0]}/>:<>
     <RB p={[0, .039, -.079]} s={[.135, .11, .11]} radius={.015} m="cream" />
     <B p={[0, .039, -.039]} s={[.102, .075, .07]} material={mat.brass} /><B p={[0, .039, 0]} s={[.096, .058, .008]} m="brass" />
     <C p={[0, .039, .024]} radius={.028} length={.017} m="steel" r={[Math.PI / 2, 0, 0]} />
@@ -735,6 +764,7 @@ function Terminal({ terminal }: { terminal: TerminalDefinition }) {
     {detailed && <B p={[0, .039, .034]} s={[.033, .006, .002]} m="dark" />}
     <mesh position={[0, -.031, -.019]}><boxGeometry args={[.14, .024, .03]} /><meshStandardMaterial color={color} emissive={hover ? color : '#000000'} emissiveIntensity={hover ? .75 : 0} /></mesh>
     {terminal.role === 'PE' && <B p={[.035, -.031, -.003]} s={[.05, .024, .004]} m="green" />}
+    </>}
     {hover && <mesh position={[0, .039, .021]} material={greenLight}><torusGeometry args={[.071, .005, 6, 20]} /></mesh>}
     {(hover || props.selected && props.showLabels) && <TextureLabel p={[0, .12, .085]} text={terminal.label} color="#f1f5f2" background="#172a31" sprite width={Math.max(.18, terminal.label.length * .06)} height={.13} font="Consolas, monospace" />}
     </group>
@@ -767,7 +797,7 @@ export const ProceduralEquipment = memo(function ProceduralEquipment(props: Equi
   const scale: Vec3 = [def.size[0] / 1.3, def.size[1] / 1.45, def.size[2] / .85];
   return <Context.Provider value={context}><group ref={group}>
     <group scale={scale}><Model /></group>
-    <Part id="terminals"><RearTerminalCarriers terminals={terminals} />
+    <Part id="terminals"><TerminalMountings terminals={terminals} />
       {terminals.map(t => <Terminal key={t.id} terminal={t} />)}
     </Part>
     {props.selected && <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .009, 0]}><ringGeometry args={[Math.max(def.size[0], def.size[2]) * .52, Math.max(def.size[0], def.size[2]) * .52 + .025, 48]} /><meshBasicMaterial color="#5ce5bd" transparent opacity={.8} side={THREE.DoubleSide} /></mesh>}

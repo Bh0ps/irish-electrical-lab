@@ -1,6 +1,7 @@
 import type { CircuitDocument } from './types.ts';
 import { validateCircuit, writeRecordsAtomic, type Progress } from './storage.ts';
 import { validateTestRecord } from './test-record.ts';
+import { validateBookmark, type LessonBookmark } from './lesson-bookmark.ts';
 
 export interface FullStudyBackup {
   format:'irish-electrical-lab-study';
@@ -9,6 +10,7 @@ export interface FullStudyBackup {
   draft:CircuitDocument|null;
   builds:CircuitDocument[];
   progress:Progress;
+  bookmark?:LessonBookmark;
 }
 export const BACKUP_LIMITS={bytes:32*1024*1024,builds:256,learningNodes:1_000_000,depth:12} as const;
 const RESERVED=new Set(['__proto__','prototype','constructor']);
@@ -102,16 +104,17 @@ export function validateStudyBackup(raw:unknown):FullStudyBackup {
   const draft=source.draft===null?null:validateCircuit(source.draft),builds=source.builds.map(validateCircuit),ids=new Set<string>();
   for(const build of builds){if(ids.has(build.id))fail('named builds have duplicate identities.');ids.add(build.id);}
   const backup:FullStudyBackup={format:'irish-electrical-lab-study',version:1,exportedAt:source.exportedAt,draft,builds,progress:validateProgress(source.progress)};
+  if(source.bookmark!=null)backup.bookmark=validateBookmark(source.bookmark);
   if(new TextEncoder().encode(JSON.stringify(backup)).length>BACKUP_LIMITS.bytes)fail('backup exceeds 32 MB.');
   return backup;
 }
-export function exportStudyBackup(draft:CircuitDocument|null,builds:CircuitDocument[],progress:Progress):FullStudyBackup {
-  return validateStudyBackup({format:'irish-electrical-lab-study',version:1,exportedAt:new Date().toISOString(),draft,builds,progress});
+export function exportStudyBackup(draft:CircuitDocument|null,builds:CircuitDocument[],progress:Progress,bookmark?:LessonBookmark):FullStudyBackup {
+  return validateStudyBackup({format:'irish-electrical-lab-study',version:1,exportedAt:new Date().toISOString(),draft,builds,progress,bookmark});
 }
 export async function restoreStudyBackup(raw:unknown,preservedBuild?:CircuitDocument):Promise<FullStudyBackup> {
   const loaded=validateStudyBackup(raw);
   // A Save-and-continue snapshot must survive replacement of the named list too.
   const backup=preservedBuild?validateStudyBackup({...loaded,builds:[preservedBuild,...loaded.builds.filter(build=>build.id!==preservedBuild.id)]}):loaded;
-  await writeRecordsAtomic({draft:backup.draft,builds:backup.builds,progress:backup.progress});
+  await writeRecordsAtomic({draft:backup.draft,builds:backup.builds,progress:backup.progress,bookmark:backup.bookmark??null});
   return backup;
 }

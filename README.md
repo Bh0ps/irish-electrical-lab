@@ -10,10 +10,10 @@ open source under the [MIT license](LICENSE).
 
 ## What you can do
 
-- Study **64 configurations** through **Look → Predict → Build → Try → Measure → Fix**.
+- Start with **One switch, one light**. Follow eight chapters covering 64 configurations, or jump straight to a chapter practical. The six-stage exercises are available under lesson details.
 - Try six **Quick practice** experiments with a prediction, a real control action,
   and a comparison of live simulated readings.
-- Inspect **87 equipment variants**, including rear terminals, removable covers,
+- Inspect **87 equipment variants**, including device-specific terminal access, removable covers,
   cutaways and exploded assemblies.
 - Build freely with up to **80 components and 300 wires**, with individual terminal
   connections, undo/redo, selectable wires and editable equipment parameters.

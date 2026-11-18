@@ -34,6 +34,19 @@ for(const entry of inventory){
     node.children=object.children.map(serialize);return node;
   };
   const nodes=scene.children.map(serialize),key=entry.key.replace(/[^a-z0-9_-]+/gi,'_');
+  // Three generates random UUIDs on every run. Keep the editable mesh recipe
+  // reproducible and its names meaningful in Blender.
+  function stableKeys(library: Record<string,unknown>,field:'geometry'|'material'){
+    const names=new Map(Object.keys(library).map((id,i)=>[id,`${field}-${i+1}`]));
+    for(const [id,name] of names){library[name]=library[id];delete library[id];}
+    function visit(node:unknown){
+      const n=node as {geometry?:string;material?:string;children:unknown[]};
+      if(n[field])n[field]=names.get(n[field]!);
+      n.children.forEach(visit);
+    }
+    nodes.forEach(visit);
+  }
+  stableKeys(geometries,'geometry');stableKeys(materials,'material');
   const item={key,file:key+'.json',galleryKey:entry.key,name:entry.name,component,definition,terminals:getComponentTerminals(component,definition),meshNodes:count,vertices};
   writeFileSync(output+key+'.json',JSON.stringify({...item,materials,geometries,nodes}));manifest.push(item);
 }

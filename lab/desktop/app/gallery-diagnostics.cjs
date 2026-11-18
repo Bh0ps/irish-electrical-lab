@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { recordsDigest,profileRecords } = require('./graphics-diagnostics-helpers.cjs');
+const { rendererHarness } = require('./native-ui-harness.cjs');
 const { windowSnapshot,restoreWindow } = require('./gallery-diagnostics-helpers.cjs');
 const ORIGIN = 'http://127.0.0.1:4187';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -64,10 +65,11 @@ async function runGalleryDiagnostics({ window, output, fixtures, directory:appDi
       report.completedVariants=index+1;writeReport();
     }
     await window.loadURL(ORIGIN + '/');
-    await js(`(async()=>{for(let tries=0;tries<100&&!Array.from(document.querySelectorAll('button')).some(e=>e.textContent.trim()==='Learn');tries++)await new Promise(resolve=>setTimeout(resolve,100));Array.from(document.querySelectorAll('button')).find(e=>e.textContent.trim()==='Learn').click();for(let tries=0;tries<100&&!Array.from(document.querySelectorAll('button')).some(e=>e.textContent.trim()==='Courses');tries++)await new Promise(resolve=>setTimeout(resolve,100));})()`);
+    await js(`(${rendererHarness.toString()})()`);
+    await js(`window.__labVerify.until(()=>window.__labVerify.control('Courses'),'chapter index')`);
     await js(`window.__galleryScene=()=>new Promise(resolve=>{const handler=e=>{clearTimeout(timer);resolve(e.detail);};const timer=setTimeout(()=>{window.removeEventListener('electrical-lab-scene',handler);resolve(null);},1000);window.addEventListener('electrical-lab-scene',handler,{once:true});window.dispatchEvent(new Event('electrical-lab-scene-request'));});true;`);
     for (const fixture of fixtures) {
-      const selected = await js(`(async()=>{const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms)),text=e=>e.textContent.trim();Array.from(document.querySelectorAll('button')).find(e=>text(e)==='Courses').click();await wait(100);const input=document.querySelector('[aria-label="Search configurations"]');if(input){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(fixture.title)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));await wait(100);}const card=Array.from(document.querySelectorAll('[role=dialog] button')).find(e=>text(e).includes(${JSON.stringify(fixture.title)}));if(!card)return false;card.click();await wait(120);const discard=Array.from(document.querySelectorAll('[role=dialog] button')).find(e=>text(e)==='Discard and continue');if(discard)discard.click();return true;})()`);
+      const selected = await js(`(async()=>{const v=window.__labVerify;await v.openCourse(${fixture.id},${JSON.stringify(fixture.title)});await v.sleep(150);const discard=v.control('Discard and continue');if(discard)discard.click();await v.until(()=>!document.querySelector('[role=dialog],[role=alertdialog]'),'course opened');return true;})()`);
       add('configuration ' + fixture.id + ' can be opened in the packaged app', selected, fixture.title);
       await settled();
       const geometry = await js(`(async()=>{let scene;for(let tries=0;tries<100;tries++){scene=await window.__galleryScene();if(scene?.circuitId===${JSON.stringify(fixture.circuit.id)}&&!scene.routingPending&&scene.components.length===${fixture.circuit.components.length}&&scene.components.every(c=>c.assetKeys.length))return scene;await new Promise(resolve=>setTimeout(resolve,100));}return scene;})()`);

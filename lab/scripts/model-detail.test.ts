@@ -20,7 +20,7 @@ function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D
 test('all 87 variants have actual family construction, original sources and local rendered icons',async()=>{
   assert.equal(manifest.length,87);const families=new Set<string>(),report:unknown[]=[];
   for(const asset of manifest){
-    assert.equal(asset.detailRevision,2,asset.key);families.add(asset.detailFamily);
+    assert.equal(asset.detailRevision,3,asset.key);families.add(asset.detailFamily);
     assert.ok(asset.sourceMeshCount>asset.meshCount,asset.key+' original source keeps separately editable details');
     assert.ok(existsSync(root+'authoring/blender/models/'+asset.key+'.blend'));
     const bytes=readFileSync(root+'lab/public'+asset.thumbnailUrl);assert.equal(bytes.subarray(1,4).toString(),'PNG');assert.equal(bytes.readUInt32BE(16),192);assert.equal(bytes.readUInt32BE(20),192);assert.ok(bytes.length>1500,asset.key+' actual icon pixels');
@@ -28,7 +28,7 @@ test('all 87 variants have actual family construction, original sources and loca
     for(const variant of [scene,low]){
       const found=details(variant);
       for(const feature of asset.detailFeatures){
-        if(feature==='rear-pressure-plate-terminals')continue;
+        if(feature==='individual-electrical-terminations')continue;
         const nodes=found.get(feature);assert.ok(nodes?.length,asset.key+' '+feature);
         assert.ok(nodes!.some(node=>meshes(node).length>0&&triangles(node)>=12),asset.key+' '+feature+' contains real construction meshes');
         for(const node of nodes!)assert.ok(typeof node.userData.detailPurpose==='string'&&node.userData.detailPurpose.length>35,asset.key+' purpose');
@@ -41,7 +41,7 @@ test('all 87 variants have actual family construction, original sources and loca
     report.push({key:asset.key,family:asset.detailFamily,features:asset.detailFeatures,sourceMeshes:asset.sourceMeshCount,runtimeMeshes:asset.meshCount,triangles:triangles(scene),lowTriangles:triangles(low),icon:asset.thumbnailUrl});
   }
   assert.equal(families.size,29);
-  mkdirSync(root+'verification/model-detail',{recursive:true});writeFileSync(root+'verification/model-detail/construction-audit.json',JSON.stringify({revision:2,variants:87,families:families.size,models:report},null,2));
+  mkdirSync(root+'verification/model-detail',{recursive:true});writeFileSync(root+'verification/model-detail/construction-audit.json',JSON.stringify({revision:3,variants:87,families:families.size,models:report},null,2));
 });
 
 test('pressure-plate clamps have apertures, multiple materials and exactly one stable terminal identity',async()=>{
@@ -49,10 +49,11 @@ test('pressure-plate clamps have apertures, multiple materials and exactly one s
     const scene=await load(url),found=details(scene);
     for(const terminal of asset.terminals){
       const clamp=found.get('terminal-clamp:'+terminal.id);assert.equal(clamp?.length,1,asset.key+'.'+terminal.id);
-      const parts=meshes(clamp![0]);assert.ok(parts.length>=3,asset.key+' cage, pressure plate, insulation and fixing materials');
+      const form=clamp![0].parent!.userData.contactForm;
+      const parts=meshes(clamp![0]);assert.ok(parts.length>=(['pin','core end'].includes(form)?1:3),asset.key+' attachment hardware materials');
       let identities=0;scene.traverse(node=>{if(node.userData.terminalId===terminal.id)identities++;});assert.equal(identities,1);
       const box=new THREE.Box3().setFromObject(clamp![0]);assert.ok(box.getSize(new THREE.Vector3()).length()>.04);
-      assert.ok(triangles(clamp![0])>100,asset.key+' true threaded/cage construction');
+      assert.ok(triangles(clamp![0])>(form==='pin'?8:form==='core end'?18:100),asset.key+' physical contact geometry');
     }
   }
 });

@@ -1,8 +1,14 @@
 {
-  "revision": 2,
-  "classification": "Original generic training equipment. Physical construction is representative, not manufacturer CAD, a certified product design or a service instruction. The immutable rear bench terminals remain a teaching interface where the real equipment uses flying leads or front-facing installation clamps.",
-  "coordinateContract": "Recipe Y-up geometry, +Z operating front, -Z canonical rear connections. Blender root rotation converts coordinates for modelling/export. All terminal IDs and parent transforms remain unchanged across inspection views.",
+  "revision": 3,
+  "classification": "Original representative training equipment. Each model illustrates an equipment architecture. Construction, circuit ratings and simplified interfaces are identified in the lesson. Product literature documents the features used for comparison.",
+  "coordinateContract": "Recipe Y-up, +Z operating front. Each electrical ID has its own physical cable mouth and outward entry vector. Wall accessories are wired at the rear. DIN protective devices have upper and lower banks, motor boards face upward, and fronts opened for service have connection blocks behind their covers. Source and meter earth connections represent the separate protective path at the installation boundary. The valve flying lead ends in a separate connector strip. Circuit IDs stay fixed when inspecting or moving equipment.",
   "sources": [
+    {"id":"hager-accessory","title":"Hager Ireland WMPS12 wall switch","url":"https://hager.com/ie/catalogue/products/wmps12-10ax-1-gang-2-way-wall-switch","architecture":"Flush mounting, white gloss face, screw fixings, single operating rocker and marked rear switching contacts."},
+    {"id":"mennekes-plug","title":"MENNEKES 400 V five-pole PowerTOP 3821","url":"https://www.mennekes.org/industry/product-details/3821/","architecture":"Five nickel-plated mating pins, marked earth contact at six o’clock, separate screw terminations and cable gland."},
+    {"id":"mennekes-contacts","title":"MENNEKES protective conductor contact and clock positions","url":"https://www.mennekes.org/industry/knowledge/for-electrical-engineers/protective-conductor-contact-clock-position-and-plug-colours/","architecture":"The PE contact is larger. Front views of the complementary plug and socket mirror one another."},
+    {"id":"hager-rcbo","title":"Hager Ireland ADA532D product data","url":"https://assets.hager.com/step-content/P/PDS_160068113001EN/Document/std.lang.all/PDS_ADA532D_3001_en-GB.pdf","architecture":"Top and bottom screw connections, central operating handle, device identification and test button. Actual displayed ratings belong to the current simulated circuit. The bench opens out its lower approach so that it can be reached above the mat."},
+    {"id":"carkit-flat","title":"IE-N05VVH4-U and IE-N05VVH4-R flat Irish cable","url":"https://www.cesco.ie/sites/admin/plugins/elfinder/files/cesco2/pdfs/N05VVH4-U%20N05VVH4-R%20-%20T%26E.pdf","architecture":"Flat common sheath and individually insulated cores including the protective conductor."},
+    {"id":"eland-flex","title":"Eland H05VV-F flexible cable","url":"https://www.elandcables.com/media/524f1w5d/318y-h05vv-f-en-50525-2-11-flexible-cable-datasheet.pdf","architecture":"Round outer sheath, flexible copper cores and individually coloured insulation."},
     {"id":"abb-mcb","title":"ABB miniature circuit breaker cutaway","url":"https://library.e.abb.com/public/ef5f3a6e43c99c288525758500534fe6/1SXU400142M0201.pdf","architecture":"Fixed/moving contacts, bimetal, magnetic solenoid, trip lever, separated arc plates and DIN clip."},
     {"id":"phoenix-clamp","title":"Phoenix Contact screw connection technology","url":"https://www.phoenixcontact.com/en-us/technologies/connection-technologies/screw-connection","architecture":"Current cage, captive pressure plate and threaded actuator protect conductors from screw rotation. Exact tension sleeve design varies by product."},
     {"id":"schneider-contactor","title":"Schneider TeSys Deca contactor data","url":"https://iportal.se.com/Contents/docs/LC1D126B7_DATASHEET.PDF","architecture":"Three main normally-open poles, AC coil and distinct auxiliary contacts. Teaching geometry uses double-break contacts and a laminated magnetic core."},
@@ -22,11 +28,11 @@
   ],
   "familySources": {
     "supply":["phoenix-clamp"], "meter":["phoenix-clamp"], "panel":["phoenix-clamp","siemens-plc"], "bar":["phoenix-clamp"],
-    "protection":["abb-mcb","schneider-spd"], "switch":["mk-accessory"], "socket":["mk-accessory"], "plug":["mk-accessory"], "junction":["mk-accessory","lapp-gland"],
+    "protection":["hager-rcbo","abb-mcb","schneider-spd"], "switch":["hager-accessory","mk-accessory"], "socket":["mk-accessory","mennekes-contacts"], "plug":["mk-accessory","mennekes-plug","mennekes-contacts"], "junction":["mk-accessory","lapp-gland"],
     "lamp":["mk-accessory"], "sensor":["aico-alarm","siemens-plc"], "controller":["resideo-valve","siemens-plc"],
     "heater":["dimplex-storage"], "appliance":["triton-shower","dimplex-storage","grundfos-pump"], "valve":["resideo-valve"],
     "pump":["grundfos-pump","abb-motor"], "fan":["abb-motor"], "motor":["abb-motor"], "contactor":["schneider-contactor"], "overload":["abb-mcb","schneider-contactor"],
     "vfd":["abb-drive"], "plc":["siemens-plc","schneider-contactor"], "inverter":["abb-drive"], "alarm":["aico-alarm"], "charger":["myenergi-ev"],
-    "transformer":["abb-drive"], "cable":["lapp-gland"], "conduit":["lapp-gland"], "instrument":["fluke-instrument"]
+    "transformer":["abb-drive"], "cable":["carkit-flat","eland-flex","lapp-gland"], "conduit":["lapp-gland"], "instrument":["fluke-instrument"]
   }
 }

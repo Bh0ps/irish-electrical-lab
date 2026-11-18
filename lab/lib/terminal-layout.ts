@@ -1,12 +1,16 @@
 import type { ComponentDefinition, ComponentInstance, TerminalDefinition, Vec3 } from './types';
 
-/** The operating face is +Z. Installation terminals belong to the rear (-Z).
- * Dimensions below follow our original fixture housings, not a manufacturer's
- * installation drawing. Stable terminal IDs and electrical groups never change. */
+/** Original workshop models use +Z for the operating face and +Y for up. */
 export function equipmentVariant(component: Pick<ComponentInstance, 'type' | 'label' | 'variant' | 'params'>, definition: ComponentDefinition): string {
   return (component.variant && ['panel','lamp','heater','conduit','cable'].includes(component.type)
     ? `${component.type} ${component.variant}`
     : `${component.type} ${component.variant ?? ''} ${component.label} ${definition.name}`).toLowerCase();
+}
+
+/** The lid or terminal door must be opened to reach these installation contacts. */
+export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'variant'|'label'>): boolean {
+  return ['source','source3','meter','panel','rose','junction','shower','boiler','heatpump','chime','ev','vfd','plc','safetyRelay','driver','dcsupply'].includes(component.type) ||
+    component.type==='heater' && /immersion/i.test(component.variant??component.label);
 }
 
 export function getComponentTerminals(component: Pick<ComponentInstance, 'type' | 'label' | 'variant' | 'params'>, definition: ComponentDefinition): TerminalDefinition[] {
@@ -105,8 +109,90 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
     case 'cooker': bank(supply,.32,-.29,.24,0,'Rear connection box'); break;
     case 'boiler': case 'heatpump': bank(supply,.36,-.325,.24,0,'Supply and demand'); break;
   }
-  // Every future model defaults to a rear bank, never the old front grid.
+  // Unlisted terminals retain their stable connection bank.
   const remaining=ids.filter(id=>!placements.has(id));
   for(let i=0;i<remaining.length;i+=3) bank(remaining.slice(i,i+3),.46+Math.floor(i/3)*.28,-.25,.23,0,'Connections');
-  return definition.terminals.map(t=>({...t,...placements.get(t.id)!,scale:terminalScale,anchor:[...placements.get(t.id)!.anchor] as Vec3}));
+  const make = (t: TerminalDefinition, anchor: Vec3, entryDirection: Vec3, scale=terminalScale) => {
+    const label = (component.type==='switch' && t.id==='OUT')?'L1':
+      component.type==='switch2' && t.id.startsWith('T')?t.id.replace('T','L'):
+      component.type==='transformer' && ['+','-'].includes(t.id)?(t.id==='+'?'SEC 1':'SEC 2'):
+      component.type==='led'?(t.id==='L'?'+':t.id==='N'?'−':t.label):
+      component.type==='chime'?(t.id==='L'?'1':t.id==='N'?'2':t.label):t.label;
+    return {...t,label,group:placements.get(t.id)!.group,scale,anchor,entryDirection};
+  };
+  return definition.terminals.map(t=>{
+    const {anchor:[x,y,z],group}=placements.get(t.id)!;
+    const center = (row: string[], spacing: number) => (row.indexOf(t.id)-(row.length-1)/2)*spacing;
+    const din = (upper: boolean, width=x) => make(t,[width,(upper?1.23:.235)*sy,.23*sz],
+      upper?[0,.8,.6]:[0,-.35,Math.sqrt(1-.35**2)]);
+    const front = (depth:number,scale=terminalScale) => make(t,[x,y,depth*sz],[0,0,1],scale);
+    switch(component.type){
+      case 'mcb':case 'mcb3':case 'rcbo':case 'rcd':case 'rcd3':case 'fuse':
+        return din(group==='Supply');
+      case 'spd': return din(t.id!=='PE',t.id==='PE'?0:(t.id==='L'?-.13:.13)*sx);
+      case 'plug':
+        if(['L','N','PE'].includes(t.id)){
+          // Front view of the protruding pins: earth above the two sleeved pins.
+          const phase=t.id==='L',earth=t.id==='PE';
+          return make(t,[(earth?0:phase?-.2:.2)*sx,(earth?.91:.64)*sy,(earth?.523:.439)*sz],[0,0,1],.58);
+        }
+        break;
+      case 'plug3':
+        if(['PE','L1IN','L2IN','L3IN','NIN'].includes(t.id)){
+          const angle=Math.PI-['PE','L1IN','L2IN','L3IN','NIN'].indexOf(t.id)*Math.PI*2/5;
+          return make(t,[Math.sin(angle)*.14*sx,(.75+Math.cos(angle)*.14)*sy,.494*sz],[0,0,1],.42);
+        }
+        break;
+      case 'contactor':case 'overload':case 'relay':
+        if(group==='Power input'||group==='Power output')return din(group==='Power input');
+        if(group==='Coil' && component.type!=='contactor')return din(true);
+        if(component.type==='relay')return din(false);
+        // Auxiliary and coil connections form a shallow front extension of the contact block.
+        return front(.39,.85);
+      case 'motor':case 'motor3':case 'pump':{
+        if(component.type==='motor' && /shutter|compressor|gate|conveyor/.test(variant))return front(.39);
+        const row=component.type==='motor3'?(t.id==='PE'?['PE']:group==='Winding starts'?['U1','V1','W1']:['U2','V2','W2']):ids;
+        const boardX=t.id==='PE'&&component.type==='motor3'?-.41*sx:((component.type==='motor3'?-.02:-.07)*sx+center(row,Math.max(.15,.205*sx)));
+        return make(t,[boardX,1.19*sy,group==='Winding starts'?-.105*sz:group==='Winding ends'?.115*sz:0],[0,1,0],.83);
+      }
+      case 'meter':{
+        if(t.id==='PE'||t.id==='PEOUT')return make(t,[.54*sx,(t.id==='PE'?.47:.27)*sy,.218*sz],[0,0,1],.79);
+        return make(t,[center(['L','LOUT','N','NOUT'],.18*sx),.28*sy,.282*sz],[0,0,1],.79);
+      }
+      case 'source':case 'source3':return front(.284);
+      case 'panel':return front(.175);
+      case 'rose':case 'junction':return front(.125);
+      case 'terminal':case 'neutralbar':case 'earthbar':return front(.135);
+      case 'vfd':case 'plc':case 'safetyRelay':return front(.31);
+      case 'shower':case 'chime':return front(.18);
+      case 'ev':return front(.272);
+      case 'boiler':case 'heatpump':return make(t,[x,.235*sy,.263*sz],[0,0,1]);
+      case 'transformer':case 'dcsupply':case 'driver':return front(.21);
+      case 'heater':
+        if(/immersion/.test(variant))return make(t,[x,1.32*sy,t.id==='PE'?.21*sz:-.08*sz],[0,1,0],.85);
+        break;
+      case 'valve':case 'valve3':{
+        // The flying flex lands on a separate row of accessible connection points.
+        return make(t,[center(ids,.17),.205*sy,.49*sz],[0,0,1],.78);
+      }
+      case 'cable':{
+        const side=t.id==='IN'?-1:1;
+        return make(t,[side*.67*sx,.60*sy,0],[side,0,0],.7);
+      }
+    }
+    return make(t,[x,y,z],[0,0,-1]);
+  });
+}
+
+/** Local direction from the equipment towards a clear inspection camera. */
+export function terminalInspectionDirection(component: Pick<ComponentInstance, 'type'|'label'|'variant'|'params'>, definition: ComponentDefinition, terminalId?: string): Vec3 {
+  const terminals=getComponentTerminals(component,definition);
+  const selected=terminalId ? terminals.filter(t=>t.id===terminalId) : terminals;
+  const sum:Vec3=[0,0,0];
+  for(const t of selected)for(let axis=0;axis<3;axis++)sum[axis]+=(t.entryDirection??[0,0,-1])[axis];
+  if(Math.hypot(...sum)<.1)return [.3,.35,.89];
+  // Look slightly down across front/rear inscriptions and across an upward-facing motor board.
+  const n=Math.hypot(...sum);const view:Vec3=[sum[0]/n+.13,Math.max(.23,sum[1]/n),sum[2]/n];
+  if(Math.abs(view[2])<.18)view[2]=.25;
+  const length=Math.hypot(...view);return view.map(v=>v/length) as Vec3;
 }

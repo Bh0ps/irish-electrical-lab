@@ -8,8 +8,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createGalleryInventory } from '../components/lab/ModelGallery';
 import { COMPONENTS } from '../lib/components';
 import { equipmentAsset } from '../lib/equipment-assets';
-import { getComponentTerminals } from '../lib/terminal-layout';
-import { animateBlenderModel,prepareBlenderModel,presentBlenderModel } from '../lib/blender-model';
+import { enclosedTerminals,getComponentTerminals,terminalInspectionDirection } from '../lib/terminal-layout';
+import { animateBlenderModel,prepareBlenderModel,presentBlenderModel,semanticOwner } from '../lib/blender-model';
 import type { EquipmentView } from '../lib/Equipment';
 import type { ComponentInstance,DeviceState } from '../lib/types';
 
@@ -28,7 +28,17 @@ test('all 87 authored variants have original Blender sources and full/distance o
     const full=await load(asset.url),low=await load(asset.lowUrl);const expected=getComponentTerminals(entry.component,definition);
     for(const scene of [full,low]){
       const found=terminals(scene);assert.equal(found.size,expected.length,entry.key+' terminal count');
-      for(const terminal of expected){const matches=found.get(terminal.id);assert.equal(matches?.length,1,entry.key+'.'+terminal.id+' exactly once');const position=matches![0].getWorldPosition(new THREE.Vector3());assert.ok(position.distanceTo(new THREE.Vector3(...terminal.anchor))<1e-5,entry.key+'.'+terminal.id+' canonical rear port');assert.ok(terminal.anchor[2]<0,entry.key+' rear wiring');}
+      for(const terminal of expected){
+        const matches=found.get(terminal.id);assert.equal(matches?.length,1,entry.key+'.'+terminal.id+' exactly once');
+        const port=matches![0], position=port.getWorldPosition(new THREE.Vector3());
+        assert.ok(position.distanceTo(new THREE.Vector3(...terminal.anchor))<1e-5,entry.key+'.'+terminal.id+' cable entry position');
+        assert.equal(port.userData.fieldMarking,terminal.label);
+        const normal=new THREE.Vector3().fromArray(terminal.entryDirection!);
+        assert.ok(normal.distanceTo(new THREE.Vector3().fromArray(port.userData.entryDirection))<1e-6);
+        // A local Blender Z-facing contact is a +Y-facing bore in the GLB.
+        const axis=new THREE.Vector3(0,1,0).transformDirection(port.matrixWorld);
+        assert.ok(axis.distanceTo(normal)<1e-5,entry.key+'.'+terminal.id+' physical contact faces its wire');
+      }
     }
     assert.ok(asset.lowTriangles<asset.triangles*.65,entry.key+' distance detail reduction');total+=asset.triangles;lowTotal+=asset.lowTriangles;
     reports.push({key:entry.key,source:true,full:asset.triangles,distance:asset.lowTriangles,terminalCount:expected.length,geometryDigest:geometryDigest(full)});
@@ -55,6 +65,35 @@ test('authored forms differ in actual geometry or functional materials, rather t
   const groups=new Map<string,{key:string;digest:string}[]>();
   for(const entry of inventory){const asset=equipmentAsset(entry.component,COMPONENTS[entry.component.type])!;groups.set(entry.component.type,[...(groups.get(entry.component.type)??[]),{key:entry.key,digest:geometryDigest(await load(asset.url),true)}]);}
   for(const variants of groups.values())if(variants.length>1)assert.equal(new Set(variants.map(v=>v.digest)).size,variants.length,variants.map(v=>v.key).join(', '));
+});
+
+test('closed service compartments conceal installation hardware and opened compartments expose each physical contact to the picking ray',async()=>{
+  for(const {component} of inventory.filter(entry=>enclosedTerminals(entry.component))){
+    const definition=COMPONENTS[component.type],asset=equipmentAsset(component,definition)!;
+    for(const url of [asset.url,asset.lowUrl]){
+      const model=prepareBlenderModel(await load(url));
+      presentBlenderModel(model,'normal',component,state);
+      assert.ok(model.chamber,url+' declares a closed service compartment');
+      const hardware=model.meshes.filter(m=>semanticOwner(m.node).terminal);
+      assert.ok(hardware.length>0&&hardware.every(m=>!m.node.visible),url+' closed terminal bank');
+      presentBlenderModel(model,'open',component,state);
+      const visible=model.meshes.filter(m=>m.node.visible).map(m=>m.node);
+      for(const t of getComponentTerminals(component,definition)){
+        const look=new THREE.Vector3(...terminalInspectionDirection(component,definition,t.id)),anchor=new THREE.Vector3(...t.anchor);
+        const up=new THREE.Vector3(0,1,0);
+        if(Math.abs(up.dot(look))>.8)up.set(0,0,1);
+        // A clamp can be selected on its mouth or its screw, including where
+        // the exact centre of the bore passes through empty space.
+        const reachable=[0,.018,.039,-.015].some(offset=>{
+          const origin=anchor.clone().addScaledVector(up,offset).addScaledVector(look,6);
+          const hit=new THREE.Raycaster(origin,look.clone().negate()).intersectObjects(visible,false)[0];
+          return hit&&semanticOwner(hit.object).terminal===t.id;
+        });
+        assert.ok(reachable,url+' open access to '+t.id);
+      }
+      model.owned.forEach(material=>material.dispose());
+    }
+  }
 });
 
 test('virtual instrument selectors and probe assemblies have distinct selectable geometry',async()=>{

@@ -1,4 +1,5 @@
-import type { CircuitDocument, ComponentInstance, Endpoint, FaultSetting, Parameters, TerminalRole, Vec3, Wire } from './types.ts';
+import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint, FaultSetting, Parameters, TerminalRole, Vec3, Wire } from './types.ts';
+import { CABLE_CORES, markedRole } from './cables.ts';
 import { COMPONENTS } from './components.ts';
 export interface Progress { lessons: number[]; builds: number[]; faults: number[]; scores: Record<string,number> }
 export const EMPTY_PROGRESS: Progress = { lessons:[], builds:[], faults:[], scores:{} };
@@ -106,6 +107,15 @@ export function validateCircuit(value:unknown):CircuitDocument {
     if(!owner||!COMPONENTS[owner.type].terminals.some(t=>t.id===terminal))return invalid(path,'references a missing component or terminal.');
     return {component,terminal};
   };
+  const runIds=new Set<string>(), occupiedCores=new Set<string>();
+  const cableRuns: CableRun[] | undefined = d.cableRuns===undefined ? undefined : array(d.cableRuns,'cableRuns',300).map((value,index)=>{
+    const path=`cableRuns[${index}]`, record=object(value,path), id=identity(record.id,path+'.id');
+    if(runIds.has(id))return invalid(path+'.id','duplicates another cable.');runIds.add(id);
+    if(record.kind!=='flat' && record.kind!=='flex')return invalid(path+'.kind','must be flat or flex.');
+    const from=endpoint(record.from,path+'.from'),to=endpoint(record.to,path+'.to');
+    if(from.component===to.component)return invalid(path,'needs two different equipment entries.');
+    return {id,kind:record.kind,from,to};
+  });
   const wires:Wire[]=[],wireIds=new Set<string>();
   wireValues.forEach((value,index)=>{
     const path=`wires[${index}]`,w=object(value,path),id=identity(w.id,`${path}.id`);
@@ -114,7 +124,18 @@ export function validateCircuit(value:unknown):CircuitDocument {
     if(from.component===to.component&&from.terminal===to.terminal)return invalid(path,'cannot connect a terminal to itself.');
     if(typeof w.role!=='string'||!ROLES.has(w.role as TerminalRole))return invalid(`${path}.role`,'does not name a supported conductor role.');
     const resistance=finite(w.resistance,`${path}.resistance`,Number.MIN_VALUE,1e9),bends=array(w.bends,`${path}.bends`,IMPORT_LIMITS.bendsPerWire).map((bend,i)=>vector(bend,`${path}.bends[${i}]`));
-    wires.push({id,from,to,role:w.role as TerminalRole,resistance,bends});
+    const wire: Wire = {id,from,to,role:w.role as TerminalRole,resistance,bends};
+    if(w.cable!==undefined){
+      const c=object(w.cable,path+'.cable'), runId=identity(c.runId,path+'.cable.runId');
+      if(!runIds.has(runId))return invalid(path+'.cable.runId','references a missing cable.');
+      if(!CABLE_CORES.includes(c.core as CableCore))return invalid(path+'.cable.core','does not identify a supported core.');
+      const core=c.core as CableCore,key=runId+'\u0000'+core;
+      if(markedRole(core,wire.role)!==wire.role)return invalid(path+'.role','does not match the marked cable core.');
+      if(occupiedCores.has(key))return invalid(path+'.cable.core','has already been terminated in this cable.');
+      occupiedCores.add(key);
+      wire.cable={runId,core,reversed:boolean(c.reversed,path+'.cable.reversed')};
+    }
+    wires.push(wire);
   });
   const faults:FaultSetting[]=faultValues.map((value,index)=>{
     const path=`faults[${index}]`,f=object(value,path),type=text(f.type,`${path}.type`,128);
@@ -127,6 +148,7 @@ export function validateCircuit(value:unknown):CircuitDocument {
     return fault;
   });
   const document:CircuitDocument={version:1,id,name,revision,supply:{enabled,phase,voltage,frequency,sourceResistance},components,wires,faults};
+  if(cableRuns!==undefined)document.cableRuns=cableRuns;
   if(d.lessonId!==undefined)document.lessonId=integer(d.lessonId,'lessonId',1,64);
   return document;
 }
