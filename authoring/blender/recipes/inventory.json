@@ -19424,5 +19424,3363 @@
     "terminals": [],
     "meshNodes": 54,
     "vertices": 2344
+  },
+  {
+    "key": "gammaboard_default",
+    "file": "gammaboard_default.json",
+    "galleryKey": "gammaboard:default",
+    "name": "Two-row domestic consumer unit",
+    "component": {
+      "id": "gallery-gammaboard",
+      "type": "gammaboard",
+      "label": "Two-row domestic consumer unit",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "doorOpen": true,
+        "frontOff": false
+      }
+    },
+    "definition": {
+      "type": "gammaboard",
+      "name": "Two-row domestic consumer unit",
+      "group": "Distribution",
+      "model": "modular-board",
+      "description": "An insulated surface-mounted enclosure with two rows of thirteen module positions. Open the door to operate installed devices. Remove the front to inspect their wiring.",
+      "terminals": [],
+      "defaults": {
+        "doorOpen": true,
+        "frontOff": false
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "rail",
+          "name": "Device rail",
+          "purpose": "A steel top-hat rail holds the devices in position. Their electrical connections follow the conductors and bars shown."
+        },
+        {
+          "id": "door",
+          "name": "Hinged outer door",
+          "purpose": "Open the door to reach the breaker handles with the dead front still installed."
+        },
+        {
+          "id": "shield",
+          "name": "Removable front",
+          "purpose": "The front shields the terminal wiring. Its windows leave the installed breakers accessible."
+        }
+      ],
+      "size": [
+        5,
+        7.5,
+        2.06
+      ]
+    },
+    "terminals": [],
+    "meshNodes": 172,
+    "vertices": 10988
+  },
+  {
+    "key": "invictaboard_default",
+    "file": "invictaboard_default.json",
+    "galleryKey": "invictaboard:default",
+    "name": "Three-phase distribution board",
+    "component": {
+      "id": "gallery-invictaboard",
+      "type": "invictaboard",
+      "label": "Three-phase distribution board",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "doorOpen": true,
+        "frontOff": false
+      }
+    },
+    "definition": {
+      "type": "invictaboard",
+      "name": "Three-phase distribution board",
+      "group": "Distribution",
+      "model": "modular-board",
+      "description": "A steel four-way TP&N enclosure with a separate incomer position and two facing banks of outgoing protection. Its removable front shields the wiring. The PE stud is the enclosure bond.",
+      "terminals": [
+        {
+          "id": "PE",
+          "label": "PE",
+          "role": "PE",
+          "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+          "anchor": [
+            3.7200000000000006,
+            8.5,
+            -0.954
+          ],
+          "group": "Connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "defaults": {
+        "doorOpen": true,
+        "frontOff": false
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "rail",
+          "name": "Device rail",
+          "purpose": "A steel top-hat rail holds the devices in position. Their electrical connections follow the conductors and bars shown."
+        },
+        {
+          "id": "door",
+          "name": "Hinged outer door",
+          "purpose": "Open the door to reach the breaker handles with the dead front still installed."
+        },
+        {
+          "id": "shield",
+          "name": "Removable front",
+          "purpose": "The front shields the terminal wiring. Its windows leave the installed breakers accessible."
+        }
+      ],
+      "size": [
+        9.3,
+        10,
+        2.65
+      ]
+    },
+    "terminals": [
+      {
+        "id": "PE",
+        "label": "PE",
+        "role": "PE",
+        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "anchor": [
+          3.7200000000000006,
+          8.5,
+          -0.954
+        ],
+        "group": "Connections",
+        "scale": 1,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "meshNodes": 185,
+    "vertices": 16880
+  },
+  {
+    "key": "forktester_default",
+    "file": "forktester_default.json",
+    "galleryKey": "forktester:default",
+    "name": "Open-fork tester · T6-600 study model",
+    "component": {
+      "id": "gallery-forktester",
+      "type": "forktester",
+      "label": "Open-fork tester · T6-600 study model",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    "definition": {
+      "type": "forktester",
+      "name": "Open-fork tester · T6-600 study model",
+      "group": "Instruments",
+      "model": "instrument",
+      "description": "Compare two probe points or put the open fork around one insulated AC conductor.",
+      "terminals": [],
+      "defaults": {},
+      "parts": [
+        {
+          "id": "body",
+          "name": "Insulated grip and finger guard",
+          "purpose": "The raised guard separates the hand grip from the open fork."
+        },
+        {
+          "id": "sensing",
+          "name": "Open fork",
+          "purpose": "Seat one insulated core at the bottom of the fork to measure its AC current or its earth-referenced AC voltage."
+        },
+        {
+          "id": "display",
+          "name": "Single reading display",
+          "purpose": "The display shows the chosen reading and its unit. HOLD freezes the displayed reading."
+        },
+        {
+          "id": "actuator",
+          "name": "Function dial",
+          "purpose": "Turn between Off, FieldSense, two-probe voltage, and resistance with continuity."
+        },
+        {
+          "id": "mode",
+          "name": "Yellow function button",
+          "purpose": "In FieldSense, press to switch the display between amps and volts."
+        },
+        {
+          "id": "hold",
+          "name": "HOLD button",
+          "purpose": "Freeze the current reading on screen. Release HOLD to record a new observation."
+        },
+        {
+          "id": "ground",
+          "name": "Rear reference contact",
+          "purpose": "With the black probe docked, the bench can model an earth reference through this contact. A black lead on a bonded earth point is the other reference."
+        },
+        {
+          "id": "probes",
+          "name": "Attached probes and storage dock",
+          "purpose": "The red and black probes compare two electrical points. The black lead also supplies an explicit earth reference in fork-voltage mode."
+        }
+      ],
+      "size": [
+        0.51,
+        2,
+        0.46
+      ]
+    },
+    "terminals": [],
+    "meshNodes": 69,
+    "vertices": 20310
+  },
+  {
+    "key": "stripper_default",
+    "file": "stripper_default.json",
+    "galleryKey": "stripper:default",
+    "name": "Wire stripper",
+    "component": {
+      "id": "gallery-stripper",
+      "type": "stripper",
+      "label": "Wire stripper",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    "definition": {
+      "type": "stripper",
+      "name": "Wire stripper",
+      "group": "Instruments",
+      "model": "instrument",
+      "description": "Remove insulation to the strip length marked for the chosen termination.",
+      "terminals": [],
+      "defaults": {},
+      "parts": [
+        {
+          "id": "body",
+          "name": "Insulated handles",
+          "purpose": "The paired handles move the cutting jaws."
+        },
+        {
+          "id": "actuator",
+          "name": "Stripping jaws",
+          "purpose": "The cutting edge removes the marked length of insulation."
+        },
+        {
+          "id": "mechanism",
+          "name": "Pivot and return spring",
+          "purpose": "The pivot guides the blades and the spring opens the handles after a cut."
+        }
+      ],
+      "size": [
+        0.62,
+        1.21,
+        0.22
+      ]
+    },
+    "terminals": [],
+    "meshNodes": 40,
+    "vertices": 7245
+  },
+  {
+    "key": "crimper_default",
+    "file": "crimper_default.json",
+    "galleryKey": "crimper:default",
+    "name": "Ferrule crimper",
+    "component": {
+      "id": "gallery-crimper",
+      "type": "crimper",
+      "label": "Ferrule crimper",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    "definition": {
+      "type": "crimper",
+      "name": "Ferrule crimper",
+      "group": "Instruments",
+      "model": "instrument",
+      "description": "Compress a correctly sized ferrule around a prepared stranded conductor.",
+      "terminals": [],
+      "defaults": {},
+      "parts": [
+        {
+          "id": "body",
+          "name": "Crimper grips",
+          "purpose": "Closing the grips drives the crimping die."
+        },
+        {
+          "id": "actuator",
+          "name": "Crimping dies",
+          "purpose": "The dies compress the metal sleeve around the prepared conductor."
+        },
+        {
+          "id": "mechanism",
+          "name": "Ratchet and pivot",
+          "purpose": "A ratcheting mechanism controls the crimp stroke. The sample checks ferrule size."
+        }
+      ],
+      "size": [
+        0.62,
+        1.21,
+        0.22
+      ]
+    },
+    "terminals": [],
+    "meshNodes": 47,
+    "vertices": 8712
+  },
+  {
+    "key": "torquedriver_default",
+    "file": "torquedriver_default.json",
+    "galleryKey": "torquedriver:default",
+    "name": "Adjustable torque screwdriver",
+    "component": {
+      "id": "gallery-torquedriver",
+      "type": "torquedriver",
+      "label": "Adjustable torque screwdriver",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    "definition": {
+      "type": "torquedriver",
+      "name": "Adjustable torque screwdriver",
+      "group": "Instruments",
+      "model": "instrument",
+      "description": "Tighten a screw terminal to the value specified for the selected product.",
+      "terminals": [],
+      "defaults": {},
+      "parts": [
+        {
+          "id": "body",
+          "name": "Insulated handle",
+          "purpose": "The driver transmits torque from the grip to the bit."
+        },
+        {
+          "id": "actuator",
+          "name": "Torque adjustment",
+          "purpose": "Set the torque specified for the selected terminal before using the driver."
+        },
+        {
+          "id": "mechanism",
+          "name": "Insulated shaft and steel tip",
+          "purpose": "The tip engages the terminal screw. The tool releases at its selected torque."
+        }
+      ],
+      "size": [
+        0.24,
+        1.24,
+        0.24
+      ]
+    },
+    "terminals": [],
+    "meshNodes": 14,
+    "vertices": 6300
+  },
+  {
+    "key": "pwmcontrol_single-channel",
+    "file": "pwmcontrol_single-channel.json",
+    "galleryKey": "pwmcontrol:single-channel",
+    "name": "Low-voltage pulse controller",
+    "component": {
+      "id": "gallery-pwmcontrol",
+      "type": "pwmcontrol",
+      "label": "Low-voltage pulse controller",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "level": 0.5,
+        "mix": 0.5,
+        "on": true
+      }
+    },
+    "definition": {
+      "type": "pwmcontrol",
+      "name": "Low-voltage pulse controller",
+      "group": "Lighting",
+      "model": "controller",
+      "description": "Changes strip brightness by switching a DC return for a fraction of each cycle.",
+      "terminals": [
+        {
+          "id": "+",
+          "label": "+",
+          "role": "DC+",
+          "purpose": "Shared positive DC connection.",
+          "anchor": [
+            -0.5519999999999999,
+            0.372,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "-",
+          "label": "-",
+          "role": "DC-",
+          "purpose": "DC supply return for the pulse controller.",
+          "anchor": [
+            -0.5519999999999999,
+            0.198,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "W",
+          "label": "W",
+          "role": "control",
+          "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+          "anchor": [
+            0.5519999999999999,
+            0.372,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "C",
+          "label": "C",
+          "role": "control",
+          "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+          "anchor": [
+            0.5519999999999999,
+            0.198,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "defaults": {
+        "level": 0.5,
+        "mix": 0.5,
+        "on": true
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        }
+      ],
+      "size": [
+        1.15,
+        0.6,
+        0.55
+      ],
+      "abstraction": "Duty-weighted steady states model average power and current. Switching frequency, edge shape and EMC are outside the model.",
+      "variants": [
+        {
+          "id": "single-channel",
+          "name": "Single-channel PWM"
+        },
+        {
+          "id": "tunable-white",
+          "name": "Warm / cool controller"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Shared positive DC connection.",
+        "anchor": [
+          -0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "DC supply return for the pulse controller.",
+        "anchor": [
+          -0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "W",
+        "label": "W",
+        "role": "control",
+        "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "C",
+        "label": "C",
+        "role": "control",
+        "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "meshNodes": 80,
+    "vertices": 6384
+  },
+  {
+    "key": "cctstrip_default",
+    "file": "cctstrip_default.json",
+    "galleryKey": "cctstrip:default",
+    "name": "Warm / cool tape",
+    "component": {
+      "id": "gallery-cctstrip",
+      "type": "cctstrip",
+      "label": "Warm / cool tape",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "ratedVoltage": 24,
+        "channelWatts": 12
+      }
+    },
+    "definition": {
+      "type": "cctstrip",
+      "name": "Warm / cool tape",
+      "group": "Lighting",
+      "model": "lamp",
+      "description": "Two independently switched LED channels share one positive pad.",
+      "terminals": [
+        {
+          "id": "+",
+          "label": "+",
+          "role": "DC+",
+          "purpose": "Shared positive DC connection.",
+          "anchor": [
+            -0.903,
+            0.5040000000000001,
+            0.027200000000000002
+          ],
+          "group": "Connections",
+          "scale": 0.4,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "W",
+          "label": "W",
+          "role": "control",
+          "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+          "anchor": [
+            -0.903,
+            0.387,
+            0.027200000000000002
+          ],
+          "group": "Connections",
+          "scale": 0.4,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "C",
+          "label": "C",
+          "role": "control",
+          "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+          "anchor": [
+            -0.903,
+            0.27,
+            0.027200000000000002
+          ],
+          "group": "Connections",
+          "scale": 0.4,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "defaults": {
+        "ratedVoltage": 24,
+        "channelWatts": 12
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "emitter",
+          "name": "Light source",
+          "purpose": "The bulb, LED module or emergency-light emitter converts electrical power into illumination. Visible brightness follows the actual emitting-load power relative to its rating. The display is an illustrative brightness scale; heat, measured optical output and colour rendering are outside the electrical model."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        }
+      ],
+      "size": [
+        2.1,
+        0.9,
+        0.32
+      ],
+      "abstraction": "The resistive operating-point model estimates channel power and relative brightness. It does not predict colour temperature or photometry."
+    },
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Shared positive DC connection.",
+        "anchor": [
+          -0.903,
+          0.5040000000000001,
+          0.027200000000000002
+        ],
+        "group": "Connections",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "W",
+        "label": "W",
+        "role": "control",
+        "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          -0.903,
+          0.387,
+          0.027200000000000002
+        ],
+        "group": "Connections",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "C",
+        "label": "C",
+        "role": "control",
+        "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          -0.903,
+          0.27,
+          0.027200000000000002
+        ],
+        "group": "Connections",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "meshNodes": 49,
+    "vertices": 2044
+  },
+  {
+    "key": "callchime_default",
+    "file": "callchime_default.json",
+    "galleryKey": "callchime:default",
+    "name": "Two-input AC door chime",
+    "component": {
+      "id": "gallery-callchime",
+      "type": "callchime",
+      "label": "Two-input AC door chime",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "ratedVoltage": 12
+      }
+    },
+    "definition": {
+      "type": "callchime",
+      "name": "Two-input AC door chime",
+      "group": "Safety",
+      "model": "alarm",
+      "description": "Separate front and rear inputs select a distinct call indication when the AC supply is available.",
+      "terminals": [
+        {
+          "id": "AC1",
+          "label": "AC1",
+          "role": "output",
+          "purpose": "One side of the continuously supplied AC winding; compare AC1 with AC2.",
+          "anchor": [
+            -0.31350000000000006,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "AC2",
+          "label": "AC2",
+          "role": "output",
+          "purpose": "One side of the continuously supplied AC winding; compare AC1 with AC2.",
+          "anchor": [
+            -0.10450000000000001,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "FRONT",
+          "label": "FRONT",
+          "role": "control",
+          "purpose": "Switched call input from the corresponding push, referenced to AC2.",
+          "anchor": [
+            0.10450000000000001,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "REAR",
+          "label": "REAR",
+          "role": "control",
+          "purpose": "Switched call input from the corresponding push, referenced to AC2.",
+          "anchor": [
+            0.31350000000000006,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "defaults": {
+        "ratedVoltage": 12
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+        }
+      ],
+      "size": [
+        1.1,
+        0.95,
+        0.6
+      ]
+    },
+    "terminals": [
+      {
+        "id": "AC1",
+        "label": "AC1",
+        "role": "output",
+        "purpose": "One side of the continuously supplied AC winding; compare AC1 with AC2.",
+        "anchor": [
+          -0.31350000000000006,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "AC2",
+        "label": "AC2",
+        "role": "output",
+        "purpose": "One side of the continuously supplied AC winding; compare AC1 with AC2.",
+        "anchor": [
+          -0.10450000000000001,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "FRONT",
+        "label": "FRONT",
+        "role": "control",
+        "purpose": "Switched call input from the corresponding push, referenced to AC2.",
+        "anchor": [
+          0.10450000000000001,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "REAR",
+        "label": "REAR",
+        "role": "control",
+        "purpose": "Switched call input from the corresponding push, referenced to AC2.",
+        "anchor": [
+          0.31350000000000006,
+          0.19949999999999998,
+          -0.056999999999999995
+        ],
+        "group": "Connections",
+        "scale": 0.68,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "meshNodes": 55,
+    "vertices": 3820
+  },
+  {
+    "key": "floatvalve_default",
+    "file": "floatvalve_default.json",
+    "galleryKey": "floatvalve:default",
+    "name": "Three-point valve actuator",
+    "component": {
+      "id": "gallery-floatvalve",
+      "type": "floatvalve",
+      "label": "Three-point valve actuator",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "ratedVoltage": 24,
+        "travel": 4
+      }
+    },
+    "definition": {
+      "type": "floatvalve",
+      "name": "Three-point valve actuator",
+      "group": "Heating",
+      "model": "valve",
+      "description": "Apply a command to OPEN or CLOSE against COM. Removing both commands holds the valve position.",
+      "terminals": [
+        {
+          "id": "COM",
+          "label": "COM",
+          "role": "DC-",
+          "purpose": "Common return for both direction inputs.",
+          "anchor": [
+            -0.207,
+            0.5750000000000001,
+            -0.248
+          ],
+          "group": "Connections",
+          "scale": 0.74,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "OPEN",
+          "label": "OPEN",
+          "role": "control",
+          "purpose": "Apply the declared supply between OPEN and COM to request travel in this direction.",
+          "anchor": [
+            0,
+            0.5750000000000001,
+            -0.248
+          ],
+          "group": "Connections",
+          "scale": 0.74,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "CLOSE",
+          "label": "CLOSE",
+          "role": "control",
+          "purpose": "Apply the declared supply between CLOSE and COM to request travel in this direction.",
+          "anchor": [
+            0.207,
+            0.5750000000000001,
+            -0.248
+          ],
+          "group": "Connections",
+          "scale": 0.74,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "ratedVoltage": 24,
+        "travel": 4
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+        },
+        {
+          "id": "mechanism",
+          "name": "mechanism",
+          "purpose": "Selectable functional part."
+        }
+      ],
+      "size": [
+        1.15,
+        1.25,
+        0.8
+      ],
+      "abstraction": "Travel time is shortened for practice. Conflicting commands inhibit movement."
+    },
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "DC-",
+        "purpose": "Common return for both direction inputs.",
+        "anchor": [
+          -0.207,
+          0.5750000000000001,
+          -0.248
+        ],
+        "group": "Connections",
+        "scale": 0.74,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "OPEN",
+        "label": "OPEN",
+        "role": "control",
+        "purpose": "Apply the declared supply between OPEN and COM to request travel in this direction.",
+        "anchor": [
+          0,
+          0.5750000000000001,
+          -0.248
+        ],
+        "group": "Connections",
+        "scale": 0.74,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "CLOSE",
+        "label": "CLOSE",
+        "role": "control",
+        "purpose": "Apply the declared supply between CLOSE and COM to request travel in this direction.",
+        "anchor": [
+          0.207,
+          0.5750000000000001,
+          -0.248
+        ],
+        "group": "Connections",
+        "scale": 0.74,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 37,
+    "vertices": 3336
+  },
+  {
+    "key": "proximity_default",
+    "file": "proximity_default.json",
+    "galleryKey": "proximity:default",
+    "name": "Three-wire PNP proximity sensor",
+    "component": {
+      "id": "gallery-proximity",
+      "type": "proximity",
+      "label": "Three-wire PNP proximity sensor",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "ratedVoltage": 24,
+        "minVoltage": 10,
+        "maxVoltage": 30,
+        "active": false
+      }
+    },
+    "definition": {
+      "type": "proximity",
+      "name": "Three-wire PNP proximity sensor",
+      "group": "Controls",
+      "model": "sensor",
+      "description": "A powered DC sensor sources current on its output when the target is near.",
+      "terminals": [
+        {
+          "id": "+",
+          "label": "+",
+          "role": "DC+",
+          "purpose": "Brown lead. Positive DC powers the sensing electronics.",
+          "anchor": [
+            -0.1184,
+            0.09899999999999999,
+            0.033299999999999996
+          ],
+          "group": "Connections",
+          "scale": 0.44,
+          "entryDirection": [
+            0,
+            -0.4500114754389374,
+            0.8930227723710469
+          ]
+        },
+        {
+          "id": "OUT",
+          "label": "OUT",
+          "role": "control",
+          "purpose": "Black PNP output. With power and a target present it supplies the load from positive.",
+          "anchor": [
+            0,
+            0.09899999999999999,
+            0.033299999999999996
+          ],
+          "group": "Connections",
+          "scale": 0.44,
+          "entryDirection": [
+            0,
+            -0.4500114754389374,
+            0.8930227723710469
+          ]
+        },
+        {
+          "id": "-",
+          "label": "-",
+          "role": "DC-",
+          "purpose": "Blue lead. Return to the negative DC supply terminal.",
+          "anchor": [
+            0.1184,
+            0.09899999999999999,
+            0.033299999999999996
+          ],
+          "group": "Connections",
+          "scale": 0.44,
+          "entryDirection": [
+            0,
+            -0.4500114754389374,
+            0.8930227723710469
+          ]
+        }
+      ],
+      "defaults": {
+        "ratedVoltage": 24,
+        "minVoltage": 10,
+        "maxVoltage": 30,
+        "active": false
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "sensing",
+          "name": "Sensing element",
+          "purpose": "The sensor converts an environmental condition or measured current into a control decision. Setpoints and input values can be changed in the inspector."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        }
+      ],
+      "size": [
+        0.74,
+        1.65,
+        0.74
+      ],
+      "abstraction": "Normally open PNP operating model. Detection distance and switching transients are outside the model."
+    },
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Brown lead. Positive DC powers the sensing electronics.",
+        "anchor": [
+          -0.1184,
+          0.09899999999999999,
+          0.033299999999999996
+        ],
+        "group": "Connections",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          -0.4500114754389374,
+          0.8930227723710469
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "OUT",
+        "role": "control",
+        "purpose": "Black PNP output. With power and a target present it supplies the load from positive.",
+        "anchor": [
+          0,
+          0.09899999999999999,
+          0.033299999999999996
+        ],
+        "group": "Connections",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          -0.4500114754389374,
+          0.8930227723710469
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "Blue lead. Return to the negative DC supply terminal.",
+        "anchor": [
+          0.1184,
+          0.09899999999999999,
+          0.033299999999999996
+        ],
+        "group": "Connections",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          -0.4500114754389374,
+          0.8930227723710469
+        ]
+      }
+    ],
+    "meshNodes": 33,
+    "vertices": 880
+  },
+  {
+    "key": "switch_door-contact",
+    "file": "switch_door-contact.json",
+    "galleryKey": "switch:door-contact",
+    "name": "Cupboard door contact · closed with door open",
+    "component": {
+      "id": "gallery-94",
+      "type": "switch",
+      "label": "Cupboard door contact · closed with door open",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      },
+      "variant": "door-contact"
+    },
+    "definition": {
+      "type": "switch",
+      "name": "One-way switch",
+      "group": "Lighting",
+      "model": "switch",
+      "description": "A maintained contact makes or breaks the line path.",
+      "terminals": [
+        {
+          "id": "COM",
+          "label": "COM",
+          "role": "L",
+          "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
+          "anchor": [
+            0,
+            0.8268620689655173,
+            -0.353529411764706
+          ],
+          "group": "Common",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "OUT",
+          "label": "L1",
+          "role": "L",
+          "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
+          "anchor": [
+            0,
+            0.3985862068965518,
+            -0.353529411764706
+          ],
+          "group": "Switched line",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "closed": true
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+        },
+        {
+          "id": "contacts",
+          "name": "Switching contacts",
+          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+        }
+      ],
+      "size": [
+        1.1,
+        1.35,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "door-contact",
+          "name": "Door-operated contact"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "L",
+        "purpose": "Common contact. Closing the wall switch joins COM to L1 and completes this part of the lamp circuit.",
+        "anchor": [
+          -0.30250000000000005,
+          0.243,
+          -0.2
+        ],
+        "group": "Common",
+        "scale": 0.58,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "L1",
+        "role": "L",
+        "purpose": "Switched line, marked L1. The wall switch connects it to COM when closed and separates the contacts when open.",
+        "anchor": [
+          -0.1375,
+          0.243,
+          -0.2
+        ],
+        "group": "Switched line",
+        "scale": 0.58,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 42,
+    "vertices": 3948
+  },
+  {
+    "key": "led_strip",
+    "file": "led_strip.json",
+    "galleryKey": "led:strip",
+    "name": "Cupboard strip",
+    "component": {
+      "id": "gallery-95",
+      "type": "led",
+      "label": "Cupboard strip",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 12,
+        "nominalVoltage": 24,
+        "ratedVoltage": 24
+      },
+      "variant": "strip"
+    },
+    "definition": {
+      "type": "led",
+      "name": "Low-voltage LED light",
+      "group": "Lighting",
+      "model": "lamp",
+      "description": "A low-voltage lighting load supplied by its driver.",
+      "terminals": [
+        {
+          "id": "L",
+          "label": "+",
+          "role": "DC+",
+          "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+          "anchor": [
+            -0.085,
+            0.4437586206896552,
+            -0.23705882352941177
+          ],
+          "group": "LED connection",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "N",
+          "label": "−",
+          "role": "DC-",
+          "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+          "anchor": [
+            0.085,
+            0.4437586206896552,
+            -0.23705882352941177
+          ],
+          "group": "LED connection",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "watts": 12,
+        "nominalVoltage": 24
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "emitter",
+          "name": "Light source",
+          "purpose": "The bulb, LED module or emergency-light emitter converts electrical power into illumination. Visible brightness follows the actual emitting-load power relative to its rating. The display is an illustrative brightness scale; heat, measured optical output and colour rendering are outside the electrical model."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        }
+      ],
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "variants": [
+        {
+          "id": "strip",
+          "name": "Constant-voltage strip"
+        },
+        {
+          "id": "series-module",
+          "name": "Series downlight module"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "L",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+        "anchor": [
+          -0.43,
+          0.55,
+          0.085
+        ],
+        "group": "Permanent supply",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "N",
+        "label": "−",
+        "role": "DC-",
+        "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+        "anchor": [
+          -0.43,
+          0.31,
+          0.085
+        ],
+        "group": "Permanent supply",
+        "scale": 0.4,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "meshNodes": 32,
+    "vertices": 2044
+  },
+  {
+    "key": "pwmcontrol_tunable-white",
+    "file": "pwmcontrol_tunable-white.json",
+    "galleryKey": "pwmcontrol:tunable-white",
+    "name": "Warm / cool controller",
+    "component": {
+      "id": "gallery-96",
+      "type": "pwmcontrol",
+      "label": "Warm / cool controller",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "level": 1,
+        "mix": 0.5,
+        "on": true
+      },
+      "variant": "tunable-white"
+    },
+    "definition": {
+      "type": "pwmcontrol",
+      "name": "Low-voltage pulse controller",
+      "group": "Lighting",
+      "model": "controller",
+      "description": "Changes strip brightness by switching a DC return for a fraction of each cycle.",
+      "terminals": [
+        {
+          "id": "+",
+          "label": "+",
+          "role": "DC+",
+          "purpose": "Shared positive DC connection.",
+          "anchor": [
+            -0.5519999999999999,
+            0.372,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "-",
+          "label": "-",
+          "role": "DC-",
+          "purpose": "DC supply return for the pulse controller.",
+          "anchor": [
+            -0.5519999999999999,
+            0.198,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "W",
+          "label": "W",
+          "role": "control",
+          "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+          "anchor": [
+            0.5519999999999999,
+            0.372,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "id": "C",
+          "label": "C",
+          "role": "control",
+          "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+          "anchor": [
+            0.5519999999999999,
+            0.198,
+            0
+          ],
+          "group": "Connections",
+          "scale": 0.64,
+          "entryDirection": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "defaults": {
+        "level": 0.5,
+        "mix": 0.5,
+        "on": true
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        }
+      ],
+      "size": [
+        1.15,
+        0.6,
+        0.55
+      ],
+      "abstraction": "Duty-weighted steady states model average power and current. Switching frequency, edge shape and EMC are outside the model.",
+      "variants": [
+        {
+          "id": "single-channel",
+          "name": "Single-channel PWM"
+        },
+        {
+          "id": "tunable-white",
+          "name": "Warm / cool controller"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Shared positive DC connection.",
+        "anchor": [
+          -0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "DC supply return for the pulse controller.",
+        "anchor": [
+          -0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "W",
+        "label": "W",
+        "role": "control",
+        "purpose": "Warm / single-channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.372,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "C",
+        "label": "C",
+        "role": "control",
+        "purpose": "Cool channel switched negative connection. Channel power depends on its conducting time.",
+        "anchor": [
+          0.5519999999999999,
+          0.198,
+          0
+        ],
+        "group": "Connections",
+        "scale": 0.64,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "meshNodes": 83,
+    "vertices": 6384
+  },
+  {
+    "key": "driver_constant-current",
+    "file": "driver_constant-current.json",
+    "galleryKey": "driver:constant-current",
+    "name": "350 mA constant-current driver",
+    "component": {
+      "id": "gallery-97",
+      "type": "driver",
+      "label": "350 mA constant-current driver",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "outputVoltage": 30,
+        "efficiency": 0.9,
+        "maxPower": 15,
+        "mode": "constant-current",
+        "outputCurrent": 0.35
+      },
+      "variant": "constant-current"
+    },
+    "definition": {
+      "type": "driver",
+      "name": "LED driver",
+      "group": "Conversion",
+      "model": "transformer",
+      "description": "Regulated isolated extra-low-voltage output with power and current limits.",
+      "terminals": [
+        {
+          "id": "L",
+          "label": "L",
+          "role": "L",
+          "purpose": "Line conductor: the alternating supply relative to neutral.",
+          "anchor": [
+            -0.21153846153846154,
+            0.8547931034482759,
+            0.19764705882352943
+          ],
+          "group": "Mains input",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "N",
+          "label": "N",
+          "role": "N",
+          "purpose": "Neutral: the normal return path. It is not a protective conductor.",
+          "anchor": [
+            0,
+            0.8547931034482759,
+            0.19764705882352943
+          ],
+          "group": "Mains input",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "PE",
+          "label": "PE",
+          "role": "PE",
+          "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+          "anchor": [
+            0.21153846153846154,
+            0.8547931034482759,
+            0.19764705882352943
+          ],
+          "group": "Mains input",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "+",
+          "label": "+",
+          "role": "DC+",
+          "purpose": "Positive output of the regulated isolated DC pair. Measure + to −; the − terminal is not mains neutral. Output voltage and available power follow the declared converter limits.",
+          "anchor": [
+            -0.11846153846153847,
+            0.3799655172413794,
+            0.19764705882352943
+          ],
+          "group": "Isolated output",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "-",
+          "label": "-",
+          "role": "DC-",
+          "purpose": "Negative output return of the regulated isolated DC pair. Measure + to −; the − terminal is not mains neutral. Output voltage and available power follow the declared converter limits.",
+          "anchor": [
+            0.11846153846153847,
+            0.3799655172413794,
+            0.19764705882352943
+          ],
+          "group": "Isolated output",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "defaults": {
+        "outputVoltage": 24,
+        "efficiency": 0.9,
+        "maxPower": 120
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        },
+        {
+          "id": "isolation",
+          "name": "Isolation boundary",
+          "purpose": "The model separates the mains circuit from the output circuit. Voltage within a floating output can be meaningful while its voltage to earth is undetermined."
+        }
+      ],
+      "size": [
+        1.1,
+        1.35,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "constant-current",
+          "name": "350 mA driver"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "L",
+        "label": "L",
+        "role": "L",
+        "purpose": "Line conductor: the alternating supply relative to neutral.",
+        "anchor": [
+          -0.517,
+          0.3375,
+          -0.016
+        ],
+        "group": "Mains input",
+        "scale": 0.66,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "N",
+        "label": "N",
+        "role": "N",
+        "purpose": "Neutral: the normal return path. It is not a protective conductor.",
+        "anchor": [
+          -0.517,
+          0.621,
+          -0.016
+        ],
+        "group": "Mains input",
+        "scale": 0.66,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "PE",
+        "label": "PE",
+        "role": "PE",
+        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "anchor": [
+          -0.517,
+          0.9045,
+          -0.016
+        ],
+        "group": "Mains input",
+        "scale": 0.66,
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "+",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Positive output of the regulated isolated DC pair. Measure + to −; the − terminal is not mains neutral. Output voltage and available power follow the declared converter limits.",
+        "anchor": [
+          0.517,
+          0.3375,
+          -0.016
+        ],
+        "group": "Isolated output",
+        "scale": 0.66,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "-",
+        "label": "-",
+        "role": "DC-",
+        "purpose": "Negative output return of the regulated isolated DC pair. Measure + to −; the − terminal is not mains neutral. Output voltage and available power follow the declared converter limits.",
+        "anchor": [
+          0.517,
+          0.621,
+          -0.016
+        ],
+        "group": "Isolated output",
+        "scale": 0.66,
+        "entryDirection": [
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "meshNodes": 85,
+    "vertices": 5960
+  },
+  {
+    "key": "led_series-module",
+    "file": "led_series-module.json",
+    "galleryKey": "led:series-module",
+    "name": "First series module",
+    "component": {
+      "id": "gallery-98",
+      "type": "led",
+      "label": "First series module",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 3.15,
+        "nominalVoltage": 24,
+        "ratedVoltage": 9
+      },
+      "variant": "series-module"
+    },
+    "definition": {
+      "type": "led",
+      "name": "Low-voltage LED light",
+      "group": "Lighting",
+      "model": "lamp",
+      "description": "A low-voltage lighting load supplied by its driver.",
+      "terminals": [
+        {
+          "id": "L",
+          "label": "+",
+          "role": "DC+",
+          "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+          "anchor": [
+            -0.085,
+            0.4437586206896552,
+            -0.23705882352941177
+          ],
+          "group": "LED connection",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "N",
+          "label": "−",
+          "role": "DC-",
+          "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+          "anchor": [
+            0.085,
+            0.4437586206896552,
+            -0.23705882352941177
+          ],
+          "group": "LED connection",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "watts": 12,
+        "nominalVoltage": 24
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "emitter",
+          "name": "Light source",
+          "purpose": "The bulb, LED module or emergency-light emitter converts electrical power into illumination. Visible brightness follows the actual emitting-load power relative to its rating. The display is an illustrative brightness scale; heat, measured optical output and colour rendering are outside the electrical model."
+        },
+        {
+          "id": "electronics",
+          "name": "Electronic control board",
+          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+        }
+      ],
+      "size": [
+        1,
+        1,
+        1
+      ],
+      "variants": [
+        {
+          "id": "strip",
+          "name": "Constant-voltage strip"
+        },
+        {
+          "id": "series-module",
+          "name": "Series downlight module"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "L",
+        "label": "+",
+        "role": "DC+",
+        "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+        "anchor": [
+          -0.31,
+          0.46,
+          0.095
+        ],
+        "group": "LED connection",
+        "scale": 0.5,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "N",
+        "label": "−",
+        "role": "DC-",
+        "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+        "anchor": [
+          0.31,
+          0.46,
+          0.095
+        ],
+        "group": "LED connection",
+        "scale": 0.5,
+        "entryDirection": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "meshNodes": 15,
+    "vertices": 800
+  },
+  {
+    "key": "pushbutton_bell-push",
+    "file": "pushbutton_bell-push.json",
+    "galleryKey": "pushbutton:bell-push",
+    "name": "front bell push",
+    "component": {
+      "id": "gallery-99",
+      "type": "pushbutton",
+      "label": "front bell push",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "pressed": false
+      },
+      "variant": "bell-push"
+    },
+    "definition": {
+      "type": "pushbutton",
+      "name": "Momentary control button",
+      "group": "Controls",
+      "model": "switch",
+      "description": "Separate normally open and normally closed contacts follow a pressed state.",
+      "terminals": [
+        {
+          "id": "COM",
+          "label": "COM",
+          "role": "control",
+          "purpose": "Common connection of the separate changeover contact. This is a supplied contact circuit, not the coil or a neutral reference.",
+          "anchor": [
+            0,
+            0.8361724137931035,
+            -0.353529411764706
+          ],
+          "group": "Common",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "NO",
+          "label": "NO",
+          "role": "N",
+          "purpose": "Normally open path from COM: closes when the button is held pressed and opens on release.",
+          "anchor": [
+            -0.10576923076923077,
+            0.40789655172413797,
+            -0.353529411764706
+          ],
+          "group": "Auxiliary contacts",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "NC",
+          "label": "NC",
+          "role": "N",
+          "purpose": "Normally closed path from COM: opens when the button is held pressed and closes on release. It can interrupt a maintained request if wired in that request path.",
+          "anchor": [
+            0.10576923076923077,
+            0.40789655172413797,
+            -0.353529411764706
+          ],
+          "group": "Auxiliary contacts",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "pressed": false
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+        },
+        {
+          "id": "contacts",
+          "name": "Switching contacts",
+          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+        }
+      ],
+      "size": [
+        1.1,
+        1.35,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "bell-push",
+          "name": "Doorbell push"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "control",
+        "purpose": "Common connection of the separate changeover contact. This is a supplied contact circuit, not the coil or a neutral reference.",
+        "anchor": [
+          -0.198,
+          0.5805,
+          -0.22400000000000003
+        ],
+        "group": "Common",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NO",
+        "label": "NO",
+        "role": "N",
+        "purpose": "Normally open path from COM: closes when the button is held pressed and opens on release.",
+        "anchor": [
+          0,
+          0.5805,
+          -0.22400000000000003
+        ],
+        "group": "Auxiliary contacts",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NC",
+        "label": "NC",
+        "role": "N",
+        "purpose": "Normally closed path from COM: opens when the button is held pressed and closes on release. It can interrupt a maintained request if wired in that request path.",
+        "anchor": [
+          0.198,
+          0.5805,
+          -0.22400000000000003
+        ],
+        "group": "Auxiliary contacts",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 41,
+    "vertices": 3944
+  },
+  {
+    "key": "selector_float-changeover",
+    "file": "selector_float-changeover.json",
+    "galleryKey": "selector:float-changeover",
+    "name": "Condensate float · normal / high",
+    "component": {
+      "id": "gallery-100",
+      "type": "selector",
+      "label": "Condensate float · normal / high",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "position": 0,
+        "closed": true
+      },
+      "variant": "float-changeover"
+    },
+    "definition": {
+      "type": "selector",
+      "name": "Maintained selector",
+      "group": "Controls",
+      "model": "switch",
+      "description": "Selects one of two control paths.",
+      "terminals": [
+        {
+          "id": "COM",
+          "label": "COM",
+          "role": "control",
+          "purpose": "Common fed contact selecting A in the first position or B in the second. The two selected paths remain alternative connections.",
+          "anchor": [
+            0,
+            0.8361724137931035,
+            -0.353529411764706
+          ],
+          "group": "Common",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "A",
+          "label": "A",
+          "role": "control",
+          "purpose": "Selected contact A: connected to COM in the first position. The selector does not energize this path without a real feed to COM.",
+          "anchor": [
+            -0.10576923076923077,
+            0.40789655172413797,
+            -0.353529411764706
+          ],
+          "group": "Selected paths",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "role": "control",
+          "purpose": "Selected contact B: connected to COM in the second position. The selector does not energize this path without a real feed to COM.",
+          "anchor": [
+            0.10576923076923077,
+            0.40789655172413797,
+            -0.353529411764706
+          ],
+          "group": "Selected paths",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "position": 0,
+        "closed": true
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+        },
+        {
+          "id": "contacts",
+          "name": "Switching contacts",
+          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+        }
+      ],
+      "size": [
+        1.1,
+        1.35,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "float-changeover",
+          "name": "Changeover float switch"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "COM",
+        "role": "control",
+        "purpose": "Common fed contact selecting A in the first position or B in the second. The two selected paths remain alternative connections.",
+        "anchor": [
+          -0.09350000000000001,
+          0.0702,
+          -0.096
+        ],
+        "group": "Common",
+        "scale": 0.52,
+        "entryDirection": [
+          0,
+          -0.5000110003630133,
+          -0.866019052628739
+        ]
+      },
+      {
+        "id": "A",
+        "label": "A",
+        "role": "control",
+        "purpose": "Selected contact A: connected to COM in the first position. The selector does not energize this path without a real feed to COM.",
+        "anchor": [
+          0,
+          0.0702,
+          -0.096
+        ],
+        "group": "Selected paths",
+        "scale": 0.52,
+        "entryDirection": [
+          0,
+          -0.5000110003630133,
+          -0.866019052628739
+        ]
+      },
+      {
+        "id": "B",
+        "label": "B",
+        "role": "control",
+        "purpose": "Selected contact B: connected to COM in the second position. The selector does not energize this path without a real feed to COM.",
+        "anchor": [
+          0.09350000000000001,
+          0.0702,
+          -0.096
+        ],
+        "group": "Selected paths",
+        "scale": 0.52,
+        "entryDirection": [
+          0,
+          -0.5000110003630133,
+          -0.866019052628739
+        ]
+      }
+    ],
+    "meshNodes": 32,
+    "vertices": 3148
+  },
+  {
+    "key": "terminal_lever-connector",
+    "file": "terminal_lever-connector.json",
+    "galleryKey": "terminal:lever-connector",
+    "name": "Positive distribution connector",
+    "component": {
+      "id": "gallery-101",
+      "type": "terminal",
+      "label": "Positive distribution connector",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {},
+      "variant": "lever-connector"
+    },
+    "definition": {
+      "type": "terminal",
+      "name": "Terminal block",
+      "group": "Distribution",
+      "model": "bar",
+      "description": "A set of explicitly joined terminals used to organise a circuit.",
+      "terminals": [
+        {
+          "id": "1",
+          "label": "1",
+          "role": "control",
+          "purpose": "Terminal 1 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            -0.28846153846153844,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "role": "control",
+          "purpose": "Terminal 2 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            -0.09615384615384615,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "role": "control",
+          "purpose": "Terminal 3 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            0.09615384615384615,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "4",
+          "label": "4",
+          "role": "control",
+          "purpose": "Terminal 4 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            0.28846153846153844,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "defaults": {},
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        }
+      ],
+      "size": [
+        1,
+        0.5,
+        0.7
+      ],
+      "variants": [
+        {
+          "id": "lever-connector",
+          "name": "Lever connector"
+        },
+        {
+          "id": "comb-busbar",
+          "name": "Insulated single-phase comb"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "1",
+        "label": "1",
+        "role": "control",
+        "purpose": "Terminal 1 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.36,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "2",
+        "label": "2",
+        "role": "control",
+        "purpose": "Terminal 2 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.12,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "3",
+        "label": "3",
+        "role": "control",
+        "purpose": "Terminal 3 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.12,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "4",
+        "label": "4",
+        "role": "control",
+        "purpose": "Terminal 4 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.36,
+          0.075,
+          -0.017499999999999998
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      }
+    ],
+    "meshNodes": 62,
+    "vertices": 3672
+  },
+  {
+    "key": "fuse_dc-fuse",
+    "file": "fuse_dc-fuse.json",
+    "galleryKey": "fuse:dc-fuse",
+    "name": "instrument branch carrier · 1 A",
+    "component": {
+      "id": "gallery-102",
+      "type": "fuse",
+      "label": "instrument branch carrier · 1 A",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true,
+        "currentRating": 1,
+        "resetToken": 0
+      },
+      "variant": "dc-fuse"
+    },
+    "definition": {
+      "type": "fuse",
+      "name": "Fuse holder",
+      "group": "Protection",
+      "model": "protection",
+      "description": "Overcurrent interruption within a removable fuse carrier.",
+      "terminals": [
+        {
+          "id": "IN",
+          "label": "IN",
+          "role": "L",
+          "purpose": "First end of the modelled series protected path, paired with OUT. Opening or tripping the device separates this pair.",
+          "anchor": [
+            0,
+            1.1027586206896551,
+            0.21647058823529414
+          ],
+          "group": "Supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0.8,
+            0.6
+          ]
+        },
+        {
+          "id": "OUT",
+          "label": "OUT",
+          "role": "L",
+          "purpose": "Second end of the modelled series protected path, paired with IN. Opening or tripping the device separates this pair.",
+          "anchor": [
+            0,
+            0.21068965517241378,
+            0.21647058823529414
+          ],
+          "group": "Load",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            -0.35,
+            0.9367496997597597
+          ]
+        }
+      ],
+      "defaults": {
+        "closed": true,
+        "currentRating": 13,
+        "resetToken": 0
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        },
+        {
+          "id": "fuse",
+          "name": "Fuse carrier and element",
+          "purpose": "A fuse interrupts its protected path when the illustrative protection model trips. It is distinct from a switch or residual-current device."
+        }
+      ],
+      "size": [
+        0.7,
+        1.3,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "dc-fuse",
+          "name": "DC branch carrier"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "IN",
+        "label": "IN",
+        "role": "L",
+        "purpose": "First end of the modelled series protected path, paired with OUT. Opening or tripping the device separates this pair.",
+        "anchor": [
+          0,
+          0.11050000000000001,
+          -0.072
+        ],
+        "group": "Supply",
+        "scale": 0.71,
+        "entryDirection": [
+          0,
+          -0.5500756406012316,
+          0.8351148361855061
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "OUT",
+        "role": "L",
+        "purpose": "Second end of the modelled series protected path, paired with IN. Opening or tripping the device separates this pair.",
+        "anchor": [
+          0,
+          1.092,
+          -0.072
+        ],
+        "group": "Load",
+        "scale": 0.71,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      }
+    ],
+    "meshNodes": 28,
+    "vertices": 3124
+  },
+  {
+    "key": "terminal_comb-busbar",
+    "file": "terminal_comb-busbar.json",
+    "galleryKey": "terminal:comb-busbar",
+    "name": "Insulated single-phase comb",
+    "component": {
+      "id": "gallery-104",
+      "type": "terminal",
+      "variant": "comb-busbar",
+      "label": "Insulated single-phase comb",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    "definition": {
+      "type": "terminal",
+      "name": "Terminal block",
+      "group": "Distribution",
+      "model": "bar",
+      "description": "A set of explicitly joined terminals used to organise a circuit.",
+      "terminals": [
+        {
+          "id": "1",
+          "label": "1",
+          "role": "control",
+          "purpose": "Terminal 1 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            -0.28846153846153844,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "role": "control",
+          "purpose": "Terminal 2 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            -0.09615384615384615,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "role": "control",
+          "purpose": "Terminal 3 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            0.09615384615384615,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "4",
+          "label": "4",
+          "role": "control",
+          "purpose": "Terminal 4 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+          "anchor": [
+            0.28846153846153844,
+            0.11617241379310345,
+            0.1111764705882353
+          ],
+          "group": "Joined connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "defaults": {},
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+        }
+      ],
+      "size": [
+        1,
+        0.5,
+        0.7
+      ],
+      "variants": [
+        {
+          "id": "lever-connector",
+          "name": "Lever connector"
+        },
+        {
+          "id": "comb-busbar",
+          "name": "Insulated single-phase comb"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "1",
+        "label": "1",
+        "role": "control",
+        "purpose": "Terminal 1 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.36,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      },
+      {
+        "id": "2",
+        "label": "2",
+        "role": "control",
+        "purpose": "Terminal 2 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          -0.12,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      },
+      {
+        "id": "3",
+        "label": "3",
+        "role": "control",
+        "purpose": "Terminal 3 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.12,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      },
+      {
+        "id": "4",
+        "label": "4",
+        "role": "control",
+        "purpose": "Terminal 4 of this one internally joined connector group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.",
+        "anchor": [
+          0.36,
+          0.42,
+          0.013999999999999999
+        ],
+        "group": "Joined connections",
+        "scale": 0.65,
+        "entryDirection": [
+          0,
+          1,
+          0
+        ]
+      }
+    ],
+    "meshNodes": 17,
+    "vertices": 748
   }
 ]

@@ -1,10 +1,13 @@
 'use client';
 import {useEffect,useRef} from 'react';
-import { CABLE_CORES, CABLE_CORE_LABEL, CABLE_LABEL, FLAT_CORE_ORDER, type CableChoice } from '../../lib/cables';
+import { cableCores, cableKinds, CABLE_CORE_LABEL, CABLE_LABEL, type CableChoice } from '../../lib/cables';
 import type { CableKind, CircuitDocument } from '../../lib/types';
 import './cable-picker.css';
 
 const descriptions:Record<CableKind,string> = {
+  'bell-pair':'Two small solid cores in a pale sheath. This sample uses a red and a white core.',
+  'led-pair':'Two flexible stranded cores in a narrow flat profile. Read the pad markings before connecting.',
+  'multi-strip':'Four cores in a ribbon. The common and two channel returns can share a cable. Leave the spare core open.',
   single: 'One insulated conductor.',
   flat: 'Three insulated cores in a flat, grey sheath.',
   flex: 'Three fine-stranded cores in a round, flexible sheath.',
@@ -14,7 +17,7 @@ const descriptions:Record<CableKind,string> = {
  * cross-section, copper strand pattern and text survive greyscale display. */
 function CableSample({kind}:{kind:CableKind}) {
   return <span className={'cable-sample cable-sample-'+kind} aria-hidden="true">
-    {(kind==='single'?['brown']:kind==='flat'?FLAT_CORE_ORDER:CABLE_CORES).map(core=><i className={'cable-core cable-'+core} key={core}><b/></i>)}
+    {cableCores(kind).map(core=><i className={'cable-core cable-'+core} key={core}><b/></i>)}
   </span>;
 }
 
@@ -31,7 +34,7 @@ export function CablePicker({document: circuit,value,onChange,onSelectWire,onRem
   return <details ref={disclosure} className="cable-picker" key={circuit.id}>
     <summary><CableSample kind={value.kind}/><span>Cable · <strong>{CABLE_LABEL[value.kind]}</strong></span></summary>
     <div className="cable-choices" role="group" aria-label="Cable construction">
-      {(['single','flat','flex'] as const).map(kind=><button type="button" key={kind}
+      {cableKinds.map(kind=><button type="button" key={kind}
         aria-pressed={value.kind===kind} onClick={()=>onChange({kind})}>
         <CableSample kind={kind}/><span>{CABLE_LABEL[kind]}</span></button>)}
     </div>
@@ -45,13 +48,13 @@ export function CablePicker({document: circuit,value,onChange,onSelectWire,onRem
         </select>
       </label>}
       <label>Core for the next connection
-        <select aria-label="Core for the next connection" value={value.core??''} onChange={event=>onChange({...value,core:CABLE_CORES.find(c=>c===event.target.value)})}>
+        <select aria-label="Core for the next connection" value={value.core??''} onChange={event=>onChange({...value,core:cableCores(value.kind).find(c=>c===event.target.value)})}>
           <option value="">Suggest from terminal markings</option>
-          {CABLE_CORES.map(core=><option key={core} value={core} disabled={list.some(w=>w.cable?.core===core)}>{CABLE_CORE_LABEL[core]}</option>)}
+          {cableCores(value.kind).map(core=><option key={core} value={core} disabled={list.some(w=>w.cable?.core===core)}>{CABLE_CORE_LABEL[core]}</option>)}
         </select>
       </label>
       {selected&&<ul className="cable-core-list" aria-label="Cores in this cable">
-        {CABLE_CORES.map(core=>{const wire=list.find(w=>w.cable?.core===core);
+        {cableCores(value.kind).map(core=>{const wire=list.find(w=>w.cable?.core===core);
           return <li key={core}><span>{CABLE_CORE_LABEL[core]}</span>{wire&&onSelectWire
             ?<button type="button" onClick={()=>onSelectWire(wire.id)}>Inspect connected core</button>
             :<small>{wire?'Connected':'Open at both ends'}</small>}</li>;})}

@@ -332,3 +332,6 @@ body:has(.mobile-lab) [data-slot=dialog-content] button { min-height: 44px; }
   .mobile-lab .learn-column .active-task > .primary-button { position:sticky;bottom:0;z-index:2;box-shadow:0 -3px 5px #fff9; }
   .book-shell.mobile-lab .notice { position:static;transform:none;max-width:none;order:3;width:100%;max-height:72px;overflow:auto;flex:none; }
 }
+
+.pulse-experiment,.elv-reading{display:block;margin:.5rem 0 .75rem;font-variant-numeric:tabular-nums}
+.pulse-experiment label,.pulse-experiment output{display:block}.pulse-experiment input{display:block;width:100%;min-height:44px;accent-color:var(--primary,#216453)}

@@ -3,7 +3,11 @@ import type { ReactNode } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
+import { TesterFace } from '../components/lab/TesterFace';
 import { BlenderEquipment } from './BlenderEquipment';
+import { InstalledHardware, WorkshopGeometry } from '../components/lab/WorkshopGeometry';
+import { workshopKey } from './workshop-variants';
+import { semanticOwner } from './blender-model';
 import { applyLampBrightness, lampBrightness } from './blender-model';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { enclosedTerminals, equipmentVariant, getComponentTerminals } from './terminal-layout';
@@ -15,6 +19,7 @@ import type { ComponentDefinition, ComponentInstance, DeviceState, TerminalDefin
 export type EquipmentView = 'normal' | 'open' | 'exploded' | 'cutaway';
 export interface EquipmentProps {
   component: ComponentInstance;
+  filledWays?: string;
   definition: ComponentDefinition;
   state?: DeviceState;
   selected: boolean;
@@ -192,6 +197,7 @@ function LED({ p, active, color = 'green' }: { p: Vec3; active?: boolean; color?
 }
 function Cover({ children, round = false, p = [0, .72, .3], s = [1, 1.1, .065], custom = false }: { children?: ReactNode; round?: boolean; p?: Vec3; s?: Vec3; custom?: boolean }) {
   const { props } = useModel();
+  if(props.component.mount&&props.definition.model==='protection')p=[p[0],p[1],p[2]+.24];
   if (props.view === 'cutaway') return null;
   const travel=enclosedTerminals(props.component)?1.0:.55;
   const offset: Vec3 = props.view === 'exploded' ? [p[0] + .5, p[1] + .5, p[2] + .65] : props.view === 'open' ? [p[0] + travel, p[1] + .08, p[2] + .15] : p;
@@ -732,6 +738,7 @@ function entryRotation(terminal: TerminalDefinition): Vec3 {
 
 function TerminalMountings({terminals}:{terminals:TerminalDefinition[]}) {
   const {props}=useModel();
+  if(workshopKey(props.component))return null;
   const rear=terminals.filter(t=>t.entryDirection?.[2]===-1);
   const exposed=terminals.filter(t=>t.entryDirection?.[2]!==-1);
   const valve=props.definition.model==='valve';
@@ -752,7 +759,7 @@ function Terminal({ terminal }: { terminal: TerminalDefinition }) {
   const [hover, setHover] = useState(false);
   const color = terminalColors[terminal.role] ?? '#9faeb7';
   const pin=props.definition.model==='plug'&&terminal.entryDirection?.[2]===1;
-  const strand=props.component.type==='cable',stud=props.component.type==='motor3';
+  const strand=['cable','proximity','cctstrip'].includes(props.component.type)||props.component.type==='led'&&['strip','series-module'].includes(props.component.variant??'')||props.component.variant==='comb-busbar',stud=props.component.type==='motor3';
   return <group name={`terminal:${terminal.id}`} userData={{terminalId:terminal.id}} position={terminal.anchor} rotation={entryRotation(terminal)} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); props.onTerminal(terminal.id); }} onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHover(true); }} onPointerOut={() => setHover(false)}>
     <group scale={terminal.scale ?? 1}>
     {pin||strand||stud?<C p={[0,0,-.008]} radius={stud?.046:pin?.045:.02} length={.018} m={strand?'copper':stud?'brass':'steel'} segments={stud?6:16} r={[Math.PI/2,0,0]}/>:<>
@@ -796,7 +803,7 @@ export const ProceduralEquipment = memo(function ProceduralEquipment(props: Equi
   // connection coordinates. Model bodies are fitted to registry dimensions.
   const scale: Vec3 = [def.size[0] / 1.3, def.size[1] / 1.45, def.size[2] / .85];
   return <Context.Provider value={context}><group ref={group}>
-    <group scale={scale}><Model /></group>
+    {workshopKey(props.component) ? <group onClick={event=>{event.stopPropagation();props.onPart(semanticOwner(event.object).part??'body');}}><WorkshopGeometry {...props}/></group> : <group scale={scale}><Model /></group>}
     <Part id="terminals"><TerminalMountings terminals={terminals} />
       {terminals.map(t => <Terminal key={t.id} terminal={t} />)}
     </Part>
@@ -804,7 +811,11 @@ export const ProceduralEquipment = memo(function ProceduralEquipment(props: Equi
     {props.showLabels && <TextureLabel p={[0, def.size[1] + .15, 0]} text={props.component.label} color={props.selected ? '#8af1c9' : '#dce7e7'} background="#12202a" sprite width={Math.min(3.6, Math.max(.6, props.component.label.length * .066))} height={.18} />}
   </group></Context.Provider>;
 });
-export const Equipment = memo(function Equipment(props: EquipmentProps) { return <BlenderEquipment {...props} fallback={<ProceduralEquipment {...props}/>} />; });
+export const Equipment = memo(function Equipment(props: EquipmentProps) {
+  return <><BlenderEquipment {...props} fallback={<ProceduralEquipment {...props}/>} />
+    <InstalledHardware {...props}/>
+    {props.component.type==='forktester'&&<TesterFace params={props.component.params}/>}</>;
+});
 
 /** Rounded corners never leave this distance from the routed line segments. */
 export const WIRE_CORNER_RADIUS = .012;

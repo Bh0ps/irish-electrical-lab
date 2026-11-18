@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0 — Follow the installation
+
+- Study 80 configurations in nine chapters. The extra-low-voltage chapter includes LED strips and drivers, two-entrance calls, three-wire proximity sensing, valve control and a mixed AC/DC practical.
+- Walk between installed devices or choose them by name. Trace the intended circuit and actual wiring on drawings with equipment tags and terminal markings.
+- Open distribution boards and inspect the individual devices on their rails. Choose bell and lighting cables and work with each core.
+- Compare probe and fork readings with a T6-600-style tester. Try stripping, crimping and tightening a documented termination sample.
+
 ## 1.4.0 — Electrical coursebook
 
 - Open the first lesson with a working switch and lamp. Eight searchable chapters lead from working examples through partial builds to complete practicals.

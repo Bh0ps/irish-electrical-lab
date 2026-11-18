@@ -7,10 +7,11 @@ export interface ComponentDefinition {
   type: string; name: string; group: string; description: string; terminals: TerminalDefinition[];
   parts: PartDefinition[]; defaults: Parameters; size: Vec3; model: string; abstraction?: string; variants?: { id: string; name: string }[];
 }
-export interface ComponentInstance { id: string; type: string; label: string; position: Vec3; rotation: number; params: Parameters; variant?: string }
+export interface RailMount { board: string; row: number; slot: number }
+export interface ComponentInstance { id: string; type: string; label: string; position: Vec3; rotation: number; params: Parameters; variant?: string; mount?: RailMount }
 export interface Endpoint { component: string; terminal: string }
-export type CableKind = 'single' | 'flat' | 'flex';
-export type CableCore = 'brown' | 'blue' | 'green-yellow';
+export type CableKind = 'single' | 'flat' | 'flex' | 'bell-pair' | 'led-pair' | 'multi-strip';
+export type CableCore = 'brown' | 'blue' | 'green-yellow' | 'red' | 'white' | 'yellow' | 'black';
 /** The two reference points locate a physical sheath; they never connect electrical nodes. */
 export interface CableRun { id: string; kind: Exclude<CableKind,'single'>; from: Endpoint; to: Endpoint }
 export interface Wire { id: string; from: Endpoint; to: Endpoint; role: TerminalRole; resistance: number; bends: Vec3[]; cable?: { runId: string; core: CableCore; reversed: boolean } }
@@ -20,12 +21,12 @@ export interface CircuitDocument {
   supply: { enabled: boolean; phase: 'single' | 'three'; voltage: number; frequency: number; sourceResistance: number };
   components: ComponentInstance[]; wires: Wire[]; faults: FaultSetting[]; lessonId?: number; cableRuns?: CableRun[];
 }
-export interface Complex { re: number; im: number; reference?: string }
+export interface Complex { re: number; im: number; reference?: string; frequency?: number }
 export interface DeviceState { energized: boolean; closed: boolean; tripped: boolean; level: number; direction: number; elapsed: number; resetToken: number; details: string; [key: string]: string | number | boolean }
 export interface Diagnostic { id: string; severity: 'info' | 'warning' | 'error'; category: 'operation' | 'protection' | 'model'; title: string; explanation: string; component?: string; wire?: string }
 export interface SimulationEvent { time: number; title: string; detail: string; component?: string }
 export interface SimulationResult {
-  revision: number; terminalVoltages: Record<string, Complex>; branchCurrents: Record<string, Complex>;
+  revision: number; pwmTerminals?: string[]; pwmWires?: string[]; bondedEarthTerminals?: string[]; terminalVoltages: Record<string, Complex>; branchCurrents: Record<string, Complex>;
   wireCurrents: Record<string, Complex>; componentPower: Record<string, number>; deviceStates: Record<string, DeviceState>;
   diagnostics: Diagnostic[]; events: SimulationEvent[]; totalPower: number; totalCurrent: number;
   converged: boolean; elapsedMs: number; nodes: number; preTrip?: { totalCurrent: number; explanation: string };

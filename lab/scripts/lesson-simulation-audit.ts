@@ -56,7 +56,7 @@ class Exercise {
     if (voltage !== undefined) this.circuit.supply.voltage = voltage;
   }
   check(description: string, condition: boolean, actual?: unknown): void {
-    // Assertion errors are retained per lesson, allowing the report to cover all 64.
+    // Assertion errors are retained per lesson, allowing the report to cover the catalogue.
     let passed = true;
     try { assert.ok(condition, description); } catch { passed = false; }
     this.checks.push({ description, passed, ...(actual === undefined ? {} : { actual }) });
@@ -170,6 +170,22 @@ function verifyOperation(x: Exercise, id: number): void {
     case 62: x.check('Default duty A runs alone', energized(x.result, 'pump-a') && !energized(x.result, 'pump-b')); x.set('duty', 'position', 1); x.run('Transfer normal duty to B'); x.check('Duty B runs alone without OR backfeed', !energized(x.result, 'pump-a') && energized(x.result, 'pump-b')); x.set('float-high', 'active', true); x.run('Request high-level assist'); x.check('Separate assist contacts request both pumps', energized(x.result, 'pump-a') && energized(x.result, 'pump-b')); break;
     case 63: x.on('motor'); x.set('present', 'active', false); x.run('Remove one PLC AND permissive'); x.off('motor'); x.check('Other status channel remains independent', power(x.result, 'ol-status') > 1); break;
     case 64: x.check('Safety relay begins unarmed', !closed(x.result, 'safety-relay')); x.pulse('reset', 'Arm stopped machine'); x.check('Reset arms permission without starting motor', closed(x.result, 'safety-relay') && !closed(x.result, 'starter')); x.pulse('start', 'Start armed machine'); x.on('motor'); x.set('channel-a', 'pressed', true); x.run('Open one safety-input channel'); x.off('motor'); x.check('Safety channel removes armed permission', !closed(x.result, 'safety-relay')); x.set('channel-a', 'pressed', false); x.pulse('reset', 'Rearm after channel restoration'); x.check('Rearming does not itself restart motor', !closed(x.result, 'starter')); break;
+    case 65: toggle('door','strip');break;
+    case 66: toggle('left-switch','left');x.on('right');break;
+    case 67: {const pair=()=>x.voltage(endpoint('far','L'),endpoint('far','N'));const single=pair();x.set('inject','closed',true);x.run('Parallel far-end feed');x.check('Both-end feed raises voltage by more than one volt',pair()!>single!+1);break;}
+    case 68: {x.set('pwm','level',.2);x.run('20 percent duty');const low=power(x.result,'strip');x.set('pwm','level',.8);x.run('80 percent duty');x.check('Power scales fourfold with duty',Math.abs(power(x.result,'strip')/low-4)<.03);break;}
+    case 69: {x.set('controller','mix',.8);x.run('Predominantly cool mix');const s=x.result.deviceStates.tape;x.check('Cool emitters deliver about four times the warm power',Math.abs(Number(s.coolWatts)/Number(s.warmWatts)-4)<.04);break;}
+    case 70: {const v=x.voltage(endpoint('cc','+'),endpoint('cc','-'));x.check('Regulated two-module string reaches about 18 volts',Math.abs(v!-18)<.1);x.set('link','closed',false);x.run('Disconnect series link');x.off('first');x.off('second');break;}
+    case 71: for(const push of ['front','rear']){x.set(push,'pressed',true);x.run('Press '+push);x.on('bell');x.set(push,'pressed',false);x.run('Release '+push);x.off('bell');}break;
+    case 72: for(const [push,call] of [['front','Front'],['back','Rear']]){x.set(push,'pressed',true);x.run('Press '+push);x.check('Indication identifies '+push,x.result.deviceStates.chime.call===call);x.set(push,'pressed',false);x.run('Release '+push);}break;
+    case 73:x.set('call','pressed',true);x.run('Start timed indication');x.on('beacon');x.set('call','pressed',false);x.run('1 s after release',4);x.on('beacon');x.run('Beyond run-on',16);x.off('beacon');break;
+    case 74:x.set('door','closed',true);x.run('Door opens');x.on('buzzer');x.pulse('ack','Acknowledge');x.off('buzzer');x.on('lamp');x.set('door','closed',false);x.run('Door closes');x.off('lamp');x.check('Memory released',!closed(x.result,'memory'));break;
+    case 75:x.on('call');x.check('Comparison across separate supplies is unresolved',measureVoltage(x.result,endpoint('supply-a','-'),endpoint('equipment','-')).value===null);toggle('stat','call');break;
+    case 76:{x.set('direction','position',1);x.run('Drive towards closed',4);const midway=x.result.deviceStates.actuator.level;x.set('enable','closed',false);x.run('Remove commands');x.check('Valve holds exact intermediate position',midway>0&&midway<1&&x.result.deviceStates.actuator.level===midway);break;}
+    case 77:x.on('permit');x.set('float','position',1);x.run('High level');x.off('permit');x.on('alarm');break;
+    case 78:x.off('pilot');x.set('sensor','active',true);x.run('Target present');x.on('pilot');break;
+    case 79:toggle('beacon-fuse','beacon');x.on('instrument');break;
+    case 80:x.off('bell');x.set('push','pressed',true);x.run('Call at entrance');x.on('bell');x.on('courtesy');x.check('AC and DC remain separate',measureVoltage(x.result,endpoint('tx','-'),endpoint('driver','-')).value===null);break;
     default: throw new Error(`Missing independent operating case ${id}`);
   }
 }
@@ -192,6 +208,8 @@ function prepareChallenge(x: Exercise, id: number): string[] {
   if (id === 27) set('boost', 'closed', false, 'Remove the alternative boost request so it cannot mask the schedule-path fault.');
   if (id === 29) set('cylinder', 'closed', false, 'Request heating only; hot-water feedback must not mask the heating-END fault.');
   if (id === 37) set('override', 'closed', false, 'Remove manual override so it cannot mask the humidity-output fault.');
+  const expose:Record<number,[string,string,boolean|number]>={67:['inject','closed',true],71:['rear','pressed',true],72:['back','pressed',true],73:['call','pressed',true],74:['door','closed',true],77:['float','position',1],78:['sensor','active',true],80:['push','pressed',true]};
+  if(expose[id])set(...expose[id],'Apply the request that exposes the interrupted path.');
   if (id === 43) set('push', 'pressed', true, 'Hold the chime push to expose a broken output feed.');
   if (id === 50) set('defrost-clock', 'on', true, 'Request defrost before opening its coil-command conductor.');
   const starts = [40, 55, 56, 57].includes(id) ? ['start'] : id === 60 ? ['start-a'] : id === 61 ? ['start-a', 'start-b'] : [];
@@ -249,6 +267,18 @@ function verifyChallenge(x: Exercise, lesson: ConfigurationLesson): void {
     case 63: x.check('Open I1 conductor inhibits PLC motor output', !closed(x.result, 'starter')); break;
     case 64: x.check('Missing NC feedback prevents initial arming after Reset', !closed(x.result, 'safety-relay')); x.check('Feedback status explicitly reports absence', x.result.deviceStates['safety-relay'].details.includes('feedback absent')); break;
   }
+  if(id>=65){
+    const stopped:Record<number,string[]>={65:['strip'],66:['right'],68:['strip'],70:['first','second'],71:['bell'],73:['beacon'],75:['call'],77:['alarm'],78:['pilot'],79:['beacon'],80:['courtesy']};
+    for(const load of stopped[id]??[])x.off(load);
+    if(id===66)x.on('left');
+    if(id===67)x.check('Missing supplemental feed leaves a measurable drop',x.voltage(endpoint('far','L'),endpoint('far','N'))!<23.5);
+    if(id===69)x.check('Open warm pad leaves only cool channel',Number(x.result.deviceStates.tape.warmWatts)<.01&&Number(x.result.deviceStates.tape.coolWatts)>1);
+    if(id===72)x.check('Rear request cannot reach chime',x.result.deviceStates.chime.call==='Idle');
+    if(id===74){x.on('buzzer');x.check('Acknowledge cannot silence warning',!closed(x.result,'memory'));}
+    if(id===76)x.check('Missing close leg prevents reversal',x.result.deviceStates.actuator.level===1);
+    if(id===79)x.on('instrument');
+    if(id===80){x.on('bell');x.check('AC relay still picks up',closed(x.result,'interface'));}
+  }
   if (id === 11) x.check('Branch short operates common RCBO', !!x.result.deviceStates.protect.tripped);
 }
 
@@ -285,6 +315,8 @@ for (const lesson of LESSONS) {
     const targetWire = lesson.challenge.wire ? fault.circuit.wires.find(w => w.id === lesson.challenge.wire) : undefined;
     assert.ok(lesson.challenge.wire || lesson.challenge.component, 'Challenge needs an explicit target');
     fault.circuit.faults = [{ type: lesson.challenge.fault, wire: lesson.challenge.wire, component: lesson.challenge.component, enabled: true }];
+    if(lesson.id===74)fault.set('ack','pressed',true);
+    if(lesson.id===76)fault.set('direction','position',1);
     if (lesson.id === 64) fault.set('reset', 'pressed', true);
     fault.run('Apply exact authored challenge target');
     verifyChallenge(fault, lesson);
@@ -315,10 +347,10 @@ const report = {
   schemaVersion: 1, generatedAtUtc: new Date().toISOString(), execution: 'Node 24 native TypeScript transformation; no browser interaction',
   sourceModules: ['lab/lib/lessons.ts', 'lab/lib/simulation.ts'],
   settings: { timeStepSeconds: STEP_SECONDS, defaultSettleTicks: SETTLE_TICKS, powerOffToleranceW: POWER_TOLERANCE, unloadedVoltageToleranceV: VOLTAGE_TOLERANCE },
-  coverage: { lessons: LESSONS.length, independentOperatingCases: 64, authoredFaultTargets: LESSONS.filter(l => l.challenge.wire || l.challenge.component).length,
+  coverage: { lessons: LESSONS.length, independentOperatingCases: records.length, authoredFaultTargets: LESSONS.filter(l => l.challenge.wire || l.challenge.component).length,
     singlePhaseNominal230Cases: LESSONS.filter(l => l.circuit.supply.phase === 'single').length,
     industrial400ReferenceCases: LESSONS.filter(l => l.circuit.supply.phase === 'three').length },
-  summary: { passed: structureErrors.length === 0 && LESSONS.length === 64 && failures.length === 0, lessonPasses: records.length - failures.length, lessonFailures: failures.length, structuralErrors: structureErrors, elapsedMs: Date.now() - started },
+  summary: { passed: structureErrors.length === 0 && LESSONS.length === 80 && failures.length === 0, lessonPasses: records.length - failures.length, lessonFailures: failures.length, structuralErrors: structureErrors, elapsedMs: Date.now() - started },
   limitations: [
     'Results validate the declared educational network and control behaviour, not a real installation or Irish regulatory compliance.',
     'Fault prerequisites are explicit; OR permissions, retained run-on and momentary holding circuits must be placed in the documented state before diagnosis.',

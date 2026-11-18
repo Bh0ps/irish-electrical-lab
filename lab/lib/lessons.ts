@@ -1,5 +1,6 @@
 import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Endpoint, Parameters, TerminalRole, Wire } from './types';
 import * as Registry from './components.ts';
+import { furnishCourseBoard } from './board-examples.ts';
 import { furnishCableExamples } from './cables.ts';
 
 const IRISH = [
@@ -24,6 +25,8 @@ const MANUFACTURERS:Record<string,{title:string;url:string}>={
   safety:{title:'Pilz: PNOZ X3 operating manual, reset and feedback comparison',url:'https://www.pilz.com/download/open/OM_PNOZ_X3_20547-EN-16.pdf'},
 };
 
+import { ELV_PAGES, ELV_WORKED, elvPage, lessonIdLimit } from './elv-coursebook.ts';
+import { wireElvLesson } from './elv-circuits.ts';
 type Node = [string, string];
 const node = (component: string, terminal: string): Node => [component, terminal];
 const endpoint = ([component, terminal]: Node): Endpoint => ({ component, terminal });
@@ -93,6 +96,7 @@ class Bench {
   document(): CircuitDocument {
     const count = this.components.length - 1, rows = Math.max(1, Math.ceil(count / 5));
     this.components.slice(1).forEach((c, i) => { c.position = [-2 + (i % 5) * 1.75, 0, rows === 1 ? 0 : -2 + Math.floor(i / 5) * 5 / (rows - 1)]; });
+    if(this.id>=65)this.components.slice(1).forEach((c,i)=>{c.position=[-2.6+(i%4)*2.75,0,-2.1+Math.floor(i/4)*3.9];});
     if(this.id===11){const left=this.components.find(c=>c.id==='gang-a')!,right=this.components.find(c=>c.id==='gang-b')!;left.params={...left.params,gangModule:'left',gangGroup:'two-gang-11'};right.params={...right.params,gangModule:'right',gangGroup:'two-gang-11'};right.position=[left.position[0]+.46,left.position[1],left.position[2]];}
     return furnishCableExamples({ version: 1, id: `lesson-${this.id}`, name: this.name, revision: 0,
       supply: { enabled: true, phase: this.three ? 'three' : 'single', voltage: this.three ? 400 : 240, frequency: 50, sourceResistance: 0.12 },
@@ -101,7 +105,8 @@ class Bench {
 }
 
 function buildCircuit(id: number, title: string): CircuitDocument {
-  const b = new Bench(id, title, id >= 53);
+  const b = new Bench(id, title, id >= 53 && id <= 64);
+  if(id>=65){b.protectedSingle();wireElvLesson(b,id);return b.document();}
   if (id >= 7 && id <= 52) b.protectedSingle();
   if (id >= 53) b.protectedThree();
   const sw = (i: string, l: string, feed = b.live) => b.control('switch', i, l, feed);
@@ -228,7 +233,7 @@ function buildCircuit(id: number, title: string): CircuitDocument {
       let x: Node = ['run-bus', '3']; if (id === 52) x = b.control('cutout', 'beam', 'Safety beam permission · abstract gate interface', x, { closed: true }); b.load('motor', 'operator', id === 41 ? 'Shutter packaged motor operator' : 'Gate packaged motor operator', x, 300, { packagedDirection: true }); break;
     }
     case 42: { b.load('alarm', 'smoke', 'Smoke alarm with backup', b.live, 2, { batteryBackup: true }); b.load('alarm', 'heat', 'Heat alarm with backup', b.live, 2, { batteryBackup: true }); b.wire(['smoke', 'LINK'], ['heat', 'LINK'], 'control'); break; }
-    case 43: { b.add('transformer', 'tx', 'Doorbell isolating transformer · 12 V', { outputVoltage: 12 }); b.mains('tx'); b.add('pushbutton', 'push', 'Doorbell push · NO', { pressed: false }); b.wire(['tx', '+'], ['push', 'COM'], 'DC+'); b.add('chime', 'chime', 'Low-voltage door chime', { watts: 3, ratedVoltage: 12, doubleInsulated: true }); b.wire(['push', 'NO'], ['chime', 'L'], 'DC+'); b.wire(['tx', '-'], ['chime', 'N'], 'DC-'); break; }
+    case 43: { b.add('transformer', 'tx', 'Doorbell transformer · 12 V AC', { outputVoltage: 12 }); b.mains('tx'); b.add('pushbutton', 'push', 'Doorbell push · NO', { pressed: false }); b.wire(['tx', '+'], ['push', 'COM'], 'output'); b.add('chime', 'chime', 'Low-voltage door chime', { watts: 3, ratedVoltage: 12, doubleInsulated: true }); b.wire(['push', 'NO'], ['chime', 'L'], 'output'); b.wire(['tx', '-'], ['chime', 'N'], 'output'); break; }
     case 44: case 45: { b.add('emergency', 'emergency', id === 44 ? 'Non-maintained emergency fitting' : 'Maintained emergency fitting', { maintained: id === 45, batteryCharge: 1, watts: 8 }); b.mains('emergency'); if (id === 45) b.wire(sw('normal-switch', 'Normal illumination switch'), ['emergency', 'SL'], 'control'); break; }
     case 46: { b.contactor('permission', 'EVSE charge-permission interface'); const x = b.powered('sensor', 'load-control', 'Load-management permission', { active: true, demand: true, mode: 'load' }); b.wire(b.live, ['load-control', 'IN'], 'control'); b.coil('permission', x); b.wire(b.live, ['permission', '1']); b.load('ev', 'evse', 'Single-phase EVSE · packaged controls', ['permission', '2'], 1200, { packagedProtection: true }); break; }
     case 47: { b.add('isolator', 'pv-isolator', 'Inverter AC isolation', { closed: true }); b.wire(b.live, ['pv-isolator', 'LIN']); b.wire(b.neutral, ['pv-isolator', 'NIN'], 'N'); b.add('pv', 'inverter', 'Grid-following PV inverter · AC side', { watts: 500, power: 500, generation: 500, antiIslanding: true }); b.wire(['pv-isolator', 'LOUT'], ['inverter', 'L']); b.wire(['pv-isolator', 'NOUT'], ['inverter', 'N'], 'N'); b.wire(b.earth, ['inverter', 'PE'], 'PE'); b.load('socket', 'home', 'Site demand receiving generated energy', b.live, 250); break; }
@@ -562,9 +567,9 @@ const SPECS: Spec[] = [
     ['Both alarms have distinct mains load branches.', 'LINK joins to LINK rather than to a supply conductor.']],
   ['Transformer doorbell and momentary push', 'Safety & energy', 'Routine',
     'A doorbell push operates an extra-low-voltage loop. The transformer input remains on the mains side while the user-operated push belongs to the output side.',
-    'Transformer + passes through the push NO contact to chime L. Chime N returns to transformer −. The mains L/N/PE terminate at the transformer input equipment.',
+    'The first AC secondary terminal feeds the push. Its normally open contact supplies chime terminal 1. Terminal 2 returns to the other winding end. The mains L/N/PE terminate at the transformer input equipment.',
     'Press and hold the virtual push to operate the chime; release it to stop. Compare the transformer output supply with the chime voltage while the push is open.',
-    'Measure approximately 12 V across the transformer output pair. With the push open, the source output can remain available while the chime receives no complete operating loop.',
+    'Measure approximately 12 V AC between the secondary terminals. With the push open, the source output can remain available while the chime receives no complete operating loop.',
     'open-live', 'The transformer produces an output but the chime cannot operate.', 'Trace the low-voltage push and chime series loop.', 'An output-loop discontinuity prevents sound even with healthy transformer supply. Keep the repair on the separated output side.',
     ['Pressed push supplies the chime.', 'Released push interrupts chime operating power.']],
   ['Non-maintained emergency luminaire', 'Safety & energy', 'Routine',
@@ -804,7 +809,7 @@ function roleExplanation(circuit: CircuitDocument): string {
   const roles = circuit.supply.phase === 'three'
     ? 'L1/L2/L3 are phase-displaced active conductors. Neutral is the phase-to-neutral return; protective earth is a separate network. A winding or phase-to-phase load must be measured across its actual two terminals.'
     : 'Line supplies the operating path; neutral returns normal load current. Protective earth is not a substitute neutral and successful operation does not verify its continuity.';
-  return `${roles} Source impedance is ${circuit.supply.sourceResistance} Ω and each drawn conductor has an explicit ${circuit.wires[0]?.resistance ?? 0.01} Ω resistance. These finite educational values influence voltage drop and prospective fault response; they are not measured values for a real property.`;
+  return `${roles} Source impedance is ${circuit.supply.sourceResistance} Ω and baseline conductors have an illustrative ${circuit.wires[0]?.resistance ?? 0.01} Ω resistance. These finite educational values influence voltage drop and prospective fault response; they are not measured values for a real property.`;
 }
 
 function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string;apprentice:string} {
@@ -849,13 +854,14 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
 function createLesson(spec: Spec, index: number): ConfigurationLesson {
   const id = index + 1;
   const [title, category, tag, purpose, connections, sequence, measurement, fault, originalBriefing, originalHint, originalAnswer, checks] = spec;
-  const circuit = buildCircuit(id, title);
-  const target = CHALLENGE_TARGETS[id];
+  const circuit = furnishCourseBoard(buildCircuit(id, title));
+  const extra=elvPage(id);
+  const target:ChallengeTarget = extra ? {path:extra.target} : CHALLENGE_TARGETS[id];
   if (!target) throw new Error(`Lesson ${id} has no exact challenge target`);
   const briefing = target.briefing ?? originalBriefing, hint = target.hint ?? originalHint, answer = target.answer ?? originalAnswer;
   const deviceNames = circuit.components.filter(c => c.id !== 'supply').map(c => `${c.label} (${c.id})`).join('; ');
   const connectionMap = circuit.wires.map(w => `${w.from.component}.${w.from.terminal} → ${w.to.component}.${w.to.terminal} [${w.role}]`).join('; ');
-  const context = id >= 53 ? 'Industrial · Republic of Ireland · 400 V three phase / approximately 230 V phase-neutral'
+  const context = extra ? "Extra-low-voltage secondary · 240 V single-phase study input" : id >= 53 ? 'Industrial · Republic of Ireland · 400 V three phase / approximately 230 V phase-neutral'
     : id >= 49 ? 'Single-phase commercial equipment · Republic of Ireland · 240 V study setting'
     : 'Domestic / light commercial · Republic of Ireland · 240 V study setting';
   const caveat = tag === 'Equipment dependent' || tag === 'Advanced'
@@ -863,6 +869,13 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
     : tag === 'Existing' ? 'This is an encountered arrangement for comparison and interpretation. It is not a recommendation that a new Irish installation should use this topology. Current design, verification and manufacturer requirements decide suitability.'
     : 'The representative arrangement teaches circuit purpose and behaviour. Real design and verification additionally depend on location, installation method, supply characteristics and the actual equipment.';
   const references = [...IRISH];
+  if(id>=65&&id<=70)references.push({title:'MEAN WELL · constant-voltage and constant-current LED operation',url:'https://led.meanwell.com/qa.aspx'});
+  if(id===43||id>=71&&id<=74||id===80)references.push({title:'Resideo · bell pushes, chimes and transformer ratings',url:'https://www.resideo.com/emea/en/-/media/EMEA%20Site%20Cluster/Mastersite/Documents/Sales%20Literature/Resideo_Electrical_Wholesale_Online_Catalogue_August_2020.pdf/'});
+  if([74,75,80].includes(id))references.push({title:'Finder · relay coils and separate changeover contacts',url:'https://cdn.findernet.com/app/uploads/ZDPENXX4052.pdf'});
+  if(id===76)references.push({title:'Belimo · 24 V three-point ball-valve actuator and real travel time',url:'https://www.belimo.com/mam/general-documents/datasheets/en-gb/belimo_LR24A-LA_datasheet_en-gb.pdf'});
+  if(id===77)references.push({title:'Aspen Pumps · high-level safety switch with common, NC and NO terminals',url:'https://dam.aspenpumps.com/api/media/file/AW0012%20Silent%2B%20MINI%20WHITE%20MANUAL%2009-23%20Issue%207%20Print%20v2-8.pdf?prefix=media'});
+  if(id===78)references.push({title:'ifm · normally open PNP inductive sensor',url:'https://media.ifm.com/dam/546f88cf-4cdf-47ac-b6ee-bee685c33458/Original/IFS204-02_EN-GB.pdf'});
+  if(id===79)references.push({title:'Littelfuse · DC blade-fuse carrier ratings',url:'https://www.littelfuse.com/assetdocs/277-in-line-datasheet?assetguid=95bec608-b8d0-4cce-90c8-f39241cc9a9e'});
   if (id === 7) references.push({title:'IET: neutral–earth faults and residual-current protection (circuit principle)',url:'https://electrical.theiet.org/media/1066/2006_19_summer_wiring_matters__complete_no_adverts.pdf'});
   if (id >= 49) references.push(HSA);
   if (id >= 25 && id <= 34) references.push(HEATING);
@@ -893,7 +906,7 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
     64:'Pilz documents channel, reset and feedback arrangements for a real safety relay. This lab exposes those concepts through S1/S2/RESET/FB and a COM–OUT contact. Its state machine and terminal names do not establish a safety category, diagnostic coverage or performance level.',
   };
   return {
-    id, title, category, tag, level: id <= 24 ? 'Foundation' : id < 53 ? 'Intermediate' : 'Advanced', context,
+    id, title, category, tag, level: extra ? id<=66||id===71 ? 'Foundation' : id===80?'Advanced':'Intermediate' : id <= 24 ? 'Foundation' : id < 53 ? 'Intermediate' : 'Advanced', context,
     summary: purpose,
     sections: [
       ...(id === 7 ? [{title:'Why a wrong connection can still light the lamp',beginner:'A lamp response is only one check. An extra wire between neutral-out and earth joins paths that have different purposes. The test flags that link even with the switch off. With the lamp on, this example can divert enough return current to trip its RCBO. A missing earth or reversed L/N can still leave the lamp operating while failing the wiring checks.',apprentice:'The solver calculates current from the actual endpoints and conductor resistance. A downstream N–PE connection places an alternative return outside the RCBO monitored neutral contact. Residual operation depends on the vector current imbalance and the declared threshold; a link with no diverted current does not cause an invented trip. The source reference bond is distinct from this added installation link. Run test checks the intact terminal map, rejects extra connections, opens and closes a copy of the switch, and compares lamp power and voltage. Copies preserve your controls and electrical topology.'}] : []),
@@ -901,7 +914,7 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
       { title: 'Connections and conductor paths', beginner: connections, apprentice: `${roleExplanation(circuit)} The complete editable terminal map is: ${connectionMap}. Every arrow is an actual graph connection used by the solver; visual proximity alone creates no connection.` },
       { title: 'Operating sequence and control logic', beginner: sequence, apprentice: `Follow the stated sequence with the simulator running and compare device states after each action. ${sequence} Contacts are evaluated from their actual coil/input paths; a hand-operated control, powered controller input, feedback contact and energy-source state are distinct causes. Where delays are present, advance simulated time and inspect events rather than assuming an immediate mechanical response.` },
       { title: 'Measurements and model limits', beginner: measurement, apprentice: `${measurement} Use a voltage pair across the actual load or winding, and use a selected conductor for current. Supply and load readings come from the solved network with ${circuit.supply.frequency} Hz and a ${circuit.supply.voltage} V preset. Power and current depend on declared parameters, conductor resistance, phase relationships and control state. Coil pickup, trip timing, conversion, electronics and rotating machinery use documented educational abstractions; this is not a commissioning instrument.` },
-      {title:'Calculations and expected readings',...calculationNotes(circuit,fault)},
+      {title:'Calculations and expected readings',...(extra?{beginner:ELV_WORKED[id],apprentice:ELV_WORKED[id]+' '+extra.connection+' '+extra.reading+' Compare the actual secondary terminals under load. Driver voltage and secondary winding voltage follow different models. Across a conductor, ΔV = I × Z. For DC, Z is its resistance. Cable resistance and load ratings are illustrative.'}:calculationNotes(circuit,fault))},
       ...(comparison[id]?[{title:'Manufacturer comparison and declared interface',beginner:comparison[id],apprentice:'Use the linked manufacturer document to compare the actual supply terminals, contact/output type and operating conditions with this model. Electrical terminal IDs in a study build are stable software identities. Real equipment compatibility, configuration, protection and verification remain equipment dependent.'}]:[]),
       { title: 'Fault-finding challenge', beginner: `${briefing} Hint: ${hint}`, apprentice: `${answer} Begin with the symptom, compare available supply with the complete normal return, then distinguish the control permission and protective path. Record the actual changed conductor or device setting. Clear the fault and reset any tripped simulated device only after the represented cause is removed; an apparently working load is not proof of protective correctness.` },
       { title: 'Irish context and real-work boundary', beginner: `${context}. Ireland's supply is nominally 230 V single phase at 50 Hz; the requested 240 V study setting lies within ESB's published range. ${caveat}`, apprentice: `Refer to current NSAI I.S. 10101 rules and the linked primary guidance, including amendments/corrections identified by NSAI. Restricted Electrical Works must be performed and certified by a Safe Electric Registered Electrical Contractor; workplace inspection/testing requires competent persons. This exercise checks its declared model, not a real installation. Cable sizes, installation methods, discrimination, earthing arrangements, measured loop impedance, insulation, equipment compatibility and statutory verification are not established by a green simulation result.` },
@@ -920,13 +933,13 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
   };
 }
 
-export const LESSONS: ConfigurationLesson[] = SPECS.map(createLesson);
+export const LESSONS: ConfigurationLesson[] = [...SPECS,...ELV_PAGES.map((p):Spec=>[p.title,'Extra-low voltage','Equipment dependent',p.situation,p.connection,p.procedure,p.reading,'open-wire',p.symptom,'Compare both ends of the affected path and follow the return.', 'The conductor between '+p.target[0].join('.')+' and '+p.target[1].join('.')+' is open. Restore it and repeat the operating sequence.',[p.idea,p.reading]])].map(createLesson);
 export const getLesson = (id: number): ConfigurationLesson | undefined => LESSONS.find(lesson => lesson.id === id);
 
 /** Structural validation is callable by integration checks; it has no runtime side effects. */
 export function validateLessons(): string[] {
   const errors: string[] = [];
-  if (LESSONS.length !== 64) errors.push(`Expected 64 lessons, received ${LESSONS.length}`);
+  if (LESSONS.length !== lessonIdLimit) errors.push(`Expected ${lessonIdLimit} lessons, received ${LESSONS.length}`);
   const signatures = new Map<string, number>();
   for (const lesson of LESSONS) {
     const components = new Map(lesson.circuit.components.map(c => [c.id, c]));

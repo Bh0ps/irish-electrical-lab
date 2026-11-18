@@ -156,7 +156,7 @@ export function BlenderEquipment(props:EquipmentProps&{fallback:React.ReactNode}
   const displays:THREE.Object3D[]=[],ratingPlates:THREE.Object3D[]=[];presentation.scene.traverse(node=>{if(node.userData.partId==='display')displays.push(node);if(node.userData.ratingPlate)ratingPlates.push(node);});
   const type=props.component.type,active=!!props.state?.energized;
   const reading=(()=>{
-    if(['multimeter','clamp'].includes(type))return String(props.component.params.reading??'—');
+    if(['multimeter','clamp','forktester'].includes(type))return String(props.component.params.reading??'—');
     if(type==='meter')return typeof props.state?.meterWatts==='number'?(props.state.meterWatts/1000).toFixed(3)+' kW':'—';
     if(type==='source'||type==='source3')return active?String(props.component.params.studyVoltage??(type==='source3'?400:240))+' V':'OFF';
     if(type==='vfd')return (active?Number(props.component.params.frequency??50).toFixed(1):'0.0')+' Hz';
@@ -167,5 +167,5 @@ export function BlenderEquipment(props:EquipmentProps&{fallback:React.ReactNode}
   const values={...props.definition.defaults,...props.component.params};
   const amp=Number(values.rating??values.currentRating??16),residual=Number(values.residualRating??Number(values.tripMa??30)/1000)*1000;
   const rating=type==='rcbo'?`${amp} A · ${Number(residual.toFixed(2))} mA`:['rcd','rcd3'].includes(type)?`${Number(residual.toFixed(2))} mA`:`${amp} A`;
-  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}{ratingPlates.map(node=><RatingText key={node.uuid} node={node} text={rating}/>)}</group>;
+  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{type!=='forktester'&&displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}{ratingPlates.map(node=><RatingText key={node.uuid} node={node} text={rating}/>)}</group>;
 }

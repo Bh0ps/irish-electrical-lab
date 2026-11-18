@@ -434,6 +434,7 @@ def set_view(root,view):
     component_type=str(root.get('galleryKey','')).split(':')[0]
     travel=1.0 if any(child.get('serviceChamber') for child in root.children_recursive) else .55
     for obj in root.children_recursive:
+        if obj.get('boardDoor'):obj.rotation_euler.y=-1.69
         if obj.get('partId')=='cover' and obj.get('restPosition'):
             p=Vector(obj['restPosition']);obj.location=p
             obj.rotation_euler=(0,0,0);obj.hide_render=False
@@ -445,6 +446,7 @@ def set_view(root,view):
             cover_assembly=any(p.get('partId')=='cover' for p in ancestors(obj))
             chamber=any(p.get('serviceChamber') for p in ancestors(obj))
             obj.hide_render=view=='cutaway' and cover_assembly or view=='normal' and (internal or chamber)
+            if any(p.get('boardShield') for p in ancestors(obj)) and view!='normal':obj.hide_render=True
             if view=='cutaway' and (part=='body' or obj.get('inspectionHousing') or obj.get('lampEnvelope')):
                 obj.data.materials.clear();obj.data.materials.append(material('Conceptual cutaway housing',(.40,.64,.55),0,.5,.14))
 
@@ -466,6 +468,14 @@ def fit_camera(root,camera,direction,padding=1.13):
     points=[o.matrix_world@Vector(corner) for o in root.children_recursive if o.type=='MESH' and not o.hide_render for corner in o.bound_box]
     lower=Vector(tuple(min(p[i] for p in points) for i in range(3)));upper=Vector(tuple(max(p[i] for p in points) for i in range(3)))
     target=(lower+upper)*.5;camera.location=target+Vector(direction)*max(2,(upper-lower).length)
+    if root.get('galleryKey') in ('gammaboard:default','invictaboard:default'):
+        # These enclosures use the declared board scale. Reposition and scale the
+        # studio fixtures so they do not end up inside the shell and its door.
+        factor=(upper.z-lower.z)/1.55
+        for light in (o for o in bpy.context.scene.objects if o.type=='LIGHT'):
+            light.location=target+(light.location-Vector((0,0,.5)))*factor
+            light.rotation_euler=(target-light.location).to_track_quat('-Z','Y').to_euler()
+            light.data.energy*=factor*factor;light.data.size*=factor
     camera.rotation_euler=(target-camera.location).to_track_quat('-Z','Y').to_euler();bpy.context.view_layer.update()
     inverse=camera.matrix_world.inverted();projected=[inverse@p for p in points]
     camera.data.ortho_scale=max(max(p.x for p in projected)-min(p.x for p in projected),max(p.y for p in projected)-min(p.y for p in projected))*padding
@@ -572,10 +582,11 @@ def main():
     for entry in selected:
         recipe=json.loads((HERE/'recipes'/entry['file']).read_text());root=reconstruct(recipe);authored_first_fixture(recipe,root);authored_library_variants(recipe,root)
         api=SimpleNamespace(**{name:globals()[name] for name in ('empty','material','box','cyl','torus','semantic','ancestors','setmesh','boolean_difference','label')})
-        features=enrich(recipe,root,api)
-        features.append(add_service_details(recipe,root,api))
+        workshop=any(o.get('detailId') for o in root.children_recursive) or recipe['component']['type'] in ('forktester','stripper','crimper','torquedriver')
+        features=enrich(recipe,root,api,workshop=workshop)
+        if not workshop:features.append(add_service_details(recipe,root,api))
         # Persist the physical-reference inventory on both exported detail levels.
-        root['referenceIds']=references['familySources'][recipe['definition']['model']]
+        root['referenceIds']=references.get('variantSources',{}).get(recipe['galleryKey'],references['familySources'].get(recipe['definition']['model'],[]))
         root['detailFeatures']=features
         add_terminal_legends(recipe,root);tag_inspection_shells(root)
         root['source']='Original typed recipe refined in Blender 4.5 LTS';root['galleryKey']=entry['galleryKey'];root['conceptualInternals']=True

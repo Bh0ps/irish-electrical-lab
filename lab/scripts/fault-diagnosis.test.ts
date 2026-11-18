@@ -90,7 +90,7 @@ test('open isolated converter output return is assessed with referenced model ev
   assert.equal(assessFaultDiagnosis(document, result, target.fault, 2, target).accepted, true);
 });
 
-test('all 64 authored defects can be corroborated, with the doorbell push exposing its separated loop', () => {
+test('all 80 authored defects can be corroborated, with the doorbell push exposing its separated loop', () => {
   for (const lesson of LESSONS) {
     const { document, result, target } = challenge(lesson.id);
     if (lesson.id === 43) {

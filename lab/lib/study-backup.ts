@@ -1,3 +1,4 @@
+import { lessonIdLimit, validLessonId } from './elv-coursebook.ts';
 import type { CircuitDocument } from './types.ts';
 import { validateCircuit, writeRecordsAtomic, type Progress } from './storage.ts';
 import { validateTestRecord } from './test-record.ts';
@@ -39,9 +40,9 @@ function count(value:unknown,label:string,max=Number.MAX_SAFE_INTEGER):number{if
 function epoch(value:unknown,label:string):void{count(value,label,8_640_000_000_000_000);}
 function endpoint(value:unknown,label:string):void{const item=plain(value,label);validId(item.component,label+' component');validId(item.terminal,label+' terminal');}
 function validateLearning(value:unknown):void {
-  const records=plain(value,'learning');if(Object.keys(records).length>64)fail('learning exceeds 64 lessons.');
+  const records=plain(value,'learning');if(Object.keys(records).length>lessonIdLimit)fail('too many learning records.');
   for(const [id,value] of Object.entries(records)){
-    if(!/^([1-9]|[1-5][0-9]|6[0-4])$/.test(id))fail('learning must use valid lesson IDs.');
+    if((String(Number(id))!==id||!validLessonId(Number(id))))fail('learning must use valid lesson IDs.');
     const record=plain(value,'lesson '+id+' learning');if(record.version!==1)fail('unsupported lesson learning version.');
     if(!Array.isArray(record.activityIds)||record.activityIds.length>512)fail('completed activities exceed the supported limit.');
     for(const activity of record.activityIds)validId(activity,'activity',256);
@@ -55,7 +56,7 @@ function validateLearning(value:unknown):void {
     for(const value of record.evidence){
       const item=plain(value,'measurement');validId(item.id,'measurement',1024);validId(item.circuitId,'measurement circuit');
       if(evidenceIds.has(item.id as string))fail('duplicate measurement identity.');evidenceIds.add(item.id as string);
-      if(item.lessonId!==undefined&&(!Number.isSafeInteger(item.lessonId)||Number(item.lessonId)<1||Number(item.lessonId)>64))fail('measurement has an invalid lesson ID.');
+      if(item.lessonId!==undefined&&!validLessonId(item.lessonId))fail('measurement has an invalid lesson ID.');
       count(item.revision,'measurement revision');epoch(item.recordedAt,'measurement time');
       if(!['voltage','current','resistance'].includes(String(item.mode)))fail('unsupported measurement mode.');
       if(item.value!==null&&(typeof item.value!=='number'||!Number.isFinite(item.value)))fail('measurement value must be finite or unresolved (null).');
@@ -65,7 +66,14 @@ function validateLearning(value:unknown):void {
       if(item.unit!==({voltage:'V',current:'A',resistance:'Ω'} as Record<string,string>)[String(item.mode)])fail('measurement unit does not match its mode.');
       if(item.a!==undefined)endpoint(item.a,'red probe');if(item.b!==undefined)endpoint(item.b,'black probe');if(item.wire!==undefined)validId(item.wire,'measured conductor');
       if(item.mode==='current'&&item.wire===undefined)fail('a current measurement requires a conductor identity.');
-      if(item.mode!=='current'&&(item.a===undefined||item.b===undefined))fail('voltage and resistance measurements require two probe endpoints.');
+      const profile=item.instrument===undefined?undefined:plain(item.instrument,'instrument evidence');
+      if(profile){
+        const method=String(profile.method),expected=method==='fork-current'?'current':method==='resistance'?'resistance':'voltage';
+        if(profile.model!=='T6-600'||!['fork-current','fork-voltage','probe-voltage','resistance'].includes(method)||expected!==item.mode||profile.held!==false||!['none','pad','black'].includes(String(profile.reference))||typeof profile.displayed!=='string'||profile.displayed.length>20||profile.signal!==undefined&&!['AC','DC'].includes(String(profile.signal)))fail('invalid tester reading.');
+        if(method.startsWith('fork-')&&(item.a!==undefined||item.b!==undefined&&(method!=='fork-voltage'||profile.reference!=='black')))fail('unexpected probe endpoints for the fork method.');
+        if(method.startsWith('fork-')&&item.wire===undefined||method==='fork-voltage'&&(profile.reference==='none'||profile.reference==='black'&&item.b===undefined))fail('the fork reading is missing a conductor or reference.');
+      }
+      if(item.mode!=='current'&&profile?.method!=='fork-voltage'&&(item.a===undefined||item.b===undefined))fail('voltage and resistance measurements require two probe endpoints.');
       const state=plain(item.controlState,'measurement control state');if(Object.keys(state).length>8192)fail('measurement control state is too large.');
       for(const [key,value] of Object.entries(state)){validId(key,'control-state key',256);if(!['string','number','boolean'].includes(typeof value)||(typeof value==='number'&&!Number.isFinite(value)))fail('control-state values must be finite scalar parameters.');}
     }
@@ -74,12 +82,12 @@ function validateLearning(value:unknown):void {
 export function validateProgress(value:unknown):Progress {
   const source=plain(value,'progress');
   const ids=(value:unknown,label:string):number[]=>{
-    if(!Array.isArray(value)||value.length>64||value.some(id=>!Number.isSafeInteger(id)||id<1||id>64))fail(label+' must contain lesson IDs from 1 to 64.');
+    if(!Array.isArray(value)||value.length>lessonIdLimit||value.some(id=>!validLessonId(id)))fail(label+' must contain valid course numbers.');
     return Array.from(new Set(value as number[]));
   };
   const lessons=ids(source.lessons,'studied lessons'),builds=ids(source.builds,'completed builds'),faults=ids(source.faults,'diagnosed faults'),scoreSource=plain(source.scores,'scores'),scores:Record<string,number>={};
-  if(Object.keys(scoreSource).length>64)fail('too many lesson scores.');
-  for(const [key,score] of Object.entries(scoreSource)){if(!/^([1-9]|[1-5][0-9]|6[0-4])$/.test(key)||typeof score!=='number'||!Number.isFinite(score)||score<0||score>100)fail('scores must be between 0 and 100 for valid lesson IDs.');scores[key]=score;}
+  if(Object.keys(scoreSource).length>lessonIdLimit)fail('too many lesson scores.');
+  for(const [key,score] of Object.entries(scoreSource)){if((String(Number(key))!==key||!validLessonId(Number(key)))||typeof score!=='number'||!Number.isFinite(score)||score<0||score>100)fail('scores must be between 0 and 100 for valid lesson IDs.');scores[key]=score;}
   const result={lessons,builds,faults,scores} as Progress & Record<string,unknown>;
   // Preserve extensions through browser-to-desktop migration instead of dropping newer progress.
   for(const [key,item] of Object.entries(source))if(!['lessons','builds','faults','scores'].includes(key)){

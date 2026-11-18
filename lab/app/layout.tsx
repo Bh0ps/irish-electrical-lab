@@ -5,7 +5,7 @@ import "./simple-lab.css";
 
 export const metadata: Metadata = {
   title: "Irish Electrical Lab",
-  description: "A local 3D electrical study workbench with 64 Irish domestic and industrial configurations.",
+  description: "A local 3D electrical study workbench with 80 domestic, extra-low-voltage and industrial configurations.",
   other: {
     "codex-preview": "development",
   },

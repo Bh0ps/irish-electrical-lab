@@ -29,6 +29,7 @@ interface Props {
   initialActivityId?: string;
   onContinueLesson?: (id: number) => void;
   onOperateComponent?: (id: string) => void;
+  onPulseSetting?:(id:string,parameter:'level'|'mix',value:number)=>void;
   onSetDimmerLevel?: (level: number) => void;
   onFullExercises?: () => void;
   manualInspection?: { component: string; part: string };
@@ -255,6 +256,7 @@ export default function LearningPanel(props: Props) {
       <div className="task-topline"><span>{course ? chapterFor(props.lesson.id).title : stage.title}</span><b>{course ? `${index + 1} / ${activities.length}` : `Step ${stageStep} of ${stage.activities.length}`}</b></div>
       <h3 ref={taskHeading} tabIndex={-1}>{activity.title}</h3><p className="task-instruction">{activity.instruction}</p>
       {!!activity.options?.length && <div className="prediction-options">{activity.options.map(option => <button type="button" key={option.id} aria-pressed={answer === option.id} className={answer === option.id ? 'chosen' : ''} onClick={() => { setAnswer(option.id); setAccepted(false); setFeedback(''); }}>{option.label}</button>)}</div>}
+      {props.lesson.id>=65&&activity.kind==='operate'&&!!activity.expectedObservations?.length&&<ExtraLowVoltageReading lesson={props.lesson.id} activity={activity} doc={props.document} result={props.result} change={props.onPulseSetting}/>}
       {activity.bookStep === 'contact' && <ContactDiagram closed={switchClosed === true} onOperate={()=>props.onOperateComponent?.('switch')}/>}
       {measuringDimmer && <p className="meter-demo"><b>Lamp power</b><br/>25% · {low ? low.watts.toFixed(1)+' W' : 'Waiting for reading'}<br/>90% · {low && Math.abs(dimmerLevel-.9)<.001 && dimmerWatts!==undefined ? dimmerWatts.toFixed(1)+' W' : 'Waiting for reading'}</p>}
       {activity.bookStep === 'meter-demo' && <div className="meter-demo"><p><strong>L</strong> · lamp line &nbsp; ↔ &nbsp; <strong>N</strong> · lamp neutral</p>
@@ -275,6 +277,7 @@ export default function LearningPanel(props: Props) {
       {feedback && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
         {accepted && !currentAccepted ? 'The circuit changed. Check this step again with its current state.' : feedback}
       </div>}
+      {props.context && course && activity.bookStep && <div className="lesson-context">{props.context}</div>}
       {savedAchievement && !currentAccepted && <p className="task-saved-progress">Previously demonstrated. Check the current circuit to continue.</p>}
     </section>
     <details className="lesson-more-detail">
@@ -317,4 +320,25 @@ function ContactDiagram({closed,onOperate}:{closed:boolean;onOperate:()=>void}) 
     <p>{closed ? 'The contacts touch. The path is closed.' : 'There is a gap. The path is open.'}</p>
     <Button variant="outline" size="sm" onClick={onOperate}>Move the switch</Button>
   </div>;
+}
+
+function ExtraLowVoltageReading({lesson,activity,doc,result,change}:{lesson:number;activity:LessonActivity;doc:CircuitDocument;result?:SimulationResult;change?:Props['onPulseSetting']}){
+  const item=doc.components.find(c=>c.id===activity.component);
+  const fresh=result?.converged&&result.revision===doc.revision?result:undefined;
+  const knob=lesson===68?'level':lesson===69?'mix':undefined;
+  if(knob&&item?.type==='pwmcontrol'){
+    const percent=Math.round(Number(item.params[knob]??.5)*100);
+    const watts=(v:number)=>v.toLocaleString('en-IE',{maximumFractionDigits:1})+' W';
+    const tape=fresh?.deviceStates.tape;
+    return <div className="pulse-experiment">
+      <label>{knob==='level'?'Brightness':'Cool channel share'} · {percent}%
+        <input aria-label={knob==='level'?'Practice brightness':'Practice cool channel share'} type="range" min="0" max="100" step="1" value={percent} onChange={e=>change?.(item.id,knob,Number(e.target.value)/100)}/>
+      </label>
+      <output>{!fresh?'Waiting for the circuit':knob==='level'?'Strip power · '+watts(fresh.componentPower.strip??0):tape?'Warm · '+watts(Number(tape.warmWatts))+'   Cool · '+watts(Number(tape.coolWatts)):'Strip unavailable'}</output>
+    </div>;
+  }
+  if(!fresh)return null;
+  if(lesson===72)return <output className="elv-reading">Entrance call · {String(fresh.deviceStates.chime?.call??'Unavailable')}</output>;
+  if(lesson===76&&fresh.deviceStates.actuator)return <output className="elv-reading">Valve position · {Math.round(fresh.deviceStates.actuator.level*100)}% open</output>;
+  return null;
 }

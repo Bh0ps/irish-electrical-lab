@@ -29,8 +29,8 @@ test('JSON export/import preserves all circuit data and produces detached editab
   assert.deepEqual(imported,source);assert.notEqual(imported,source);assert.notEqual(imported.supply,source.supply);assert.notEqual(imported.components[1].params,source.components[1].params);
   imported.components[1].params.watts=100;imported.wires[0].bends[0][0]=99;assert.equal(source.components[1].params.watts,60);assert.equal(source.wires[0].bends[0][0],1);
 });
-test('all64 published circuits and their exact challenge targets survive import validation',()=>{
-  assert.equal(LESSONS.length,64);
+test('all80 published circuits and their exact challenge targets survive import validation',()=>{
+  assert.equal(LESSONS.length,80);
   for(const lesson of LESSONS){
     const doc=structuredClone(lesson.circuit);assert.deepEqual(validateCircuit(doc),doc);
     doc.faults=[{type:lesson.challenge.fault,enabled:true,...(lesson.challenge.component?{component:lesson.challenge.component}:{}),...(lesson.challenge.wire?{wire:lesson.challenge.wire}:{})}];
@@ -103,7 +103,7 @@ test('component, wire, fault, bend and parameter count limits protect imported b
 });
 test('lesson association is optional and otherwise an integer from1 to64',()=>{
   const unassociated=fixture();delete unassociated.lessonId;assert.equal(validateCircuit(unassociated).lessonId,undefined);
-  for(const id of [0,65,1.5,'7',NaN,null])rejects(['lessonId'],id,/lessonId/);
+  for(const id of [0,81,1.5,'7',NaN,null])rejects(['lessonId'],id,/lessonId/);
 });
 test('unknown ancillary fields are removed from returned canonical circuit',()=>{
   const doc=fixture(),data={...doc,untrustedMetadata:{hello:'world'}};const valid=validateCircuit(data);assert.deepEqual(valid,doc);

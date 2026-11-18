@@ -1,3 +1,4 @@
+import { simulatePulses } from './pulse-simulation.ts';
 import { COMPONENTS } from './components.ts';
 import { endpointKey, type CircuitDocument, type Complex, type ComponentInstance, type DeviceState, type Diagnostic, type Endpoint, type Parameters, type SimulationEvent, type SimulationResult } from './types.ts';
 
@@ -146,6 +147,17 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
       const level = clamp(number(p, 'level', 0.65), 0, 1);
       const resistance = getDimmerEquivalentResistance(level, number(p, 'referenceOhms', 960));
       if (closedCommand(item) && !state.tripped && resistance !== null) resistor(`${item.id}.dimming`, T('COM'), T('OUT'), resistance, item.id);
+    } else if (item.type === 'pwmcontrol' || item.type === 'proximity') {
+      resistor(item.id+'.electronics',T('+'),T('-'),20000,item.id);
+      if(item.type==='proximity')contact(item,'output','+','OUT',state.energized&&flag(p,'active'));
+      else for(const channel of ['W','C'])contact(item,channel,channel,'-',state.energized&&flag(p,'pulse'+channel));
+    } else if(item.type==='cctstrip'){
+      for(const channel of ['W','C'])resistor(item.id+'.'+channel,T('+'),T(channel),state['blocked'+channel]?1e8:nominal**2/Math.max(.01,number(p,'channelWatts',12)),item.id);
+    } else if(item.type==='floatvalve'){
+      for(const pin of ['OPEN','CLOSE'])resistor(item.id+'.'+pin,T(pin),T('COM'),nominal**2/2,item.id);
+    } else if(item.type==='callchime'){
+      resistor(item.id+'.supply',T('AC1'),T('AC2'),nominal**2/(state.energized?2:.15),item.id);
+      for(const pin of ['FRONT','REAR'])resistor(item.id+'.'+pin,T(pin),T('AC2'),10000,item.id);
     } else if (item.type === 'switch2') {
       contact(item, 'throw', 'COM', number(p, 'position', 0) === 0 ? 'T1' : 'T2', true);
     } else if (item.type === 'intermediate') {
@@ -256,12 +268,13 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
       for (const name of ['L1', 'L2', 'L3']) resistor(`${item.id}.load${name}`, T(name), T('N'), (document.supply.voltage / Math.sqrt(3)) ** 2 / (watts / 3), item.id);
     } else if (item.type === 'spd') {
       resistor(`${item.id}.standby`, T('L'), T('PE'), 1e9, item.id, false);
-    } else if (isType(item, 'conduit', 'multimeter', 'clamp')) {
-      // No conductive terminals: these are inspection and measurement tools.
+    } else if (!definition(item).terminals.length || isType(item, 'conduit', 'multimeter', 'clamp','invictaboard')) {
+      // A metal enclosure has one chassis PE stud. Its bond is tracked by the
+      // protective-network check; it creates no additional load or neutral link.
     } else if (loadTypes.has(item.type) || has('L') && has('N') && !converterTypes.has(item.type)) {
       let factor = faults.some(f => f.component === item.id && f.type === 'overload') ? 4 : 1;
       if (item.type === 'emergency') factor = state.normalActive ? 1 : Math.max(0.01, number(p, 'standbyWatts', 1)) / watts;
-      const resistance = number(p, 'ohms', nominal * nominal / watts) / factor;
+      const resistance = item.type==='led'&&state.reverseBlocked?1e8:number(p, 'ohms', nominal * nominal / watts) / factor;
       const pf = isType(item, 'motor', 'pump', 'fan', 'heatpump') ? clamp(number(p, 'powerFactor', 0.8), 0.1, 1) : 1;
       resistor(`${item.id}.load`, T('L'), T('N'), resistance * pf * pf, item.id, true, resistance * pf * Math.sqrt(1 - pf * pf));
       if (has('SL')) resistor(`${item.id}.switchedInput`, T('SL'), T('N'), 100000, item.id, false);
@@ -345,6 +358,10 @@ function installationDiagnostics(document: CircuitDocument, net: Network, solved
   for (const wire of document.wires) {
     if (!net.branches.some(b=>b.key===`wire:${wire.id}`)) continue;
     const root=paths.find(endpointKey(wire.from));
+    const construction=wire.cable&&document.cableRuns?.find(run=>run.id===wire.cable!.runId)?.kind;
+    if(construction&&['led-pair','bell-pair','multi-strip'].includes(construction)&&(active.has(root)||neutral.has(root)||wire.role==='PE')){
+      findings.push({...diag('elvCable:'+wire.id,'Extra-low-voltage cable on a mains or protective path','The selected bell or strip cable is the dedicated signalling sample. Inspect its endpoints and use the specified mains or protective material for this exercise.',undefined,'warning','protection'),wire:wire.id});
+    }
     const mismatch=wire.role==='N'&&active.has(root)&&!neutral.has(root)||['L','L1','L2','L3'].includes(wire.role)&&neutral.has(root)&&!active.has(root)||wire.role==='PE'&&!protective.has(root);
     if(mismatch) findings.push({...diag(`identification:${wire.id}`, 'Conductor identification conflicts with its connections', 'The selected conductor identification disagrees with its actual active, neutral or protective path. Identification does not alter current flow or make an incorrect connection electrically correct.', undefined, 'warning', 'protection'),wire:wire.id});
   }
@@ -503,6 +520,37 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
       const requested = closedCommand(item) && number(p, 'temperature', 18) < number(p, 'setpoint', item.type === 'cutout' ? 85 : 21);
       if (item.type === 'cutout' && !requested && number(p, 'temperature', 18) >= number(p, 'setpoint', 85)) trip(item, state, 'Thermal cut-out opened', 'The independent teaching temperature limit was exceeded. Reset after restoring an acceptable temperature.');
       set(state, 'closed', requested && !state.tripped); state.details = `Temperature ${number(p, 'temperature', 18)}°C; setpoint ${number(p, 'setpoint', 21)}°C; contact ${state.closed ? 'closed' : 'open'}.`;
+    } else if(item.type==='pwmcontrol'||item.type==='proximity'){
+      const v=getV(item,'+','-');
+      const available=!!v&&v.re>=number(p,'minVoltage',5)&&v.re<=number(p,'maxVoltage',36)&&solved.frequencies?.[terminal(item,'+')]===0;
+      set(state,'energized',available&&flag(p,'on',true));
+      state.closed=state.energized&&(item.type==='proximity'?flag(p,'active'):flag(p,'pulseW')||flag(p,'pulseC'));
+      state.details=item.type==='proximity'?(state.closed?'Target detected. Output sources positive current.':'Output open. Inspect the sensor supply and target.'):'Pulse controller supplied at '+(v?.re??0).toFixed(1)+' V DC.';
+    } else if(item.type==='cctstrip'){
+      let total=0;
+      for(const channel of ['W','C']){
+        const v=getV(item,'+',channel);
+        set(state,'blocked'+channel,!!v&&v.re<-.02);
+        const watts=v?Math.max(0,power(v,solved.currents[item.id+'.'+channel]||c())):0;
+        state[channel==='W'?'warmWatts':'coolWatts']=watts;total+=watts;
+      }
+      state.lightOutputPower=total;state.energized=total>.02;
+    } else if(item.type==='led'){
+      const reversed=!!supplyV&&supplyV.re<-.02&&solved.frequencies?.[terminal(item,'L')]===0;
+      set(state,'reverseBlocked',reversed);
+      state.energized=!reversed&&supplyMagnitude>nominal*.05;state.level=state.energized?supplyMagnitude/nominal:0;
+      state.details=reversed?'Positive and negative are reversed at the module. Only modelled leakage flows.':'DC module at its declared resistive operating point.';
+    } else if(item.type==='callchime'){
+      const supplied=abs(getV(item,'AC1','AC2'))>nominal*.6&&(solved.frequencies?.[terminal(item,'AC1')]??0)>0;
+      const front=supplied&&abs(getV(item,'FRONT','AC2'))>nominal*.55,rear=supplied&&abs(getV(item,'REAR','AC2'))>nominal*.55;
+      set(state,'energized',front||rear);state.call=front&&rear?'Both':front?'Front':rear?'Rear':'Idle';
+      state.details='Call indication: '+state.call+'. Front and rear have separate wired inputs.';
+    } else if(item.type==='floatvalve'){
+      const opening=abs(getV(item,'OPEN','COM'))>nominal*.55,closing=abs(getV(item,'CLOSE','COM'))>nominal*.55;
+      state.direction=Number(opening)-Number(closing);state.energized=opening||closing;state.conflict=opening&&closing;
+      state.level=clamp((old?.level??0)+state.direction*dt/Math.max(.1,number(p,'travel',4)),0,1);
+      state.moving=state.direction>0&&state.level<1||state.direction<0&&state.level>0;
+      state.details=state.conflict?'Opposing commands inhibit movement.':Math.round(state.level*100)+'% open. '+(state.moving?'Valve driving.':'Valve holding.');
     } else if (item.type === 'dimmer') {
       const level = clamp(number(p, 'level', 0.65), 0, 1);
       const reference = Math.max(0.001, number(p, 'referenceOhms', 960));
@@ -541,7 +589,7 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
     } else if (isType(item, 'timer', 'sensor', 'smartrelay')) {
       const input = abs(getV(item, 'IN', 'N')) > number(p, 'controlVoltage', nominal) * 0.5;
       const connectedInput = document.wires.some(w => w.from.component === item.id && w.from.terminal === 'IN' || w.to.component === item.id && w.to.terminal === 'IN');
-      const permission = !connectedInput || input;
+      const permission = (!connectedInput && !flag(p,'requireInput')) || input;
       let demand = flag(p, 'on', true) && flag(p, 'demand', true) && permission;
       if (item.type === 'sensor') {
         const condition = item.params.sensorValue !== undefined || item.params.setpoint !== undefined ? String(p.mode) === 'temperature' ? number(p, 'sensorValue', 0) < number(p, 'setpoint', 0.5) : number(p, 'sensorValue', 0) > number(p, 'setpoint', 0.5) : flag(p, 'demand', true);
@@ -664,7 +712,7 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
   return changed;
 }
 
-export function simulate(document: CircuitDocument, previousDeviceStates: Record<string, DeviceState> = {}, dt = 0.1): SimulationResult {
+function simulateSteady(document: CircuitDocument, previousDeviceStates: Record<string, DeviceState> = {}, dt = 0.1): SimulationResult {
   const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
   dt = clamp(Number.isFinite(dt) ? dt : 0.1, 0, 60);
   const states = Object.fromEntries(document.components.map(item => [item.id, newState(item, previousDeviceStates[item.id])]));
@@ -716,6 +764,8 @@ export function simulate(document: CircuitDocument, previousDeviceStates: Record
       const pe = terminal(item, 'PE');
       if (conductive.find(pe) !== conductive.find(GROUND)) diagnostics.push(diag(`cpc:${item.id}`, 'CPC connection is missing', 'The PE terminal has no modelled conductor path to the supply earth reference. Operation may still occur; this is not an automatic numerical failure.', item.id, 'warning', 'protection'));
     }
+    if(state.reverseBlocked)diagnostics.push(diag('reverseDC:'+item.id,'LED polarity is reversed','Compare its positive pad with its negative pad. The reverse-connected module is dark.',item.id));
+    if(state.conflict)diagnostics.push(diag('opposed:'+item.id,'Opposing valve commands','Both direction inputs are supplied. Remove one request before observing travel.',item.id));
     if (item.type === 'motor3' && state.unbalance && Number(state.unbalance) > 0.15) diagnostics.push(diag(`phase:${item.id}`, 'Motor phase supply is unbalanced', 'The winding RMS voltages differ substantially. Inspect phase paths and star/delta links; motor starting and thermal damage are not calculated.', item.id));
     if (item.type === 'motor3' && state.level > 1.15) diagnostics.push(diag(`windingVoltage:${item.id}`, 'Motor winding voltage exceeds its teaching rating', 'Inspect the winding-voltage parameter and star/delta links. A400 V line supply does not imply every winding is rated400 V.', item.id));
     if (loadTypes.has(item.type) && !state.energized) {
@@ -727,7 +777,9 @@ export function simulate(document: CircuitDocument, previousDeviceStates: Record
       if (expected > 2 && Math.abs(input - expected) / expected > 0.01) diagnostics.push(diag(`balance:${item.id}`, 'Converter power transfer did not converge', 'Input and output powers do not balance within the model tolerance. Assessment is withheld.', item.id, 'error', 'model'));
     }
   }
-  const terminalVoltages = Object.fromEntries(Object.entries(solved.voltages).filter(([name]) => !name.startsWith('@')));
+  const terminalVoltages = Object.fromEntries(Object.entries(solved.voltages).filter(([name]) => !name.startsWith('@')).map(([name, value]) => [name, {...value, frequency: solved.frequencies?.[name]}]));
+  const earthRoot=conductive.find(GROUND);
+  const bondedEarthTerminals=document.components.flatMap(item=>(definition(item)?.terminals??[]).filter(t=>t.role==='PE'&&conductive.find(terminal(item,t.id))===earthRoot).map(t=>terminal(item,t.id)));
   const signalPaths = contactPaths(document, net), signalGroups = new Set(document.components.filter(item => item.type === 'alarm').map(item => signalPaths.find(terminal(item,'LINK'))));
   const wireCurrents = Object.fromEntries(document.wires.filter(wire => !signalGroups.has(signalPaths.find(endpointKey(wire.from)))).map(wire => [wire.id, solved.currents[`wire:${wire.id}`] || c()]));
   const elapsedMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - start;
@@ -740,14 +792,19 @@ export function simulate(document: CircuitDocument, previousDeviceStates: Record
       state.meterWatts=power(supply,lineCurrent);
     }
   }
-  return { revision: document.revision, terminalVoltages, branchCurrents: { ...solved.currents, ...solved.sourceCurrents }, wireCurrents, componentPower, deviceStates: states, diagnostics, events, totalPower, totalCurrent, converged, elapsedMs, nodes: solved.nodes, ...(preTrip ? { preTrip } : {}) };
+  return { revision: document.revision, bondedEarthTerminals, terminalVoltages, branchCurrents: { ...solved.currents, ...solved.sourceCurrents }, wireCurrents, componentPower, deviceStates: states, diagnostics, events, totalPower, totalCurrent, converged, elapsedMs, nodes: solved.nodes, ...(preTrip ? { preTrip } : {}) };
 }
 
+export function simulate(document:CircuitDocument, previousDeviceStates:Record<string,DeviceState>={},dt=.1):SimulationResult {
+  if(document.components.some(item=>item.type==='pwmcontrol'))return simulatePulses(document,previousDeviceStates,dt,simulateSteady);
+  return simulateSteady(document,previousDeviceStates,dt);
+}
 export interface MeterReading { value: number | null; explanation: string }
 /** RMS magnitude; independent isolated references cannot be subtracted. */
 export function measureVoltage(result: SimulationResult, a: Endpoint, b: Endpoint): MeterReading {
   const av = result.terminalVoltages[endpointKey(a)], bv = result.terminalVoltages[endpointKey(b)];
   if (!result.converged) return { value: null, explanation: 'The electrical model has not converged; resolve the model diagnostic before interpreting a meter reading.' };
+  if ([a,b].some(point=>result.pwmTerminals?.includes(endpointKey(point)))) return {value:null,explanation:'This output is pulsed. Compare channel power and the steady DC input instead.'};
   if ((!av || !bv) && [a,b].some(endpoint => endpoint.terminal === 'LINK' && result.deviceStates[endpoint.component]?.conceptualInterlink)) return { value: null, explanation: 'The alarm interlink is a conceptual wired signal model. Inspect LINK active/inactive state; manufacturer-specific signal voltage and waveform are not simulated.' };
   if (!av || !bv) return { value: null, explanation: 'Floating terminal: this model has no referenced voltage for one or both probe points.' };
   if (av.reference !== bv.reference) return { value: null, explanation: 'The probes span independent isolated circuits. Their common-mode voltage is undetermined; probe within one output circuit.' };

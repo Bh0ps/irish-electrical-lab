@@ -23,3 +23,9 @@
 .cable-core-list { list-style:none; padding:0; }
 .cable-core-list li { display:flex; justify-content:space-between; align-items:center; gap:.35rem; margin:.2rem 0; }
 .cable-core-list button { min-height:44px; text-decoration:underline; }
+
+.cable-red {background:#b63a30;} .cable-white {background:#f0ece0;} .cable-yellow {background:#e0ba39;} .cable-black {background:#28292b;}
+.cable-sample-bell-pair {border-radius:50%;background:#d9d7c9;display:flex;align-items:center;justify-content:center;gap:1px;}
+.cable-sample-led-pair,.cable-sample-multi-strip {border-radius:6px;background:#4c5052;display:flex;align-items:center;justify-content:center;gap:1px;}
+.cable-sample-led-pair b,.cable-sample-multi-strip b {background:radial-gradient(#925a34 30%,#e4a974 45%);background-size:2px 2px;}
+.cable-sample-multi-strip .cable-core {width:7px;height:8px;}

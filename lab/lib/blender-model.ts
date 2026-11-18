@@ -3,7 +3,7 @@ import type { ComponentInstance, DeviceState } from './types';
 import type { EquipmentView } from './Equipment';
 import { COMPONENTS } from './components';
 
-const lampTypes=new Set(['lamp','led','emergency']);
+const lampTypes=new Set(['lamp','led','emergency','cctstrip']);
 const diffuserOff=new THREE.Color('#aeb6ad'),diffuserOn=new THREE.Color('#fff6e9');
 const filamentOff=new THREE.Color('#79858b'),filamentOn=new THREE.Color('#ffe8a5');
 /** Educational visible output, normalized to the individual lamp's rating.
@@ -12,7 +12,7 @@ const filamentOff=new THREE.Color('#79858b'),filamentOn=new THREE.Color('#ffe8a5
  * This is a visual power scale, not a photometric or filament-temperature model. */
 export function lampBrightness(component:ComponentInstance,state?:DeviceState):number{
   if(!lampTypes.has(component.type))return 0;
-  const watts=Number(component.params.watts??COMPONENTS[component.type]?.defaults.watts);
+  const watts=component.type==='cctstrip'?2*Number(component.params.channelWatts??12):Number(component.params.watts??COMPONENTS[component.type]?.defaults.watts);
   const output=state?.lightOutputPower;
   return Number.isFinite(watts)&&watts>0&&typeof output==='number'&&Number.isFinite(output)?THREE.MathUtils.clamp(output/watts,0,1):0;
 }
@@ -39,12 +39,16 @@ export function castsEquipmentShadow(material:THREE.Material|THREE.Material[],la
 const sourceVector=(value:number[])=>new THREE.Vector3(value[0],value[2],-value[1]);
 const sourceAxis=(axis:string)=>sourceVector(axis==='x'?[1,0,0]:axis==='y'?[0,1,0]:[0,0,1]);
 function raycastVisible(this:THREE.Mesh,caster:THREE.Raycaster,hits:THREE.Intersection[]){
-  if(this.visible)THREE.Mesh.prototype.raycast.call(this,caster,hits);
+  for(let node:THREE.Object3D|null=this;node;node=node.parent)if(!node.visible)return;
+  THREE.Mesh.prototype.raycast.call(this,caster,hits);
 }
 export interface AssetPresentation {
   scene:THREE.Group;
   covers:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion}[];
   chamber:boolean;
+  probeDocks:{node:THREE.Object3D;red:boolean}[];
+  doors:{node:THREE.Object3D;rest:THREE.Quaternion}[];
+  shields:THREE.Object3D[];
   meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   motions:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;angle:number;current:number}[];
   owned:THREE.Material[];
@@ -60,11 +64,14 @@ export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:strin
 }
 /** Clone transforms and selectable identity while sharing immutable mesh data. */
 export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
-  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],motions:[],owned:[],initialized:false,chamber:false};
+  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],motions:[],doors:[],shields:[],probeDocks:[],owned:[],initialized:false,chamber:false};
   scene.userData.equipmentSource='Blender';
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
     const part=semanticOwner(node).part??'';
+    if(node.userData.probeSide)presentation.probeDocks.push({node,red:node.userData.probeSide==='red'});
+    if(node.userData.boardDoor)presentation.doors.push({node,rest:node.quaternion.clone()});
+    if(node.userData.boardShield)presentation.shields.push(node);
     if(node.userData.partId==='cover'&&Array.isArray(node.userData.restPosition))presentation.covers.push({node,position:node.position.clone(),quaternion:node.quaternion.clone()});
     if(node.userData.animation){const axis=sourceAxis(String(node.userData.axis??'z'));const q=node.quaternion,angle=2*Math.atan2(new THREE.Vector3(q.x,q.y,q.z).dot(axis),q.w);presentation.motions.push({node,position:node.position.clone(),quaternion:node.quaternion.clone(),angle,current:angle});}
     if(!(node instanceof THREE.Mesh))return;
@@ -106,8 +113,12 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
   return state?.closed??component.params.closed!==false;
 }
 export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState):void{
+  for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
+  for(const door of presentation.doors)door.node.quaternion.copy(door.rest).multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),component.params.doorOpen!==false||view!=='normal'?-1.69:0));
+  for(const shield of presentation.shields)shield.visible=view==='normal'&&!component.params.frontOff;
   for(const cover of presentation.covers){
     cover.node.position.copy(cover.position);cover.node.quaternion.copy(cover.quaternion);
+    if(component.mount&&COMPONENTS[component.type].model==='protection')cover.node.position.add(sourceVector([0,0,.24]));
     if(view==='open'){cover.node.position.add(sourceVector([presentation.chamber?1:.55,.08,.15]));cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),Math.PI/2.5));}
     if(view==='exploded')cover.node.position.add(sourceVector([.5,.5,.65]));
   }
@@ -119,7 +130,13 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
     mesh.node.material=view==='cutaway'&&mesh.cutaway?mesh.cutaway:mesh.light??mesh.material;
     mesh.node.castShadow=castsEquipmentShadow(mesh.node.material,!!mesh.lampOutput,!!mesh.node.userData.lampEnvelope);
     if(mesh.light){
-      if(mesh.lampOutput)applyLampBrightness(mesh.light,brightness,mesh.filament);
+      if(mesh.lampOutput){
+        if(component.type==='cctstrip'){
+          let channel:string|undefined;for(let n:THREE.Object3D|null=mesh.node;n&&!channel;n=n.parent)channel=n.userData.ledChannel;
+          const level=THREE.MathUtils.clamp(Number(state?.[channel==='C'?'coolWatts':'warmWatts']??0)/Math.max(.001,Number(component.params.channelWatts??12)),0,1);
+          applyLampBrightness(mesh.light,level);if(level>0&&channel==='C')mesh.light.emissive.set('#c3deff');
+        }else applyLampBrightness(mesh.light,brightness,mesh.filament);
+      }
       else if(mesh.indicator){const on=component.type==='overload'?!!state?.tripped:active;const color=component.type==='overload'?'#e12624':'#43d57d';mesh.light.color.set(on?color:'#253b33');mesh.light.emissive.set(on?color:'#000000');mesh.light.emissiveIntensity=on?.8:0;}
       else if(mesh.part==='emitter'){mesh.light.emissive.set(active?'#ffd394':'#000000');mesh.light.emissiveIntensity=active?.6:0;}
       else mesh.light.emissiveIntensity=active?1.1:0;
@@ -144,7 +161,7 @@ export function animateBlenderModel(presentation:AssetPresentation,component:Com
       moving ||= motion.node.position.distanceToSquared(destination)>1e-8;
       continue;
     }
-    const target=animation==='dimmer'?(THREE.MathUtils.clamp(Number(component.params.level??.65),0,1)-.5)*4:animation==='valve'?(active?Number(data.onAngle??.6):Number(data.offAngle??-.6)):closed?Number(data.onAngle??-.115):Number(data.offAngle??.115);
+    const target=animation==='valvePosition'?-Math.PI*.5*Number(state?.level??0):animation==='pwmLevel'||animation==='pwmMix'?(Number(component.params[animation==='pwmMix'?'mix':'level']??.5)-.5)*-4.0:animation==='testerDial'?-THREE.MathUtils.clamp(Number(component.params.dialPosition??0),0,3)*.59:animation==='dimmer'?(THREE.MathUtils.clamp(Number(component.params.level??.65),0,1)-.5)*4:animation==='valve'?(active?Number(data.onAngle??.6):Number(data.offAngle??-.6)):closed?Number(data.onAngle??-.115):Number(data.offAngle??.115);
     if(immediate)motion.current=target;else motion.current=THREE.MathUtils.lerp(motion.current,target,1-Math.exp(-Math.min(dt,.05)*18));
     motion.node.quaternion.copy(motion.quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(axis,motion.current-motion.angle));
     moving ||= Math.abs(motion.current-target)>.001;

@@ -27,7 +27,7 @@ FAMILY_REQUIREMENTS={
  'instrument':['instrument-sensing','instrument-input-protection'],
 }
 
-def enrich(recipe,root,api):
+def enrich(recipe,root,api,workshop=False):
     global A,M
     A=api
     M={
@@ -100,14 +100,27 @@ def enrich(recipe,root,api):
         node=next(o for o in root.children_recursive if o.get('terminalId')==terminal['id'])
         for child in list(node.children_recursive)[::-1]:bpy.data.objects.remove(child,do_unlink=True)
         pin=model=='plug' and terminal['entryDirection']==[0,0,1]
-        form='pin' if pin else 'winding stud' if kind=='motor3' else 'core end' if kind=='cable' else 'pressure plate'
+        form='pin' if pin else 'winding stud' if kind=='motor3' else 'core end' if kind in ('cable','proximity') or key=='selector:float-changeover' else 'solder pad' if kind=='cctstrip' or key in ('led:strip','led:series-module') else 'comb tooth' if key=='terminal:comb-busbar' else 'spring cage' if key=='terminal:lever-connector' else 'pressure plate'
         purpose={'pin':'Exposed mating contact on the plug. The cable is connected to the separate cord-side terminals.',
                  'winding stud':'The ring lug and link plate are clamped to the threaded motor terminal by a washer and hex nut.',
                  'core end':'An individual copper end makes this sample conductor accessible for the learning circuit.',
                  'pressure plate':'The screw drives a captive pressure plate against the conductor inside a brass current cage.'}
-        node['contactForm']=form
+        purpose.update({'solder pad':'An exposed copper pad on the printed circuit is a separate connection for this marked conductor.','comb tooth':'An exposed copper tooth mates with a supply clamp. All four teeth share one continuous copper comb.','spring cage':'A spring presses the conductor against a common copper bar when its individual lever is released.'})
+        node['contactForm']=form;node['entryDirection']=terminal['entryDirection'];node['fieldMarking']=terminal['label']
+        if kind=='callchime':node['serviceChamber']=True
         clamp=feature('terminal-clamp:'+terminal['id'],purpose[form],node)
         scale=float(terminal.get('scale',1));clamp.scale=(scale,scale,scale)
+        if form=='solder pad':
+            A.box('Tinned copper solder land',(0,0,-.006),(.105,.10,.012),clamp,M['copper'],.005)
+            continue
+        if form=='comb tooth':
+            A.box('Square copper clamping blade',(0,0,-.038),(.085,.058,.085),clamp,M['copper'],.004)
+            continue
+        if form=='spring cage':
+            A.box('Copper conductor bed',(0,-.026,-.043),(.088,.016,.095),clamp,M['copper'],.003)
+            A.box('Spring blade',(0,.018,-.046),(.080,.012,.075),clamp,M['steel'],.003).rotation_euler.x=.24
+            ring('Wire entry funnel',(0,0,0),.048,.030,.024,clamp,M['white'])
+            continue
         if form=='winding stud':
             A.cyl('Terminal board insulator',(0,0,-.098),.074,.094,clamp,M['black'])
             A.cyl('Threaded connection post',(0,0,-.023),.022,.105,clamp,M['brass'])
@@ -140,6 +153,20 @@ def enrich(recipe,root,api):
         A.box('Moulded conductor identification',(0,-.043,-.014),(.13,.022,.032),clamp,M[color],.003)
         if role=='PE':A.box('Protective green yellow stripe',(-.020,-.043,.003),(.027,.022,.003),clamp,M['yellow'],.001)
     if recipe['terminals']:features.append('individual-electrical-terminations')
+
+    if workshop:
+        for obj in root.children_recursive:
+            if obj.get('partId') and obj['partId'] not in declared:obj['partId']=canonical(str(obj['partId']))
+            code=obj.get('detailId')
+            if code and not code.startswith('fixing-') and code not in features and any(c.type=='MESH' for c in obj.children_recursive):features.append(code)
+            if kind in ('forktester','stripper','crimper','torquedriver') and obj.get('partId') and not obj.get('detailId') and any(c.type=='MESH' for c in obj.children_recursive):
+                part_id=obj['partId'];code=kind+'-'+part_id
+                obj['detailId']=code;obj['detailPurpose']=next((p['purpose'] for p in recipe['definition']['parts'] if p['id']==part_id),'')
+                if len(obj['detailPurpose'])<36:obj['detailPurpose']='This separately selectable '+part_id+' assembly belongs to the original '+recipe['name']+' study model.'
+                if code not in features:features.append(code)
+                if kind=='forktester' and part_id=='actuator':obj['animation']='testerDial';obj['axis']='z'
+        root['detailRevision']=REVISION;root['detailFamily']=model;root['detailFeatures']=features
+        return features
 
     if model in ('supply','meter'):
         p=part('electronics')

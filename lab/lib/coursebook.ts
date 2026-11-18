@@ -1,3 +1,4 @@
+import { ELV_PAGES } from './elv-coursebook.ts';
 import { COURSE_PAGES } from './coursebook-content.ts';
 import { createIsolatedGuidedBuild } from './guided-build.ts';
 import { getLessonActivities, type LessonActivity } from './learning.ts';
@@ -6,6 +7,7 @@ import type { ConfigurationLesson, CircuitDocument, SimulationResult } from './t
 
 export const CHAPTERS = [
   { id: 'lighting', title: 'Lighting', lessons: [7, 8, 11, 12, 13, 14, 15, 16, 10, 9], practical: 9 },
+  { id:'extra-low', title:'Extra-low voltage', lessons:ELV_PAGES.map(p=>p.id), practical:80 },
   { id: 'supply', title: 'Supply and protection', lessons: [1, 3, 4, 5, 6, 2], practical: 2 },
   { id: 'sockets', title: 'Sockets and appliances', lessons: [20, 21, 22, 23, 24, 18, 19, 17], practical: 17 },
   { id: 'heating', title: 'Heating', lessons: [25, 26, 27, 29, 30, 31, 32, 33, 34, 28], practical: 28 },
@@ -32,7 +34,7 @@ export function courseBuildWires(lesson: ConfigurationLesson) {
   if (chapter.lessons.indexOf(lesson.id) < Math.ceil(chapter.lessons.length / 2)) return [];
   // A short wiring practical teaches a functional path without removing unrelated
   // supply wiring. The original example supplies the exact endpoints and markings.
-  const load = lesson.circuit.components.find(c => ['lamp','heater','socket','fan','motor','motor3','pump','emergency','valve','chime','boiler','ev','indicator','heatpump'].includes(c.type));
+  const load = lesson.circuit.components.find(c => ['led','floatvalve','callchime','cctstrip','lamp','heater','socket','fan','motor','motor3','pump','emergency','valve','chime','boiler','ev','indicator','heatpump'].includes(c.type));
   return (load ? lesson.circuit.wires.filter(w => w.from.component === load.id || w.to.component === load.id) : lesson.circuit.wires).slice(0, 2);
 }
 

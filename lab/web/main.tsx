@@ -16,4 +16,4 @@ function hasWorkbenchGraphics() {
   }
 }
 root.render(<Lab startWithList={!hasWorkbenchGraphics()}/>);
-void registerOfflineWorker().catch(() => {/* Offline settings offer a retry. */});
+if(import.meta.env.PROD)void registerOfflineWorker().catch(() => {/* Offline settings offer a retry. */});

@@ -1,4 +1,4 @@
-import type { ComponentDefinition, TerminalDefinition, TerminalRole, Parameters, Vec3 } from './types';
+import type { ComponentDefinition, ComponentInstance, TerminalDefinition, TerminalRole, Parameters, Vec3 } from './types';
 import { getComponentTerminals } from './terminal-layout.ts';
 
 const purpose: Record<string, string> = {
@@ -21,6 +21,9 @@ const partText: Record<string, [string,string]> = {
   cover: ['Removable cover', 'The cover limits access to internal connections. Opening it here is a virtual inspection operation.'],
   terminals: ['Terminal clamps', 'Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires.'],
   mounting: ['Mounting and fixings', 'Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections.'],
+  door:['Hinged outer door','Open the door to reach the breaker handles with the dead front still installed.'],
+  shield:['Removable front','The front shields the terminal wiring. Its windows leave the installed breakers accessible.'],
+  rail:['Device rail','A steel top-hat rail holds the devices in position. Their electrical connections follow the conductors and bars shown.'],
   contacts: ['Switching contacts', 'Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions.'],
   actuator: ['Operating mechanism', 'The mechanism translates a handle, button, coil or control demand into an operating state.'],
   coil: ['Electromagnetic coil', 'Voltage across the coil produces a magnetic operating force. This simulation models coil demand and pickup, rather than magnetic field saturation or inrush.'],
@@ -41,6 +44,21 @@ const partText: Record<string, [string,string]> = {
   probes: ['Test probes and sockets', 'The red and black probes contact two circuit terminals for a voltage or resistance reading. Voltage is measured between those terminals; resistance and continuity require the simulated supply to be off. The probe sockets and insulated leads are separate from the mode selector.'],
   sheath: ['Cable sheath and individual cores', 'The sheath provides mechanical protection around individual insulated conductors. Identification helps reading a circuit but does not prove that a conductor has been connected correctly.'],
 };
+const handToolParts: Record<string,Record<string,[string,string]>> = {
+  forktester:{
+    body:['Insulated grip and finger guard','The raised guard separates the hand grip from the open fork.'],
+    sensing:['Open fork','Seat one insulated core at the bottom of the fork to measure its AC current or its earth-referenced AC voltage.'],
+    display:['Single reading display','The display shows the chosen reading and its unit. HOLD freezes the displayed reading.'],
+    actuator:['Function dial','Turn between Off, FieldSense, two-probe voltage, and resistance with continuity.'],
+    mode:['Yellow function button','In FieldSense, press to switch the display between amps and volts.'],
+    hold:['HOLD button','Freeze the current reading on screen. Release HOLD to record a new observation.'],
+    ground:['Rear reference contact','With the black probe docked, the bench can model an earth reference through this contact. A black lead on a bonded earth point is the other reference.'],
+    probes:['Attached probes and storage dock','The red and black probes compare two electrical points. The black lead also supplies an explicit earth reference in fork-voltage mode.'],
+  },
+  stripper:{body:['Insulated handles','The paired handles move the cutting jaws.'],actuator:['Stripping jaws','The cutting edge removes the marked length of insulation.'],mechanism:['Pivot and return spring','The pivot guides the blades and the spring opens the handles after a cut.']},
+  crimper:{body:['Crimper grips','Closing the grips drives the crimping die.'],actuator:['Crimping dies','The dies compress the metal sleeve around the prepared conductor.'],mechanism:['Ratchet and pivot','A ratcheting mechanism controls the crimp stroke. The sample checks ferrule size.']},
+  torquedriver:{body:['Insulated handle','The driver transmits torque from the grip to the bit.'],actuator:['Torque adjustment','Set the torque specified for the selected terminal before using the driver.'],mechanism:['Insulated shaft and steel tip','The tip engages the terminal screw. The tool releases at its selected torque.']},
+};
 const defs: ComponentDefinition[] = [];
 /** Terminal explanations describe this model's actual branch/contact map.
  * Device IDs stay stable; numbered labels are not a universal manufacturer map. */
@@ -53,12 +71,12 @@ function explainTerminal(type:string,t:TerminalDefinition):void {
   if((type==='meter'||type==='source'||type==='source3')&&(id==='PE'||id==='PEOUT'))return set('Protective connection at the represented supply boundary. This separate earth path is drawn beside the metering equipment. The meter measures energy on the active supply path.');
   if(id==='PE'||id==='PEOUT')return set(`${id==='PEOUT'?'Outgoing protective connection':'Protective connection'} to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.`);
   if(['transformer','driver','dcsupply'].includes(type)&&['+','-'].includes(id)){
-    if(type==='transformer'){t.role='output';set(`Isolated AC secondary ${id==='+'?'first':'second'} winding end. The stable ${id} identifier is a software label, not fixed DC polarity. Measure RMS voltage between + and −; secondary-to-earth common-mode voltage is undetermined without a reference connection.`);}
+    if(type==='transformer'){t.role='output';set(`Isolated AC secondary ${id==='+'?'first':'second'} winding end. The stable ${id} identifier is a software label, not fixed DC polarity. Measure AC voltage between the two secondary markings; secondary-to-earth common-mode voltage is undetermined without a reference connection.`);}
     else set(`${id==='+'?'Positive output':'Negative output return'} of the regulated isolated DC pair. Measure + to −; the − terminal is not mains neutral. Output voltage and available power follow the declared converter limits.`);
     return;
   }
   if(type==='led'&&['L','N'].includes(id))return set(`${id==='L'?'Positive LED input':'Negative LED return'} in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.`);
-  if(type==='chime'&&['L','N'].includes(id))return set(`${id==='L'?'First':'Second'} low-voltage sounder connection, across the isolated transformer secondary through the doorbell push. L/N are retained model identifiers; this lesson supplies AC at the declared secondary voltage, not 240 V mains.`);
+  if(type==='chime'&&['L','N'].includes(id))return set(`${id==='L'?'First':'Second'} low-voltage sounder connection. The bell exercises specify an isolated AC winding. The door annunciator uses a DC sounder. Check the device rating before comparing its two terminals.`);
   if(type==='motor3'&&/^[UVW][12]$/.test(id))return set(`${id[0]} winding ${id.endsWith('1')?'start':'end'}, paired with ${id[0]}${id.endsWith('1')?'2':'1'}. The solver places an actual impedance between this pair. External links determine star or delta; measure across the winding pair and compare with its declared winding-voltage parameter.`);
   if(['contactor','relay'].includes(type)&&['A1','A2'].includes(id))return set(`Coil ${id==='A1'?'first connection':'return connection'}, paired with ${id==='A1'?'A2':'A1'}. Measure across A1–A2 to establish coil demand. This coil circuit is electrically separate from the switched contacts; its pickup/dropout follow the declared voltage thresholds.`);
   if(type==='contactor'&&['1','2','3','4','5','6'].includes(id)){const odd=Number(id)%2===1,pair=odd?Number(id)+1:Number(id)-1;return set(`${odd?'Incoming':'Outgoing'} side of power-contact pair ${odd?id:pair}–${odd?pair:id}. This pair closes when the contactor operates and opens when it releases. It is separate from the coil and auxiliary contacts.`);}
@@ -89,6 +107,10 @@ function explainTerminal(type:string,t:TerminalDefinition):void {
   if(type==='battery'&&['BL','BN'].includes(id))return set(`${id==='BL'?'Backup active output':'Backup return output'} of the declared isolated AC backup pair. Measure BL–BN; its common-mode voltage to the grid is undetermined without a reference. The external grid switch does not remove this available source.`);
   if(['pv','battery'].includes(type)&&['+','-'].includes(id))return set(`${id==='+'?'Positive':'Negative return'} of the declared isolated DC energy-interface pair. Its availability and limits follow the conceptual energy model; it is not a model of physical PV string design or battery-cell wiring. Grid L/N and backup BL/BN, where present, have different functions.`);
   if(['terminal','junction','neutralbar','earthbar'].includes(type))return set(`Terminal ${id} of this one internally joined ${type==='neutralbar'?'neutral':type==='earthbar'?'protective':'connector'} group. All four numbered terminals share a conductive link; use separate component groups when conductors must remain isolated.`);
+  if(type==='proximity')return set(({'+':'Brown lead. Positive DC powers the sensing electronics.','-':'Blue lead. Return to the negative DC supply terminal.','OUT':'Black PNP output. With power and a target present it supplies the load from positive.'} as Record<string,string>)[id]);
+  if(type==='pwmcontrol'||type==='cctstrip')return set(id==='+'?'Shared positive DC connection.':id==='-'?'DC supply return for the pulse controller.':(id==='W'?'Warm / single-channel':'Cool channel')+' switched negative connection. Channel power depends on its conducting time.');
+  if(type==='floatvalve')return set(id==='COM'?'Common return for both direction inputs.':'Apply the declared supply between '+id+' and COM to request travel in this direction.');
+  if(type==='callchime')return set(id.startsWith('AC')?'One side of the continuously supplied AC winding; compare AC1 with AC2.':'Switched call input from the corresponding push, referenced to AC2.');
   if(id==='IN'||id==='OUT')return set(`${id==='IN'?'First':'Second'} end of the modelled ${type==='cable'?'single cable conductor':'series protected path'}, paired with ${id==='IN'?'OUT':'IN'}. ${type==='cable'?'The other visible cutaway cores are explanatory geometry; add independent graph wires for their electrical connections.':'Opening or tripping the device separates this pair.'}`);
   if(/^(L[123]?|N)(IN|OUT)$/.test(id))return set(`${id.endsWith('IN')?'Incoming':'Outgoing'} ${id.replace(/IN|OUT/g,'')} terminal of its separately modelled linked contact path. Pair it with ${id.endsWith('IN')?id.replace(/IN$/,'OUT'):id.replace(/OUT$/,'IN')}. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.`);
   if(['L','N'].includes(id)&&['plc','safetyRelay'].includes(type))return set(`${id==='L'?'Declared control-supply input':'Control-supply return reference'} for this powered electronics block. The lesson uses its stated nominal control voltage; the L/N identifiers do not prescribe a 240 V connection.`);
@@ -98,6 +120,7 @@ function add(type: string, name: string, group: string, model: string, descripti
   if(['switch','switch2','intermediate','dimmer'].includes(type))terminals.forEach(t=>{t.role='L';t.purpose=t.id==='COM'?'Common line-contact connection. The switch links this terminal to the selected output; it is not a neutral connection.':type==='switch2'?'Traveller connection selected by the common contact. T1/T2 are alternative switch paths, not separate supply phases.':type==='intermediate'?'Traveller connection. This mechanism pairs the two traveller paths straight through or crossed.':'Controlled line output. Its potential follows the actual contact or dimmer state.';});
   terminals.forEach(t=>explainTerminal(type,t));
   const definition:ComponentDefinition={ type,name,group,model,description,terminals,defaults,parts:['body','cover','terminals','mounting',...parts,...(['rcbo','rcd','rcd3'].includes(type)?['test']:[])].map(id=>({id,name:partText[id]?.[0]??id,purpose:partText[id]?.[1]??'Selectable functional part.'})),size,abstraction };
+  if(handToolParts[type])definition.parts=Object.entries(handToolParts[type]).map(([id,[name,purpose]])=>({id,name,purpose}));
   definition.terminals=getComponentTerminals({type,label:name,params:defaults},definition);
   defs.push(definition);
 }
@@ -107,6 +130,8 @@ add('source','Single-phase supply','Distribution','supply','Virtual customer sup
 add('source3','Three-phase supply','Distribution','supply','Three sinusoidal RMS phases with 120-degree separation; line voltage is the selected industrial supply value.',['L1','L2','L3','N','PE'],{sourceResistance:.12},['display']);
 add('meter','Energy meter','Distribution','meter','A supply meter records energy in kilowatt-hours. Its practice display shows the power passing through its own line connection right now, in kilowatts (kW).',pass,{closed:true},['display','electronics']);
 add('panel','Distribution enclosure','Distribution','panel','Openable cabinet with DIN rails, conductor bars, circuit labels and a customer-side supply path.',pass,{closed:true},[],[2,1.8,.8]);
+add('gammaboard','Two-row domestic consumer unit','Distribution','modular-board','An insulated surface-mounted enclosure with two rows of thirteen module positions. Open the door to operate installed devices. Remove the front to inspect their wiring.',[],{doorOpen:true,frontOff:false},['rail','door','shield'],[5,7.5,2.06]);
+add('invictaboard','Three-phase distribution board','Distribution','modular-board','A steel four-way TP&N enclosure with a separate incomer position and two facing banks of outgoing protection. Its removable front shields the wiring. The PE stud is the enclosure bond.',['PE'],{doorOpen:true,frontOff:false},['rail','door','shield'],[9.30,10,2.65],['PE']);
 add('terminal','Terminal block','Distribution','bar','A set of explicitly joined terminals used to organise a circuit.',['1','2','3','4'],{},[],[1,.5,.7]);
 add('neutralbar','Neutral bar','Distribution','bar','Normal neutral connections share a metal bar. They remain separate from protective earth.',['1','2','3','4'],{},[],[1,.5,.7],['N','N','N','N']);
 add('earthbar','Protective-earth bar','Distribution','bar','A protective connection point for exposed conductive parts, separate from load neutral.',['1','2','3','4'],{},[],[1,.5,.7],['PE','PE','PE','PE']);
@@ -162,7 +187,7 @@ add('vfd','Variable-frequency drive','Industrial','vfd','A drive accepts three-p
 add('plc','PLC and I/O module','Industrial','plc','A powered logic block maps wired permissive inputs to real output contacts.',['L','N','I1','I2','COM','Q1','Q2'],{mode:'and',on:true,nominalVoltage:24},['electronics','display'],[1.6,1.4,.9]);
 add('safetyRelay','Safety relay','Industrial','plc','Conceptual dual input, reset and feedback checks operate an output contact.',['L','N','S1','S2','RESET','FB','COM','OUT'],{on:true,nominalVoltage:24},['electronics','contacts'],[1.4,1.4,.9],undefined,'This teaching state machine does not establish machinery safety compliance or performance level.');
 add('alarm','Interlinked alarm','Safety','alarm','Mains operation, separate interlink and conceptual backup state.', ['L','N','PE','LINK'],{watts:2,nominalVoltage:240,battery:true,alarm:false},['sensing','battery','electronics'],[1.1,.7,1.1]);
-add('chime','Doorbell chime','Safety','alarm','A low-voltage sounder controlled by a separate pushbutton.',['L','N'],{watts:3,nominalVoltage:12},['coil','actuator'],[1,.9,.8]);
+add('chime','Doorbell chime','Safety','alarm','A low-voltage sounder controlled by a separate pushbutton.',['L','N'],{watts:3,nominalVoltage:12},['coil','actuator'],[1,.9,.8],['output','output']);
 add('emergency','Emergency luminaire','Safety','lamp','Monitors a mains supply, charges a battery and changes operation on supply loss.',['L','N','PE','SL'],{watts:8,nominalVoltage:240,battery:true,maintained:false},['emitter','battery','electronics'],[1.6,.9,.7]);
 add('ev','EV charging equipment','Energy','charger','Packaged charging load with an external permission abstraction.',load,{watts:1800,nominalVoltage:240,on:true},['electronics','display'],[1.3,1.8,.8],undefined,'EV protection and communication are equipment dependent; this does not model every charging protocol.');
 add('pv','PV grid inverter','Energy','inverter','Controlled generation at the AC interface, limited by solar availability.', ['L','N','PE','+','-'],{generation:600,on:true,efficiency:.95,availability:1},['electronics','display'],[1.4,1.7,.8],undefined,'A grid-presence teaching rule prevents arbitrary stand-alone operation; inverter certification is not simulated.');
@@ -171,8 +196,22 @@ add('cable','Cable section','Accessories','cable','A selectable cable cutaway sh
 add('conduit','Conduit / gland assembly','Accessories','conduit','Containment and strain relief; it is not itself an electrical conductor.',[],{},['sheath'],[1.5,.5,.7]);
 add('multimeter','Virtual multimeter','Instruments','instrument','Voltage and resistance probes read the solver rather than recorded values.',[],{mode:'voltage'},['display','actuator','probes'],[1,1.6,.6]);
 add('clamp','Virtual current clamp','Instruments','instrument','The clamp reads a selected conductor current.',[],{mode:'current'},['display','sensing','actuator'],[1,1.7,.6]);
+add('forktester','Open-fork tester · T6-600 study model','Instruments','instrument','Compare two probe points or put the open fork around one insulated AC conductor.',[],{},['display','sensing','actuator','mode','hold','ground','probes'],[.51,2,.46]);
+add('stripper','Wire stripper','Instruments','instrument','Remove insulation to the strip length marked for the chosen termination.',[],{},['actuator','mechanism'],[.62,1.21,.22]);
+add('crimper','Ferrule crimper','Instruments','instrument','Compress a correctly sized ferrule around a prepared stranded conductor.',[],{},['actuator','mechanism'],[.62,1.21,.22]);
+add('torquedriver','Adjustable torque screwdriver','Instruments','instrument','Tighten a screw terminal to the value specified for the selected product.',[],{},['actuator','mechanism'],[.24,1.24,.24]);
+add('pwmcontrol','Low-voltage pulse controller','Lighting','controller','Changes strip brightness by switching a DC return for a fraction of each cycle.',['+','-','W','C'],{level:.5,mix:.5,on:true},['actuator','electronics'],[1.15,.6,.55],['DC+','DC-','control','control'],'Duty-weighted steady states model average power and current. Switching frequency, edge shape and EMC are outside the model.');
+add('cctstrip','Warm / cool tape','Lighting','lamp','Two independently switched LED channels share one positive pad.',['+','W','C'],{ratedVoltage:24,channelWatts:12},['emitter','electronics'],[2.1,.9,.32],['DC+','control','control'],'The resistive operating-point model estimates channel power and relative brightness. It does not predict colour temperature or photometry.');
+add('callchime','Two-input AC door chime','Safety','alarm','Separate front and rear inputs select a distinct call indication when the AC supply is available.',['AC1','AC2','FRONT','REAR'],{ratedVoltage:12},['electronics','actuator'],[1.1,.95,.6],['output','output','control','control']);
+add('floatvalve','Three-point valve actuator','Heating','valve','Apply a command to OPEN or CLOSE against COM. Removing both commands holds the valve position.',['COM','OPEN','CLOSE'],{ratedVoltage:24,travel:4},['actuator','mechanism'],[1.15,1.25,.8],['DC-','control','control'],'Travel time is shortened for practice. Conflicting commands inhibit movement.');
+add('proximity','Three-wire PNP proximity sensor','Controls','sensor','A powered DC sensor sources current on its output when the target is near.',['+','OUT','-'],{ratedVoltage:24,minVoltage:10,maxVoltage:30,active:false},['sensing','electronics'],[.74,1.65,.74],['DC+','control','DC-'],'Normally open PNP operating model. Detection distance and switching transients are outside the model.');
 // Physical forms share stable electrical terminals and differ only in presentation.
 const physicalForms:Record<string,{id:string;name:string}[]>={
+  pwmcontrol:[{id:'single-channel',name:'Single-channel PWM'},{id:'tunable-white',name:'Warm / cool controller'}],
+  led:[{id:'strip',name:'Constant-voltage strip'},{id:'series-module',name:'Series downlight module'}],
+  switch:[{id:'door-contact',name:'Door-operated contact'}],selector:[{id:'float-changeover',name:'Changeover float switch'}],
+  pushbutton:[{id:'bell-push',name:'Doorbell push'}], driver:[{id:'constant-current',name:'350 mA driver'}],
+  terminal:[{id:'lever-connector',name:'Lever connector'},{id:'comb-busbar',name:'Insulated single-phase comb'}], fuse:[{id:'dc-fuse',name:'DC branch carrier'}],
   panel:[{id:'domestic',name:'Domestic consumer unit'},{id:'industrial',name:'Industrial cabinet'}],
   lamp:[{id:'bulb',name:'B22 bulb and holder'},{id:'downlight',name:'Recessed downlight'},{id:'batten',name:'Linear batten'}],
   heater:[{id:'immersion',name:'Immersion assembly'},{id:'mat',name:'Underfloor heating mat'},{id:'storage',name:'Storage heater'}],
@@ -183,3 +222,19 @@ for(const def of defs)if(physicalForms[def.type])def.variants=physicalForms[def.
 export const COMPONENTS: Record<string,ComponentDefinition> = Object.fromEntries(defs.map(d=>[d.type,d]));
 export const COMPONENT_LIST = defs;
 export const getComponent = (type:string) => COMPONENTS[type];
+
+/** Changing the actual material also selects its declared electrical specification.
+ * Geometry-only variants never alter saved settings or terminal endpoints. */
+export function applyEquipmentVariant(item:ComponentInstance,variant:string|undefined):ComponentInstance{
+  if(item.variant===variant)return item;
+  let params=item.params;
+  if(item.type==='driver'&&(variant==='constant-current'||item.variant==='constant-current')){
+    params=variant==='constant-current'
+      ?{...params,mode:'constant-current',outputCurrent:.35,outputVoltage:30,maxPower:15}
+      :{...params,mode:'constant-voltage',outputVoltage:24,maxPower:120};
+  }else if(item.type==='led'&&(variant==='strip'||variant==='series-module'||item.variant==='series-module')){
+    const series=variant==='series-module';
+    params={...params,ratedVoltage:series?9:24,watts:series?3.15:12};
+  }
+  return {...item,variant,params};
+}

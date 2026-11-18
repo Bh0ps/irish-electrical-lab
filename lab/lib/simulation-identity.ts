@@ -4,7 +4,7 @@ import type {CircuitDocument} from './types';
  * faults advance a separate generation so A → B → A cannot accept an old A. */
 export function electricalKey(document:CircuitDocument):string {
   return JSON.stringify({id:document.id,lessonId:document.lessonId,supply:document.supply,
-    components:document.components.map(c=>({id:c.id,type:c.type,params:c.params})),
+    components:document.components.map(c=>({id:c.id,type:c.type,params:c.type==='gammaboard'||c.type==='invictaboard'?Object.fromEntries(Object.entries(c.params).filter(([k])=>k!=='doorOpen'&&k!=='frontOff')):c.params,...(c.type==='pwmcontrol'?{pulseChannels:c.variant==='tunable-white'?2:1}:{})})),
     wires:document.wires.map(w=>({id:w.id,from:w.from,to:w.to,role:w.role,resistance:w.resistance})),
     faults:document.faults});
 }

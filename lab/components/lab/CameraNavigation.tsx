@@ -35,15 +35,17 @@ function presetPose(props:CameraNavigationProps,camera:THREE.Camera):CameraPose 
   const action=props.cameraCommand.action,selected=props.document.components.find(c=>c.id===props.selected),focus=!!selected&&['focus','rear'].includes(action);
   const starter=action==='first-light'&&props.document.lessonId===7;
   const wirePoints=action==='focus-wire'&&props.selectedWire?props.routing.routes.get(props.selectedWire):undefined;
-  const bounds=wirePoints?.length?new THREE.Box3().setFromPoints(wirePoints.map(p=>new THREE.Vector3(...p))):starter?sceneBounds({...props.document,components:props.document.components.filter(c=>c.id==='switch'||c.id==='light')}):focus?selectedPartBounds(selected!,action==='rear'?'terminals':props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
+  const instrument=action==='focus-instrument'?props.nodes.get('@meter'):undefined;
+  const bounds=instrument?new THREE.Box3().setFromObject(instrument):wirePoints?.length?new THREE.Box3().setFromPoints(wirePoints.map(p=>new THREE.Vector3(...p))):starter?sceneBounds({...props.document,components:props.document.components.filter(c=>c.id==='switch'||c.id==='light')}):focus?selectedPartBounds(selected!,action==='rear'?'terminals':props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
   const target=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),perspective=camera as THREE.PerspectiveCamera,aspect=perspective.aspect||1,fov=THREE.MathUtils.degToRad(perspective.fov||43);
-  const distance=starter||wirePoints?.length?Math.max(2.6,Math.max(size.x/aspect,size.y,size.z)*.69/Math.tan(fov/2)):focus?Math.max(.8,Math.max(size.x/aspect,size.y,size.z)*1.55/Math.tan(fov/2)):Math.max(6.3,Math.max(size.x/aspect,size.z,size.y)*1.75);
+  const distance=instrument?Math.max(1.35,Math.max(size.y,size.x/aspect,size.z/aspect)*.66/Math.tan(fov/2)):starter||wirePoints?.length?Math.max(2.6,Math.max(size.x/aspect,size.y,size.z)*.69/Math.tan(fov/2)):focus?Math.max(.8,Math.max(size.x/aspect,size.y,size.z)*1.55/Math.tan(fov/2)):Math.max(6.3,Math.max(size.x/aspect,size.z,size.y)*1.75);
   const offset=new THREE.Vector3(3.7,5.8,9).normalize().multiplyScalar(distance);
   if(starter)offset.set(.12,.42,1).normalize().multiplyScalar(distance);
   if(action==='top')offset.set(0,distance,.01);
   if(action==='front')offset.set(0,distance*.25,distance);
   const definition=selected&&COMPONENTS[selected.type],rear=action==='rear'||action==='focus'&&selected&&definition&&getComponentTerminals(selected,definition).some(t=>props.selectedPart==='terminals'||t.id===props.selectedPart);
-  if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else offset.set(.28,.2,1);offset.normalize().multiplyScalar(distance);offset.applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);}
+  if(instrument){offset.set(.08,.11,1).applyQuaternion(instrument.getWorldQuaternion(new THREE.Quaternion())).normalize().multiplyScalar(distance);offset.y=Math.max(.14*distance,offset.y);}
+  else if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else offset.set(.28,.2,1);offset.normalize().multiplyScalar(distance);offset.applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);}
   else if(action==='rear')offset.set(0,distance*.25,-distance);
   const position=target.clone().add(offset).toArray() as Vec3,to=target.toArray() as Vec3;
   return {position,target:to,quaternion:cameraLookQuaternion(position,to)};

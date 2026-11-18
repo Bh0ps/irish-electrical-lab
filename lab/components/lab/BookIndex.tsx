@@ -8,7 +8,7 @@ export function BookHome({ resume, start, index }: { resume?: string; start: () 
   return <section className="book-home" aria-label="Coursebook">
     <p className="book-eyebrow">Electrical coursebook</p>
     <h2>{resume ?? 'One switch, one light'}</h2>
-    <p>{resume ? 'Your circuit and your place are saved.' : 'Start with a wall switch and a lamp. Everything you need is already on the bench.'}</p>
+    <p>{resume ? 'Your circuit and your place are saved.' : 'Step into the hall and try the light switch. Follow each connection on the drawing.'}</p>
     <button className="book-primary" onClick={start}>{resume ? 'Continue learning' : 'Start learning'} <ChevronRight size={17}/></button>
     <button className="book-link" onClick={index}>Browse chapters and practicals</button>
   </section>;

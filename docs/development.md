@@ -154,3 +154,12 @@ Circuit documents and lesson progress use IndexedDB. Desktop data lives in `%APP
 The electrical engine is an educational steady-state complex RMS model. Domestic lessons offer a 240 V study setting and a 230 V nominal preset; industrial examples use 400 V line-to-line at 50 Hz. Source, conductor and device parameters are documented teaching assumptions. Converter and machinery safety blocks are explicit abstractions. The app does not perform cable-design approval, manufacturer-specific trip certification, transient analysis or installation certification. Keep electrical operation, protective-path findings and lesson objectives separate, and represent unresolved readings honestly.
 
 Do not commit learner backups, browser profiles, profile recovery files, installed app directories or raw local verification reports. Public verification belongs in the curated summary, with its measured platform and any limitations recorded.
+
+
+## Installed views and extra-low-voltage circuits
+
+The job assignments and metre-scale equipment positions live in `lab/lib/job-site.ts`. The installation renderer and the workbench share equipment definitions and stable terminal IDs. The drawing builds its pins, conductors and control paths from the chosen circuit. Reference and as-wired views can therefore differ after a learner edits a circuit. Site navigation and drawing selections are presentation state.
+
+The extra-low-voltage coursebook and circuits live in `lab/lib/elv-coursebook.ts` and `lab/lib/elv-circuits.ts`. The simulator resolves isolated supply domains, switched operating points and average power for the supported PWM exercises. For a new circuit, add a measured operating objective and a fault that can be diagnosed on the actual topology. Add a geometry entry and a product reference when the learner must recognise a different physical device.
+
+From `lab`, run `node --import tsx --test scripts/job-site-drawing.test.ts scripts/elv.test.ts` for the drawing, location and extra-low-voltage checks. The full catalogue, operating-sequence, routing and lesson audits remain part of release verification.

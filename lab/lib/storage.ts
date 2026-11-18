@@ -1,6 +1,8 @@
+import { lessonIdLimit } from './elv-coursebook.ts';
 import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint, FaultSetting, Parameters, TerminalRole, Vec3, Wire } from './types.ts';
-import { CABLE_CORES, markedRole } from './cables.ts';
+import { cableCores, isSheathKind, markedRole } from './cables.ts';
 import { COMPONENTS } from './components.ts';
+import { mountError, normalizeBoardMounts } from './board-assembly.ts';
 export interface Progress { lessons: number[]; builds: number[]; faults: number[]; scores: Record<string,number> }
 export const EMPTY_PROGRESS: Progress = { lessons:[], builds:[], faults:[], scores:{} };
 let database: Promise<IDBDatabase> | undefined;
@@ -94,9 +96,14 @@ export function validateCircuit(value:unknown):CircuitDocument {
     if(byId.has(id))return invalid(`${path}.id`,'duplicates another component identity.');
     const component:ComponentInstance={id,type,label:text(c.label,`${path}.label`),position:vector(c.position,`${path}.position`),rotation:finite(c.rotation,`${path}.rotation`,-1000000,1000000),params:equipmentParameters(c.params,`${path}.params`)};
     if(c.variant!==undefined)component.variant=text(c.variant,`${path}.variant`,256,false);
+    if(c.mount!==undefined){
+      const m=object(c.mount,`${path}.mount`);
+      component.mount={board:identity(m.board,`${path}.mount.board`),row:integer(m.row,`${path}.mount.row`,0,9),slot:integer(m.slot,`${path}.mount.slot`,0,12)};
+    }
     components.push(component);byId.set(id,component);
   });
   for(const component of components){
+    if(component.mount){const problem=mountError(components,component,component.mount);if(problem)return invalid('mount',problem);}
     const partner=component.params.mechanicallyInterlockedWith;
     if(partner!==undefined&&partner!==''){
       if(component.type!=='contactor'||typeof partner!=='string'||partner===component.id||byId.get(partner)?.type!=='contactor')return invalid(`component ${component.id} mechanicallyInterlockedWith`,'must reference another existing contactor.');
@@ -111,7 +118,7 @@ export function validateCircuit(value:unknown):CircuitDocument {
   const cableRuns: CableRun[] | undefined = d.cableRuns===undefined ? undefined : array(d.cableRuns,'cableRuns',300).map((value,index)=>{
     const path=`cableRuns[${index}]`, record=object(value,path), id=identity(record.id,path+'.id');
     if(runIds.has(id))return invalid(path+'.id','duplicates another cable.');runIds.add(id);
-    if(record.kind!=='flat' && record.kind!=='flex')return invalid(path+'.kind','must be flat or flex.');
+    if(!isSheathKind(record.kind))return invalid(path+'.kind','must identify a supported cable.');
     const from=endpoint(record.from,path+'.from'),to=endpoint(record.to,path+'.to');
     if(from.component===to.component)return invalid(path,'needs two different equipment entries.');
     return {id,kind:record.kind,from,to};
@@ -128,12 +135,19 @@ export function validateCircuit(value:unknown):CircuitDocument {
     if(w.cable!==undefined){
       const c=object(w.cable,path+'.cable'), runId=identity(c.runId,path+'.cable.runId');
       if(!runIds.has(runId))return invalid(path+'.cable.runId','references a missing cable.');
-      if(!CABLE_CORES.includes(c.core as CableCore))return invalid(path+'.cable.core','does not identify a supported core.');
+      if(!cableCores(cableRuns!.find(r=>r.id===runId)!.kind).includes(c.core as CableCore))return invalid(path+'.cable.core','does not identify a supported core.');
       const core=c.core as CableCore,key=runId+'\u0000'+core;
       if(markedRole(core,wire.role)!==wire.role)return invalid(path+'.role','does not match the marked cable core.');
       if(occupiedCores.has(key))return invalid(path+'.cable.core','has already been terminated in this cable.');
       occupiedCores.add(key);
       wire.cable={runId,core,reversed:boolean(c.reversed,path+'.cable.reversed')};
+    }
+    // Before AC secondary markings were available, the supplied doorbell example
+    // used DC conductor identification. Migrate only the original named wires.
+    if(d.lessonId===43&&!wire.cable){
+      const pairs:Record<string,[string,string,TerminalRole]>={w6:['tx.+','push.COM','DC+'],w7:['push.NO','chime.L','DC+'],w8:['tx.-','chime.N','DC-']};
+      const expected=pairs[wire.id],actual=[from.component+'.'+from.terminal,to.component+'.'+to.terminal];
+      if(expected&&wire.role===expected[2]&&actual.includes(expected[0])&&actual.includes(expected[1]))wire.role='output';
     }
     wires.push(wire);
   });
@@ -149,7 +163,7 @@ export function validateCircuit(value:unknown):CircuitDocument {
   });
   const document:CircuitDocument={version:1,id,name,revision,supply:{enabled,phase,voltage,frequency,sourceResistance},components,wires,faults};
   if(cableRuns!==undefined)document.cableRuns=cableRuns;
-  if(d.lessonId!==undefined)document.lessonId=integer(d.lessonId,'lessonId',1,64);
-  return document;
+  if(d.lessonId!==undefined)document.lessonId=integer(d.lessonId,'lessonId',1,lessonIdLimit);
+  return normalizeBoardMounts(document);
 }
 export function downloadCircuit(doc:CircuitDocument){const blob=new Blob([JSON.stringify(doc,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=doc.name.replace(/[^a-z0-9]+/gi,'-')+'.electrical.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

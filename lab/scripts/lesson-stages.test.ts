@@ -9,7 +9,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import LearningPanel from '../components/lab/LearningPanel.tsx';
 
-test('all 64 courses retain all 2021 activity IDs exactly once in six stable ordered groups', () => {
+test('all 80 courses retain all 2471 activity IDs exactly once in six stable ordered groups', () => {
   let count = 0;
   for (const lesson of LESSONS) {
     const original = getLessonActivities(lesson), before = structuredClone(original), stages = getLessonStages(lesson);
@@ -25,7 +25,7 @@ test('all 64 courses retain all 2021 activity IDs exactly once in six stable ord
     assert.deepEqual(original, before);
     count += grouped.length;
   }
-  assert.equal(count, 2021);
+  assert.equal(count, 2471);
 });
 
 test('past stage achievements remain historical and do not provide a current verification', () => {
