@@ -26,8 +26,9 @@ import type { CircuitDocument,Endpoint,SimulationResult,Vec3 } from '../../lib/t
 import InstallationRoom from './InstallationRoom';
 import BellCupboard from './BellCupboard';
 import {FittedWireTails,KitchenDriver,RockerEnclosure,StripChannel} from './KitchenLighting';
-import {KITCHEN_LIGHTS as kitchen,rockerPose} from '../../lib/kitchen-lighting';
-import {connectedRockerTerminals,rockerConductiveSurface} from '../../lib/dc-rocker';
+import {KITCHEN_LIGHTS as kitchen,rockerPose,worktopOverview} from '../../lib/kitchen-lighting';
+import {connectedRockerTerminals,rockerProbeTerminal} from '../../lib/dc-rocker';
+import {worktopLooseEnd} from '../../lib/worktop-connector';
 import {fcuProbeScrew} from '../../lib/bg851';
 import {BathServiceBox} from './BathroomExtract';
 import {FittedHeaterFlex,HeaterSwitchBox} from './FusedHeaterSite';
@@ -39,7 +40,7 @@ import SiteCablePeek from './SiteCablePeek';
 import HeaterFlexChoice,{flexClue,type FlexLanding} from './HeaterFlexChoice';
 import {SiteProbePicker} from './SiteProbePicker';
 import SiteMeterPads,{type SiteMeter} from './SiteMeterPads';
-import {padCamera,siteContacts,type SiteTestFitting} from '../../lib/site-meter';
+import {looseRockerView,padCamera,siteContacts,type SiteTestFitting} from '../../lib/site-meter';
 import { BATTEN_FILAMENT, CUPBOARD_HINGE, CUPBOARD_SWING, fixturePoint, installedTerminalPoint,TAPE_SECTION_LENGTH, TAPE_SECTIONS } from '../../lib/site-fixtures';
 
 
@@ -55,8 +56,8 @@ interface Props {
   onPeek:(id?:string)=>void;onPlan:(wire:string)=>void;onExplore:()=>void;
   onPart:(id:string,part:string,detail?:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
 }
-function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,fcuOpen,probeMode,wideRocker,bathroom,rockerOpen,chimeOpen}:{
-  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;fcuOpen:boolean;probeMode:boolean;wideRocker:boolean;bathroom:boolean;rockerOpen:boolean;chimeOpen:boolean;
+function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,fcuOpen,probeMode,wideRocker,bathroom,rockerOpen,repairRocker,chimeOpen}:{
+  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;fcuOpen:boolean;probeMode:boolean;wideRocker:boolean;bathroom:boolean;rockerOpen:boolean;repairRocker:boolean;chimeOpen:boolean;
 }){
   const {component:c,definition:def,state}=equipment;
   const {fixture,position}=item;
@@ -79,14 +80,14 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
   const tint=useMemo(()=>new THREE.Color('#ffe9bd').lerp(new THREE.Color('#d9eaff'),cool/Math.max(.001,warm+cool)),[warm,cool]);
   const touched=useRef<{id:number;key:string}|undefined>(undefined);
   const pressedContact=useRef<string|undefined>(undefined);
-  const guarded=probeMode&&(fixture?.worktopRocker||fixture?.croma||fixture?.fusedHeater);
+  const guarded=repairRocker||probeMode&&(fixture?.worktopRocker||fixture?.croma||fixture?.fusedHeater);
   const point=(e:ThreeEvent<PointerEvent>)=>{const o=semanticOwner(e.object);return o.terminal??o.part??'body';};
   const conductingPart=(e:ThreeEvent<PointerEvent>)=>{
     const material=(e.object as THREE.Mesh).material;
     const hit=Array.isArray(material)?material[e.face?.materialIndex??0]:material;
     if(fixture?.fusedHeater)return fcuOpen&&hit?fcuProbeScrew(e.object,hit.name):undefined;
-    const metal=fixture?.croma?chimeOpen&&hit?.name==='K1 clamp screw steel':rockerOpen&&hit&&rockerConductiveSurface(hit.name);
-    return metal?semanticOwner(e.object).terminal:undefined;
+    if(fixture?.worktopRocker)return rockerOpen?rockerProbeTerminal(e.object,hit?.name):undefined;
+    return fixture?.croma&&chimeOpen&&hit?.name==='K1 clamp screw steel'?semanticOwner(e.object).terminal:undefined;
   };
   return <group userData={{siteComponent:item.id}}
     onPointerDown={e=>{
@@ -124,31 +125,31 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
         <group rotation={[0,0,mountRoll(c)]} scale={mountScale(c)}>
           <Equipment {...equipment} installedHeaterFlex={fixture?.panelHeater} view={fixture?.extractor&&trace||fixture?.croma&&(chimeOpen||trace)?'open':equipment.view} onTerminal={id=>{
             if(fixture?.fusedHeater&&!fcuOpen)return;
-            if(probeMode&&(i>0||(guarded&&pressedContact.current!==id)))return;
+            if(probeMode&&i>0||guarded&&pressedContact.current!==id)return;
             equipment.onTerminal(id);
           }} animate={!cupboardDoor} contactPiece={cupboardDoor?'reed':undefined} />
         </group>
       </group>)}
       {illuminated&&<pointLight position={emitter} color={c.type==='cctstrip'?tint:'#fff0d0'} intensity={.34*optical} distance={2.9}/>}
     </group>
-    {pin&&!fixture?.croma&&!fixture?.panelHeater&&!(probeMode&&(fixture?.tape||fixture?.worktopRocker||fixture?.fusedHeater))&&<mesh position={installedTerminalPoint(item,c,pin)} renderOrder={15} raycast={()=>{}}>
+    {pin&&!repairRocker&&!fixture?.croma&&!fixture?.panelHeater&&!(probeMode&&(fixture?.tape||fixture?.worktopRocker||fixture?.fusedHeater))&&<mesh position={installedTerminalPoint(item,c,pin)} renderOrder={15} raycast={()=>{}}>
       <sphereGeometry args={[Math.max(.0018,Math.min(.008,.065*item.scale)),12,8]}/><meshBasicMaterial color="#ffb34a" depthTest={false}/>
     </mesh>}
   </group>;
 }
-const FittingTails=React.memo(function FittingTails({doc,site,red,black,drawn}:{doc:CircuitDocument;site:JobSite;red?:string;black?:string;drawn?:string}){
-  const openRockers=new Set([red,black,drawn].filter((id):id is string=>!!id));
+const FittingTails=React.memo(function FittingTails({doc,site,red,black,drawn,repair}:{doc:CircuitDocument;site:JobSite;red?:string;black?:string;drawn?:string;repair?:string}){
+  const openRockers=new Set([red,black,drawn,repair].filter((id):id is string=>!!id));
   const fitted=new Map(site.items.filter(i=>i.fixture?.tapeProfile||i.fixture?.extractor||i.fixture?.serviceBox||i.fixture?.worktopRocker||i.fixture?.croma).map(i=>[i.id,i.fixture!]));
   if(!fitted.size)return null;
   const tails=doc.wires.flatMap(w=>[w.from,w.to].flatMap(end=>{
       const fixture=fitted.get(end.component);if(!fixture)return [];
-      const points=installedEnd(doc,site,end,openRockers)?.lead;if(!points)return [];
+      const points=installedEnd(doc,site,end,openRockers,w)?.lead;if(!points)return [];
       const core=w.cable?.core??(w.role==='PE'?'green-yellow':w.role==='N'?'blue':'brown');
-      return [{points,id:w.id+'-'+end.component+'-'+end.terminal,
+      return [{points,id:w.id+'-'+end.component+'-'+end.terminal,block:!!fixture.worktopRocker&&openRockers.has(end.component),
         colour:(fixture.tapeProfile||fixture.worktopRocker)&&!w.cable?DRAWING_INK[w.role]:core==='green-yellow'?'#308643':CORE_COLOUR[core],
         stripe:core==='green-yellow'?'#e8c63a':undefined,flexible:(fixture.worktopRocker||fixture.croma)&&core!=='green-yellow',radius:fixture.croma?.00065:(fixture.tapeProfile||fixture.worktopRocker) ? .0008 : .0014}];
   }));
-  return <FittedWireTails tails={tails}/>;
+  return <><FittedWireTails tails={tails.filter(t=>!t.block)}/><FittedWireTails tails={tails.filter(t=>t.block)} blockProbes/></>;
 });
 function WireTrace({doc,site,id,openRocker}:{doc:CircuitDocument;site:JobSite;id?:string;openRocker?:ReadonlySet<string>}){
   const wire=doc.wires.find(w=>w.id===id);
@@ -340,6 +341,8 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
   const selectedId=selected??site.first;
   const panelHeater=site.items.find(i=>i.fixture?.panelHeater&&doc.components.some(c=>c.id===i.id));
   const utilityBoard=site.items.find(i=>i.id===site.cupboardBoard);
+  const bothWorktops=doc.lessonId===66&&['left','right'].every(id=>site.items.some(item=>item.id===id&&item.fixture?.tapeProfile));
+  const wholeKitchen=bothWorktops&&jump.overview&&jump.component==='right'&&!walking&&!meter;
   const boardDevices=useMemo(()=>utilityBoard?doc.components.filter(mountedStudyControl).flatMap(component=>{
     const item=site.items.find(s=>s.id===component.id);
     return item?[{component,item}]:[];
@@ -350,7 +353,7 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
   const [moreFittingTools,setMoreFittingTools]=useState(false);
   useLayoutEffect(()=>{
     const canvasSlot=input.current;
-    if(!canvasSlot||(!panelHeater&&!site.doorsteps&&!utilityBoard))return;
+    if(!canvasSlot||(!panelHeater&&!site.doorsteps&&!utilityBoard&&!bothWorktops))return;
     const observer=new ResizeObserver(([entry])=>{
       const {width,height}=entry.contentRect;
       if(!width||!height)return;
@@ -359,13 +362,13 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
       const current=pose.current;
       if(walking&&walkStart?.fitOnResize&&current?.walking&&sameSiteView(walkStart,current)){
         const room=homeRoomAt(current.position[0],current.position[2],false,site.doorsteps);
-        const resized=panelHeater?fittedHeaterView(panelHeater,'walk',ratio):utilityBoard?cupboardView(utilityBoard,'walk',ratio):doorstepView(room,ratio);
+        const resized=panelHeater?fittedHeaterView(panelHeater,'walk',ratio):utilityBoard?cupboardView(utilityBoard,'walk',ratio):bothWorktops?worktopOverview(ratio,true):doorstepView(room,ratio);
         if(!sameSiteView(walkStart,resized))setWalkStart(resized);
       }
     });
     observer.observe(canvasSlot);
     return ()=>observer.disconnect();
-  },[panelHeater,pose,walkStart,walking,site.doorsteps,utilityBoard]);
+  },[panelHeater,pose,walkStart,walking,site.doorsteps,utilityBoard,bothWorktops]);
   const jobKey=site.kind+':'+(doc.lessonId??doc.id);
   const stair=doc.lessonId===9;
   const lastStairGoal=useRef<string|undefined>(undefined);
@@ -378,15 +381,18 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
   const [screwView,setScrewView]=useState<{focus:number;id:string}>();
   const aimedScrew=meterPlateOpen&&screwView?.focus===jump.id?screwView.id:undefined;
   const [withdrawnAt,setWithdrawnAt]=useState<number>();
-  const [openedRepair,setOpenedRepair]=useState<{job:string;focus:number;id:string}>();
+  const [openedRepair,setOpenedRepair]=useState<{job:string;focus:number;id:string;revision:number}>();
   const [missedTerminal,setMissedTerminal]=useState<{focus:number;pin:string}>();
   const roomVisit=visit?.job===jobKey&&visit.jump===jump.id?visit:undefined;
   const repairFocus=jump.component&&repairHere?.targets.includes(jump.component)?jump.component:undefined;
   const repairId=!walking&&!meter&&!lost&&!roomVisit?repairFocus:undefined;
   const repairDestination=repairHere?.targets.find(id=>site.items.some(item=>item.id===id));
   const repairFitting=repairId?testFittings.find(f=>f.item.id===repairId):undefined;
-  const accessOpen=!!repairId&&!repairHere?.powerOff&&openedRepair?.job===jobKey&&openedRepair.focus===jump.id&&openedRepair.id===repairId;
+  const accessOpen=!!repairId&&!repairHere?.powerOff&&openedRepair?.job===jobKey&&openedRepair.focus===jump.id&&openedRepair.id===repairId
+    &&(!repairHere?.landing?.rockerTerminals||openedRepair.revision===doc.revision);
   const landing=accessOpen&&repairHere?.landing?.point.component===repairId?repairHere?.landing:undefined;
+  const rockerLanding=landing?.rockerTerminals?repairId:undefined;
+  const looseRocker=useMemo(()=>worktopLooseEnd(doc),[doc]);
 
   const redFitting=meter?.red?.component,blackFitting=meter?.black?.component;
   const pinned=meterTarget!==undefined&&(redFitting===meterTarget||blackFitting===meterTarget);
@@ -398,6 +404,9 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
   const closeView=!!jump.component&&!walking&&!roomVisit;
   const [magnified,setMagnified]=useState(false);
   const station=jump.component??site.first;
+  // In the kitchen overview, let daylight fill the unlit side while the
+  // working strip supplies the local light on its own counter.
+  const compareLights=bothWorktops&&!meter&&!accessOpen&&(walking||wholeKitchen);
   const stationSwitch=stair&&isStairStation(station)&&!roomVisit?station:undefined;
   useEffect(()=>{
     const previous=lastStairGoal.current;lastStairGoal.current=stairGoal;
@@ -410,6 +419,7 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
     if(roomVisit){const view=site.kind==='home'?homeVisit(roomVisit.room,stair,site.doorsteps,aspect):serviceVisit(site,roomVisit.room);if(view)return view;}
     const id=station,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
     const restored=previousSiteView(pose.current??graphics.view,jobKey,jump);
+    if(bothWorktops&&jump.overview&&id==='right'&&!jump.restore&&(!restored||restored.fitOnResize))return worktopOverview(aspect);
     if(utilityBoard&&!jump.restore&&(!restored||restored.fitOnResize)&&(id===utilityBoard.id||boardDevices.some(d=>d.item.id===id))){
       const pair=boardDevices.filter(d=>d.component.type==='mcb'),group=boardDevices.filter(d=>d.item.id===id&&d.component.type==='rcd');
       const kind=doorClosed||jump.component===utilityBoard.id?'board':group.length?'group':pair.length?'ways':'board';
@@ -424,9 +434,10 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
       return restored??padCamera({kind:'rocker',item,component:c},false,touch);
     }
     return restored??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined,touch);
-  },[jobKey,jump,graphics.view,roomVisit,touch,station,aspect,panelHeater,site,doc.components,doc.lessonId,pose,stair,utilityBoard,boardDevices,doorClosed]);
+  },[jobKey,jump,graphics.view,roomVisit,touch,station,aspect,panelHeater,site,doc.components,doc.lessonId,pose,stair,utilityBoard,boardDevices,doorClosed,bothWorktops]);
   const fuseBox=repairId?site.items.find(i=>i.id===repairId&&i.fixture?.fusedHeater):undefined;
-  const target=walking&&walkStart?walkStart:accessOpen&&fuseBox?fusedPlateView(fuseBox,true,touch):accessOpen&&repairFitting?padCamera(repairFitting,true,touch):meterFitting?padCamera(meterFitting,meterFitting.kind==='chime'?chimeOpen:openRocker,touch,aimedScrew,aspect):roomTarget;
+  const exposedLooseRocker=rockerLanding?repairFitting:openRocker&&looseRocker?.component===meterTarget?meterFitting:undefined;
+  const target=walking&&walkStart?walkStart:exposedLooseRocker?looseRockerView(exposedLooseRocker,aspect):accessOpen&&fuseBox?fusedPlateView(fuseBox,true,touch):accessOpen&&repairFitting?padCamera(repairFitting,true,touch):meterFitting?padCamera(meterFitting,meterFitting.kind==='chime'?chimeOpen:openRocker,touch,aimedScrew,aspect):roomTarget;
   const stop=useCallback(()=>{rig.stop();pointers.current.clear();blockTap.current=true;},[rig]);
   useEffect(()=>{window.addEventListener('blur',stop);window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
     function release(e:PointerEvent){pointers.current.delete(e.pointerId);}
@@ -534,7 +545,7 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
     ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,push?[0,.55,.36]:heaterControl?FCU_ROCKER:stationSwitch?[0,.651,.067]:[0,COMPONENTS.switch.size[1]/2,.20],rocker.rotation)):undefined;
   const zoomButton=immersive&&closeView&&!lost&&(!toolsOpen||meter)?<button type="button" aria-label={magnified?'Reset fitting zoom':'Enlarge fitting'}
     aria-pressed={magnified} onClick={()=>rig.setZoom(magnified?1:2)}>{magnified?'1×':'Zoom'}</button>:undefined;
-  return <div className="jobsite" data-site={site.kind} data-immersive={immersive||undefined} data-walking={walking||undefined} data-tools-open={toolsOpen||undefined}>
+  return <div className="jobsite" data-site={site.kind} data-immersive={immersive||undefined} data-walking={walking||undefined} data-tools-open={toolsOpen||undefined} data-loose-rocker={exposedLooseRocker?(meter?'meter':'repair'):undefined}>
     <div className="site-camera" ref={input} tabIndex={0} aria-label={walking?'Walk around the site. Use WASD or the movement pad.':'Installation view. Choose equipment or enter Walk.'}
       onKeyDown={e=>{if(e.key==='Escape'){stop();setWalking(false);}const key=keyMap[e.code];if(!toolsOpen&&walking&&key){e.preventDefault();rig.keys.add(key);rig.wake();}}}
       onKeyUp={e=>{rig.keys.delete(keyMap[e.code]);}} onBlur={e=>{if(rig.thumb)rig.keys.clear();else if(!e.currentTarget.contains(e.relatedTarget))stop();}}
@@ -553,24 +564,25 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
       onWheel={e=>{if(toolsOpen&&walking)return;rig.zoomBy(Math.max(-.18,Math.min(.18,-e.deltaY*.001)));}}>
       <SiteBoundary key={graphics.generation} onList={onList}><Canvas shadows={!touch} frameloop="demand" dpr={touch&&!(immersive&&closeView)?1:[1,1.5]} camera={{fov:49,near:.012,far:55}} gl={{antialias:!touch,powerPreference:'default'}}
         onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=.99;}}>
-        <ContextRecovery onChange={recoverGraphics}/><SettledCanvas layout={[immersive,toolsOpen,jobKey,jump.id,walking,roomVisit?.room,wire,chimeOpen,openRocker,accessOpen,meterTarget,aimedScrew].join('/')}/>{!lost&&<><color attach="background" args={['#cddedd']}/><hemisphereLight args={['#edf3ff','#b0a697',.88]}/>
-        <directionalLight castShadow={!touch} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-.0006} shadow-normalBias={.0015} position={[-2.6,2.7,1.3]} intensity={1.12} color="#fff6e7"/>
-        <directionalLight position={[-4,2,1]} intensity={.27} color="#c2ddf4"/>
+        <ContextRecovery onChange={recoverGraphics}/><SettledCanvas layout={[immersive,toolsOpen,jobKey,jump.id,walking,roomVisit?.room,wire,chimeOpen,openRocker,accessOpen,meterTarget,aimedScrew].join('/')}/>{!lost&&<><color attach="background" args={['#cddedd']}/><hemisphereLight args={['#edf3ff','#b0a697',compareLights?.40:.88]}/>
+        <directionalLight castShadow={!touch} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-.0006} shadow-normalBias={.0015} position={[-2.6,2.7,1.3]} intensity={compareLights?.48:1.12} color="#fff6e7"/>
+        <directionalLight position={[-4,2,1]} intensity={compareLights?.13:.27} color="#c2ddf4"/>
         {site.doorsteps&&<directionalLight position={[2.7,5.2,6.8]} intensity={.68} color="#fff4dd"/>}
         <InstallationRoom site={site} economy={touch} cupboardOpen={!!fixtureMap.get('door')?.params.closed} operateCupboard={()=>{if(!blockTap.current&&!walking&&fixtureMap.has('door'))onPart('door','actuator');}}/>
         {utilityBoard&&<UtilityBoard board={utilityBoard} devices={boardDevices} shield={!fixtureMap.get(utilityBoard.id)?.params.frontOff}/>}
         <FittedHeaterFlex site={site} doc={doc} open={meterPlateOpen||!!fuseBox&&accessOpen} blockProbes={meterPlateOpen}/>
-        <FittingTails doc={doc} site={site} red={redFitting} black={blackFitting} drawn={drawn}/>
+        <FittingTails doc={doc} site={site} red={redFitting} black={blackFitting} drawn={drawn} repair={rockerLanding}/>
         {visible.map(item=>{const c=fixtureMap.get(item.id)!,def=COMPONENTS[c.type];if(!def)return null;
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
-          const focus=item.id===selectedId;const t=focus?getComponentTerminals(c,def).find(t=>t.id===terminalId):undefined;
+          const focus=item.id===selectedId&&!(wholeKitchen&&item.fixture?.tapeProfile);const t=focus?getComponentTerminals(c,def).find(t=>t.id===terminalId):undefined;
           const cupboardDoor=doc.lessonId===65&&c.id==='door';
           const reveal=accessOpen&&item.id===repairId||tracedIds.includes(item.id)||(item.fixture?.bellService==='protect'&&tracedIds.includes('supply'));
           return <InstalledFixture key={item.id} item={item} optical={optical} pin={t} probeMode={!!meter} chimeOpen={chimeOpen} rockerOpen={openRockers.has(item.id)} cupboardDoor={cupboardDoor} bathroom={doc.lessonId===36} wideRocker={doc.lessonId===36&&!jump.component&&!roomVisit&&!walking&&!meter&&!reveal&&['light-switch','fan-isolation'].includes(item.id)}
-            fcuOpen={meterPlateOpen&&item.id===meterTarget||accessOpen&&item.id===repairId} trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
+            repairRocker={item.id===rockerLanding} fcuOpen={meterPlateOpen&&item.id===meterTarget||accessOpen&&item.id===repairId} trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
             onTouchPick={e=>{lastTouchPick.current={x:e.clientX,y:e.clientY,at:performance.now()};}} equipment={{
             filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
-            connectedTerminals:connectedRockerTerminals(c,item.fixture?.fusedHeater?doc.wires.filter(w=>!looseHeaterCore(doc,w)):doc.wires),lowDetail:!focus,preferLowAsset:touch,view:accessOpen&&item.id===repairId&&!item.fixture?.fusedHeater?'open':'normal',showLabels:false,onModelAvailability:modelAvailability,
+            looseRockerTerminal:looseRocker?.component===item.id?looseRocker.terminal:undefined,
+            connectedTerminals:connectedRockerTerminals(c,item.fixture?.fusedHeater?doc.wires.filter(w=>!looseHeaterCore(doc,w)):doc.wires),lowDetail:!focus,preferLowAsset:touch,view:accessOpen&&item.id===repairId&&!item.fixture?.fusedHeater&&!item.fixture?.worktopRocker?'open':'normal',showLabels:false,onModelAvailability:modelAvailability,
             onPart:(part,detail)=>{
               if(utilityBoard&&mountedStudyControl(c)&&(doorClosed||!cupboardFaceVisible(pose.current?.position,installedHandle(item,c))))return;
               if(walking&&immersive){
@@ -585,7 +597,7 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
                 else jumpTo(item.id);
                 return;
               }
-              if(accessOpen&&item.id===repairId&&item.fixture?.fusedHeater)return;
+              if(accessOpen&&item.id===repairId&&(item.fixture?.fusedHeater||rockerLanding))return;
               if(item.fixture?.croma&&part==='cover'&&!blockTap.current&&!walking){if(!chimeOpen)setChimeOpen(true);return;}
               if(meter){
                 if(blockTap.current)return;
@@ -599,7 +611,7 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
             onTerminal:id=>{
               if(blockTap.current)return;
               if(utilityBoard&&mountedStudyControl(c)&&!fixtureMap.get(utilityBoard.id)?.params.frontOff)return;
-              if(accessOpen&&item.id===repairId&&item.fixture?.fusedHeater){
+              if(accessOpen&&item.id===repairId&&(item.fixture?.fusedHeater||rockerLanding)){
                 if(landing&&!landing.connect({component:c.id,terminal:id}))setMissedTerminal({focus:jump.id,pin:id});
                 return;
               }
@@ -636,7 +648,7 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
       {meterFitting?.kind==='chime'&&<button type="button" aria-expanded={chimeOpen} title={chimeOpen&&pinned?'Lift the meter probes and close the front cover':undefined} onClick={()=>{if(chimeOpen&&pinned)liftProbes(meterFitting.component.id);setChimeOpen(!chimeOpen);}}>{chimeOpen?(pinned?'Lift and close':'Close chime cover'):'Open chime cover'}</button>}
       {meterFitting?.kind==='rocker'&&<button type="button" aria-expanded={openRocker} aria-label={openRocker&&pinned?'Lift probe and refit':undefined} onClick={()=>{if(pinned)liftProbes(meterFitting.item.id);setWithdrawnAt(openRocker?undefined:jump.id);}}>{openRocker?(pinned?'Lift and refit':'Refit panel'):'Show back of switch'}</button>}
     </div>}
-    {landing&&!toolsOpen&&<p className="site-landing-prompt" role="status">{missedTerminal?.focus===jump.id?flexClue(missedTerminal.pin,landing):landing.chimeTerminals?'Tap the screw for the back-door wire, or choose its marking below.':'Tap the terminal for the loose brown wire, or choose it by name below.'}</p>}
+    {landing&&!toolsOpen&&<p className="site-landing-prompt" role="status">{missedTerminal?.focus===jump.id?flexClue(missedTerminal.pin,landing):rockerLanding?'Tap the blade for the loose strip wire, or choose its marking below.':landing.chimeTerminals?'Tap the screw for the back-door wire, or choose its marking below.':'Tap the terminal for the loose brown wire, or choose it by name below.'}</p>}
     {!landing&&!lost&&!meter&&!(immersive&&walking)&&(wire||[1,2,3,9,13,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61,65,66,68,69,71,72].includes(doc.lessonId??0))&&
       <div className={stair&&!wire?'stair-locations':undefined}>
         {stair&&!wire&&<nav className="stair-stations" aria-label="Stair switch locations">{(['near','far'] as const).map(id=>
@@ -653,9 +665,10 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
       {selectedId&&!walking&&!repairHere&&!retest&&testFittings.some(s=>s.component.id===selectedId)&&<button onClick={()=>openMeter(selectedId)}>{testFittings.some(s=>s.kind==='fcu'&&s.component.id===selectedId)?'Check wall switch':'Measure'}</button>}
       {!walking&&!toolsOpen&&!lost&&!repairId&&repairDestination&&<button className="site-repair" type="button" onClick={()=>jumpTo(repairDestination)}>Find repair</button>}
       {landing&&!toolsOpen&&<HeaterFlexChoice landing={landing}/>}
+      {rockerLanding&&!toolsOpen&&<button type="button" onClick={()=>{setOpenedRepair(undefined);setMissedTerminal(undefined);}}>Refit switch</button>}
       {repairId&&!toolsOpen&&!landing&&repairHere&&<button type="button" className="site-repair" onClick={()=>{
         if(repairHere.powerOff){setOpenedRepair(undefined);repairHere.powerOff.run();return;}
-        if(!accessOpen){setMissedTerminal(undefined);setOpenedRepair({job:jobKey,focus:jump.id,id:repairId});if(repairFitting?.kind==='chime')setChimeOpen(true);return;}
+        if(!accessOpen){setMissedTerminal(undefined);setOpenedRepair({job:jobKey,focus:jump.id,id:repairId,revision:doc.revision});if(repairFitting?.kind==='chime')setChimeOpen(true);return;}
         repairHere.run();
       }}>{repairHere.powerOff?.label??(accessOpen?repairHere.label:'Open fitting')}</button>}
       {!walking&&!toolsOpen&&!lost&&retest&&<button className="site-repair" type="button" disabled={retest.disabled} onClick={retest.run}>{retest.label}</button>}

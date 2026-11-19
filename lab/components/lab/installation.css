@@ -136,7 +136,7 @@
 .jobsite[data-immersive] .site-actions {position:absolute; inset:auto auto var(--walk-bottom) 50%; transform:translateX(-50%); margin:0; max-width:calc(100% - 12px);}
 .jobsite[data-immersive] .site-actions button,.jobsite[data-immersive] .site-jump {min-height:44px; min-width:44px}
 .jobsite[data-immersive][data-walking] .site-actions {inset:8px var(--walk-right) auto auto;transform:none}
-.jobsite[data-immersive]:not([data-walking]) .site-location {display:none}
+.jobsite[data-immersive]:not([data-walking]) .site-location:not(:has(output)) {display:none}
 .jobsite[data-immersive] .site-location {max-width:calc(100% - 110px);left:var(--walk-left);top:11px}
 .site-approach {position:absolute;z-index:2;bottom:var(--walk-bottom);right:var(--walk-right);max-width:calc(100% - 170px);
  display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;min-height:48px;cursor:pointer; overflow-wrap:anywhere;
@@ -147,6 +147,15 @@
 .site-walk-stick > i{display:none;position:absolute;left:calc(50% - 15px);top:calc(50% - 15px);width:30px;height:30px;border:1px solid #56775e;border-radius:50%;background:#74a17e66;transform:translate(var(--thumb-x,0),var(--thumb-y,0));pointer-events:none}
 .site-walk-stick[data-pressed] > i{display:block}
 .jobsite[data-immersive] .site-actions .site-repair{background:#27553e;color:#fff;white-space:normal;line-height:1.25}
+@media(max-width:365px){
+  .jobsite[data-immersive][data-loose-rocker]{display:flex;flex-direction:column}
+  .jobsite[data-immersive][data-loose-rocker]>.site-camera{position:relative;flex:1;min-height:0;height:auto}
+  .jobsite[data-immersive][data-loose-rocker=meter]>.site-meter-heading{position:static;order:-1;display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;max-width:none;border-radius:0;padding:2px 5px;gap:2px}
+  .jobsite[data-loose-rocker=meter] .site-meter-heading select{width:100%;max-width:100%}
+  .jobsite[data-loose-rocker=meter] .site-meter-heading label b{display:none}
+  .jobsite[data-immersive][data-loose-rocker=repair]>.site-actions{position:static;align-self:stretch;max-width:none;transform:none;flex-wrap:wrap;justify-content:center;margin:0}
+  .jobsite[data-immersive][data-loose-rocker=repair]>.site-landing-prompt{position:static;order:-1;max-width:none;width:100%;border-radius:0}
+}
 /* On a small portrait phone, keep the title on its own line and give the
    site its four views through one native chooser beside the circuit controls. */
 @media (orientation:portrait) and (max-width:430px) {

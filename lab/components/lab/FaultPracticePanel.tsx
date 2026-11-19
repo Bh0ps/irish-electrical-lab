@@ -20,13 +20,18 @@ interface Props {
   feedback:string; diagnosis:string; setDiagnosis:(value:string)=>void; submit:()=>void; checking:boolean; repair:()=>void;
   test:()=>void; testing:boolean; failed:boolean; openReport:()=>void; showClue:()=>void; closeTools:()=>void; openMeter:()=>void;
   context?:ReactNode; next:()=>void; readings:{strip?:MeasurementEvidence;switchOutput?:MeasurementEvidence}; heater?:HeaterReadings;
-  heaterRun?:HeaterRun; heaterRunAction?:{label:string; instruction:string; reading:string; disabled:boolean; run:()=>void};
+  heaterRun?:HeaterRun; heaterRunAction?:{label:string; instruction:string; reading:string; disabled:boolean; run:()=>void}; worktopStatus?:string;
   restoreSupply?:()=>void; samples:MeasurementEvidence[]; missing:string; wrongPoints:boolean; leftLit?:boolean; scoreThis:()=>void; switchOn:boolean; operateSwitch:()=>void;
 }
 
 const stages:Record<FaultStage,string> = {
   measure:'1 of 4 · Measure', diagnose:'2 of 4 · Find the fault', repair:'3 of 4 · Repair', retest:'4 of 4 · Test', done:'Complete',
 };
+
+function worktopOutput(doc:CircuitDocument){
+  const mark=describeEndpoint(doc,worktopFaultPoints.switchOutput.a)?.terminalLabel;
+  return mark&&!['OUT','Output','Switched output'].includes(mark)?'terminal '+mark:'the output';
+}
 
 function measurePrompt(props:Props) {
   if(props.bell){
@@ -55,10 +60,8 @@ function measurePrompt(props:Props) {
   const {strip,switchOutput}=props.readings;
   if (strip && switchOutput) return 'Check the driver supply, then take both readings again.';
   if (!strip) return 'Touch red to + and black to − on the right strip.';
-  const out=describeEndpoint(props.doc,worktopFaultPoints.switchOutput.a)?.terminalLabel;
-  const point=out && !['OUT','Output','Switched output'].includes(out) ? 'terminal '+out : 'the output';
   const reverse=strip.a?.terminal==='N';
-  return 'Keep '+(reverse?'red':'black')+' on −. Move '+(reverse?'black':'red')+' to '+point+' on the right switch.';
+  return 'Keep '+(reverse?'red':'black')+' on the strip’s − pad. Move '+(reverse?'black':'red')+' to '+worktopOutput(props.doc)+' on the right switch.';
 }
 
 function readingValue(sample:MeasurementEvidence) {
@@ -81,6 +84,25 @@ function bellProbeTip(doc:CircuitDocument,sample:MeasurementEvidence,rows:BellRe
   const pin=points[1-common];
   if(pin?.component==='chime'&&pin.terminal==='FRONT')return value+'That’s the front door. Move '+moving+' to '+chimeMark(doc,'REAR')+' for the back door.';
   return value+'Move '+moving+' to '+chimeMark(doc,'REAR')+' to check the back call.';
+}
+
+function worktopProbeTip(doc:CircuitDocument,sample:MeasurementEvidence,strip?:MeasurementEvidence){
+  if(sample.mode!=='voltage'||sample.instrument&&sample.instrument.method!=='probe-voltage')return 'Use the meter’s two voltage probes to compare these points.';
+  if(sample.instrument?.held)return 'Turn Hold off and record what the probes are touching now.';
+  if(sample.assisted)return 'Place both probes yourself, then record what the meter shows.';
+  const pair=[sample.a,sample.b];
+  if(!strip){
+    if(pair.every(p=>p?.component==='left'))return 'That’s the left strip. Try the + and − pads on the right strip.';
+    return 'Start at the right strip. Put one probe on + and the other on −.';
+  }
+  const common=pair.findIndex(p=>p?.component==='right'&&p.terminal==='N');
+  if(common<0)return 'Put '+(strip.a?.terminal==='N'?'red':'black')+' back on the − pad of the right strip. Both checks use that same pad.';
+  const moving=common===0?'black':'red',other=pair[1-common];
+  if(other?.component==='right-switch'&&other.terminal==='COM'){
+    const mark=describeEndpoint(doc,other)?.terminalLabel;
+    return (mark?'That’s the feed from the driver at '+mark+'. ':'That’s the feed from the driver. ')+'Move '+moving+' to '+worktopOutput(doc)+' to check the wire going to the strip.';
+  }
+  return 'Keep the probe on the right strip’s − pad. Move '+moving+' to '+worktopOutput(doc)+' on the right switch.';
 }
 
 function FaultReadings({doc,samples,readings,worktop,heater,bell}:Pick<Props,'doc'|'samples'|'readings'|'worktop'|'heater'|'bell'>) {
@@ -110,8 +132,8 @@ export function FaultPracticePanel(props:Props) {
 
   const headingText=stage==='measure'?measurePrompt(props)
     :stage==='diagnose'?'Which fault fits your readings?'
-    :stage==='repair'?'You found the fault.'
-    :stage==='retest'?props.restoreSupply?'Turn the supply back on before testing.':props.heaterRunAction?.instruction??(props.failed?'The circuit still has a fault.':'The repair is in. Does it work?')
+    :stage==='repair'?worktop?'Check the wire from the right switch to the strip.':'You found the fault.'
+    :stage==='retest'?props.restoreSupply?'Turn the supply back on before testing.':props.heaterRunAction?.instruction??(props.failed?'The circuit still has a fault.':worktop?'Check the two lights, then test the repair.':'The repair is in. Does it work?')
     :'The repair passed.';
   const canAsk=stage==='measure'||stage==='diagnose';
   const choices=props.bell?[
@@ -136,12 +158,15 @@ export function FaultPracticePanel(props:Props) {
     {stage==='measure'&&!instrumentOpen&&!props.wrongPoints&&!props.samples.length&&(
       props.bell?<p>The front doorbell rings in the hall. The back doorbell is quiet.</p>
       :props.heater?<p>{props.switchOn?'L is line and N is neutral. The training bench lets you check both without opening the heater.':'“I’ve tried the wall switch, but the kitchen heater stays cold.”'}</p>
-      :worktop?props.switchOn&&props.leftLit&&<p>The left strip is on. Check the one that stays dark.</p>
+      :worktop?<p>{props.leftLit?'“The light under the left cupboard works. The right one stays dark.”':'“The light under the right cupboard stays dark.”'}</p>
       :<p>Record two meter readings before choosing the fault.</p>
     )}
     {stage==='measure'&&props.heater?.heater&&!props.heater.output&&!props.wrongPoints&&
       <p role="status">At the heater · <b>{readingValue(props.heater.heater)}</b></p>}
+    {stage==='measure'&&worktop&&readings.strip&&!readings.switchOutput&&!props.wrongPoints&&
+      <p role="status">Right strip · <b>{readingValue(readings.strip)}</b></p>}
     {stage==='measure'&&(worktop||props.heater||props.bell)&&props.wrongPoints&&<p className="task-feedback attention" role="status">{props.bell&&props.wrongSample?bellProbeTip(props.doc,props.wrongSample,props.bell):
+      worktop&&props.wrongSample?worktopProbeTip(props.doc,props.wrongSample,readings.strip):
       props.heater&&props.wrongSample?heaterProbeTip(props.doc,props.wrongSample,props.heater):'Reading saved. For this check, use the points named above.'}</p>}
     {props.feedback&&stage!=='done'&&<p className="task-feedback" role="status">{props.feedback}</p>}
     {stage==='diagnose'&&!instrumentOpen&&<FaultReadings {...props}/>}
@@ -155,16 +180,17 @@ export function FaultPracticePanel(props:Props) {
         </label>
         <Button className="primary-button full" disabled={!props.diagnosis||props.checking} onClick={props.submit}>{props.checking?'Checking…':'Check my diagnosis'}</Button>
       </>}
-      {stage==='repair'&&<><p>{worktop?'The break is between the right switch and the strip.':lesson.challenge.answer}</p>
+      {stage==='repair'&&<><p>{worktop?'You found voltage at the switch and none across the strip. Turn the simulated supply off before opening the fitting.':lesson.challenge.answer}</p>
         {props.flexLanding&&!props.findRepair&&!props.isolateForRepair?<HeaterFlexChoice landing={props.flexLanding}/>:
           <Button className="primary-button full" onClick={props.findRepair??props.isolateForRepair?.run??props.repair}>
             {props.findRepair?'Find repair on site':props.isolateForRepair?.label??'Repair fault'}</Button>}</>}
       {stage==='retest'&&props.heaterRunAction&&<p role="status">{props.heaterRunAction.reading}</p>}
+      {stage==='retest'&&worktop&&props.worktopStatus&&<p role="status">{props.worktopStatus}</p>}
       {stage==='retest'&&!props.restoreSupply&&!props.heaterRunAction&&props.heater&&props.heaterRun?.runningAfter!==undefined&&<p>Switch off · {Math.round(props.heaterRun.stopped)} W. Switch on · {Math.round(props.heaterRun.runningAfter)} W.</p>}
       {stage==='retest'&&(props.restoreSupply?<Button className="primary-button full" onClick={props.restoreSupply}>Turn bench supply on</Button>:props.heaterRunAction?<Button className="primary-button full" disabled={props.heaterRunAction.disabled} onClick={props.heaterRunAction.run}>{props.heaterRunAction.label}</Button>:props.failed?<><Button className="primary-button full" onClick={props.openReport}>See test report</Button>
         <Button variant="ghost" disabled={props.testing} onClick={props.test}>{props.testing?'Testing…':'Test the repair'}</Button></>
         :<Button className="primary-button full" disabled={props.testing} onClick={props.test}>{props.testing?'Testing…':'Test the repair'}</Button>)}
-      {stage==='done'&&<>{props.bell&&<p>Both door buttons now send a call to the hall chime.</p>}{worktop&&<p>The two worktop lights now switch on and off separately.</p>}{props.heater&&<p>{props.heaterRun?.runningAfter!==undefined?'With the wall switch off, the element drew '+Math.round(props.heaterRun.stopped)+' W. With it back on, it drew '+Math.round(props.heaterRun.runningAfter)+' W.':'You found the break and tested the repaired heater feed.'}</p>}
+      {stage==='done'&&<>{props.bell&&<p>Both door buttons now send a call to the hall chime.</p>}{worktop&&<p>You restored the feed to the right worktop light and tested the repair.</p>}{props.heater&&<p>{props.heaterRun?.runningAfter!==undefined?'With the wall switch off, the element drew '+Math.round(props.heaterRun.stopped)+' W. With it back on, it drew '+Math.round(props.heaterRun.runningAfter)+' W.':'You found the break and tested the repaired heater feed.'}</p>}
         {props.scored&&<p>Your score <b>{faultScore(props.hints)}/100</b></p>}
         <Button className="primary-button full" onClick={props.next}>Choose another job</Button>
         <Button variant="ghost" onClick={props.openReport}>See test report</Button></>}

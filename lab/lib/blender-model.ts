@@ -3,6 +3,7 @@ import type { ComponentInstance, DeviceState } from './types';
 import type { EquipmentView } from './Equipment';
 import { COMPONENTS } from './components';
 import { attachTerminalBatches } from './terminal-render-batches';
+import {looseRockerPose} from './dc-rocker';
 export { disposeBlenderTerminalBatches } from './terminal-render-batches';
 
 const lampTypes=new Set(['lamp','led','emergency','cctstrip']);
@@ -58,7 +59,7 @@ export interface AssetPresentation {
   fuseMarkings:{node:THREE.Object3D;amps:number}[];
   meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];pickingMaterial?:THREE.Material;cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;residualTripFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   terminalBatches:THREE.Mesh[];
-  receptacles:{node:THREE.Object3D;terminal:string}[];
+  receptacles:{node:THREE.Object3D;terminal:string;rocker?:{rest:THREE.Vector3;rotation:THREE.Quaternion;loose:THREE.Vector3;tilt:THREE.Quaternion}}[];
   motions:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;angle:number;current:number}[];
   owned:THREE.Material[];
   initialized:boolean;
@@ -77,12 +78,26 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
   const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],terminalBatches:[],receptacles:[],motions:[],doors:[],shields:[],benchStands:[],fuseMarkings:[],probeDocks:[],owned:[],initialized:false,chamber:false};
   scene.userData.equipmentSource='Blender';
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
+  if(componentVariant==='dc-rocker')scene.updateMatrixWorld(true);
   scene.traverse(node=>{
     const part=semanticOwner(node).part??'';
     if(node.userData.looseHeaterFlex)presentation.looseHeaterLead=node;
     if(node.userData.plxeScreen)presentation.heaterScreen=node;
     const occupied=node.userData.matingBlade??node.userData.occupiedTerminal;
-    if(occupied)presentation.receptacles.push({node,terminal:String(occupied)});
+    if(occupied){
+      let rocker:AssetPresentation['receptacles'][number]['rocker'];
+      if(componentVariant==='dc-rocker'&&node.userData.matingBlade&&node.parent){
+        // Blender's terminal frame faces rearwards; convert the fitting-space
+        // hanging pose into the connector's own parent coordinates once.
+        const parent=node.parent,offset=new THREE.Vector3(...looseRockerPose.offset);
+        const loose=parent.worldToLocal(node.getWorldPosition(new THREE.Vector3()).add(offset));
+        const rotation=parent.getWorldQuaternion(new THREE.Quaternion());
+        const turn=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),looseRockerPose.yaw);
+        const tilt=rotation.clone().invert().multiply(turn).multiply(rotation).multiply(node.quaternion);
+        rocker={rest:node.position.clone(),rotation:node.quaternion.clone(),loose,tilt};
+      }
+      presentation.receptacles.push({node,terminal:String(occupied),rocker});
+    }
     if(typeof node.userData.fuseAmps==='number')presentation.fuseMarkings.push({node,amps:node.userData.fuseAmps});
     if(node.userData.probeSide)presentation.probeDocks.push({node,red:node.userData.probeSide==='red'});
     if(node.userData.boardDoor)presentation.doors.push({node,rest:node.quaternion.clone()});
@@ -137,11 +152,18 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
   if(component.type==='dimmer')return component.params.closed!==false;
   return state?.closed??component.params.closed!==false;
 }
-export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet',connectedTerminals='',installedHeaterFlex=false):void{
+export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet',connectedTerminals='',installedHeaterFlex=false,looseRockerTerminal?:string):void{
   if(presentation.looseHeaterLead)presentation.looseHeaterLead.visible=!installedHeaterFlex;
   const batch=view==='normal'&&!contactPiece&&!installedHeaterFlex;
   for(const mesh of presentation.terminalBatches)mesh.visible=batch;
-  for(const clip of presentation.receptacles)clip.node.visible=connectedTerminals.split(' ').includes(clip.terminal);
+  for(const clip of presentation.receptacles){
+    clip.node.visible=connectedTerminals.split(' ').includes(clip.terminal);
+    if(!clip.rocker)continue;
+    const loose=clip.node.visible&&looseRockerTerminal===clip.terminal;
+    clip.node.userData.looseRockerContact=loose;
+    clip.node.position.copy(loose?clip.rocker.loose:clip.rocker.rest);
+    clip.node.quaternion.copy(loose?clip.rocker.tilt:clip.rocker.rotation);
+  }
   for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
   for(const door of presentation.doors)door.node.quaternion.copy(door.rest).multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),component.params.doorOpen!==false||view!=='normal'?-1.69:0));
   for(const mark of presentation.fuseMarkings)mark.node.visible=mark.amps===Number(component.params.rating??component.params.currentRating);

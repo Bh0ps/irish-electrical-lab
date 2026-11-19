@@ -1,4 +1,6 @@
 import type {Vec3} from './types';
+import type {SitePose} from './site-camera';
+import {looseRockerPose} from './dc-rocker';
 
 /** Positions in the Oakfield joinery. The LED driver casing follows the
  * HLG-100H blank-type drawing. The two connection boxes belong to this house. */
@@ -9,6 +11,13 @@ export const KITCHEN_LIGHTS={
   boxOffset:.299,boxZ:.035,boxSize:[.078,.034,.054] as Vec3,
   switchHeight:1.135,tileFace:-2.802,railY:1.523,railZ:-2.735,backGapZ:-2.783,
 };
+/** Stand low enough to see both diffusers and the light they cast on the worktops. */
+export function worktopOverview(aspect:number,standing=false):SitePose {
+  const k=KITCHEN_LIGHTS,span=k.right-k.left+.505;
+  const distance=Math.max(1.04,(span+.20)/(.912*Math.max(.32,aspect)));
+  const eye=standing?1.56:1.25;
+  return {position:[(k.left+k.right)/2,eye,k.profileZ+distance],yaw:0,pitch:Math.atan2(1.18-eye,distance),fitOnResize:true};
+}
 export function driverContact(id:string):Vec3{
   const k=KITCHEN_LIGHTS,dc=id==='+'||id==='-';
   const offset=dc?(id==='+'?-.008:.008):id==='L'?-.014:id==='N'?0:.014;
@@ -43,18 +52,31 @@ export function rockerPose(origin:Vec3,open:boolean){
 }
 
 /** Two independent cores run through the rear entry, with slack inside the box. */
-export function rockerLead(origin:Vec3,pin:Vec3,id:string,open=false):Vec3[]{
+export function rockerLead(origin:Vec3,pin:Vec3,id:string,open=false,loose=false):Vec3[]{
   const centre=rockerPanelCentre(origin,false),hand=id==='COM'?-1:1;
   const entry:Vec3=[centre[0]-.012+hand*.0018,centre[1]-.015,centre[2]-ROCKER_BOX.depth];
   let slack:Vec3[];
+  const yaw=(open?ROCKER_BOX.rearYaw:0)+(loose?looseRockerPose.yaw:0);
+  const dx=-Math.sin(yaw),dz=-Math.cos(yaw);
+  if(loose&&!open){
+    // The free socket lies beside its tab. Stow this lead in the side bay
+    // so neither the metal crimp nor its core crosses the intact feed.
+    const point=(x:number,y:number,z:number):Vec3=>[centre[0]+x,centre[1]+y,centre[2]+z];
+    const loop=Array.from({length:31},(_,i)=>{
+      const f=i/30,a=-1.2+f*1.68*2*Math.PI;
+      return point(.022+f*.004,.019*Math.cos(a),-.032+.0205*Math.sin(a));
+    });
+    return [pin,[pin[0]+.004*dx,pin[1],pin[2]+.004*dz],...loop,point(.022,-.009,-.052),
+      point(.007,-.012,-.056),[entry[0],entry[1],centre[2]-.057],entry,[entry[0],entry[1],entry[2]-.065]];
+  }
   if(open){
-    const radius=id==='OUT'?.014:.008,straight=.0035,dx=-Math.sin(ROCKER_BOX.rearYaw),dz=-Math.cos(ROCKER_BOX.rearYaw);
+    const radius=id==='OUT'?.014:.008,straight=.0035;
     slack=Array.from({length:5},(_,i)=>{
       const angle=i*Math.PI/8,travel=straight+radius*Math.sin(angle);
       return [pin[0]+travel*dx,pin[1]-radius*(1-Math.cos(angle)),pin[2]+travel*dz] as Vec3;
     });
     slack.push([pin[0]+(straight+radius)*dx,centre[1]-.044,pin[2]+(straight+radius)*dz],
-      [centre[0]+.017+hand*.003,centre[1]-.063+hand*.002,centre[2]+.108+hand*.004],
+      [centre[0]+.017+hand*.003,centre[1]-(loose?.069:.063)+hand*.002,centre[2]+.108+hand*.004],
       [centre[0]+.020+hand*.003,centre[1]-.067,centre[2]+.075],
       [centre[0]+.023+hand*.003,centre[1]-.021,centre[2]+.008]);
   }else{

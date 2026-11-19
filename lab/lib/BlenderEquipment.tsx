@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { equipmentAsset } from './equipment-assets';
 import { animateBlenderModel, disposeBlenderTerminalBatches, prepareBlenderModel, presentBlenderModel, semanticOwner } from './blender-model';
 import type { EquipmentProps } from './Equipment';
-import {rockerConductiveSurface} from './dc-rocker';
+import {rockerProbeTerminal} from './dc-rocker';
 import {panelThermostat} from './panel-heater';
 
 interface CachedAsset {
@@ -177,7 +177,7 @@ export function BlenderEquipment(props:EquipmentProps&{children?:React.ReactNode
   const batchDistantTerminals=lowOnly&&loaded?.url===lowUrl&&!props.selected&&props.view==='normal'&&!props.contactPiece&&!props.installedHeaterFlex;
   const presentation=useMemo(()=>source?prepareBlenderModel(source,batchDistantTerminals):undefined,[source,batchDistantTerminals]);
   useEffect(()=>()=>presentation?.owned.forEach(material=>material.dispose()),[presentation]);
-  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,invalidate]);
+  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,props.looseRockerTerminal);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,props.looseRockerTerminal,invalidate]);
   useFrame(({camera},dt)=>{if(presentation){
     if(!props.preferLowAsset&&!props.selected&&!props.lowDetail){const distance=camera.position.distanceTo(presentation.scene.getWorldPosition(new THREE.Vector3())),next=distance>(far?12:14);if(next!==far)setFar(next);}
     if(props.animate!==false&&animateBlenderModel(presentation,props.component,props.state,dt))invalidate();
@@ -186,8 +186,8 @@ export function BlenderEquipment(props:EquipmentProps&{children?:React.ReactNode
   const pick=(event:ThreeEvent<MouseEvent>)=>{
     const owner=semanticOwner(event.object);event.stopPropagation();
     if(owner.terminal&&props.component.variant==='dc-rocker'&&event.object instanceof THREE.Mesh){
-      const mat=event.object.material, surfaces=Array.isArray(mat)?mat:[mat];
-      if(!surfaces.some(m=>rockerConductiveSurface(m.name))){props.onPart('terminals');return;}
+      const mat=event.object.material,surface=Array.isArray(mat)?mat[event.face?.materialIndex??0]:mat;
+      if(!rockerProbeTerminal(event.object,surface?.name)){props.onPart('terminals');return;}
     }
     if(owner.terminal)props.onTerminal(owner.terminal);else props.onPart(owner.part??'body',owner.detail);
   };

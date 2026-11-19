@@ -34,7 +34,7 @@ const data: Data[] = [
     ['Why does the right strip stay on?', 'The right switch still feeds its strip from the driver', 'The left strip still carries the right strip’s current'],
     [['right-switch', 'OUT'], ['right', 'L']], [['left', 'L'], ['left', 'N']], 'Both switches are on. The left strip lights up. The right one stays dark.',
     'You switched each worktop strip without disturbing the other.',
-    'Start at the strip that stays dark. Both worktops use the same driver.', 'Put black on the right strip’s − pad and red on its + pad. Leave black there and move red to the wire leaving the right switch.',
+    'Start at the strip that stays dark. Both worktops use the same driver.', 'Put black on the right strip’s − pad and red on its + pad. Leave black there. Move red to the switch terminal that feeds the strip.',
     'There’s a break between the right switch and its strip. The left worktop still works because it uses a separate branch.',
   ],
   [

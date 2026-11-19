@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { captureMeasurement, getLessonActivities, validateDiagnosisEvidence } from '../lib/learning';
 import { assessFaultDiagnosis } from '../lib/fault-diagnosis';
+import { assessBuild } from '../lib/assessment';
 import { getLesson } from '../lib/lessons';
 import { simulate } from '../lib/simulation';
 import type { Endpoint } from '../lib/types';
-import { worktopFaultPoints as points, worktopFaultReadings } from '../lib/worktop-fault';
+import { reseatWorktopConnector, worktopFaultPoints as points, worktopFaultReadings, worktopLampStatus, worktopLooseEnd } from '../lib/worktop-fault';
 
 function exercise(broken=true){
   const lesson=getLesson(66)!,doc=structuredClone(lesson.circuit);
@@ -18,6 +19,50 @@ function exercise(broken=true){
   });
   return {lesson,doc,result,probe};
 }
+
+test('only the fitted output lead on the right DC rocker has a loose push-on',()=>{
+  const {lesson,doc}=exercise(),lead=doc.wires.find(w=>w.id===lesson.challenge.wire)!;
+  assert.deepEqual(worktopLooseEnd(doc),points.switchOutput.a);
+  assert.equal(worktopLooseEnd(doc,doc.wires.find(w=>w.id!==lead.id)!),undefined);
+  [lead.from,lead.to]=[lead.to,lead.from];
+  assert.deepEqual(worktopLooseEnd(doc,lead),points.switchOutput.a);
+  lead.from={component:'left',terminal:'L'};
+  assert.equal(worktopLooseEnd(doc),undefined);
+  lead.from=points.strip.a;
+  doc.faults[0].enabled=false;
+  assert.equal(worktopLooseEnd(doc),undefined);
+  doc.faults[0].enabled=true;
+  doc.components.find(c=>c.id==='right-switch')!.variant=undefined;
+  assert.equal(worktopLooseEnd(doc),undefined);
+});
+
+test('reseating requires isolation and the selected blade, and preserves other faults and protection settings',()=>{
+  const {lesson,doc}=exercise(),wire=lesson.challenge.wire!,out=points.switchOutput.a;
+  assert.equal(reseatWorktopConnector(doc,wire,out),undefined);
+  doc.supply.enabled=false;
+  const alternate={...doc.components[0],id:'backup',type:'battery',params:{on:true}};
+  const withBattery={...doc,components:[...doc.components,alternate]};
+  assert.equal(reseatWorktopConnector(withBattery,wire,out),undefined);
+  assert.equal(reseatWorktopConnector(doc,wire,{...out,terminal:'COM'}),undefined);
+  assert.equal(reseatWorktopConnector(doc,wire,{...out,component:'left-switch'}),undefined);
+  assert.equal(reseatWorktopConnector(doc,'missing-wire',out),undefined);
+  const other={enabled:true,type:'missing-earth',wire:doc.wires.find(w=>w.role==='PE')!.id};
+  doc.faults.push(other);
+  const fixed=reseatWorktopConnector(doc,wire,out)!;
+  assert.deepEqual(fixed.faults,[other]);
+  assert.equal(fixed.components,doc.components);
+  assert.equal(fixed.wires,doc.wires);
+  assert.equal(doc.faults.length,2);
+  assert.equal(reseatWorktopConnector(fixed,wire,out),undefined);
+  assert.equal(simulate(fixed).deviceStates.right.energized,false);
+  assert.equal(worktopLampStatus(fixed,simulate(fixed)),'Left strip dark · Right strip dark');
+  const restored={...fixed,supply:{...fixed.supply,enabled:true},revision:fixed.revision+1};
+  assert.equal(worktopLampStatus(restored,simulate(fixed)),undefined);
+  assert.equal(worktopLampStatus(restored,simulate(restored)),'Left strip lit · Right strip lit');
+  const report=assessBuild(restored,simulate(restored),lesson.circuit);
+  assert.equal(report.passed,false);
+  assert.ok(report.checks.some(item=>item.category==='protection'&&item.status==='fail'));
+});
 
 test('a learner can compare the two ends of the broken worktop feed with the same return',()=>{
   for(const reversed of [false,true]){
