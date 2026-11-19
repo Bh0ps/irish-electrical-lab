@@ -83,7 +83,7 @@ test('both original BG 851 meshes expose the marked mouths, metal screw heads an
 
 test('both probe bodies clear the withdrawn fitting’s wires and one another, including on the same screw',()=>{
   const {challenge}=getLesson(20)!;
-  const faulty:CircuitDocument={...doc,faults:[{wire:challenge.wire,type:challenge.fault,enabled:true}]};
+  const faulty:CircuitDocument={...doc,faults:[{wire:challenge.wire,type:challenge.fault,enabled:true,looseEnd:{component:item.id,terminal:'LOUT'}}]};
   const site=jobSite(doc),fcu=site.items.find(i=>i.id===item.id)!,heater=site.items.find(i=>i.id==='fixed')!;
   const pose=fusedPlatePose(fcu,true);
   const localMM=(p:Vec3)=>vec(p).sub(vec(pose.position)).applyAxisAngle(up,-pose.rotation).multiplyScalar(1000);

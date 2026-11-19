@@ -45,6 +45,9 @@ import { faultChoices, faultScore, worktopComparisonReady, faultStage, faultStag
 import { faultClue } from '../../lib/fault-checks';
 import { reseatWorktopConnector, worktopFaultReadings, worktopLampStatus, worktopLooseEnd } from '../../lib/worktop-fault';
 import { bellComparisonReady, bellFaultActivity, bellFaultTitle, bellInput, bellReadings, hasBellHandover, startBellPress, finishBellPress, bellRunReady, bellHandoverStep, type BellRun, type BellPress } from '../../lib/bell-fault';
+import { heaterFieldAvailable, heaterFieldReadings, heaterFieldReady, heaterFieldPrompt } from '../../lib/heater-field-fault';
+import { heaterFlexEnd, looseHeaterWire } from '../../lib/heater-connection';
+import { reseatHeaterWire } from '../../lib/heater-repair';
 import { looseBellWire, reseatBellWire } from '../../lib/bell-connection';
 import { heaterComparisonReady, heaterFaultActivity, heaterFaultReadings, heaterFaultTitle, heaterFeed, hasPanelHeater, elementWatts, startHeaterPress, finishHeaterPress, heaterRunReady, heaterHandoverStep, type HeaterRun, type HeaterSwitchPress } from '../../lib/heater-fault';
 import { lessonCompetency } from '../../lib/scenarios';
@@ -219,6 +222,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const worktopFault=faultJob==='worktop',heaterFault=faultJob==='heater',chimeFault=faultJob==='chime';
   const [bellRun,setBellRun]=useState<BellRun>();
   const pendingBellPress=useRef<BellPress|undefined>(undefined);
+  const [heaterMeterChoice,setHeaterMeterChoice]=useState<{circuit:string;bench:boolean}>();
   const [heaterRun,setHeaterRun]=useState<HeaterRun>();
   const pendingHeaterPress=useRef<HeaterSwitchPress|undefined>(undefined);
   const [faultFeedback,setFaultFeedback]=useState(''),[faultReadingIds,setFaultReadingIds]=useState<string[]>([]);
@@ -287,6 +291,9 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   },[investigating,faultJob,evidence,document.id,document.revision]);
   useLayoutEffect(()=>{pendingEvidenceKey.current=evidenceKey;},[evidenceKey]);
   const liveHeaterReadings=useMemo(()=>investigating&&heaterFault?heaterFaultReadings(document,result,evidence):undefined,[investigating,heaterFault,document,result,evidence]);
+  const fieldHeaterAvailable=heaterFault&&heaterFieldAvailable(document);
+  const liveHeaterField=useMemo(()=>investigating&&fieldHeaterAvailable?heaterFieldReadings(document,result,evidence):undefined,[investigating,fieldHeaterAvailable,document,result,evidence]);
+  const heaterBench=heaterMeterChoice?.circuit===document.id?heaterMeterChoice.bench:!!(liveHeaterReadings?.heater||liveHeaterReadings?.output);
   const liveBellReadings=useMemo(()=>investigating&&chimeFault?bellReadings(document,result,evidence):undefined,[investigating,chimeFault,document,result,evidence]);
   const faultObservation=useMemo(()=>{
     if(investigating&&worktopFault){
@@ -296,15 +303,18 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
     if(liveBellReadings){
       return {ready:bellComparisonReady(liveBellReadings),missing:'',readings:{},samples:[liveBellReadings.call,liveBellReadings.push].filter((e):e is MeasurementEvidence=>!!e)};
     }
+    if(liveHeaterField&&!heaterBench){
+      return {ready:heaterFieldReady(liveHeaterField),missing:'',readings:{},samples:[liveHeaterField.pole,liveHeaterField.gap].filter((e):e is MeasurementEvidence=>!!e)};
+    }
     if(liveHeaterReadings){
       return {ready:heaterComparisonReady(document,liveHeaterReadings),missing:'',readings:{},samples:[liveHeaterReadings.heater,liveHeaterReadings.output].filter((e):e is MeasurementEvidence=>!!e)};
     }
     if(evidenceKey&&checkedFault?.key===evidenceKey)return {ready:checkedFault.accepted,missing:checkedFault.explanation,readings:{},samples:evidence.filter(e=>checkedFault.sampleIds.includes(e.id))};
     return {ready:false,missing:'',readings:{},samples:[]};
-  },[investigating,worktopFault,liveHeaterReadings,liveBellReadings,document,result,evidence,checkedFault,evidenceKey]);
+  },[investigating,worktopFault,liveHeaterReadings,liveHeaterField,heaterBench,liveBellReadings,document,result,evidence,checkedFault,evidenceKey]);
   const isOriginalFault=(f:CircuitDocument['faults'][number])=>f.enabled&&f.type===lesson.challenge.fault&&
     (!lesson.challenge.wire||f.wire===lesson.challenge.wire)&&(!lesson.challenge.component||f.component===lesson.challenge.component);
-  const repairInPlace=challengeRepaired&&!((worktopFault||chimeFault)?document.faults.some(isOriginalFault):document.faults.some(f=>f.enabled));
+  const repairInPlace=challengeRepaired&&!(faultJob?document.faults.some(isOriginalFault):document.faults.some(f=>f.enabled));
   const checkingBell=faultSession&&chimeFault&&repairInPlace&&!challengeComplete&&hasBellHandover(document);
   const bellProved=checkingBell&&bellRunReady(document,result,bellRun);
   const checkingHeater=faultSession&&heaterFault&&repairInPlace&&!challengeComplete&&hasPanelHeater(document);
@@ -312,7 +322,9 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const faultStep=faultStage({accepted:diagnosisAccepted,repaired:repairInPlace,completed:challengeComplete,scored,hints},faultObservation.ready);
   const storedFaultSample=(i:number)=>evidence.find(e=>e.id===faultReadingIds[i]&&e.circuitId===document.id);
   const faultReadings=diagnosisAccepted&&worktopFault?{strip:storedFaultSample(0),switchOutput:storedFaultSample(1)}:faultObservation.readings;
-  const heaterReadings=heaterFault&&diagnosisAccepted?{heater:storedFaultSample(0),output:storedFaultSample(1)}:liveHeaterReadings;
+  const savedHeaterField=heaterFault&&diagnosisAccepted&&storedFaultSample(0)?.mode==='resistance';
+  const heaterField=savedHeaterField?{pole:storedFaultSample(0),gap:storedFaultSample(1)}:liveHeaterField;
+  const heaterReadings=heaterFault&&diagnosisAccepted?(savedHeaterField?{}:{heater:storedFaultSample(0),output:storedFaultSample(1)}):liveHeaterReadings;
   const doorReadings=chimeFault&&diagnosisAccepted?{call:storedFaultSample(0),push:storedFaultSample(1)}:liveBellReadings;
   const wrongFaultReading=!!faultSample&&faultSample.revision===document.revision&&
     (faultJob?!faultObservation.samples.some(e=>e.id===faultSample.id):faultObservation.samples.length>=2&&!faultObservation.ready);
@@ -341,7 +353,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       !new RegExp('^(lesson|book):'+document.lessonId+':').test(activityId))return;
     const saved:LessonBookmark={version:1,circuit:document,activityId,path,
       mode:mode==='challenges'?'challenges':mode==='build'?'build':'explore',
-      ...(faultSession?{fault:{hints,accepted:diagnosisAccepted,repaired:challengeRepaired,scored,...(faultJob?{[faultJob]:true,probes:{...(probePlacement.current.red&&probeA?{red:probeA}:{}),...(probePlacement.current.black&&probeB?{black:probeB}:{})}}:{}),...(heaterFault&&challengeRepaired&&heaterRun?{heaterRun}:{}),...(chimeFault&&challengeRepaired&&bellRun?.revision===document.revision?{bellRun}:{}),...(faultReadingIds.length?{readingIds:faultReadingIds}:{}),...(faultJob==='worktop'||heaterFault&&hasPanelHeater(document)||chimeFault&&hasBellHandover(document)?{completed:challengeComplete}:challengeComplete?{completed:true}:{})}}:{})};
+      ...(faultSession?{fault:{hints,accepted:diagnosisAccepted,repaired:challengeRepaired,scored,...(faultJob?{[faultJob]:true,probes:{...(probePlacement.current.red&&probeA?{red:probeA}:{}),...(probePlacement.current.black&&probeB?{black:probeB}:{})}}:{}),...(heaterFault&&heaterMeterChoice?.circuit===document.id?{heaterMeter:heaterMeterChoice.bench?'bench' as const:'field' as const}:{}),...(heaterFault&&challengeRepaired&&heaterRun?{heaterRun}:{}),...(chimeFault&&challengeRepaired&&bellRun?.revision===document.revision?{bellRun}:{}),...(faultReadingIds.length?{readingIds:faultReadingIds}:{}),...(faultJob==='worktop'||heaterFault&&hasPanelHeater(document)||chimeFault&&hasBellHandover(document)?{completed:challengeComplete}:challengeComplete?{completed:true}:{})}}:{})};
     setBookmark(saved);
     // A learner may close the app after a wrong turn as well as after a checked step.
     let active=true;
@@ -349,7 +361,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       .catch(()=>{if(active)setSaveStatus('Could not save the lesson position.');})
       .then(()=>{if(active&&callView)setSavedCallView(callView);});
     return ()=>{active=false;};
-  },[hydrated,workspace,path,activePractice,activeActivity,startActivity,currentCall,callView,document,mode,challengeStarted,hints,diagnosisAccepted,challengeRepaired,scored,challengeComplete,faultJob,heaterFault,chimeFault,faultReadingIds,heaterRun,bellRun,faultSession,faultStep,lessonId,probeA,probeB]);
+  },[hydrated,workspace,path,activePractice,activeActivity,startActivity,currentCall,callView,document,mode,challengeStarted,hints,diagnosisAccepted,challengeRepaired,scored,challengeComplete,faultJob,heaterFault,heaterMeterChoice,chimeFault,faultReadingIds,heaterRun,bellRun,faultSession,faultStep,lessonId,probeA,probeB]);
   const lampMeterDemo=workspace==='learn'&&path!=='home'&&activeActivity?.bookStep==='meter-demo'&&document.lessonId===7;
   useEffect(()=>{
     if(!lampMeterDemo||!docRef.current.components.some(c=>c.id==='light'&&c.type==='lamp'))return;
@@ -434,7 +446,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
           lastFaultReading.current='';setInspectorCollapsed(true);setPanel('lesson');setTool('select');setSheetOpen(true);
         }
       }
-      if(!restoring.current&&m.kind==='measurement'&&m.revision===docRef.current.revision&&m.circuitId===docRef.current.id){const onSwitch=typeof m.requestId==='string'&&m.requestId.startsWith(switchMeasurement);if(!onSwitch)setResistance(m.evidence);if(m.evidence&&m.evidence.status!=='unresolved'){const slot=docRef.current.lessonId??evidenceSlot.current;if(!onSwitch){lastFaultReading.current=m.evidence.id;setFaultSample(m.evidence);setNotice((m.evidence.instrument?.displayed??(m.value===null?'OL':format(m.value)))+' Ω recorded.');}setProgress(p=>recordEvidence(p,slot,m.evidence));}}
+      if(!restoring.current&&m.kind==='measurement'&&m.revision===docRef.current.revision&&m.circuitId===docRef.current.id){const onSwitch=typeof m.requestId==='string'&&m.requestId.startsWith(switchMeasurement);if(!onSwitch)setResistance(m.evidence);if(m.evidence&&m.evidence.status!=='unresolved'){const slot=docRef.current.lessonId??evidenceSlot.current;if(onSwitch){setFaultSample(m.evidence);setFaultFeedback('');}else{lastFaultReading.current=m.evidence.id;setFaultSample(m.evidence);setNotice((m.evidence.instrument?.displayed??(m.value===null?'OL':format(m.value)))+' Ω recorded.');}setProgress(p=>recordEvidence(p,slot,m.evidence));}}
       if(!restoring.current&&m.kind==='diagnosis'&&diagnosisRequest.current&&diagnosisRequest.current.id===m.requestId){
         const request=diagnosisRequest.current;diagnosisRequest.current=null;setCheckingDiagnosis(false);
         if(m.revision===docRef.current.revision&&m.circuitId===docRef.current.id){
@@ -499,7 +511,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   function pairContactor(id:string,partner:string){commit({...document,components:document.components.map(c=>c.id===id?{...c,params:{...c.params,mechanicallyInterlockedWith:partner}}:c.id===partner?{...c,params:{...c.params,mechanicallyInterlockedWith:id}}:c.params.mechanicallyInterlockedWith===id||!!(partner&&c.params.mechanicallyInterlockedWith===partner)?{...c,params:{...c.params,mechanicallyInterlockedWith:''}}:c)});}
   function restoreHistoryEntry(previous:CircuitDocument){
     pendingBellPress.current=undefined;setBellRun(undefined);
-    if(faultSession&&(worktopFault||chimeFault)&&challengeComplete&&previous.id===docRef.current.id&&previous.faults.some(isOriginalFault)){
+    if(faultSession&&faultJob&&challengeComplete&&previous.id===docRef.current.id&&previous.faults.some(isOriginalFault)){
       // Keep the earned achievement. Putting the break back needs another live repair and test.
       challengeRef.current.accepted=diagnosisAccepted;
       setChallengeComplete(false);
@@ -604,11 +616,12 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     const example=clone(course.circuit);example.id=uid('challenge');
     const heaterSwitch=job==='heater'&&example.components.find(c=>c.id==='fcu-switch');
     if(heaterSwitch)heaterSwitch.params.closed=false;
-    example.faults=[{type:course.challenge.fault,wire:course.challenge.wire,component:course.challenge.component,enabled:true,...(job==='chime'&&hasBellHandover(example)?{looseEnd:{...bellInput}}:{})}];
+    const looseEnd=job==='heater'?heaterFlexEnd(example,course.challenge.wire):job==='chime'&&hasBellHandover(example)?bellInput:undefined;
+    example.faults=[{type:course.challenge.fault,wire:course.challenge.wire,component:course.challenge.component,enabled:true,...(looseEnd?{looseEnd:{...looseEnd}}:{})}];
     freshWorkerState.current=true;baseline.current=fingerprintLayout(example);commit(example,true);
     setLessonId(course.id);setPath('full');setStartActivity(faultStageId(course.id,'measure'));setSessionKey(k=>k+1);setCoursesOpen(false);
     setPractice(undefined);setActiveActivity(undefined);activityCircuit.current='';setMoveTarget(undefined);cancelConnection();clearProbes();setEvents([]);
-    setWorkspace('learn');setMode('challenges');setFaultJob(job);setBellRun(undefined);pendingBellPress.current=undefined;setHeaterRun(undefined);pendingHeaterPress.current=undefined;setSurface(job?'site':'bench');sitePose.current=undefined;
+    setWorkspace('learn');setMode('challenges');setFaultJob(job);setHeaterMeterChoice(undefined);setBellRun(undefined);pendingBellPress.current=undefined;setHeaterRun(undefined);pendingHeaterPress.current=undefined;setSurface(job?'site':'bench');sitePose.current=undefined;
     if(job)setSiteJump(prev=>({id:prev.id+1,component:job==='chime'?'back':job==='heater'?'fcu-switch':'right',overview:job==='chime'||job==='worktop'||job==='heater'&&hasPanelHeater(example)}));
     if(job)enterSiteJob();else setSheetOpen(true);
     setPanel('lesson');setTool('select');setInspectorCollapsed(true);setCamera(c=>({id:c.id+1,action:'fit'}));
@@ -633,7 +646,12 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   }
   function repair(){
     const doc=docRef.current;
-    if(faultSession&&(worktopFault&&worktopLooseEnd(doc)||chimeFault&&looseBellWire(doc)))return false;
+    if(faultSession&&(worktopFault&&worktopLooseEnd(doc)||chimeFault&&looseBellWire(doc)||heaterFault&&looseHeaterWire(doc)))return false;
+    if(faultSession&&heaterFault){
+      const target=doc.faults.find(isOriginalFault);
+      if(!target||resistanceSupplyWarning(doc))return false;
+      return applyRepair({...doc,faults:doc.faults.filter(f=>f!==target)});
+    }
     return applyRepair({...doc,faults:[],components:doc.components.map(c=>({...c,params:{...c.params,resetToken:Number(c.params.resetToken??0)+1}}))});
   }
   function markLesson(){setProgress(p=>({...p,lessons:Array.from(new Set([...p.lessons,lessonId]))}));setNotice('Lesson marked as studied.');}
@@ -643,10 +661,10 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     if(!worker.current||!faultObservation.ready||!diagnosis||!investigating)return;
     const id=++testSequence.current;diagnosisRequest.current={id,readingIds:faultObservation.samples.slice(0,20).map(e=>e.id)};
     setCheckingDiagnosis(true);setFaultFeedback('');
-    worker.current.postMessage({kind:'diagnose',requestId:id,document:docRef.current,electricalGeneration:electricalIdentity.current.generation,diagnosis,evidence,challenge:lesson.challenge,dt:0});
+    worker.current.postMessage({kind:'diagnose',requestId:id,document:docRef.current,electricalGeneration:electricalIdentity.current.generation,diagnosis,evidence:heaterFault?faultObservation.samples:evidence,challenge:lesson.challenge,dt:0});
   }
   function showHint(){const next=Math.min(hints+1,3);setHints(next);challengeRef.current.hints=next;}
-  const clue=faultClue(lesson,document,hints,worktopFault);
+  const clue=faultClue(lesson,document,hints,worktopFault,fieldHeaterAvailable&&!heaterBench);
   function chooseForkMethod(method:ForkMethod){
     setForkMethod(method);setHeldReading(undefined);setForkSelectingReference(false);setMeterMode(forkMode(method));
   }
@@ -784,7 +802,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       if(bookmark.mode!=='explore'||bookmark.path==='full')setSurface('bench');setMode(bookmark.mode);setSheetOpen(true);setInspectorCollapsed(false);
       if(savedCall)enterSiteJob();
       const f=bookmark.fault;if(f){scoredFault.current=f.scored;setScored(f.scored);setChallengeStarted(true);setHints(f.hints);
-        lastFaultReading.current='';setFaultJob(f.worktop?'worktop':f.heater?'heater':f.chime?'chime':undefined);setBellRun(f.bellRun?.revision===circuit.revision?f.bellRun:undefined);pendingBellPress.current=undefined;setHeaterRun(f.heaterRun);pendingHeaterPress.current=undefined;setFaultReadingIds(f.readingIds??[]);setFaultSample(undefined);setFaultFeedback('');setCheckingDiagnosis(false);setDiagnosis('');
+        lastFaultReading.current='';setHeaterMeterChoice(f.heaterMeter?{circuit:circuit.id,bench:f.heaterMeter==='bench'}:undefined);setFaultJob(f.worktop?'worktop':f.heater?'heater':f.chime?'chime':undefined);setBellRun(f.bellRun?.revision===circuit.revision?f.bellRun:undefined);pendingBellPress.current=undefined;setHeaterRun(f.heaterRun);pendingHeaterPress.current=undefined;setFaultReadingIds(f.readingIds??[]);setFaultSample(undefined);setFaultFeedback('');setCheckingDiagnosis(false);setDiagnosis('');
         if(f.worktop||f.heater||f.chime){enterSiteJob();setProbeA(f.probes?.red);setProbeB(f.probes?.black);setActiveProbe(f.probes?.red?.terminal===(f.chime?'AC2':'N')?'black':'red');
           probePlacement.current={red:!!f.probes?.red,black:!!f.probes?.black,current:false};setMeterMode('voltage');setForkMethod('probe-voltage');setSurface('site');setSiteJump(prev=>({id:prev.id+1,component:f.chime?'back':f.heater?'fcu-switch':'right',overview:!!f.chime||!!f.heater&&hasPanelHeater(circuit)||!!f.worktop&&(f.repaired||!f.probes?.red&&!f.probes?.black)}));}
         const finished=f.completed??(!(f.heater&&hasPanelHeater(circuit))&&!(f.chime&&hasBellHandover(circuit))&&f.repaired&&progress.lastTest?.assessment.passed===true&&testRecordMatches(progress.lastTest,circuit)&&!!progress.learning[circuit.lessonId!]?.activityIds.includes('fault-repaired'));setChallengeComplete(finished);setDiagnosisAccepted(f.accepted);setChallengeRepaired(f.repaired);challengeRef.current={accepted:f.accepted&&!finished,repaired:f.repaired,lessonId:bookmark.circuit.lessonId!,hints:f.hints,circuitId:bookmark.circuit.id};}
@@ -798,11 +816,12 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   function openCourses(destination:'learn'|'sandbox',jobs=false){setShowJobs(jobs);setCourseDestination(destination);setCoursesOpen(true);setBuildsOpen(false);}
   function chooseTool(next:Tool,fixtureId?:string,touchFitting=false){
     setSitePoints(false);
-    if(next==='meter'&&activeSurface==='site'&&fixtureId&&switchFitting?.component.id===fixtureId){
+    if(next==='meter'&&(activeSurface==='site'||activeSurface==='list')&&fixtureId&&switchFitting?.component.id===fixtureId){
+      if(fieldHeaterAvailable)setHeaterMeterChoice({circuit:document.id,bench:false});
       if(!switchCheck.active)setMeterVisit({circuit:document.id,pose:sitePose.current,component:siteJump.component,selected});
       switchCheck.start(fixtureId);setHandTool(undefined);setTool('meter');setPanel('meter');setInspectorCollapsed(false);
-      setViewOpen(false);setConductorPickerOpen(false);setSheetOpen(!immersive);
-      findFixture(fixtureId);return;
+      setViewOpen(false);setConductorPickerOpen(false);setSheetOpen(!immersive||activeSurface==='list');
+      if(activeSurface==='site')findFixture(fixtureId);return;
     }
     if(switchCheck.active)switchCheck.finish();
     if(next==='meter'&&activeSurface==='site'&&testFittings.some(f=>f.kind!=='fcu')){
@@ -1011,7 +1030,8 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   const voltageToolOpen=tool==='meter'&&panel==='meter'&&!inspectorCollapsed;
   const wrongVoltageMode=useFork?forkMethod!=='probe-voltage':meterMode!=='voltage';
   const liveVoltageMode=!wrongVoltageMode&&!(useFork&&heldReading);
-  const adjustMeter=wrongVoltageMode
+  const benchHeaterOff=fieldHeaterAvailable&&heaterBench&&(activeSurface==='bench'||activeSurface==='list')&&!document.supply.enabled&&!switchCheck.open;
+  const adjustMeter=benchHeaterOff?{label:'Turn simulated supply on',action:()=>changeBenchSupply(true)}:wrongVoltageMode
     ? {label:'Set the meter to volts',action:()=>{if(useFork)chooseForkMethod('probe-voltage');else setMeterMode('voltage');}}
     : useFork&&heldReading ? {label:'Release HOLD for a live reading',action:()=>physicalInstrument('hold')} : undefined;
   const lessonVolts=useFork?liveFork.status==='value'?liveFork.shown+' volts '+(liveFork.signal??''):undefined
@@ -1031,7 +1051,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     showSurface(v);setSheetOpen(false);
   }
   const fieldPair=JSON.stringify([document.id,document.revision,probeA,probeB,useFork?forkMethod:'study',startActivity]);
-  const switchMeterHere=switchCheck.active&&activeSurface==='site'&&tool==='meter'&&panel==='meter'&&!!switchFitting;
+  const switchMeterHere=switchCheck.active&&(activeSurface==='site'||activeSurface==='list')&&tool==='meter'&&panel==='meter'&&!!switchFitting;
   const voltageMeterHere=activeSurface==='site'&&voltageToolOpen&&!handTool&&!switchMeterHere&&testFittings.some(f=>f.kind!=='fcu')&&!wrongVoltageMode;
   const sameRecordedPair=wrongFaultReading&&faultSample?.a&&faultSample.b&&probeA&&probeB&&
     endpointKey(faultSample.a)===endpointKey(probeA)&&endpointKey(faultSample.b)===endpointKey(probeB);
@@ -1045,8 +1065,10 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     :isolationFailed?()=>worker.current?.postMessage({document:docRef.current,electricalGeneration:electricalIdentity.current.generation,dt:0})
     :undefined;
   function operateFittedSwitch(){if(switchMeterHere&&switchCheck.safe&&!switchCheck.open)operate(switchFitting.component);}
-  const switchSheet=switchMeterHere&&<SwitchMeterSheet circuit={document} part={switchFitting.component} check={switchCheck}
-    isolate={isolateSwitch} isolateLabel={switchIsolationLabel} operate={operateFittedSwitch} leave={()=>chooseFieldView('site')}/>;
+  const installedHeaterHint=liveHeaterField&&!heaterBench
+    ?heaterFieldPrompt(document,liveHeaterField,wrongFaultReading?faultSample:undefined):undefined;
+  const switchSheet=switchMeterHere&&<SwitchMeterSheet hint={installedHeaterHint} circuit={document} part={switchFitting.component} check={switchCheck}
+    isolate={isolateSwitch} isolateLabel={switchIsolationLabel} operate={operateFittedSwitch} leave={()=>activeSurface==='list'?closeTools():chooseFieldView('site')}/>;
   const context=panel==='meter'?switchSheet||compactMeter:panel==='results'?resultContent:panel==='connect'?connectContent:panel==='equipment'?paletteContent:panel==='inspect'?inspectorContent:null;
   const briefSwitchAction=panel==='inspect'&&selectedPart==='actuator'&&(
     inBook&&!!activeActivity?.bookStep&&component?.type==='switch'
@@ -1058,7 +1080,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       {!currentCall&&!faultSession&&<IconButton label="Close tools" onClick={closeTools}><X size={15}/></IconButton>}</div>}
     {jobConductorList?<ConductorPicker circuit={document} selected={selectedWire} onPick={selectConductor}/>:context}
   </section>:undefined;
-  const diagnosedFault=faultSession&&faultStep==='repair'?document.faults.find(worktopFault||chimeFault?isOriginalFault:f=>f.enabled):undefined;
+  const diagnosedFault=faultSession&&faultStep==='repair'?document.faults.find(faultJob?isOriginalFault:f=>f.enabled):undefined;
   const brokenWire=diagnosedFault?.wire?document.wires.find(w=>w.id===diagnosedFault.wire):undefined;
   const brokenEnds=brokenWire?[brokenWire.to,brokenWire.from]:[];
   const looseEnd=heaterFault&&document.components.some(c=>c.id==='fcu-switch'&&c.type==='fcu')
@@ -1089,6 +1111,10 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
         sitePose.current=undefined;
         setSiteJump(prev=>({id:prev.id+1,component:'right',overview:true}));
       }
+    }else if(looseEnd&&point&&brokenWire&&diagnosedFault.looseEnd){
+      const fixed=reseatHeaterWire(doc,diagnosedFault,point);
+      if(!fixed||!applyRepair(fixed))return false;
+      pendingHeaterPress.current=undefined;setHeaterRun(undefined);
     }else if(bellEnd&&point&&brokenWire){
       const fixed=reseatBellWire(doc,diagnosedFault,point);
       if(!fixed||!applyRepair(fixed))return false;
@@ -1143,10 +1169,33 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       reading:worktopStatus??(bellProved?'Hall chime · both doors checked':undefined)??(heaterProved&&heaterWatts!==undefined?'Heater element · '+Math.round(heaterWatts)+' W':undefined),
     };
   }
+  function openHeaterField(){
+    setHeaterMeterChoice({circuit:document.id,bench:false});
+    if(activeSurface==='site'||activeSurface==='list'){
+      chooseTool('meter','fcu-switch',true);return;
+    }
+    setSurface(startWithList?'bench':'site');setListView(startWithList);setSitePoints(false);
+    setMeterVisit(undefined);setHandTool(undefined);setViewOpen(false);setTool('meter');setPanel('meter');
+    setInspectorCollapsed(false);setSheetOpen(!immersive||startWithList);
+    sitePose.current=undefined;setSiteJump(prev=>({id:prev.id+1,component:'fcu-switch'}));
+    switchCheck.start('fcu-switch');
+  }
+  function openHeaterBench(){
+    if(switchCheck.active)switchCheck.finish();
+    setHeaterMeterChoice({circuit:document.id,bench:true});
+    setSitePoints(false);setSurface('bench');setListView(startWithList||activeSurface==='list');setMeterMode('voltage');
+    if(useFork)chooseForkMethod('probe-voltage');
+    setHandTool(undefined);setView('open');setTool('meter');setPanel('meter');
+    setInspectorCollapsed(false);setSheetOpen(true);
+  }
   function openFaultMeter(){
     if(faultJob){
       setMeterMode('voltage');
       if(useFork)chooseForkMethod('probe-voltage');
+    }
+    if(heaterFault&&fieldHeaterAvailable){
+      if(heaterBench)openHeaterBench();else openHeaterField();
+      return;
     }
     if(chimeFault&&doorReadings?.call){
       if(activeSurface==='site'&&testFittings.some(f=>f.kind==='sesame'&&f.component.id==='back')){
@@ -1166,7 +1215,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     {label:'Equipment list',selected:activeSurface==='list',run:()=>chooseFieldView('list')},
   ]:[];
   const fieldActions:FieldAction[]=immersive?[
-    {label:'Measure',run:()=>chooseTool('meter',undefined,true)},
+    {label:'Measure',run:()=>fieldHeaterAvailable&&investigating?openFaultMeter():chooseTool('meter',undefined,true)},
     ...(activeSurface==='site'&&switchFitting?[{label:'Check wall switch',run:()=>chooseTool('meter',switchFitting.component.id,true)}]:[]),
     ...(canFindRepair?[{label:'Find repair',run:findRepairOnSite}]:[]),
     ...(selected?[{label:'Inspect fitting',run:()=>inspectFixture(selected)}]:[]),
@@ -1200,7 +1249,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       <button type="button" className="field-meter-return" onClick={()=>chooseFieldView('site')}>Put meter away</button>}
     {immersive&&!sheetOpen&&!fieldTools&&(voltageMeterHere||switchMeterHere&&switchCheck.open)&&<div className="field-meter-slot">
       {switchMeterHere?<FieldMeter pointsButton={fieldPointsButton} circuit={document} active={switchCheck.lead} red={switchCheck.red} black={switchCheck.black} choose={switchCheck.choose}
-        display={switchCheck.reading.shown+' Ω'} hint={switchCheck.red&&switchCheck.black&&switchCheck.reading.status!=='value'?switchCheck.reading.explanation:undefined}
+        display={switchCheck.reading.shown+' Ω'} hint={installedHeaterHint??(switchCheck.red&&switchCheck.black&&switchCheck.reading.status!=='value'?switchCheck.reading.explanation:undefined)}
         points={()=>setSitePoints(true)} canRecord={switchCheck.canRecord} recorded={switchCheck.recorded} record={switchCheck.record}/>:
         <FieldMeter pointsButton={fieldPointsButton} circuit={document} active={activeProbe} red={probeA} black={probeB} choose={setActiveProbe}
           display={useFork?(visibleFork.shown+' '+(visibleFork.unit||'V')+' '+(visibleFork.signal??'')+(heldReading?' HOLD':'')).trim():voltage?.value!=null?format(voltage.value,2)+' V':'— V'}
@@ -1221,6 +1270,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
         repair={repair} worktopStatus={worktopStatus} heaterRun={heaterRun} heaterRunAction={heaterRunAction} bellRun={bellRun} bellRunAction={bellRunAction} restoreSupply={!document.supply.enabled?restoreRepairSupply:undefined} test={runTest} testing={testRunning} failed={repairTestFailed}
         openReport={openFaultReport} showClue={showHint} closeTools={closeTools} scoreThis={()=>requestReplacement('Start scored fault challenge',()=>startChallenge(true,lesson,faultJob))}
         context={courseContext} fieldTaskHost={fieldTaskHost} openJob={()=>setSheetOpen(true)} next={()=>openCourses('learn',true)}
+        heaterField={heaterField} heaterBench={diagnosisAccepted?!savedHeaterField:heaterBench} openHeaterField={fieldHeaterAvailable?openHeaterField:undefined} openHeaterBench={fieldHeaterAvailable?openHeaterBench:undefined}
         openMeter={openFaultMeter}
         readings={faultReadings} missing={faultObservation.missing} samples={faultObservation.samples}
         wrongSample={faultSample} wrongPoints={wrongFaultReading}

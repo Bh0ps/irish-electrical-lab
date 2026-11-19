@@ -160,7 +160,7 @@ export function validateCircuit(value:unknown):CircuitDocument {
     if(f.looseEnd!==undefined){
       const end=endpoint(f.looseEnd,path+'.looseEnd');
       const wire=wires.find(w=>w.id===fault.wire);
-      if(type!=='open-wire'||!wire||![wire.from,wire.to].some(p=>p.component===end.component&&p.terminal===end.terminal))
+      if((type!=='open-wire'&&type!=='open-live')||!wire||![wire.from,wire.to].some(p=>p.component===end.component&&p.terminal===end.terminal))
         return invalid(path+'.looseEnd','must identify an end of the open conductor.');
       fault.looseEnd=end;
     }

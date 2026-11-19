@@ -6,6 +6,7 @@ import { Footprints,PanelTopOpen,Focus } from 'lucide-react';
 import { mountScale,mountRoll,filledWays } from '../../lib/board-assembly';
 import { DRAWING_INK } from '../../lib/installation-drawing';
 import { installedEnd,installedWireRoute } from '../../lib/house-installation';
+import {heaterCopperEndpoint} from '../../lib/heater-flex-point';
 import { Line } from '@react-three/drei';
 import { COMPONENTS,definitionFor } from '../../lib/components';
 import { Equipment, type EquipmentProps } from '../../lib/Equipment';
@@ -560,7 +561,7 @@ export default function JobSiteView({instructionTarget,pointsOpen,closePoints,on
     ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,push?[0,.55,.36]:heaterControl?FCU_ROCKER:stationSwitch?[0,.651,.067]:[0,COMPONENTS.switch.size[1]/2,.20],rocker.rotation)):undefined;
   const zoomButton=immersive&&closeView&&!lost&&(!toolsOpen||meter)?<button type="button" aria-label={magnified?'Reset fitting zoom':'Enlarge fitting'}
     aria-pressed={magnified} onClick={()=>rig.setZoom(magnified?1:2)}>{magnified?'1×':'Zoom'}</button>:undefined;
-  return <div className="jobsite" data-site={site.kind} data-immersive={immersive||undefined} data-walking={walking||undefined} data-tools-open={toolsOpen||undefined} data-loose-rocker={exposedLooseRocker?(meter?'meter':'repair'):undefined} data-bell-meter={meterFitting?.kind==='sesame'||undefined}>
+  return <div className="jobsite" data-site={site.kind} data-immersive={immersive||undefined} data-walking={walking||undefined} data-tools-open={toolsOpen||undefined} data-loose-rocker={exposedLooseRocker?(meter?'meter':'repair'):undefined} data-bell-meter={meterFitting?.kind==='sesame'||undefined} data-fcu-meter={meterFitting?.kind==='fcu'||undefined}>
     <div className="site-camera" ref={input} tabIndex={0} aria-label={walking?'Walk around the site. Use WASD or the movement pad.':'Installation view. Choose equipment or enter Walk.'}
       onKeyDown={e=>{if(e.key==='Escape'){stop();setWalking(false);}const key=keyMap[e.code];if(!toolsOpen&&walking&&key){e.preventDefault();rig.keys.add(key);rig.wake();}}}
       onKeyUp={e=>{rig.keys.delete(keyMap[e.code]);}} onBlur={e=>{if(rig.thumb)rig.keys.clear();else if(!e.currentTarget.contains(e.relatedTarget))stop();}}
@@ -585,7 +586,8 @@ export default function JobSiteView({instructionTarget,pointsOpen,closePoints,on
         {site.doorsteps&&<directionalLight position={[2.7,5.2,6.8]} intensity={.68} color="#fff4dd"/>}
         <InstallationRoom site={site} economy={touch} cupboardOpen={!!fixtureMap.get('door')?.params.closed} operateCupboard={()=>{if(!blockTap.current&&!walking&&fixtureMap.has('door'))onPart('door','actuator');}}/>
         {utilityBoard&&<UtilityBoard board={utilityBoard} devices={boardDevices} shield={!fixtureMap.get(utilityBoard.id)?.params.frontOff}/>}
-        <FittedHeaterFlex site={site} doc={doc} open={meterPlateOpen||!!fuseBox&&accessOpen} blockProbes={meterPlateOpen}/>
+        <FittedHeaterFlex site={site} doc={doc} open={meterPlateOpen||!!fuseBox&&accessOpen} blockProbes={meterPlateOpen||!!fuseBox&&accessOpen}
+          blocked={blockTap} onCopperPick={meterPlateOpen&&meterFitting?.looseCore?w=>onTerminal(heaterCopperEndpoint(w)):undefined}/>
         <FittingTails doc={doc} site={site} red={redFitting} black={blackFitting} drawn={drawn} repair={rockerLanding}/>
         {visible.map(item=>{const c=fixtureMap.get(item.id)!,def=COMPONENTS[c.type];if(!def)return null;
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
@@ -656,7 +658,7 @@ export default function JobSiteView({instructionTarget,pointsOpen,closePoints,on
           if(!fcuIsolation.safe){fcuIsolation.isolate?.();return;}
           setScrewView(undefined);fcuIsolation.setOpen(!meterPlateOpen);
         }}>{!fcuIsolation.safe?(fcuIsolation.label??'Turn bench supply off'):meterPlateOpen?(pinned?'Lift and refit':'Refit switch'):'Show rear screws'}</button>
-        {meterPlateOpen&&<label>View <select aria-label="View a terminal screw" value={aimedScrew??''} onChange={e=>setScrewView({focus:jump.id,id:e.target.value})}>
+        {meterPlateOpen&&<label><span>View</span><select aria-label={meterFitting.looseCore?'View a test point':'View a terminal screw'} value={aimedScrew??''} onChange={e=>setScrewView({focus:jump.id,id:e.target.value})}>
           <option value="">Whole switch</option>{siteContacts(meterFitting,true).map(s=><option key={s.endpoint.terminal} value={s.endpoint.terminal}>{s.label}</option>)}
         </select></label>}
       </>}

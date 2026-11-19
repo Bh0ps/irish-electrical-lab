@@ -6,13 +6,15 @@ import {cromaProbeContact} from './croma-chime';
 import {sesameProbeContact,sesameServicePose} from './sesame-push';
 import {sesameCallWiring} from './bell-meter-site';
 import {fcuProbeContact} from './bg851';
-import {fusedPlatePose,fusedPlateView} from './fused-heater-site';
+import {fusedPlatePose,fusedPlateView,heaterCopperContact} from './fused-heater-site';
+import {heaterCopperEndpoint} from './heater-flex-point';
 import { getComponentTerminals } from './terminal-layout';
 import type { JobSite, SiteItem } from './job-site';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3 } from './types';
 
 export interface SiteTestFitting {
   kind:'strip'|'rocker'|'chime'|'fcu'|'sesame'; item:SiteItem; component:ComponentInstance;
+  looseCore?:{endpoint:Endpoint;first:{position:Vec3;approach:Vec3};second:{position:Vec3;approach:Vec3}};
 }
 export interface SiteContact {endpoint:Endpoint;label:string;position:Vec3}
 export function installedTestFittings(doc:CircuitDocument,site:JobSite):SiteTestFitting[]{
@@ -21,7 +23,10 @@ export function installedTestFittings(doc:CircuitDocument,site:JobSite):SiteTest
   for(const component of doc.components){
     const item=site.items.find(entry=>entry.id===component.id);
     if(!item?.fixture)continue;
-    if(doc.lessonId===20&&item.fixture.fusedHeater&&component.type==='fcu')fittings.push({kind:'fcu',item,component});
+    if(doc.lessonId===20&&item.fixture.fusedHeater&&component.type==='fcu'){
+      const first=heaterCopperContact(doc,site,true),second=first&&heaterCopperContact(doc,site,true,true);
+      fittings.push({kind:'fcu',item,component,looseCore:first&&second?{endpoint:heaterCopperEndpoint(first.wire),first,second}:undefined});
+    }
     else if(item.fixture.croma)fittings.push({kind:'chime',item,component});
     else if(item.fixture.bellPush&&sesameCallWiring(doc,component.id))fittings.push({kind:'sesame',item,component});
     else if(component.type==='led'&&component.variant==='strip'&&item.fixture.tape)fittings.push({kind:'strip',item,component});
@@ -30,7 +35,7 @@ export function installedTestFittings(doc:CircuitDocument,site:JobSite):SiteTest
   return fittings;
 }
 
-export function siteContacts({kind,item,component}:SiteTestFitting,open:boolean):SiteContact[]{
+export function siteContacts({kind,item,component,looseCore}:SiteTestFitting,open:boolean):SiteContact[]{
   if(kind==='sesame'){
     if(!open)return [];
     return ['COM','NO'].map(terminal=>({endpoint:{component:component.id,terminal},label:terminal==='COM'?'Upper screw':'Lower screw',
@@ -38,11 +43,12 @@ export function siteContacts({kind,item,component}:SiteTestFitting,open:boolean)
   }
   if(kind==='fcu'){
     if(!open)return [];
-    return getComponentTerminals(component,COMPONENTS.fcu).flatMap(t=>{
+    const clamps=getComponentTerminals(component,COMPONENTS.fcu).flatMap(t=>{
       const screw=fusedProbePose(item,component,t.id);
       const label=t.id.startsWith('PE')?t.label:t.label+' · '+t.group;
       return screw?[{endpoint:{component:component.id,terminal:t.id},label,position:screw.position}]:[];
     });
+    return looseCore?[...clamps,{endpoint:looseCore.endpoint,label:'Loose brown wire',position:looseCore.first.position}]:clamps;
   }
   if(kind==='chime'){
     if(!open)return [];
@@ -107,6 +113,13 @@ export function padCamera(fitting:SiteTestFitting,open:boolean,touch:boolean,scr
     if(!open)return fusedPlateView(fitting.item,false,touch);
     const pose=fusedPlatePose(fitting.item,true);
     const world=(p:Vec3)=>fixturePoint(pose.position,fitting.item.scale,fitting.item.fixture,fitting.component,p,pose.rotation);
+    if(screwId&&screwId===fitting.looseCore?.endpoint.terminal){
+      const centre=fitting.looseCore.first.position;
+      const aim=world([.24,.67,-.9]),origin=world([0,.47,-.085]);
+      const v=aim.map((n,i)=>n-origin[i]);
+      const position=centre.map((n,i)=>n+v[i]*.056/Math.hypot(...v)) as Vec3;
+      return {position,yaw:Math.atan2(v[0],v[2]),pitch:-Math.atan2(v[1],Math.hypot(v[0],v[2]))};
+    }
     const screw=screwId?fcuProbeContact(screwId):undefined;
     const centre=screw?world(screw.position):world([0,.47,-.085]);
     let eye=world([.18,.85,-.9]);

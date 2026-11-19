@@ -2,6 +2,8 @@ import { COMPONENTS } from './components';
 import type { JobSite,SiteItem } from './job-site';
 import type {SitePose} from './site-camera';
 import {PLXE_BODY_BOTTOM,PLXE_FLEX_EXIT,PLXE_MM_PER_UNIT} from './plxe';
+import {looseHeaterWire} from './heater-connection';
+import {heaterCopperFrame,heaterCopperLanding} from './heater-copper';
 import {installedTerminalPoint} from './site-fixtures';
 import {getComponentTerminals} from './terminal-layout';
 import type { CircuitDocument, ComponentInstance, Vec3, Wire } from './types';
@@ -83,7 +85,7 @@ export function heaterFlexPath(fcu:SiteItem,heater:SiteItem,open:boolean):Vec3[]
   return Array.from({length:25},(_,i)=>cubic(a,b,c,d,i/24));
 }
 export function looseHeaterCore(doc:CircuitDocument,wire:Wire){
-  return doc.faults.some(f=>f.enabled&&f.wire===wire.id&&['open-live','open-wire'].includes(f.type));
+  return looseHeaterWire(doc)?.id===wire.id;
 }
 // Jacket continues 20 mm up from the outlet, through the moulded saddle at y=16.85 mm.
 export function gripEnd(item:SiteItem,open:boolean):Vec3{
@@ -96,8 +98,8 @@ function coreEnd(doc:CircuitDocument,wire:Wire,component:ComponentInstance,item:
   const isFcu=component.type==='fcu';
   const pose=isFcu?fusedPlatePose(item,open):item;
   const local=contact.anchor.map(n=>n*item.scale) as Vec3;
-  const loose=isFcu&&open&&looseHeaterCore(doc,wire);
-  if(loose){local[0]-=.007;local[1]-=.007;local[2]-=.009;}
+  const loose=isFcu&&looseHeaterCore(doc,wire);
+  if(loose){local[0]-=.002;local[1]-=.007;local[2]-=.009;}
   const pin=placed(pose,local);
   const clearance=placed(pose,loose?[local[0]-.0015,local[1]-.006,local[2]-.0025]:[local[0],local[1],local[2]-.006]);
   return {pin,clearance,pose,loose};
@@ -126,6 +128,22 @@ export function heaterFlexRoute(doc:CircuitDocument,site:JobSite,wire:Wire,open=
     path.push(b.clearance,b.pin);
   }
   return wire.from.component===fcu.id?path:path.reverse();
+}
+/** Core remains in the cord grip. Only its stripped end is out of its mouth.
+ * With the plate on the wall the end is concealed inside the closed box. */
+export function heaterExposedCopper(doc:CircuitDocument,site:JobSite,open:boolean){
+  if(!open)return;
+  const wire=looseHeaterWire(doc),item=site.items.find(i=>i.id==='fcu-switch'&&i.fixture?.fusedHeater);
+  if(!wire||!item)return;
+  const route=heaterFlexRoute(doc,site,wire,true);
+  if(!route)return;
+  const tail=wire.from.component===item.id?route:[...route].reverse();
+  const pose=fusedPlatePose(item,true);
+  return {wire,frame:heaterCopperFrame(tail[0],tail[1],[-Math.sin(pose.rotation),0,-Math.cos(pose.rotation)])};
+}
+export function heaterCopperContact(doc:CircuitDocument,site:JobSite,open:boolean,second=false){
+  const copper=heaterExposedCopper(doc,site,open);
+  if(copper)return {wire:copper.wire,...heaterCopperLanding(copper.frame,second)};
 }
 /** Only the existing live circuit wires enter the surface box. Yellow/green stays identifiable. */
 export function fusedIncomingLead(doc:CircuitDocument,item:SiteItem,wire:Wire,open:boolean):Vec3[]|undefined{

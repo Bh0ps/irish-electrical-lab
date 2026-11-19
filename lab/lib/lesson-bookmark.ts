@@ -12,7 +12,7 @@ export interface LessonBookmark {
   activityId: string;
   path: 'coursebook' | 'full';
   mode: 'explore' | 'build' | 'challenges';
-  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; heater?: boolean; chime?:boolean; heaterRun?:HeaterRun; bellRun?:BellRun; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
+  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; heater?: boolean; heaterMeter?:'bench'|'field'; chime?:boolean; heaterRun?:HeaterRun; bellRun?:BellRun; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
 }
 
 export function validateBookmark(value: unknown): LessonBookmark {
@@ -30,6 +30,7 @@ export function validateBookmark(value: unknown): LessonBookmark {
       (fault.repaired && !fault.accepted) || (fault.completed !== undefined && (typeof fault.completed !== 'boolean' || fault.completed && !fault.repaired)) ||
       (fault.worktop !== undefined && (typeof fault.worktop !== 'boolean' || fault.worktop && circuit.lessonId !== 66)) ||
       (fault.heater !== undefined && (typeof fault.heater !== 'boolean' || fault.heater && circuit.lessonId !== 20)) ||
+      (fault.heaterMeter!==undefined&&(!fault.heater||!['bench','field'].includes(fault.heaterMeter))) ||
       (fault.chime!==undefined&&(typeof fault.chime!=='boolean'||fault.chime&&circuit.lessonId!==72)) ||
       (fault.bellRun!==undefined&&(!fault.chime||!fault.repaired||!hasBellHandover(circuit)||!isBellRun(fault.bellRun,circuit.revision))) ||
       (fault.heaterRun!==undefined&&(!fault.heater||!fault.repaired||!hasPanelHeater(circuit)||!isHeaterRun(fault.heaterRun,circuit.revision))) ||

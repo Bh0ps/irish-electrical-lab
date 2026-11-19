@@ -1,7 +1,8 @@
 'use client';
-import {useMemo} from 'react';
+import {useEffect,useMemo,useRef,type RefObject} from 'react';
 import * as THREE from 'three';
-import {FCU_BOX,fusedIncomingLead,heaterFlexPath,gripEnd,heaterFlexRoute,heaterFlexRun,looseHeaterCore} from '../../lib/fused-heater-site';
+import {FCU_BOX,fusedIncomingLead,heaterFlexPath,gripEnd,heaterFlexRoute,heaterFlexRun,heaterExposedCopper} from '../../lib/fused-heater-site';
+import {heaterInsulationStart,makeHeaterCopperGeometry} from '../../lib/heater-copper';
 import type {JobSite,SiteItem} from '../../lib/job-site';
 import {CORE_COLOUR} from '../../lib/cables';
 import type {CircuitDocument,Vec3,Wire} from '../../lib/types';
@@ -43,9 +44,29 @@ function colour(wire:Wire){
   const core=wire.cable?.core??(wire.role==='N'?'blue':wire.role==='PE'?'green-yellow':'brown');
   return {colour:CORE_COLOUR[core],stripe:core==='green-yellow'?'#e0bb49':undefined};
 }
-export function FittedHeaterFlex({site,doc,open,blockProbes=false}:{site:JobSite;doc:CircuitDocument;open:boolean;blockProbes?:boolean}){
+type CopperHit={onCopperPick?:(wire:Wire)=>void;blocked?:RefObject<boolean>};
+function LooseCopper({wire,frame,onCopperPick,blocked}:{wire:Wire;frame:THREE.Matrix4}&CopperHit){
+  const copper=useMemo(()=>makeHeaterCopperGeometry(),[]);
+  useEffect(()=>()=>copper.dispose(),[copper]);
+  const pressed=useRef<{id:number;x:number;y:number}>(undefined);
+  return <mesh name="Free brown heater flex · bare strands" matrix={frame} matrixAutoUpdate={false}
+    geometry={copper} userData={{heaterCopperWire:wire.id}}
+    onPointerDown={e=>{
+      e.stopPropagation();
+      pressed.current=e.button===0&&!blocked?.current?{id:e.pointerId,x:e.clientX,y:e.clientY}:undefined;
+    }}
+    onPointerUp={e=>{
+      e.stopPropagation();const start=pressed.current;pressed.current=undefined;
+      if(start?.id===e.pointerId&&!blocked?.current&&Math.hypot(e.clientX-start.x,e.clientY-start.y)<=5)onCopperPick?.(wire);
+    }}
+    onPointerOut={()=>{pressed.current=undefined;}} onPointerCancel={()=>{pressed.current=undefined;}} onClick={e=>e.stopPropagation()}>
+    <meshStandardMaterial name="Exposed heater flex copper" color="#c48050" roughness={.35} metalness={.63}/>
+  </mesh>;
+}
+export function FittedHeaterFlex({site,doc,open,blockProbes=false,onCopperPick,blocked}:{site:JobSite;doc:CircuitDocument;open:boolean;blockProbes?:boolean}&CopperHit){
   const run=heaterFlexRun(doc),fcu=site.items.find(i=>i.fixture?.fusedHeater),heater=site.items.find(i=>i.id==='fixed');
   if(!fcu||!heater)return null;
+  const copper=heaterExposedCopper(doc,site,open);
   const tails:{points:Vec3[];colour:string;id:string;radius:number;stripe?:string;flexible?:boolean}[]=[];
   if(run)tails.push({points:[gripEnd(fcu,open),...heaterFlexPath(fcu,heater,open)],id:run.id,colour:'#ebe6da',radius:.0032,flexible:true});
   if(open){
@@ -53,12 +74,7 @@ export function FittedHeaterFlex({site,doc,open,blockProbes=false}:{site:JobSite
       const out=heaterFlexRoute(doc,site,wire,true);
       if(out){
         const lead=(wire.from.component===fcu.id?out:[...out].reverse()).slice(0,6);
-        const loose=looseHeaterCore(doc,wire);
-        if(loose){
-          const [end,away]=lead;
-          const tip=end.map((p,i)=>p*.60+away[i]*.40) as Vec3;
-          tails.push({points:[end,tip],id:wire.id+':tip',colour:'#b56c39',radius:.00059});lead[0]=tip;
-        }
+        if(copper?.wire.id===wire.id)lead[0]=heaterInsulationStart(copper.frame);
         tails.push({points:lead,id:wire.id,...colour(wire),radius:.00105});
       }else{
         const incoming=fusedIncomingLead(doc,fcu,wire,true);
@@ -66,5 +82,7 @@ export function FittedHeaterFlex({site,doc,open,blockProbes=false}:{site:JobSite
       }
     }
   }
-  return <group userData={{heaterFlex:true}}><FittedWireTails tails={tails} blockProbes={blockProbes}/></group>;
+  return <group userData={{heaterFlex:true}}><FittedWireTails tails={tails} blockProbes={blockProbes}/>
+    {copper&&<LooseCopper {...copper} onCopperPick={onCopperPick} blocked={blocked}/>}
+  </group>;
 }

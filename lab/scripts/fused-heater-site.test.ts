@@ -134,10 +134,14 @@ test('with the cover withdrawn the faulty LOAD L tail is clear of the real mouth
   assert.ok(view.position[0]<open.position[0]-.25&&Math.abs(view.position[1]-open.position[1])<.08);
   const line=doc.wires.find(w=>w.id===lesson.challenge.wire)!,supply=doc.wires.find(w=>w.to.component===fcu.id&&w.to.terminal==='LIN')!;
   const before=installedWireRoute(doc,site,line,fcu.id)!,seated=installedWireRoute(doc,site,line)!;
-  doc.faults=[{type:lesson.challenge.fault,wire:line.id,enabled:true}];
+  doc.faults=[{type:lesson.challenge.fault,wire:line.id,component:lesson.challenge.component,enabled:true}];
+  assert.deepEqual(installedWireRoute(doc,site,line,fcu.id),before,'an open reading without a known break location leaves the flex intact');
+  doc.faults[0].looseEnd={component:fcu.id,terminal:'LOUT'};
   const loose=installedWireRoute(doc,site,line,fcu.id)!;
   assert.ok(length(loose[0],before[0])>.007);assert.deepEqual(loose.slice(2),before.slice(2));
-  assert.deepEqual(seated,installedWireRoute(doc,site,line));
+  const concealed=installedWireRoute(doc,site,line)!;
+  assert.ok(length(seated[0],concealed[0])>.007,'closing the plate conceals the loose end while the fault remains');
+  assert.deepEqual(seated.slice(2),concealed.slice(2));
   const a=installedWireRoute(doc,site,supply)!,b=installedWireRoute(doc,site,supply,fcu.id)!;
   assert.ok(length(a.at(-1)!,b.at(-1)!)>.07);same(a[0],b[0]);
   assert.ok(b.some(p=>Math.abs(p[0]+2.261)<.0015),'incoming cores pass the rear of the surface box');
