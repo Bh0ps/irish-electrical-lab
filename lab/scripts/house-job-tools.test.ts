@@ -13,7 +13,7 @@ test('a tool opened during a house job keeps its instruction and a way back to t
   const props = {
     call, document, start: callActivityId(call.lesson, 1),
     onActivity: noop, onCredit: async () => {}, operate: noop, locate: noop,
-    restart: noop, choose: noop, undo: noop, startFault: noop, closeTools: noop,
+    restart: noop, choose: noop, undo: noop, startFault: noop, closeTools: noop, openMeter:noop,
   };
   const instruction = call.steps[1].instruction;
   const tool = createElement('output', null, 'Stair light 0 V');

@@ -155,7 +155,14 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
       if(point)return make(t,[point[0]/100,.46+point[1]/100,point[2]/100],[0,0,-1],.42);
     }
     if(k==='invictaboard')return scaled(.40,.85,-.36,[0,0,1],1);
-    if(k==='cctstrip'||k==='led'&&f==='strip')return scaled(-.43,.43+(k==='cctstrip'?[.13,0,-.13]:[.12,-.12])[ids.indexOf(t.id)],.085,[0,0,1],.40);
+    if(k==='led'&&f==='strip'){
+      const positive=t.id==='L';
+      return {...make(t,[-.488,.43+(positive?.019:-.019),.0035],[0,0,1],.16),
+        label:positive?'+24 V':'−',group:'Feed end',purpose:positive
+          ? 'The positive wire meets the copper pad marked +24 V here.'
+          : 'The negative wire returns to the driver from this pad marked −.'};
+    }
+    if(k==='cctstrip')return scaled(-.43,.43+[.13,0,-.13][ids.indexOf(t.id)],.085,[0,0,1],.40);
     if(k==='led'&&f==='series-module')return scaled(t.id==='L'?-.31:.31,.46,.095,[0,0,1],.50);
     if(k==='proximity')return scaled((ids.indexOf(t.id)-1)*.16,.06,.045,[0,-.45,.893],.44);
     if(k==='pwmcontrol'){const left=t.id==='+'||t.id==='-';return scaled(left?-.48:.48,(t.id==='+'||t.id==='W')?.62:.33,0,[left?-1:1,0,0],.64);}

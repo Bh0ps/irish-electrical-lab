@@ -56,6 +56,17 @@ test('isolated open-resistance evidence transfers without inventing a finite rea
   const wrong=structuredClone(backup);Object.assign((wrong.progress as unknown as {learning:Record<string,{evidence:Record<string,unknown>[]}>}).learning[7].evidence[0],{mode:'voltage',unit:'V'});assert.throws(()=>validateStudyBackup(wrong),/status/);
 });
 
+test('a backup can carry the pad names recorded by the meter',()=>{
+  const backup=fixture();
+  const evidence=(backup.progress as unknown as {learning:Record<number,{evidence:Record<string,unknown>[]}>}).learning[7].evidence[0];
+  evidence.measuredAt='Left strip · +24 V → Left strip · −';
+  assert.ok(JSON.stringify(validateStudyBackup(backup)).includes(evidence.measuredAt as string));
+  for(const invalid of [17,'x'.repeat(2049)]){
+    evidence.measuredAt=invalid;
+    assert.throws(()=>validateStudyBackup(backup),/label for the measured points/);
+  }
+});
+
 test('persistent test reports migrate with their electrical identity and reject invalid assessment claims',()=>{
   const backup=fixture(),record=captureTestRecord(backup.draft!,{circuitId:backup.draft!.id,revision:backup.draft!.revision,passed:true,summary:'Operating check passed.',checks:[{id:'operating',category:'operation',status:'pass',title:'Declared load operates',explanation:'The measured operating state matched the objective.'}]},1);
   Object.assign(backup.progress,{lastTest:record});assert.deepEqual(validateStudyBackup(JSON.stringify(backup)),backup);

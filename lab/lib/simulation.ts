@@ -840,10 +840,10 @@ export function measureVoltage(result: SimulationResult, a: Endpoint, b: Endpoin
   if (!result.converged) return { value: null, explanation: 'The bench could not get a steady reading. Choose Test circuit to check the wiring.' };
   if ([a,b].some(point=>result.pwmTerminals?.includes(endpointKey(point)))) return {value:null,explanation:'This output switches on and off rapidly. Measure the DC supply at the controller, or check the power drawn by each LED channel.'};
   if ((!av || !bv) && [a,b].some(endpoint => endpoint.terminal === 'LINK' && result.deviceStates[endpoint.component]?.conceptualInterlink)) return { value: null, explanation: 'Read the LINK indicator to see whether the alarm is sending a signal. This bench does not calculate the signal voltage.' };
-  if (!av || !bv) return { value: null, explanation: 'One probe is on a terminal with no fixed voltage. This is called a floating terminal. Check where that terminal connects.' };
-  if (av.reference !== bv.reference) return { value: null, explanation: 'There is no electrical connection between these two circuits. Put both probes on the same side of the isolated supply.' };
+  if (!av || !bv) return { value: null, explanation: 'The bench has no voltage to compare at one or both probe points. Check for a loose end. A point with no fixed voltage is called floating.' };
+  if (av.reference !== bv.reference) return { value: null, explanation: 'These circuits have no electrical connection to each other. To check the output, put one probe on each output terminal.' };
   const volts = abs(sub(av, bv));
-  return { value: volts, explanation: volts === 0 ? 'Both probe tips are at the same voltage. A reading of 0 V between them can occur even when both are live.' : av.reference === 'mains' ? 'Voltage between the two probe tips.' : 'Voltage between the probes on this isolated circuit.' };
+  return { value: volts, explanation: volts === 0 ? 'The two points are at the same voltage. Both can still be live.' : av.reference === 'mains' ? 'Voltage between the two probe tips.' : 'Voltage between the probes on this isolated circuit.' };
 }
 
 /** De-energized equivalent resistance, with device contacts held at their document control state.
@@ -856,12 +856,12 @@ export function measureResistance(document: CircuitDocument, a: Endpoint, b: End
   const passiveDocument: CircuitDocument = { ...document, supply: { ...document.supply, enabled: false }, components: document.components.filter(item => !isType(item, 'transformer', 'driver', 'dcsupply', 'vfd', 'pv', 'battery')) };
   const states = Object.fromEntries(passiveDocument.components.map(item => [item.id, newState(item)]));
   const net = network(passiveDocument, states, true), ak = endpointKey(a), bk = endpointKey(b);
-  if (!net.nodes.has(ak) || !net.nodes.has(bk)) return { value: null, explanation: 'Check both probe points. This resistance test can follow a wire or a winding. It cannot measure through a power converter or from one transformer winding to another.' };
+  if (!net.nodes.has(ak) || !net.nodes.has(bk)) return { value: null, explanation: 'The bench can’t test resistance at one of these points. Try the two ends of a wire. This test leaves transformers and electronic supplies out.' };
   const union = new Union(); for (const branch of net.branches) union.join(branch.a, branch.b);
-  if (union.find(ak) !== union.find(bk)) return { value: null, reason: 'open', explanation: 'Open circuit. There is no path for the test current between these probes.' };
+  if (union.find(ak) !== union.find(bk)) return { value: null, reason: 'open', explanation: 'OL means open circuit here. There is no path between the probes for the tester’s current.' };
   const solved = solve(net, true, [ak, bk]);
   const reading = voltage(solved, ak, bk);
-  return solved.valid && reading ? { value: Math.max(0, reading.re), explanation: 'This reading includes every path the test current can take between the probes. The bench leaves active electronics out of this test.' } : { value: null, explanation: 'The bench could not calculate the resistance between these points.' };
+  return solved.valid && reading ? { value: Math.max(0, reading.re), explanation: 'If there is more than one path between the probes, this reading includes them all. The bench leaves active electronics out of this test.' } : { value: null, explanation: 'The bench couldn’t get a resistance reading here. Try a shorter section, starting with the two ends of one wire.' };
 }
 
 export const simulationLimits = { maxElectricalUnknowns: MAX_UNKNOWNS, model: 'complex RMS modified nodal analysis', sourceImpedancePurpose: 'illustrative, not an earth-loop or cable design value' };

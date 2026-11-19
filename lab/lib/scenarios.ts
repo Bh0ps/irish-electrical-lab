@@ -1,3 +1,4 @@
+import { describeEndpoint } from './endpoint-description.ts';
 import { LESSONS } from './lessons.ts';
 import { simulate, measureVoltage } from './simulation.ts';
 import { endpointKey, type CircuitDocument, type DeviceState, type Endpoint, type Parameters, type SimulationResult } from './types.ts';
@@ -27,9 +28,12 @@ const state = (component:string,key:string,equals:string|number|boolean,title:st
 const close = (component:string,equals:boolean,title='') => state(component,'closed',equals,title);
 const patch = (component:string,key:string,value:string|number|boolean) => ({component,params:{[key]:value}});
 const step = (title:string,patches:ScenarioStep['patches']=[],expectations:ScenarioExpectation[]=[],ticks=24):ScenarioStep => ({title,patches,expectations,dt:.25,ticks});
-const pulse = (component:string,title:string):ScenarioStep[] => [step(`${title}: press`,[patch(component,'pressed',true)],[],3),step(`${title}: release`,[patch(component,'pressed',false)],[],3)];
+const pulse = (component:string,press:string,release:string):ScenarioStep[] => [
+  step(press,[patch(component,'pressed',true)],[],3),
+  step(release,[patch(component,'pressed',false)],[],3)
+];
 const toggled = (control:string,load:string,turnOff:string,turnOn:string):ScenarioStep[] => [step('Check the circuit with the control on',[],[on(load)]),step(turnOff,[patch(control,'closed',false)],[off(load)]),step(turnOn,[patch(control,'closed',true)],[on(load)])];
-const starter = (start:string,stop:string,k:string,motor:string):ScenarioStep[] => [step('Check the motor before pressing Start',[],[close(k,false),off(motor)]),...pulse(start,start.endsWith('-a')?'Press Start at station A':start.endsWith('-b')?'Press Start at station B':'Press Start'),step('Release Start and see whether the motor keeps running',[],[on(motor),close(k,true)]),...pulse(stop,stop.endsWith('-a')?'Press Stop at station A':stop.endsWith('-b')?'Press Stop at station B':'Press Stop'),step('Release Stop and check that the motor stays off',[],[off(motor),close(k,false)])];
+const starter = (start:string,stop:string,k:string,motor:string):ScenarioStep[] => [step('Check the motor before pressing Start',[],[close(k,false),off(motor)]),...pulse(start,start.endsWith('-a')?'Press Start at station A':start.endsWith('-b')?'Press Start at station B':'Press Start','Let go of Start'),step('Release Start and see whether the motor keeps running',[],[on(motor),close(k,true)]),...pulse(stop,stop.endsWith('-a')?'Press Stop at station A':stop.endsWith('-b')?'Press Stop at station B':'Press Stop','Let go of Stop'),step('Release Stop and check that the motor stays off',[],[off(motor),close(k,false)])];
 function authored(id:number):ScenarioStep[] {
   const s=step, p=patch;
   switch(id) {
@@ -74,7 +78,7 @@ function authored(id:number):ScenarioStep[] {
     case 40:return starter('start','stop','starter','motor');
     case 41:return [s('Raise the shutter',[],[close('up',true),close('down',false)]),s('Lower the shutter',[p('direction','position',1)],[close('up',false),close('down',true)]),s('Reach the lower limit switch',[p('limit-down','closed',false)],[off('operator')])];
     case 42:return [s('Trigger one interlinked alarm',[p('smoke','alarm',true)],[state('heat','level',1,'The heat alarm sounds too')]),{...s('Disconnect the wire linking the alarms',[],[state('heat','level',0,'The heat alarm stops receiving the signal')]),openSignal:{a:ep('smoke','LINK'),b:ep('heat','LINK')}}];
-    case 43:return [s('Check the bell before pressing the button',[],[off('chime')]),...pulse('push','Doorbell push'),s('Check the bell with the button released',[],[off('chime')]),s('Hold the bell button down',[p('push','pressed',true)],[on('chime')])];
+    case 43:return [s('Check the bell before pressing the button',[],[off('chime')]),...pulse('push','Press the bell button','Let go of the bell button'),s('Check the bell with the button released',[],[off('chime')]),s('Hold the bell button down',[p('push','pressed',true)],[on('chime')])];
     case 44:return [s('Check the lamp with mains power on',[],[state('emergency','energized',false,'The lamp stays dark on standby')]),{...s('Switch off the mains supply to the fitting',[],[state('emergency','emergencyActive',true,'The battery takes over'),state('emergency','energized',true,'The emergency lamp lights')]),supplyEnabled:false}];
     case 45:return [s('Turn the normal light switch on',[],[state('emergency','normalActive',true,'The lamp lights on mains power')]),s('Turn the normal light switch off',[p('normal-switch','closed',false)],[state('emergency','energized',false,'The lamp goes out'),state('emergency','emergencyActive',false,'With mains still present, the battery stays on standby')]),{...s('Cut mains power with the light switch off',[],[state('emergency','emergencyActive',true,'The lamp comes on from its battery')]),supplyEnabled:false}];
     case 46:return [s('Allow the car to charge',[],[on('evse')]),s('Pause charging at the load controller',[p('load-control','active',false)],[off('evse')])];
@@ -87,15 +91,15 @@ function authored(id:number):ScenarioStep[] {
     case 53:return [s('Check one load on each phase',[],[on('phase-load1'),on('phase-load2'),on('phase-load3'),{kind:'voltage-ratio',a:ep('supply','L1'),b:ep('supply','L2'),c:ep('supply','L1'),d:ep('supply','N'),minimum:1.7,title:'Expect about 400 V between phases and 230 V from phase to neutral'}])];
     case 54:return [s('Check the three-phase socket with its switch on',[],[state('socket','energized',true,'All three phases reach the socket')]),s('Turn off the socket isolator',[p('socket-isolation','closed',false)],[state('socket','energized',false,'The socket loses power on all three phases')])];
     case 55:return starter('start','stop','starter','motor');
-    case 56:return [s('Check the motor before selecting a direction',[],[off('motor')]),...pulse('start','Start forward'),s('Check which way the motor turns',[],[state('motor','direction',1,'The motor runs forwards'),close('forward',true),close('reverse',false)]),...pulse('stop','Stop before reversal'),s('Select reverse',[p('direction','position',1)]),...pulse('start','Start reverse'),s('Check the motor in reverse',[],[state('motor','direction',-1,'The motor runs in reverse'),close('forward',false),close('reverse',true),{kind:'parameter',component:'reverse',key:'mechanicallyInterlockedWith',equals:'forward',title:'The reverse contactor is linked to the forward contactor'}, {kind:'parameter',component:'forward',key:'mechanicallyInterlockedWith',equals:'reverse',title:'The forward contactor is linked to the reverse contactor'}])];
+    case 56:return [s('Check the motor before selecting a direction',[],[off('motor')]),...pulse('start','Start forward','Let go of Start'),s('Check which way the motor turns',[],[state('motor','direction',1,'The motor runs forwards'),close('forward',true),close('reverse',false)]),...pulse('stop','Stop before reversal','Let go of Stop'),s('Select reverse',[p('direction','position',1)]),...pulse('start','Start reverse','Let go of Start'),s('Check the motor in reverse',[],[state('motor','direction',-1,'The motor runs in reverse'),close('forward',false),close('reverse',true),{kind:'parameter',component:'reverse',key:'mechanicallyInterlockedWith',equals:'forward',title:'The reverse contactor is linked to the forward contactor'}, {kind:'parameter',component:'forward',key:'mechanicallyInterlockedWith',equals:'reverse',title:'The forward contactor is linked to the reverse contactor'}])];
     case 57:return [s('Press Start and watch the star contactor',[p('start','pressed',true)],[close('star',true),close('delta',false)],2),s('Release Start and wait for the timer',[p('start','pressed',false)],[close('star',false),close('delta',true),on('motor'),{kind:'parameter',component:'motor',key:'windingVoltage',equals:400,title:'Each motor winding is rated for 400 V'}])];
     case 58:return [s('Run the motor with the drive set to 35 Hz',[],[on('motor'),{kind:'state',component:'motor',key:'frequency',equals:35,tolerance:.01,title:'The drive supplies the motor at 35 Hz'}]),s('Open the switch between RUN and COM',[p('run','closed',false)],[off('motor')])];
     case 59:return [s('Switch off heater stage two',[p('demand-b','closed',false)],[close('stage-a',true),close('stage-b',false)]),s('Trip the cut-out for both heaters',[p('safety','closed',false)],[close('stage-a',false),close('stage-b',false)])];
     case 60:return [...starter('start-a','stop-b','starter','motor'),...starter('start-b','stop-a','starter','motor')];
-    case 61:return [...pulse('start-b','Try starting the feed belt first'),s('The upstream conveyor stays off until the downstream conveyor runs',[],[close('upstream',false)]),...pulse('start-a','Start the receiving belt'),...pulse('start-b','Start the feed belt'),s('Check that both belts are running',[],[close('downstream',true),close('upstream',true)]),...pulse('stop-a','Stop the receiving belt'),s('Stopping the downstream conveyor also stops the one feeding it',[],[close('downstream',false),close('upstream',false)])];
+    case 61:return [...pulse('start-b','Try starting the feed belt first','Let go of the feed belt Start button'),s('Check the feed belt with the receiving belt stopped',[],[close('upstream',false)]),...pulse('start-a','Start the receiving belt','Let go of the receiving belt Start button'),...pulse('start-b','Start the feed belt','Let go of the feed belt Start button'),s('Check that both belts are running',[],[close('downstream',true),close('upstream',true)]),...pulse('stop-a','Stop the receiving belt','Let go of the receiving belt Stop button'),s('Check the feed belt after stopping the receiving belt',[],[close('downstream',false),close('upstream',false)])];
     case 62:return [s('Try pump A first',[],[state('pump-a','energized',true,'Pump A runs'),state('pump-b','energized',false,'Pump B stays off')]),s('Select pump B',[p('duty','position',1)],[state('pump-a','energized',false,'Pump A stops'),state('pump-b','energized',true,'Pump B runs on its own')]),s('Lift the high-level float',[p('float-high','active',true)],[state('pump-a','energized',true,'Pump A runs with the float up'),state('pump-b','energized',true,'Pump B runs with the float up')])];
     case 63:return [s('Give the controller both start signals',[],[on('motor')]),s('Remove one of the two start signals',[p('present','active',false)],[off('motor'),on('ol-status','The other status light stays on')])];
-    case 64:return [s('Check the relay before Reset',[],[close('safety-relay',false)]),...pulse('reset','Press Reset with the motor stopped'),s('Check the motor after Reset',[],[close('safety-relay',true),close('starter',false)]),...pulse('start','Press Start'),s('Check that the motor is running',[],[on('motor')]),s('Open one safety contact',[p('channel-a','pressed',true)],[off('motor'),close('safety-relay',false)]),s('Close the safety contact again',[p('channel-a','pressed',false)]),...pulse('reset','Press Reset again'),s('Check that the motor still waits for Start',[],[close('starter',false),off('motor')])];
+    case 64:return [s('Check the relay before Reset',[],[close('safety-relay',false)]),...pulse('reset','Press Reset with the motor stopped','Let go of Reset'),s('Check the motor after Reset',[],[close('safety-relay',true),close('starter',false)]),...pulse('start','Press Start','Let go of Start'),s('Check that the motor is running',[],[on('motor')]),s('Open one safety contact',[p('channel-a','pressed',true)],[off('motor'),close('safety-relay',false)]),s('Close the safety contact again',[p('channel-a','pressed',false)]),...pulse('reset','Press Reset again','Let go of Reset'),s('Check that the motor still waits for Start',[],[close('starter',false),off('motor')])];
     case 65:return [s('Close the cupboard door',[p('door','closed',false)],[off('strip')]),s('Open the cupboard door',[p('door','closed',true)],[on('strip')])];
     case 66:return [s('Light the right worktop only',[p('left-switch','closed',false)],[off('left'),on('right')]),s('Swap the lit worktop',[p('left-switch','closed',true),p('right-switch','closed',false)],[on('left'),off('right')])];
     case 67:return [s('Check the far end of the strip with one feed',[p('inject','closed',false)],[{kind:'voltage',a:ep('far','L'),b:ep('far','N'),min:21,max:22.7,title:'The voltage drops towards the far end of the strip'}]),s('Connect the second feed',[p('inject','closed',true)],[{kind:'voltage',a:ep('far','L'),b:ep('far','N'),min:23.8,max:24.1,title:'The far end now reads close to the driver voltage'}])];
@@ -164,14 +168,18 @@ function describeReading(check: ScenarioExpectation, value: number | string | bo
     if (check.key === 'gridPresent') return value ? 'Mains power is on.' : 'Mains power is off.';
     if (check.key === 'emergencyActive') return value ? 'The backup light is on.' : 'The backup light is off.';
     if (check.key === 'normalActive') return value ? 'The mains light is on.' : 'The mains light is off.';
-    if (check.key === 'energized') return value ? 'The equipment is on.' : 'The equipment is off.';
+    if (check.key === 'energized') {
+      const fitting=doc.components.find(c=>c.id===check.component);
+      if(fitting?.type==='pump')return fitting.label+(value?' is running.':' is stopped.');
+      return (fitting?.label??'The fitting')+(value?' is on.':' is off.');
+    }
     if (check.key === 'direction') {
       if (doc.components.find(c => c.id === check.component)?.type === 'floatvalve') return value === 0 ? 'The valve is still.' : value === 1 ? 'The valve is opening.' : 'The valve is closing.';
       return value === 0 ? 'The motor is stopped.' : value === 1 ? 'The motor turns forwards.' : 'The motor turns in reverse.';
     }
     if (check.key === 'level' && typeof value === 'number') {
       if (doc.components.find(c => c.id === check.component)?.type === 'alarm') return value ? 'The alarm is sounding.' : 'The alarm is quiet.';
-      return 'Valve position ' + number(value * 100) + '%.';
+      return 'The valve is ' + number(value * 100) + '% open.';
     }
     if (check.key === 'call') {
       if (value === 'Idle') return 'The chime is quiet.';
@@ -183,8 +191,16 @@ function describeReading(check: ScenarioExpectation, value: number | string | bo
     : check.kind === 'state' && check.key === 'frequency' ? ' Hz' : ['power','total-power'].includes(check.kind) || check.kind === 'state' && ['warmWatts','coolWatts'].includes(check.key) ? ' W' : '';
   if (typeof value === 'number') {
     if (check.kind === 'voltage-ratio') return 'Line-to-line voltage is ' + number(value) + ' times line-to-neutral voltage.';
-    if (check.kind === 'voltage-spread') return 'Difference between the highest and lowest readings: ' + number(value) + ' V.';
-    return 'Reading: ' + number(value) + unit + '.';
+    if (check.kind === 'voltage-spread') return 'The highest and lowest readings are ' + number(value) + ' V apart.';
+    if (check.kind === 'power') {
+      const fitting=doc.components.find(c=>c.id===check.component);
+      return (fitting?.label??'The fitting')+' drew '+number(value)+' W.';
+    }
+    if (check.kind === 'voltage') {
+      const a=describeEndpoint(doc,check.a), b=describeEndpoint(doc,check.b);
+      if(a&&b)return number(value)+' V between '+a.label+' and '+(a.endpoint.component===b.endpoint.component?b.pointLabel:b.label)+'.';
+    }
+    return number(value) + unit + '.';
   }
   return String(value) + '.';
 }
@@ -214,7 +230,7 @@ export function runLessonScenarios(document:CircuitDocument,previousStates:Recor
     const error=r.diagnostics.find(d=>d.severity==='error');
     add(prefix+':model',r.converged&&!error?'pass':'unresolved',action.title+' · readings',r.converged&&!error?`Readings taken after ${Number((action.ticks*action.dt).toFixed(2))} seconds on the bench.`:error?.explanation??'The readings kept changing. Check the control wiring and try again.');
     const trips=doc.components.filter(c=>r.deviceStates[c.id]?.tripped).map(c=>c.label);
-    add(prefix+':protection',trips.length?'fail':'pass',action.title+' · trip check',trips.length?`Tripped: ${trips.join(', ')}. Repair the fault, then reset and test again.`:'No protective device was left tripped at this step.');
+    add(prefix+':protection',trips.length?'fail':'pass',action.title+' · trip check',trips.length?`Tripped: ${trips.join(', ')}. Repair the fault, then reset and test again.`:'No breaker or other protection is tripped.');
     for(const [j,e]of action.expectations.entries()){const value=evaluateScenarioExpectation(e,doc,r,history);add(prefix+':'+j,!r.converged||value.pass===null?'unresolved':value.pass?'pass':'fail',e.title,`${action.title}. ${value.detail}`, 'component'in e?e.component:'a'in e?e.a.component:undefined,value.reading);}
   }
   return checks;

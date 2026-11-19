@@ -9755,29 +9755,30 @@
     "detailRevision": 3,
     "detailFamily": "lamp",
     "detailFeatures": [
-      "terminal-clamp:L",
-      "terminal-clamp:N",
       "individual-electrical-terminations",
+      "flexible-copper-tracks",
+      "surface-mount-bodies",
       "smd-led-packages",
-      "flexible-copper-tracks"
+      "terminal-clamp:L",
+      "terminal-clamp:N"
     ],
-    "sourceMeshCount": 25,
-    "meshCount": 11,
-    "triangles": 3180,
-    "lowTriangles": 826,
+    "sourceMeshCount": 50,
+    "meshCount": 10,
+    "triangles": 14248,
+    "lowTriangles": 8690,
     "terminals": [
       {
         "id": "L",
-        "label": "+",
+        "label": "+24 V",
         "role": "DC+",
-        "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/\u2212 output pair rather than a mains supply.",
+        "purpose": "The positive wire meets the copper pad marked +24 V here.",
         "anchor": [
-          -0.43,
-          0.55,
-          0.085
+          -0.488,
+          0.449,
+          0.0035
         ],
-        "group": "Permanent supply",
-        "scale": 0.4,
+        "group": "Feed end",
+        "scale": 0.16,
         "entryDirection": [
           0,
           0,
@@ -9788,14 +9789,14 @@
         "id": "N",
         "label": "\u2212",
         "role": "DC-",
-        "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/\u2212 output pair rather than a mains supply.",
+        "purpose": "The negative wire returns to the driver from this pad marked \u2212.",
         "anchor": [
-          -0.43,
-          0.31,
-          0.085
+          -0.488,
+          0.411,
+          0.0035
         ],
-        "group": "Permanent supply",
-        "scale": 0.4,
+        "group": "Feed end",
+        "scale": 0.16,
         "entryDirection": [
           0,
           0,
@@ -9803,8 +9804,8 @@
         ]
       }
     ],
-    "bytes": 77628,
-    "lowBytes": 31312,
+    "bytes": 385020,
+    "lowBytes": 250444,
     "bespokeBlender": true
   },
   {

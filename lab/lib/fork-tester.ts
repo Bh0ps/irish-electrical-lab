@@ -18,7 +18,7 @@ function driveOutput(doc:CircuitDocument,result:SimulationResult,reference:strin
 }
 function number(value:number,unit:string,signal:'AC'|'DC'|undefined,limit:number,places:number,explanation:string):ForkReading {
   if(!Number.isFinite(value))return wait('The tester has no reading here.',unit);
-  if(Math.abs(value)>limit)return {status:'overrange',value:null,shown:unit==='Ω'?'OL':'— — —',unit,signal,explanation:unit==='Ω'?`The bench found a path above ${limit.toLocaleString('en-IE')} Ω. That is beyond this tester’s range, so it shows OL.`:'The reading is above the tester’s '+limit+' '+unit+' limit.'};
+  if(Math.abs(value)>limit)return {status:'overrange',value:null,shown:unit==='Ω'?'OL':'— — —',unit,signal,explanation:unit==='Ω'?`There is a path between the probes. Its resistance is above ${limit.toLocaleString('en-IE')} Ω, so this tester shows OL.`:'This is above the tester’s '+limit+' '+unit+' range.'};
   const shown=(Math.round(value*10**places)/10**places).toFixed(places);
   return {status:'value',value,shown,unit,signal,explanation};
 }
@@ -34,13 +34,13 @@ export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:
     if(doc.supply.enabled || doc.components.some(c=>['battery','pv'].includes(c.type)&&c.params.on!==false))return wait('Switch off the bench supply and any battery or solar supply before using Ω.','Ω');
     const sample=ohms??(solveOhms?measureResistance(doc,a,b):undefined);
     if(!sample)return wait('Measuring resistance…','Ω');
-    if(sample.value===null)return (ohms ? ohms.status==='open' : 'reason' in sample && sample.reason==='open')?{status:'open',value:null,shown:'OL',unit:'Ω',explanation:'OL means open circuit here. There is no path for the test current between the probes.'}:wait(sample.explanation,'Ω');
-    const reading=number(sample.value,'Ω',undefined,2000,0,sample.value<.5?'The display rounds to 0 ohms. There is a path between the probes.':'Resistance between the probes, measured in ohms (Ω).');
+    if(sample.value===null)return (ohms ? ohms.status==='open' : 'reason' in sample && sample.reason==='open')?{status:'open',value:null,shown:'OL',unit:'Ω',explanation:'OL means open circuit here. There is no path between the probes for the tester’s current.'}:wait(sample.explanation,'Ω');
+    const reading=number(sample.value,'Ω',undefined,2000,0,sample.value<.5?'The probes are joined by a path with so little resistance that the display reads 0 ohms.':'The resistance between these points is shown in ohms (Ω).');
     if(reading.status==='value')reading.beeps=sample.value<40;
     return reading;
   }
   if(method==='probe-voltage'){
-    if(!a||!b)return wait(a?'Put the black probe on the point you want to compare.':b?'Put the red probe on the point you want to compare.':'Put the red probe on one point and the black probe on the other.','V');
+    if(!a||!b)return wait(a?'Place the black probe on the second point.':b?'Place the red probe on the other point.':'Put the red probe on one point and the black probe on the other.','V');
     const sample=measureVoltage(r,a,b);
     if(sample.value===null)return wait(sample.explanation,'V');
     const va=r.terminalVoltages[endpointKey(a)],vb=r.terminalVoltages[endpointKey(b)];
@@ -52,7 +52,7 @@ export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:
     const dc=va.frequency===0;
     const value=dc?va.re-vb.re:sample.value;
     const volts=Math.abs(Math.round(value));
-    const meaning=volts===0?(value===0?'There are zero volts between the probes. Both points can still be live.':'The voltage is small enough for this display to round to zero volts.'):dc
+    const meaning=volts===0?(value===0?'There are zero volts between the probes. Both points can still be live.':'This tester reads in whole volts. The difference between these points is small enough to show 0 V.'):dc
       ? 'The red probe is '+volts+' volts '+(value<0?'below':'above')+' the black probe.'
       : volts+' V AC between the probes.';
     return number(value,'V',dc?'DC':'AC',600,0,meaning);

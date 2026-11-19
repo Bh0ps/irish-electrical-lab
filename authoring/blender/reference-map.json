@@ -206,6 +206,12 @@
       "architecture": "Drawing dimensions of JK104B, 465 × 500 × 132.5 mm. The study fixture keeps these exterior proportions."
     },
     {
+      "id": "ledvance-lsv500",
+      "title": "LEDVANCE LS V -500/830/5 · photograph, cut marks and dimensions",
+      "url": "https://www.ledvance.com/en-int/professional-lighting/products/led-strips--modules-and-drivers/led-strips/led-strips-white/led-strips-for-standard-applications/indoor-applications/led-strips-indoor-applications-gen-2/led-strips-with-500-lmm-for-general-applications-c199234?productId=184159",
+      "architecture": "The single-colour cut section measures 100 × 8 × 1.5 mm. Seven warm-white LEDs sit between pairs of copper lands. The +24V and minus markings, cut line and solder joints follow the maker’s image. The worktop course uses 500 mm per side at 5 W per metre. Other exercises set the load separately."
+    },
+    {
       "id": "ledvance-strip",
       "title": "LEDVANCE tape and controller installation diagrams",
       "url": "https://www.ledvance.com/00_Free_To_Use/asset-13063715_led_strip_system-assortment-ledvance-2022_03_-en-i.pdf",
@@ -614,7 +620,7 @@
       "ledvance-strip"
     ],
     "led:strip": [
-      "ledvance-strip"
+      "ledvance-lsv500"
     ],
     "led:series-module": [
       "ledvance-strip"

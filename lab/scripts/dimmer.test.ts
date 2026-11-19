@@ -32,8 +32,8 @@ test('fixed reference behaves according to a custom connected resistor rather th
 });
 test('isolated COM–OUT passive resistance follows the setting and OFF reads an actual open circuit',()=>{
   const d=fixture();d.supply.enabled=false;d.wires=[];
-  for(const level of [0,.25,.65,.9,1]){setting(d,level);const reading=measureResistance(d,e('dimmer','COM'),e('dimmer','OUT'));const expected=getDimmerEquivalentResistance(level);if(expected===null){assert.equal(reading.value,null);assert.match(reading.explanation,/Open circuit/);}else close(reading.value,expected);}
-  setting(d,.65);d.components.find(c=>c.id==='dimmer')!.params.closed=false;const off=measureResistance(d,e('dimmer','COM'),e('dimmer','OUT'));assert.equal(off.value,null);assert.match(off.explanation,/Open circuit/);
+  for(const level of [0,.25,.65,.9,1]){setting(d,level);const reading=measureResistance(d,e('dimmer','COM'),e('dimmer','OUT'));const expected=getDimmerEquivalentResistance(level);if(expected===null){assert.equal(reading.value,null);assert.equal(reading.reason,'open');assert.match(reading.explanation,/open circuit/i);}else close(reading.value,expected);}
+  setting(d,.65);d.components.find(c=>c.id==='dimmer')!.params.closed=false;const off=measureResistance(d,e('dimmer','COM'),e('dimmer','OUT'));assert.equal(off.value,null);assert.equal(off.reason,'open');assert.match(off.explanation,/open circuit/i);
 });
 test('an actual bypass maintains load power even at dimmer zero and an ohmmeter sees the parallel path',()=>{
   const d=fixture();d.wires.push({id:'bypass',from:e('dimmer','COM'),to:e('dimmer','OUT'),role:'L',resistance:.01,bends:[]});let prior=0;

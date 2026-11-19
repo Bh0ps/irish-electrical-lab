@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { COMPONENTS } from '../../lib/components';
 import { CABLE_CORE_LABEL } from '../../lib/cables';
 import { describeEndpoint } from '../../lib/build-hints';
@@ -45,11 +45,45 @@ function focusFirstResult(event: KeyboardEvent<HTMLInputElement>) {
   }
 }
 
-export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false }: {
+type Probe = 'red' | 'black';
+type ProbePoints = Partial<Record<Probe, Endpoint>>;
+
+export function ProbePicker({ circuit, points, active, onProbe, onPick, defaultOpen=false }: {
+  circuit: CircuitDocument;
+  points: ProbePoints;
+  active: Probe;
+  onProbe: (probe: Probe) => void;
+  onPick: (endpoint: Endpoint) => void;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const id = useId();
+  return <div className="meter-probes">
+    <div className="meter-leads" role="group" aria-label="Place meter probes">
+      {(['red', 'black'] as const).map(probe => {
+        const expanded = open && probe === active;
+        return <button type="button" key={probe} aria-controls={id} aria-pressed={active===probe} aria-expanded={expanded} className={'meter-lead '+probe} onClick={() => {
+          onProbe(probe);
+          setOpen(!expanded);
+        }}>
+          <strong>{probe === 'red' ? 'Red (+)' : 'Black (COM)'}</strong>
+          <span>{describeEndpoint(circuit, points[probe])?.label ?? 'Place probe'}</span>
+        </button>;
+      })}
+    </div>
+    <div id={id} hidden={!open}>
+      {open && <TerminalPicker circuit={circuit} label={active+' probe terminal'} probes={points} activeProbe={active} onPick={onPick}/>}
+    </div>
+  </div>;
+}
+
+export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false, probes, activeProbe }: {
   circuit: CircuitDocument;
   label: string;
   from?: Endpoint;
   nextFitting?: boolean;
+  probes?: ProbePoints;
+  activeProbe?: Probe;
   onPick: (endpoint: Endpoint) => void;
 }) {
   const [query, setQuery] = useState('');
@@ -70,8 +104,11 @@ export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false
   })).filter(group => group.terminals.length > 0);
 
   return <section ref={list} tabIndex={-1} className="point-picker" aria-label={label}>
-    <Input type="search" enterKeyHint="next" aria-label="Search equipment and terminals" placeholder="Search equipment or terminal" value={query}
-      onKeyDown={focusFirstResult} onChange={event => { setQuery(event.target.value); setOpenId(undefined); }} />
+    <div className={activeProbe ? 'probe-search' : undefined}>
+      {activeProbe && <span role="status">{activeProbe === 'red' ? 'Red probe' : 'Black probe'}</span>}
+      <Input type="search" enterKeyHint="next" aria-label={activeProbe ? 'Find a terminal for the '+activeProbe+' probe' : 'Search equipment and terminals'} placeholder={activeProbe ? 'Find a terminal' : 'Search equipment or terminal'} value={query}
+        onKeyDown={focusFirstResult} onChange={event => { setQuery(event.target.value); setOpenId(undefined); }} />
+    </div>
     {groups.length === 0 && <p role="status">{circuit.components.length?'No terminals match. Try the fitting name or a marking such as COM.':'Add a fitting to the bench to see its terminals.'}</p>}
     <div className="point-list">
       {groups.map(({ component, terminals }) => {
@@ -80,10 +117,14 @@ export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false
           <button type="button" aria-expanded={open} onClick={() => setOpenId(open ? '' : component.id)}>
             {component.label}<span>{terminals.length} {terminals.length === 1 ? 'terminal' : 'terminals'}</span>
           </button>
-          {open && <div className="point-list-terminals">{terminals.map(terminal =>
-            <button type="button" key={terminal.id} aria-pressed={from ? from.component===component.id && from.terminal===terminal.id : undefined} onClick={() => select({ component: component.id, terminal: terminal.id })}>
+          {open && <div className="point-list-terminals">{terminals.map(terminal => {
+            const leads = probes && (['red','black'] as const).filter(probe =>
+              probes[probe]?.component === component.id && probes[probe]?.terminal === terminal.id);
+            return <button type="button" key={terminal.id} aria-pressed={from ? from.component===component.id && from.terminal===terminal.id : undefined} onClick={() => select({ component: component.id, terminal: terminal.id })}>
               <b>{terminal.label}</b><span>{shortRole(component.type,terminal)}{from?.component===component.id&&from.terminal===terminal.id&&<small> · first end</small>}{component.type==='switch2'&&terminal.id.startsWith('T') && <small> · {terminal.id} on drawing</small>}</span>
-            </button>)}</div>}
+              {!!leads?.length && <small className="terminal-leads">{leads.length === 2 ? 'Both probes' : leads[0] === 'red' ? 'Red probe' : 'Black probe'}</small>}
+            </button>;
+          })}</div>}
         </div>;
       })}
     </div>

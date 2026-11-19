@@ -7,6 +7,7 @@ export { disposeBlenderTerminalBatches } from './terminal-render-batches';
 
 const lampTypes=new Set(['lamp','led','emergency','cctstrip']);
 const diffuserOff=new THREE.Color('#aeb6ad'),diffuserOn=new THREE.Color('#fff6e9');
+const stripPhosphor=new THREE.Color('#f0cf62');
 const filamentOff=new THREE.Color('#79858b'),filamentOn=new THREE.Color('#ffe8a5');
 /** Educational visible output, normalized to the individual lamp's rating.
  * The solver supplies emitting power, including the declared emergency block.
@@ -19,10 +20,10 @@ export function lampBrightness(component:ComponentInstance,state?:DeviceState):n
   return Number.isFinite(watts)&&watts>0&&typeof output==='number'&&Number.isFinite(output)?THREE.MathUtils.clamp(output/watts,0,1):0;
 }
 /** Mutate only an instance-owned material; the immutable source stays shared. */
-export function applyLampBrightness(material:THREE.MeshStandardMaterial,brightness:number,filament=false):void{
+export function applyLampBrightness(material:THREE.MeshStandardMaterial,brightness:number,filament=false,unlitColour?:THREE.Color):void{
   const level=Number.isFinite(brightness)?THREE.MathUtils.clamp(brightness,0,1):0;
   material.userData.lampOutput=true;material.userData.lampBrightness=level;
-  material.color.copy(filament?filamentOff:diffuserOff).lerp(filament?filamentOn:diffuserOn,Math.sqrt(level));
+  material.color.copy(unlitColour??(filament?filamentOff:diffuserOff)).lerp(filament?filamentOn:diffuserOn,Math.sqrt(level));
   material.emissive.set(level>0?'#ffd394':'#000000');
   material.emissiveIntensity=(filament?3:2.4)*level;
 }
@@ -158,7 +159,7 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
           let channel:string|undefined;for(let n:THREE.Object3D|null=mesh.node;n&&!channel;n=n.parent)channel=n.userData.ledChannel;
           const level=THREE.MathUtils.clamp(Number(state?.[channel==='C'?'coolWatts':'warmWatts']??0)/Math.max(.001,Number(component.params.channelWatts??12)),0,1);
           applyLampBrightness(mesh.light,level);if(level>0&&channel==='C')mesh.light.emissive.set('#c3deff');
-        }else applyLampBrightness(mesh.light,brightness,mesh.filament);
+        }else applyLampBrightness(mesh.light,brightness,mesh.filament,component.type==='led'&&component.variant==='strip'?stripPhosphor:undefined);
       }
       else if(mesh.indicator){const on=component.type==='overload'?!!state?.tripped:active;const color=component.type==='overload'?'#e12624':'#43d57d';mesh.light.color.set(on?color:'#253b33');mesh.light.emissive.set(on?color:'#000000');mesh.light.emissiveIntensity=on?.8:0;}
       else if(mesh.part==='emitter'){mesh.light.emissive.set(active?'#ffd394':'#000000');mesh.light.emissiveIntensity=active?.6:0;}

@@ -3,6 +3,7 @@ import { fixturePoint, physicalFixture, isStrip, type FixturePose } from './site
 import {seatPosition} from './board-assembly';
 import { COMPONENTS } from './components';
 import {bellServicePart,bellServicePose} from './bell-cupboard';
+import {fittedKitchenDriver,KITCHEN_LIGHTS as kitchen} from './kitchen-lighting';
 import { houseFixing, onWall } from './house-installation';
 import { HOME_ROOMS, REAR_GARDEN, STAIR_LANDING, walkHome } from './home-floorplan';
 import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
@@ -112,13 +113,6 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
 
     if(id===7&&c.id==='light'){x=.42;y=1.84;}
     if(id===7&&c.id==='switch'){x=0;y=1.24;}
-    if([13,65,66,68,69].includes(id)&&area===0){
-      if(c.type==='led'||c.type==='cctstrip'){x=c.id==='right'?-3.77:-4.61;y=1.50;z=BACK+.39;}
-      if(c.variant==='door-contact'){x=-4.32;y=2.10;z=BACK+.443;}
-      if(id===65&&c.type==='led'){x=-4.64;y=2.15;z=BACK+.33;}
-      else if(c.type==='led'||c.type==='cctstrip'){y=1.44;}
-
-    }
     if(id===80&&c.id==='courtesy'){x=.99;y=2.07;z=FRONT+.11;}
     const cabinets = kind === 'home' && area === 0 && [13,65,66,68,69].includes(id);
     const atBackWall = !outside && Math.abs(z - (BACK + .11)) < .0001;
@@ -127,6 +121,9 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     if(servicePart){
       const pose=bellServicePose(servicePart),s=pose.scale;
       return {id:c.id,ref,room:2,position:pose.position,rotation:0,scale:s,fixture:{scale:[s,s,s] as Vec3,bellService:servicePart}};
+    }
+    if(cabinets&&fittedKitchenDriver(id,c.type,c.id,c.variant)&&!c.mount){
+      return {id:c.id,ref,room:0,position:[...kitchen.driver] as Vec3,rotation:0,scale:.1,fixture:{scale:[.1,.1,.1] as Vec3,kitchenDriver:true}};
     }
     const fixture = physicalFixture(c, !!mapped||atBackWall, cabinets,!!mapped&&(id===71||id===72));
     let scale = physicalHeight(c) / Math.max(.1, COMPONENTS[c.type]?.size[1] ?? 1);
@@ -144,10 +141,13 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     }
     if (fixture?.batten) z = BACK - .01 + .161*fixture.scale[2];
     if (id === 65 && c.id === 'door') { x = -4.274; y = 2.137; z = -2.3585; }
+    if(id===13&&area===0&&c.type==='led'&&!isStrip(c)){x=-4.61;y=1.44;z=BACK+.39;}
     if (cabinets && isStrip(c)) {
-      y = id === 65 ? 2.282 : 1.526;
-      z = id === 65 ? -2.498 : -2.405;
-      x = c.id === 'right' ? -3.83 : -4.65;
+      const centre=c.type==='cctstrip'?.387:.43;
+      y=id===65?2.282:kitchen.bottom-.0015-(c.type==='cctstrip'?.0008:0);
+      z=(id===65?-2.498:kitchen.profileZ)-centre*fixture!.scale[1];
+      x=c.id==='right'?kitchen.right:kitchen.left;
+      fixture!.tapeProfile=id!==65;
     }
     const station=kind!=='home'&&!c.mount?serviceFixing(id,c,kind):undefined;
     return {id:c.id,ref,room:mapped?.room??station?.room??area,position:mapped?onWall(mapped,c,scale,fixture):station?.position??[x,y,z] as Vec3,rotation:mapped?.yaw??station?.rotation??0,scale:station?.scale??scale,fixture};

@@ -1,12 +1,13 @@
 import { useEffect,useLayoutEffect,useMemo,useRef,useState, type MouseEvent, type ReactNode } from 'react';
 import { Button } from '../ui/button';
-import type { LessonActivity } from '../../lib/learning';
+import MeterHistory from './MeterHistory';
+import type { LessonActivity, MeasurementEvidence } from '../../lib/learning';
 import type { CircuitDocument, SimulationResult } from '../../lib/types';
-import { callActivityId, callReadings, savedCallStep, verifiedCallStep, type CallOperation, type HouseCall } from '../../lib/house-calls';
+import { callActivityId, callReadings, checkCallSample, savedCallStep, verifiedCallStep, type CallOperation, type CallSample, type HouseCall } from '../../lib/house-calls';
 
 interface Props {
   context?:ReactNode; closeTools:()=>void;
-  call:HouseCall; document:CircuitDocument; result?:SimulationResult; operation?:CallOperation;
+  call:HouseCall; document:CircuitDocument; result?:SimulationResult; operation?:CallOperation; sample?:CallSample; openMeter:()=>void; meterHistory?:MeasurementEvidence[];
   start?:string; onActivity:(activity:LessonActivity)=>void; onCredit:(id:string,next:string)=>Promise<void>;
   operate:(id:string)=>void; locate:(id:string)=>void; restart:()=>void; choose:()=>void; undo:()=>void;
   nextJob?:{ title:string; open:()=>void }; startFault:()=>void;
@@ -34,19 +35,21 @@ export function HouseCallPanel(props:Props){
   },[toolsOpen]);
   const step=call.steps[index];
   const activity=useMemo<LessonActivity>(()=>({
-    id:callActivityId(call.lesson,index),kind:'operate',title:call.title,
+    id:callActivityId(call.lesson,index),kind:step?.measure?'measure':'operate',title:call.title,
     instruction:step?.instruction??call.done,explanation:step?.changed??call.done,
-    component:step&&call.breakers?'course-enclosure':step?.target,competency:'house-call',part:step&&!call.breakers?'actuator':undefined,
+    component:step&&call.breakers?'course-enclosure':step?.target,competency:'house-call',part:step?.measure?'terminals':step&&!call.breakers?'actuator':undefined,
   }),[call,index,step]);
   useEffect(()=>onActivity(activity),[onActivity,activity]);
-  const verified=verifiedCallStep(call,index,doc,result,operation);
+  const sample=checkCallSample(call,index,doc,result,props.sample);
+  const verified=step?.measure?sample?.pass:verifiedCallStep(call,index,doc,result,operation);
+  const observed=sample?.pass?sample.message:step?.changed??'';
   useEffect(()=>{
     if(!step || !verified || credited.current===activity.id)return;
     credited.current=activity.id;
     void onCredit(activity.id,callActivityId(call.lesson,index+1)).then(()=>{
-      setObservation(step.changed);
+      setObservation(observed);
     });
-  },[activity.id,call,index,verified,step,onCredit]);
+  },[activity.id,call,index,verified,step,onCredit,observed]);
   const readings=callReadings(step?.before??call.steps[call.steps.length-1].after,doc,result);
   const ready=readings?.every(r=>r.matches) && doc.supply.enabled;
   const wasTried=step && operation?.activity===activity.id && operation.component===step.target && operation.before.id===doc.id && operation.before.revision+1===doc.revision;
@@ -55,6 +58,7 @@ export function HouseCallPanel(props:Props){
   const otherPush=call.bellPushes?.find(push=>push.id!==step?.target && doc.components.find(c=>c.id===push.id)?.params.pressed);
   const targetDoor=call.bellPushes?.find(push=>push.id===step?.target)?.door;
   const usedBell=call.bellPushes?.some(push=>push.id===recentAction?.component);
+  const worktops=call.steps.some(s=>s.measure);
   const otherControl=step && recentAction && recentAction.component!==step.target && !usedCandidate && !usedBell
     ? doc.components.find(c=>c.id===recentAction.component)?.label : undefined;
   const wrongState=step && readings && !ready && !verified;
@@ -116,19 +120,22 @@ export function HouseCallPanel(props:Props){
   },[index,doc.revision,result?.revision,boardFeedback]);
   return <section className="active-task house-call" data-house-tools={toolsOpen||undefined} data-house-call={call.lesson} data-call-step={index} aria-label="House call">
     <div className="task-topline"><span>Oakfield house</span><b>{step?'Check '+(index+1)+' of '+call.steps.length:'Job complete'}</b></div>
-    <div className="house-job-heading"><h3 ref={heading} tabIndex={-1} aria-live="polite">{step?step.instruction:'What you checked'}</h3>
+    <div className={'house-job-heading'+(sample&&!sample.pass?' with-reading-feedback':'')}><h3 ref={heading} tabIndex={-1} aria-live="polite">{step?step.instruction:'What you checked'}</h3>
       {toolsOpen&&<Button variant="ghost" size="sm" onClick={props.closeTools}>Back to job</Button>}
+      {sample&&!sample.pass&&<p className="task-feedback attention" role="status">{sample.message}</p>}
     </div>
-    {props.context ?? <>
+    {props.context}
+    {!toolsOpen&&<>
     {!index&&<p>{call.request}</p>}
     {observation&&step&&!bellFeedback&&<p className="task-feedback success" role="status">{observation}</p>}
     {!step&&<p className="task-instruction">{call.done}</p>}
+    {!step&&worktops&&props.meterHistory&&<MeterHistory circuit={doc} readings={props.meterHistory.filter(r=>r.circuitId===doc.id)}/>}
     {call.bellPushes && <p className="call-chime" role="status">Chime <strong>{readings?chimeStatus:result?.revision===doc.revision?'No reading':'Waiting…'}</strong></p>}
-    {call.bellPushes?<details className="call-bell-readings"><summary>See the voltages</summary>{voltageReadings()}</details>:voltageReadings()}
+    {worktops?<dl className="call-readings" aria-label="Worktop lights">{readings?.map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.lit===undefined?'No reading':r.lit?'Lit':'Dark'}</dd></div>)}</dl>:call.bellPushes?<details className="call-bell-readings"><summary>See the voltages</summary>{voltageReadings()}</details>:voltageReadings()}
     {otherControl&&<div className="task-feedback attention" role="status"><p>You used {otherControl}. Try the fitting named in the job.</p><Button variant="outline" size="sm" onClick={props.undo}>Undo that change</Button></div>}
     {unresolved&&<p className="task-feedback attention" role="status">The lab couldn’t get a reading. Check the wiring at the fitting, or open Help to start this job again.</p>}
     {(bellFeedback||wrongState)&&!otherControl&&!boardFeedback&&!unresolved&&<p className="task-feedback attention" role="status">{bellFeedback||(!doc.supply.enabled?'The supply is off. Switch it on to try the job.':wasTried?'The readings didn’t change as expected. Try the control again to return to the starting position.':'Return the controls to their starting positions, or start this job again.')}</p>}
-    {step?<>{call.bellPushes?<div className="call-breakers call-bell-buttons" role="group" aria-label="Doorbell buttons">{call.bellPushes.map(push=>{
+    {step?<>{step.measure?<Button className="primary-button full" onClick={props.openMeter}>{step.label}</Button>:call.bellPushes?<div className="call-breakers call-bell-buttons" role="group" aria-label="Doorbell buttons">{call.bellPushes.map(push=>{
       const fitting=doc.components.find(c=>c.id===push.id),held=Boolean(fitting?.params.pressed);
       return <div className="call-breaker-choice" key={push.id}><Button variant="outline" disabled={!fitting} aria-pressed={held} aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,push.id)}>{held?'Let go of ':'Hold '}{push.door} button</Button></div>;
     })}</div>:call.breakers?<div className="call-breakers" role="group" aria-label="Breakers on the board">{call.breakers.map(b=>{
@@ -139,7 +146,7 @@ export function HouseCallPanel(props:Props){
           {hint&&<p id="call-board-feedback" className="task-feedback attention" role="status">{hint}</p>}</div>;
       })}</div>:<Button className="primary-button full" aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,step.target)}>{step.label}</Button>}
       <div className="task-support-actions"><Button variant="ghost" onClick={()=>props.locate(call.breakers?'course-enclosure':step.target)}>{call.breakers?'Show the board':'Show me where'}</Button></div>
-      <details className="lesson-more-detail"><summary>Help</summary><p>{call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button></details>
+      <details className="lesson-more-detail"><summary>Help</summary><p>{step.measure?'Find the two copper pads at the end of the strip. Put a probe on each one, or choose the strip and its + and − pads by name. Then choose Record reading.':worktops?'Use the switch named above, or find it in the equipment list. Look at which strip goes dark.':call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button></details>
     </>:<><Button className="primary-button full" onClick={props.nextJob?.open??props.startFault}>{props.nextJob?'Next job · '+props.nextJob.title:'Try a fault on this circuit'}</Button><Button variant="ghost" onClick={props.choose}>Choose another job</Button></>}
     </>}
   </section>;

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.0 — At the worktop
+
+- Switch off one kitchen light and measure both strips in the new **Meter the worktop lights** house job. Pick each copper pad in the room or by name. The meter keeps the sign when the leads are reversed.
+- Inspect the seven LEDs, cut marks and copper pads on a section of white LED tape. Follow its leads through the cabinet channel to the driver and switches.
+- Lessons use shorter questions, the markings on the actual fittings and readings from the circuit. Help explains terms such as *submain* where they come up.
+- The meter keeps the chosen lead visible when the phone keyboard opens. Moving a probe clears the old resistance reading. Saved readings keep the terminal names you saw when you took them.
+
 ## 1.10.0 — At the door
 
 - Check the front and back doorbells at Oakfield house. Each push has two rear screw terminals. Hold one, read the chime and let go. Older three-contact pushes still work in saved builds.

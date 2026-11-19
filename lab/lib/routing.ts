@@ -150,7 +150,18 @@ function hitsBody(a:Vec3,b:Vec3,obstacles:Obstacle[],owner?:string):boolean {
   });
 }
 class SegmentIndex {
-  constructor(private reserveBreakouts=true) {}
+  private pairedPads = new Map<string,string>();
+  constructor(doc:CircuitDocument,private reserveBreakouts=true) {
+    for(const component of doc.components) if(component.type==='led'&&component.variant==='strip'){
+      const positive=keyOf({component:component.id,terminal:'L'}), negative=keyOf({component:component.id,terminal:'N'});
+      this.pairedPads.set(positive,negative);this.pairedPads.set(negative,positive);
+    }
+  }
+  nearTerminalSpacing(a:string,b:string,normal:number):number {
+    // On 8 mm tape these two solder lands are closer than the usual spare
+    // clearance. The insulation must still clear right up to each pad.
+    return this.pairedPads.get(a)===b ? 2*WIRE_RADIUS+.001 : normal;
+  }
   segments:Segment[]=[];
   buckets=new Map<string,number[]>();
   cells(a:Vec3,b:Vec3):string[] {
@@ -196,7 +207,7 @@ class SegmentIndex {
       if(joint&&s.joint===joint)continue;
       const envelope=(id:string,at?:string)=>id.startsWith('@sheath-')?SHEATH_RADIUS-WIRE_RADIUS
         :this.reserveBreakouts&&id.startsWith('@tail-')&&at?.startsWith('@sheath-') ? .045 : 0;
-      const required=(joint&&s.joint?spacing:Math.max(ROUTE_SPACING,spacing))+envelope(wire,joint)+envelope(s.wire,s.joint);
+      const required=(joint&&s.joint?this.nearTerminalSpacing(joint,s.joint,spacing):Math.max(ROUTE_SPACING,spacing))+envelope(wire,joint)+envelope(s.wire,s.joint);
       if(segmentDistance(a,b,s.a,s.b)<required-1e-7)return true;
     }
     return false;
@@ -387,7 +398,7 @@ function planHarness(doc:CircuitDocument,priority:Set<string>,reserveBreakouts:b
   const obstacles=obstaclesFor(doc),harness=createHarness(doc,obstacles);
   const ordered=harness.wires.sort((a,b)=>a.id.localeCompare(b.id));
   const result:CircuitRoutes={routes:new Map(),issues:[]};
-  const occupied=new SegmentIndex(reserveBreakouts),exits=new Map<string,[Vec3,Vec3]>(),invalid=new Set<string>();
+  const occupied=new SegmentIndex(doc,reserveBreakouts),exits=new Map<string,[Vec3,Vec3]>(),invalid=new Set<string>();
   const neighbours=new Map<string,string[]>();
   for(const w of ordered)for(const e of [w.from,w.to]){const key=keyOf(e),ids=neighbours.get(key)??[];if(!ids.includes(w.id))ids.push(w.id);neighbours.set(key,ids);}
   const entries=ordered.flatMap(w=>[['from',w.from],['to',w.to]].map(([label,endpoint])=>({w,label:label as string,e:endpoint as Endpoint})))
@@ -426,7 +437,7 @@ function planHarness(doc:CircuitDocument,priority:Set<string>,reserveBreakouts:b
       if(occupied.hit(a,b,w.id,keyOf(e),2*WIRE_RADIUS+WIRE_CLEARANCE+.001)||occupied.hit(b,b,w.id,undefined))continue;
       if(occupied.segments.some(s=>s.wire!==w.id&&s.joint&&segmentDistance(a,b,s.b,s.b)<ROUTE_SPACING-1e-7))continue;
       if(hitsBody(b,lead,obstacles)||occupied.hit(b,lead,w.id))continue;
-      if([...anchors].some(([key,p])=>key!==keyOf(e)&&segmentDistance(a,b,p,p)<2*WIRE_RADIUS+WIRE_CLEARANCE+.001))continue;
+      if([...anchors].some(([key,p])=>key!==keyOf(e)&&segmentDistance(a,b,p,p)<occupied.nearTerminalSpacing(keyOf(e),key,2*WIRE_RADIUS+WIRE_CLEARANCE+.001)))continue;
       const direction=sub(b,a),length=distance(a,b);
       if(own.some(s=>{const other=sub(s.b,s.a),cosine=dot(direction,other)/(length*distance(s.a,s.b));return cosine>.955||distance(b,s.b)<ROUTE_SPACING;}))continue;
       return [a,b];
@@ -575,7 +586,7 @@ export function routeWire(doc:CircuitDocument,wire:Wire):Vec3[] {return routeCir
 
 /** Independent final-route audit for regression tests and reports. */
 export function auditRoutes(doc:CircuitDocument,routing=routeCircuit(doc)):RoutingIssue[] {
-  const issues=[...routing.issues],obstacles=obstaclesFor(doc),index=new SegmentIndex(false);
+  const issues=[...routing.issues],obstacles=obstaclesFor(doc),index=new SegmentIndex(doc,false);
   const harness=createHarness(doc,obstacles),physical=new Map(routing.routes);
   const atCableFace=(e:Endpoint,n:Vec3)=>{
     const head=harness.heads.get(e.component);

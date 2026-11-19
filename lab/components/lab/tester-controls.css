@@ -17,6 +17,15 @@
 .tester-controls button[aria-pressed=true] { box-shadow:inset 0 0 0 2px #356d66; }
 .tester-controls button.tester-function { background:#f6c859; }
 .tester-controls button:disabled,.termination-practice button:disabled { opacity:.55; }
+.meter-leads { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.35rem; }
+.meter-leads .meter-lead,.tester-controls .meter-leads .meter-lead { min-width:0; min-height:44px; display:grid; align-content:start; gap:.15rem; padding:.4rem .5rem; text-align:left; color:#203743; background:#f5f8f7; border:1px solid #a2b4b6; border-radius:.4rem; overflow-wrap:anywhere; }
+.meter-lead strong { display:flex; align-items:center; gap:.35em; }
+.meter-lead strong::before { content:''; flex:none; width:.5em; height:.5em; background:#262d30; border-radius:50%; }
+.meter-lead.red strong::before { background:#ac342d; }
+.meter-leads .meter-lead[aria-pressed=true] { box-shadow:inset 0 0 0 2px #356d66; }
+.probe-search { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:.5rem; }
+.probe-search > span { font-weight:600; }
+.point-list .terminal-leads { margin-inline-start:auto; font-size:.82em; color:#274e47; font-weight:600; }
 .tester-controls details,.termination-practice details { margin:.22rem 0; padding:0; }
 .tester-controls summary,.termination-practice summary { cursor:pointer; padding:.5rem 0; font-weight:600; }
 .termination-practice { margin-top:.8rem; border-top:1px solid #b9c9cb; }

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HOUSE_CALLS, callActivityId, callReadings, savedCallStep, houseJobLabels, nextHouseCall, onlyCallControlsChanged, verifiedCallStep } from '../lib/house-calls';
+import { HOUSE_CALLS, callActivityId, callReadings, checkCallSample, savedCallStep, houseJobLabels, nextHouseCall, onlyCallControlsChanged, verifiedCallStep } from '../lib/house-calls';
+import { captureMeasurement } from '../lib/learning';
+import { forkRead, instrumentData } from '../lib/fork-tester';
 import { migrateProgress, recordActivity } from '../lib/progress';
 import { getCoursebookActivities, completedCoursebookLesson } from '../lib/coursebook';
 import { LESSONS } from '../lib/lessons';
@@ -17,6 +19,12 @@ for(const call of HOUSE_CALLS){
       assert.ok(callReadings(step.before,doc,reading)?.every(r=>r.matches));
       const id=callActivityId(call.lesson,index);
       const action={component:step.target,activity:id,before:doc,reading};
+      if(step.measure){
+        const evidence={...captureMeasurement(doc,reading,{mode:'voltage',a:{component:step.target,terminal:'L'},b:{component:step.target,terminal:'N'}}),assisted:false};
+        assert.equal(checkCallSample(call,index,doc,reading,{activity:id,evidence})?.pass,true);
+        assert.equal(verifiedCallStep(call,index,doc,reading,action),false);
+        continue;
+      }
       const after={...doc,revision:doc.revision+1,components:doc.components.map(c=>{
         if(c.id!==step.target)return c;
         const p={...c.params};if(c.type==='switch2')p.position=Number(p.position)===0?1:0;else if(c.type==='pushbutton')p.pressed=!p.pressed;else p.closed=!p.closed;
@@ -78,10 +86,12 @@ test('the board job follows the connected branch, including a board with the fee
 });
 
 test('the next house job skips demonstrated jobs and keeps an unfinished job available',()=>{
-  const [cupboard,stairs,board,bell]=HOUSE_CALLS;
+  const [cupboard,stairs,board,bell,worktops]=HOUSE_CALLS;
   let progress=migrateProgress(undefined);
   assert.equal(nextHouseCall(board,progress),bell);
   progress=recordActivity(progress,bell.lesson,callActivityId(bell.lesson,bell.steps.length-1),'house-call',true);
+  assert.equal(nextHouseCall(board,progress),worktops);
+  progress=recordActivity(progress,worktops.lesson,callActivityId(worktops.lesson,worktops.steps.length-1),'house-call',true);
   assert.equal(nextHouseCall(board,progress),cupboard);
   progress=recordActivity(progress,cupboard.lesson,callActivityId(cupboard.lesson,0),'house-call',true);
   assert.equal(nextHouseCall(board,progress),cupboard);
@@ -89,6 +99,54 @@ test('the next house job skips demonstrated jobs and keeps an unfinished job ava
     progress=recordActivity(progress,job.lesson,callActivityId(job.lesson,job.steps.length-1),'house-call',true);
   }
   assert.equal(nextHouseCall(board,progress),undefined);
+});
+
+test('worktop checks require fresh probes on the named strip and accept either polarity',()=>{
+  const call=HOUSE_CALLS.find(c=>c.lesson===66)!;
+  const original=LESSONS.find(l=>l.id===66)!.circuit;
+  const doc={...original,revision:11,components:original.components.map(c=>c.id==='left-switch'?{...c,params:{...c.params,closed:false}}:c)};
+  const result=simulate(doc);
+  function mark(index:number,a:string,b:string,reverse=false){
+    const setup={method:'probe-voltage' as const,reference:'none' as const,a:{component:a,terminal:reverse?'N':'L'},b:{component:b,terminal:reverse?'L':'N'}};
+    const instrument=instrumentData(setup,forkRead(doc,result,setup));
+    const evidence={...captureMeasurement(doc,result,{mode:'voltage',a:setup.a,b:setup.b,instrument}),assisted:false};
+    return {activity:callActivityId(66,index),evidence};
+  }
+  for(const [i,id,expected] of [[1,'left',0],[2,'right',24]] as const){
+    for(const reverse of [true,false]){
+      const sample=mark(i,id,id,reverse);
+      assert.ok(Math.abs(Math.abs(sample.evidence.value!)-expected)<.1);
+      assert.equal(checkCallSample(call,i,doc,result,sample)?.pass,true);
+      assert.ok(checkCallSample(call,i,doc,result,sample)?.message.includes(sample.evidence.instrument!.displayed+' V'));
+      assert.equal(checkCallSample(call,i,doc,result,{...sample,evidence:{...sample.evidence,assisted:true}})?.pass,false);
+      assert.equal(checkCallSample(call,i,doc,result,{...sample,evidence:{...sample.evidence,assisted:undefined}})?.pass,false);
+      assert.equal(checkCallSample(call,i,doc,result,{...sample,evidence:{...sample.evidence,value:90}}),undefined);
+      assert.equal(checkCallSample(call,i,doc,{...result,revision:12},sample),undefined);
+      assert.equal(checkCallSample(call,i,doc,result,{...sample,evidence:{...sample.evidence,circuitId:'another draft'}}),undefined);
+      assert.equal(checkCallSample(call,i,doc,result,{...sample,activity:callActivityId(66,0)}),undefined);
+      const saved=JSON.parse(JSON.stringify(sample));
+      saved.evidence.instrument.held=true;
+      assert.equal(checkCallSample(call,i,doc,result,saved),undefined);
+    }
+    assert.equal(checkCallSample(call,i,doc,result,mark(i,'left','right'))?.pass,false);
+  }
+  const otherState={...doc,components:doc.components.map(c=>c.id==='right-switch'?{...c,params:{...c.params,closed:false}}:c)};
+  const fresh=simulate(otherState);
+  const wrongState={activity:callActivityId(66,1),evidence:{...captureMeasurement(otherState,fresh,{mode:'voltage',a:{component:'left',terminal:'L'},b:{component:'left',terminal:'N'}}),assisted:false}};
+  assert.equal(checkCallSample(call,1,otherState,fresh,wrongState)?.pass,false);
+  const wrongSupply={...doc,components:doc.components.map(c=>c.id==='driver'?{...c,type:'transformer'}:c)};
+  const ac=simulate(wrongSupply);
+  const right={...captureMeasurement(wrongSupply,ac,{mode:'voltage',a:{component:'right',terminal:'L'},b:{component:'right',terminal:'N'}}),assisted:false};
+  assert.ok(right.value!>23 && right.value!<25);
+  assert.equal(checkCallSample(call,2,wrongSupply,ac,{activity:callActivityId(66,2),evidence:right})?.pass,false);
+  const backwards={...doc,wires:doc.wires.map(w=>w.to.component==='right'?{...w,to:{...w.to,terminal:w.to.terminal==='L'?'N':'L'}}:w)};
+  const blocked=simulate(backwards);
+  const dark=callReadings(call.steps[2].after,backwards,blocked)![1];
+  assert.ok(dark.value!>23&&dark.value!<25);
+  assert.equal(dark.lit,false);
+  assert.equal(dark.matches,false);
+  const reversed={...captureMeasurement(backwards,blocked,{mode:'voltage',a:{component:'right',terminal:'L'},b:{component:'right',terminal:'N'}}),assisted:false};
+  assert.equal(checkCallSample(call,2,backwards,blocked,{activity:callActivityId(66,2),evidence:reversed})?.pass,false);
 });
 
 test('the doorbell job watches each chime input and its live supply during a hold and after release',()=>{

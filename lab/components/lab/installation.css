@@ -84,3 +84,14 @@
   .mobile-lab .site-camera{position:relative;flex:1;min-height:0;height:auto}
   .mobile-lab .site-actions{position:relative;inset:auto;transform:none;align-self:center;flex:none;margin:2px 0}
 }
+.site-meter-heading{position:absolute;z-index:3;top:.5rem;left:.5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;max-width:calc(100% - 1rem);background:#f9f8ee;color:#173b30;border:1px solid #c3c9b9;border-radius:8px;padding:.2rem .45rem;font-size:.84rem}
+.site-meter-heading select{max-width:100%;min-height:44px;color:inherit;background:transparent}
+.site-pad{position:relative;width:0;height:0;pointer-events:none}
+.site-pad i{position:absolute;left:-2px;top:-2px;width:4px;height:4px;background:white;border:1px solid #183930;border-radius:50%}
+.site-pad::after{content:'';position:absolute;top:0;width:24px;height:1px;background:#23473c;box-shadow:0 1px 0 white}
+.site-pad-positive::after{right:0;transform-origin:right;transform:rotate(24deg)}
+.site-pad-negative::after{left:0;transform-origin:left;transform:rotate(24deg)}
+.site-pad button{position:absolute;pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:.3rem;white-space:nowrap;min-height:44px;min-width:48px;padding:0 .55rem;border:1px solid #3c5a4e;border-radius:7px;color:#143a2f;background:#fffff5;box-shadow:0 1px 4px #0003;touch-action:manipulation}
+.site-pad-positive button{right:21px;bottom:-11px}
+.site-pad-negative button{left:21px;top:-11px}
+.site-pad button small{font-size:.75rem}

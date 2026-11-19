@@ -2,7 +2,9 @@ import { equipmentAssetKey } from './equipment-assets.ts';
 import { COMPONENTS } from './components.ts';
 import { mountVector } from './board-assembly.ts';
 import {chimeEnvelope,type BellServicePart} from './bell-cupboard';
-import type { ComponentInstance, Vec3 } from './types.ts';
+import {driverContact} from './kitchen-lighting';
+import type {SiteItem} from './job-site';
+import type { ComponentInstance, TerminalDefinition, Vec3 } from './types.ts';
 
 export const CUPBOARD_HINGE: Vec3 = [-5.035, 1.92, -2.34];
 export const CUPBOARD_SWING = -1.36;
@@ -14,6 +16,8 @@ export interface FixturePose {
   scale: Vec3;
   bellService?:BellServicePart;
   hallChime?:boolean;
+  kitchenDriver?:boolean;
+  tapeProfile?:boolean;
   tilt?: number;
   roll?: number;
   tape?: boolean;
@@ -58,7 +62,7 @@ export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboar
   if (isStrip(c)) {
     // A repeated section uses the actual catalog chip packages, copper, insulator and lands.
     const tw = c.type === 'cctstrip';
-    return {scale: [TAPE_SECTION_LENGTH / (tw ? 2.058 : .98), (tw ? .010 : .008) / (tw ? .396 : .44), .0012 / (tw ? .125 : .392)], tape: true, tilt: cupboard ? Math.PI / 2 : 0};
+    return {scale: tw?[TAPE_SECTION_LENGTH/2.058,.010/.396,.0012/.125]:[.1,.1,.1],tape:true,tilt:cupboard?Math.PI/2:0};
   }
   if (backWall && !c.params.gangGroup && !c.variant && ['switch','switch2','intermediate'].includes(c.type)) {
     const one = c.type === 'switch';
@@ -66,7 +70,17 @@ export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboar
   }
 }
 
-/** Translate the exact workbench pin, including the leftmost feed on a run of tape. */
+/** Map an electrical terminal to the contact the learner can touch in the room. */
+export function installedTerminalPoint(item:SiteItem,component:ComponentInstance,terminal:Pick<TerminalDefinition,'anchor'|'id'>):Vec3{
+  // The installed driver has flying leads. Its terminals are in the two connection boxes.
+  if(item.fixture?.kitchenDriver){
+    const local=driverContact(terminal.id);
+    return item.position.map((n,i)=>n+local[i]) as Vec3;
+  }
+  return fixturePoint(item.position,item.scale,item.fixture,component,terminal.anchor,item.rotation);
+}
+
+/** Transform a point on the workbench model, including the first section in a tape run. */
 export function fixturePoint(position: Vec3, uniform: number, pose: FixturePose | undefined, component: ComponentInstance, anchor: Vec3, yaw=0): Vec3 {
   const p = mountVector(component, anchor);
   const scale = pose?.scale ?? [uniform, uniform, uniform];

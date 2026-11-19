@@ -1,5 +1,19 @@
 # Verification summary
 
+## 1.11.0 — At the worktop
+
+**One dark strip, one lit strip.** In the kitchen, switching off the left rocker left the right worktop lit. Chromium sessions at 390 × 844 and 1280 × 800 put probes on the actual copper pads, recorded 0 V on the dark strip and about −24 V across the lit strip with the leads reversed. Returning from the meter restored the job. A drag, cancelled touch or two-finger gesture on the probe target earned no reading. A check with reversed strip wiring verified that the job reports the simulated lamp state even when voltage is present at a dark LED.
+
+**Models and wires.** Both detail levels of the single-colour strip contain seven visible LED windows per 100 mm section, two distinct probe points and an insulated underside. The cabinet view uses five sections per worktop. The full and economy meshes fit the channel. All 1,110 example wires reached their terminals in the workbench routing tests.
+
+**Course language and checks.** The review covered the opening, prediction and explanation for each of the 80 courses. The revised questions refer to the switch, signal or reading in the example. For instance, Q2 in the PLC lesson follows the machine-ready input at I2. All 80 example circuits and all 80 practice faults passed, along with 1,382 electrical checks across 240 operating steps. Each of the 2,471 guided activities still maps to its original stage. The complete suite passed 377 automated tests and the TypeScript check. Lint on the 45 changed or added source files reported the same 25 errors and 16 warnings as the previous version. These checks cover the software. A first-time learner session, an independent electrician’s review and a physical iPhone trial are still outstanding.
+
+**Offline and saved work.** The web build checked both workers and the offline pack of 249 files (44,442,336 bytes). Interrupting an upgrade from 1.10.0 left the previous copy and its saved stair job usable. Retrying the download made the new kitchen job available offline. Windows WebKit opened a backup from the previous Windows app, exported it and reopened the study after a cold restart. Both Chromium and WebKit finished a previously unopened kitchen job, loaded the 35-wire PLC lesson, then saved and reopened the 80-piece, 228-wire plant with the server stopped. At 320 px with enlarged text and at 844 px in landscape, the phone meter’s search field remained reachable while the keyboard took up space.
+
+**Windows installation.** The per-user installer replaced the installed app. The Desktop and Start menu shortcuts both pointed to the 1.11.0 executable. The package audit checked 414 files, including 378 production assets.
+
+**Large-plant performance.** One cold run per Windows browser at a 390 × 844 touch viewport, with other tests running, measured 6.41 seconds to route, solve and render the plant in Chromium with software graphics (737 ms solve, 9 fps). WebKit took 4.55 seconds (315 ms solve, 35 fps). These are measurements on the test PC. Physical iPhone performance is unknown.
+
 ## 1.10.0 — At the door
 
 **Lesson wording.** Reviewed the nine chapters. We revised 43 course pages, the shared instructions used across all 80 lessons and the six Quick practice experiments. At 390 and 1280 pixels, a learner could predict, turn the switch, see the reading fall from 240 V to 0 V, get a clue after a wrong explanation and try again. A regression also breaks the feed to the hall lamp. With the switch closed, feedback reports the lamp’s actual 0 W reading and directs the learner to Test circuit.
