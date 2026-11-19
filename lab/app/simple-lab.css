@@ -310,6 +310,18 @@
 .mobile-lab .notice { width: min(370px, 93vw); bottom: calc(env(safe-area-inset-bottom) + 25px); padding: 7px 10px; }
 .mobile-lab .notice button { min-width: 44px; min-height: 44px; }
 .mobile-lab .phone-view-actions { display: flex; }
+.mobile-lab .point-picker input[type=search] { min-height: 44px; }
+.mobile-lab :is(.learn-column, .context-drawer)[data-picker-keyboard][data-sheet-open=true] {
+  position: fixed;
+  inset: var(--lab-visible-top, 0px) 0 auto;
+  z-index: 12;
+  height: var(--lab-visible-height);
+  max-height: var(--lab-visible-height);
+}
+.mobile-lab [data-picker-keyboard] .point-list {
+  max-height: min(14rem, calc(var(--lab-visible-height) - 120px));
+}
+.mobile-lab .learn-column[data-picker-keyboard] .active-task > .primary-button { position: static; }
 body:has(.mobile-lab) [data-slot=dialog-content] { top: calc(var(--lab-visible-top, 0px) + var(--lab-visible-height, 100dvh) / 2); width: calc(100% - max(24px, env(safe-area-inset-left) + env(safe-area-inset-right))); max-height: min(85dvh, calc(var(--lab-visible-height, 100dvh) - 24px)); overflow: auto; padding: 14px; }
 body:has(.mobile-lab) [data-slot=dialog-content] button { min-height: 44px; }
 @media (orientation: landscape) {

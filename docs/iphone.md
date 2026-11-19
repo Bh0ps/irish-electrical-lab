@@ -6,7 +6,7 @@ In the Home Screen app, open **More → Download for offline use**. Keep the app
 
 Safari, the Home Screen app, and Windows keep separate study data. On Windows, choose **My builds → Files and backups → Export full backup** and transfer the JSON file to the iPhone’s Files app, for example with iCloud Drive. Open the lab from your Home Screen, then choose **My builds → Files and backups → Restore backup** and pick the file. To export from iPhone, choose **Export full backup**, then **Save to Files** if the share sheet opens. Keep a backup of study data you want to retain. [WebKit storage policy](https://webkit.org/blog/14403/updates-to-storage-policy/)
 
-In **Site**, tap **Go to** and choose a fitting or a room. Use the direction pad to walk and drag to look around. Tap **Finish walk** before pressing a switch. Oakfield’s **Drawing** starts with the room you’re working in. Choose **Whole house** to see how the rooms connect. Tap an equipment tag, then **Find on site**, to visit it.
+In **Site**, tap **Go to** and choose a fitting or a room. Use the direction pad to walk and drag to look around. At the stairs, tap the wall switch when you reach it. **Finish walk** returns to the usual site controls. Oakfield’s **Drawing** starts with the room you’re working in. Choose **Whole house** to see how the rooms connect. Tap an equipment tag, then **Find on site**, to visit it.
 
 On the workbench, drag to orbit, pinch to zoom and drag with two fingers to pan. To move a part in Sandbox, select it, tap **Move**, then drag its housing. **Connect** and **Measure** accept taps on the workbench and let you search for terminals by name. Tap a wire to see **Remove conductor**, or find it by name under **View**. Use **Undo** to restore the last edit.
 

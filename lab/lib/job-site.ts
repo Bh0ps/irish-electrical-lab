@@ -3,7 +3,7 @@ import { physicalFixture, isStrip, type FixturePose } from './site-fixtures.ts';
 import {seatPosition} from './board-assembly';
 import { COMPONENTS } from './components';
 import { houseFixing, onWall } from './house-installation';
-import { HOME_ROOMS, walkHome } from './home-floorplan';
+import { HOME_ROOMS, STAIR_LANDING, walkHome } from './home-floorplan';
 import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
 
 export type SiteKind = 'home' | 'plant' | 'shop' | 'workshop' | 'works';
@@ -60,7 +60,6 @@ function roomFor(c:ComponentInstance,id:number,room:number) {
     return 1;
   }
   if(/^(driver|plc|vfd|timer|smartrelay|dcsupply)$/.test(c.type)&&room===3)return 2;
-  if(id===9&&c.id==='far')return 1;
   if(id===10&&c.id==='far')return 2;
   if([10,60].includes(id)&&/far|middle|stop-b|start-b/.test(c.id))return 0;
   if(id===42&&c.id==='heat')return 0;
@@ -113,7 +112,6 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
 
     if(id===7&&c.id==='light'){x=.42;y=1.84;}
     if(id===7&&c.id==='switch'){x=0;y=1.24;}
-    if(id===9&&c.id==='far'){x=-1.71;y=2.43;z=-1.05;}
     if([13,65,66,68,69].includes(id)&&area===0){
       if(c.type==='led'||c.type==='cctstrip'){x=c.id==='right'?-3.77:-4.61;y=1.50;z=BACK+.39;}
       if(c.variant==='door-contact'){x=-4.32;y=2.10;z=BACK+.443;}
@@ -163,7 +161,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
   const load=(id===24?all.find(c=>c.type==='shaveroutlet'):undefined)??all.find(c=>['gammaboard','invictaboard'].includes(c.type))
     ??(id===3?all.find(c=>c.type==='rcbo'):id===5?all.find(c=>c.type==='spd'):undefined)
     ??all.find(c=>/switch|pushbutton|dimmer|pwmcontrol/.test(c.type)&&roomFor(c,id,room)===room)??all.find(c=>roomFor(c,id,room)===room&&!isSupply(c));
-  return {kind,building,name,room,items,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):rooms[r]??(kind==='home'?HOME_ROOMS.find(space=>space.id===r)?.name:r===4?SERVICE_AREAS[kind].name:undefined)??name};
+  return {kind,building,name,room,items,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):id===9&&r===STAIR_LANDING.id?STAIR_LANDING.name:rooms[r]??(kind==='home'?HOME_ROOMS.find(space=>space.id===r)?.name:r===4?SERVICE_AREAS[kind].name:undefined)??name};
 }
 export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wiring'{
   if(!lesson)return 'wiring';

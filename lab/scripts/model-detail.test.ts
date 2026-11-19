@@ -17,6 +17,51 @@ function meshes(parent:THREE.Object3D){const result:THREE.Mesh[]=[];parent.trave
 function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)=>total+(m.geometry.index?.count??m.geometry.getAttribute('position').count)/3,0);}
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
+test('the double socket exposes four recessed clamps, separate screwdriver wells and clear front shutters',async()=>{
+  const asset=manifest.find(model=>model.key==='socket_default')!;
+  const faceNormals:THREE.Vector3[]=[];
+  for(const url of [asset.url,asset.lowUrl]){
+    const scene=await load(url);
+    scene.updateMatrixWorld(true);
+    const cast=(from:THREE.Vector3,towards:THREE.Vector3)=>{
+      const hit=new THREE.Raycaster(from,towards).intersectObject(scene,true)[0];
+      assert.ok(hit,url+' expected a visible surface');
+      return hit;
+    };
+    const rear=(x:number,y:number)=>cast(new THREE.Vector3(x,y,-1),new THREE.Vector3(0,0,1));
+    const front=(x:number,y:number)=>cast(new THREE.Vector3(x,y,1),new THREE.Vector3(0,0,-1));
+    const top=(x:number,z:number)=>cast(new THREE.Vector3(x,1,z),new THREE.Vector3(0,-1,0));
+    for(const terminal of asset.terminals){
+      const [x,y,z]=terminal.anchor;
+      const lip=rear(x+.044,y),inside=rear(x,y);
+      assert.equal(semanticOwner(lip.object).terminal,terminal.id);
+      assert.equal(semanticOwner(inside.object).terminal,terminal.id);
+      assert.ok(Math.abs(lip.point.z-z)<.002 && inside.point.z-lip.point.z>.070,'cable enters a real recessed window');
+      const driver=top(x+.009,z+.041),insert=top(x,z+.095);
+      assert.equal(semanticOwner(driver.object).terminal,terminal.id);
+      assert.equal(semanticOwner(insert.object).terminal,terminal.id);
+      assert.match((driver.object as THREE.Mesh<THREE.BufferGeometry,THREE.Material>).material.name,/steel/i);
+      assert.ok(insert.point.y-driver.point.y>.012,'the driver head sits below the white crown insert');
+    }
+    assert.ok(rear(0,.56).point.z-rear(.06,.56).point.z>.085,'the case has a deep central slot');
+    assert.ok(rear(0,.56).point.z-rear(0,.582).point.z>.05,'a moulded tie spans the slot');
+    for(const [x,y] of [[-.36,.489],[.36,.489],[.10,.3835],[-.545,.46],[.545,.46]]){
+      assert.equal(semanticOwner(rear(x,y).object).detail,'linked-earth-strap');
+    }
+    for(const x of [-.485,-.265,.265,.485]){
+      for(const dx of [-.018,0,.018]){
+        assert.equal(semanticOwner(front(x+dx,.31).object).detail,'socket-contact-system','plate ribs stay clear of the shutters');
+      }
+    }
+    // The broad face beside each aperture must retain its flat shading at distance.
+    for(const [i,x] of [-.60,-.45,-.29,0,.29,.45,.60].entries()){
+      const hit=front(x,.496),normal=hit.normal!.clone().transformDirection(hit.object.matrixWorld);
+      if(url===asset.url)faceNormals.push(normal);
+      else assert.ok(normal.distanceTo(faceNormals[i])<.01,'same plate normal in both detail levels');
+    }
+  }
+});
+
 test('the wall switch case screws and the retained rose knockout can be identified in both detail levels',async()=>{
   for(const suffix of ['','.low']){
     for(const key of ['switch_single-rocker','switch2_single-rocker']){

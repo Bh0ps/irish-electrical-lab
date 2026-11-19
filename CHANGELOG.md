@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.0 — On the landing
+
+- Find the lighting breaker by trying the two handles and reading the lamp and socket voltages. A wrong choice can be put back, even after closing the app. House jobs now appear in search and lead on to the next unfinished job.
+- Walk from the lower stair switch to the upper landing. The house drawing, steps and switch positions follow the same return stair.
+- The terminal picker stays within reach above the phone keyboard. A cancelled touch during a two-finger gesture leaves the wire selection alone.
+- The twin socket has deeper screw wells, a shaped rear body and a folded earth strip based on the BG 824 rear view.
+
 ## 1.7.0 — Follow the wire
 
 - Three short jobs in Oakfield house let you try the cupboard door, both stair switches and the lighting breaker. Each check follows the voltage at the fitting. Closing the app keeps your place.

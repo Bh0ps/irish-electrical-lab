@@ -2314,10 +2314,10 @@
       "socket-contact-system",
       "linked-earth-strap"
     ],
-    "sourceMeshCount": 104,
-    "meshCount": 27,
-    "triangles": 60788,
-    "lowTriangles": 31846,
+    "sourceMeshCount": 128,
+    "meshCount": 37,
+    "triangles": 51882,
+    "lowTriangles": 24730,
     "terminals": [
       {
         "id": "L",
@@ -2392,8 +2392,8 @@
         ]
       }
     ],
-    "bytes": 1642600,
-    "lowBytes": 888208,
+    "bytes": 1517032,
+    "lowBytes": 758512,
     "bespokeBlender": true
   },
   {

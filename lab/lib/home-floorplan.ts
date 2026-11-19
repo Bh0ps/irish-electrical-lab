@@ -47,6 +47,46 @@ export const HOME_DOORS:FloorDoor[]=[
   {wall:'study',centre:1.50,width:.94,hinge:-1,side:-1},
 ];
 export interface FloorBox {x:number;z:number;w:number;d:number}
+
+// Lesson 9 uses the western part of the hall. The two flights share a turning landing.
+export const HOME_STAIR = {
+  west: -2.14, divider: -.95, east: .24, back: -2.8, turn: -1.62,
+  landingEnd: 1.58, going: .275, rise: 2.94 / 16, risersPerFlight: 8,
+};
+const stairRun = HOME_STAIR.going * (HOME_STAIR.risersPerFlight - 1);
+export const STAIR_FOOT = HOME_STAIR.turn + stairRun;
+export const STAIR_HALF = HOME_STAIR.rise * HOME_STAIR.risersPerFlight;
+export const STAIR_TOP = 2 * STAIR_HALF;
+export const STAIR_EYE = 1.56;
+const stairVisit = {position: [-1.63, STAIR_EYE, 1.62] as Vec3, yaw: 0, pitch: .02};
+export const STAIR_LANDING:FloorRoom = {
+  id:8,name:'First-floor landing',left:HOME_STAIR.divider,right:HOME_STAIR.east,back:STAIR_FOOT,front:HOME_STAIR.landingEnd,
+};
+const upperVisit = {position:[-.70, STAIR_EYE+STAIR_TOP, .45] as Vec3,yaw:-2.26,pitch:-.26};
+export function homeVisit(room:number,stair:boolean){
+  if(stair&&room===1)return stairVisit;
+  if(stair&&room===STAIR_LANDING.id)return upperVisit;
+  return HOME_VISITS[room];
+}
+
+/** Finished tread or landing height under a walker's feet. */
+export function stairFloor(x:number,z:number){
+  const s=HOME_STAIR;
+  if(x<s.west||x>s.east||z<s.back||z>s.landingEnd)return 0;
+  if(z<=s.turn)return STAIR_HALF;
+  const belowTurn=Math.max(0,Math.ceil((z-s.turn)/s.going-1e-9));
+  if(x<s.divider)return Math.max(0,s.risersPerFlight-belowTurn)*s.rise;
+  return Math.min(STAIR_TOP,STAIR_HALF+belowTurn*s.rise);
+}
+
+function stairBarriers():FloorBox[]{
+  const s=HOME_STAIR;
+  return [
+    {x:s.divider,z:(s.turn+s.landingEnd)/2,w:.07,d:s.landingEnd-s.turn},
+    {x:s.east,z:(s.back+s.landingEnd)/2,w:.12,d:s.landingEnd-s.back},
+    {x:(s.divider+s.east)/2,z:s.landingEnd,w:s.east-s.divider,d:.12},
+  ];
+}
 export const HOUSE_FURNITURE={
   sofa:{x:-6.03,z:-5.23,w:.90,d:2.2},coffee:{x:-4.68,z:-5.14,w:.68,d:1.08},
   television:{x:-.90,z:-5.76,w:.43,d:1.60},bed:{x:5.52,z:-5.95,w:1.44,d:2.04},
@@ -54,12 +94,15 @@ export const HOUSE_FURNITURE={
   deskChair:{x:.28,z:-6.10,w:.49,d:.50},bookcase:{x:3.19,z:-5.94,w:.40,d:1.14},
   locker:{x:4.53,z:-6.82,w:.38,d:.38},shoeBench:{x:2.77,z:-4.76,w:1.0,d:.32},
 };
-export function doorsOn(wall:FloorWall,bathroom:boolean){
+// The stair hall's front door opens into the clear passage beside the upper flight.
+const stairEntrance:FloorDoor={wall:'front',centre:1.18,width:.98,hinge:1,side:-1};
+export function doorsOn(wall:FloorWall,bathroom:boolean,stair=false){
+  if(stair&&wall.id==='front')return [stairEntrance];
   return HOME_DOORS.filter(d=>d.wall===wall.id&&!(bathroom&&d.hallOnly));
 }
-export function wallSpans(wall:FloorWall,bathroom:boolean):[number,number][]{
+export function wallSpans(wall:FloorWall,bathroom:boolean,stair=false):[number,number][]{
   const result:[number,number][]=[];let start=wall.start;
-  for(const door of doorsOn(wall,bathroom)){
+  for(const door of doorsOn(wall,bathroom,stair)){
     result.push([start,door.centre-door.width/2]);start=door.centre+door.width/2;
   }
   result.push([start,wall.end]);return result;
@@ -70,18 +113,20 @@ export function alignWall(wall:FloorWall,along:number,depth:number,length:number
 export function doorLeaf(wall:FloorWall,door:FloorDoor){
   return alignWall(wall,door.centre+door.hinge*(door.width/2-.022),door.side*door.width/2,.044,door.width);
 }
-export function homeRoomAt(x:number,z:number){
+export function homeRoomAt(x:number,z:number,stair=false){
+  if(stair&&x>STAIR_LANDING.left&&x<STAIR_LANDING.right&&z>STAIR_FOOT&&z<STAIR_LANDING.front)return STAIR_LANDING.id;
   return HOME_ROOMS.find(r=>x>=r.left&&x<=r.right&&z>=r.back&&z<=r.front)?.id??3;
 }
 function collisionBoxes(bathroom:boolean,backEntrance:boolean,stair:boolean){
   const boxes=Object.values(HOUSE_FURNITURE).slice() as FloorBox[];
   for(const wall of HOME_WALLS){
-    for(const [a,b] of wallSpans(wall,bathroom))boxes.push(alignWall(wall,(a+b)/2,0,b-a,.12));
-    for(const door of doorsOn(wall,bathroom))boxes.push(doorLeaf(wall,door));
+    for(const [a,b] of wallSpans(wall,bathroom,stair))boxes.push(alignWall(wall,(a+b)/2,0,b-a,.12));
+    for(const door of doorsOn(wall,bathroom,stair))boxes.push(doorLeaf(wall,door));
   }
   boxes.push({x:backEntrance?-3.57:-4.4,z:-2.49,w:backEntrance?1.53:3.65,d:.59},{x:3.13,z:-.65,w:1.36,d:.54},{x:5.6,z:-2.49,w:1.4,d:.59});
   if(bathroom)boxes.push({x:1.32,z:-2.47,w:1.3,d:.59});
-  else if(!stair)boxes.push({x:.64,z:-2.48,w:.80,d:.74});
+  else if(stair)boxes.push(...stairBarriers());
+  else boxes.push({x:.64,z:-2.48,w:.80,d:.74});
   return boxes;
 }
 const collisions=new Map<string,FloorBox[]>();
@@ -101,5 +146,6 @@ export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,backEntr
     return Math.max(axis==='x'?-6.6+radius:HOME_BACK+radius,Math.min(axis==='x'?6.6-radius:6,next));
   };
   const x=advance('x',from[0],from[2],dx);
-  return [x,from[1],advance('z',from[2],x,dz)];
+  const z=advance('z',from[2],x,dz);
+  return [x,from[1]+(stair?stairFloor(x,z)-stairFloor(from[0],from[2]):0),z];
 }

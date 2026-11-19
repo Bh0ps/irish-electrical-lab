@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
-import {HOME_BACK,HOME_DOORS,HOME_WALLS} from '../lib/home-floorplan';
+import {HOME_BACK,HOME_DOORS,HOME_WALLS,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
 import {houseFixing,installedWireRoute} from '../lib/house-installation';
 import {getComponentTerminals} from '../lib/terminal-layout';
@@ -67,4 +67,18 @@ test('installed runs follow the actual terminals, turn at fitted walls and remai
   assert.ok(runLessonScenarios(lesson(17)).every(c=>c.status==='pass'));
   assert.ok(runLessonScenarios(lesson(18)).every(c=>c.status==='pass'));
   assert.ok(runLessonScenarios(lesson(19)).every(c=>c.status==='pass'));
+});
+test('the two-way switch rockers face separate level landings at the same local height',()=>{
+  const doc=lesson(9),site=jobSite(doc),heights:number[]=[];
+  for(const [id,level,name] of [['near',0,'Stair hall'],['far',STAIR_TOP,'First-floor landing']] as const){
+    const c=doc.components.find(c=>c.id===id)!,item=site.items.find(i=>i.id===id)!;
+    assert.equal(site.location(item.room),name);
+    const face=houseFixing(9,c)!.face;
+    const standingX=face[0]+Math.sin(item.rotation)*.45;
+    assert.equal(stairFloor(standingX,face[2]-.1),level);
+    assert.equal(stairFloor(standingX,face[2]+.1),level);
+    const height=fixturePoint(item.position,item.scale,item.fixture,c,[0,COMPONENTS[c.type].size[1]/2,.2],item.rotation)[1]-level;
+    assert.ok(height>1.00&&height<1.20);heights.push(height);
+  }
+  assert.ok(near(heights[0],heights[1]));assert.ok(runLessonScenarios(doc).every(r=>r.status==='pass'));
 });

@@ -14,6 +14,10 @@ The site camera uses the same local equipment GLBs and simulation state as the w
 
 ## Oakfield house wiring
 
+Lesson 9 places switch A at the foot of the stairs and switch B beside the first-floor door. Each rocker is about 1.08 m above its own landing. Both operate the batten lamp above the turning landing. The National Disability Authority’s home design guidance illustrates a light switch at each end of a stair and describes consistent, reachable control heights. [Universal Design Guidelines for Homes in Ireland, section 2, p. 93](https://universaldesign.ie/uploads/publications/Section-2-Entering-and-Moving-Around_2024-09-24-115441_ecio.pdf) · [Section 4, p. 164](https://universaldesign.ie/uploads/publications/Section-4-Elements-and-Systems_2024-09-24-122859_xnua.pdf)
+
+Roscommon County Council’s published House Type C drawing shows the entrance stair in plan and the first floor at 2.70 m in section. Oakfield’s existing ground-floor ceiling sets its first-floor level at 2.94 m. Two flights of eight equal risers with 275 mm goings connect the hall, turning landing and first-floor door in this training layout. The plan, walking surface and rendered joinery use the same dimensions. [Slí an Choiste, Monksland, House Type C plans, elevations and section](https://www.roscommoncoco.ie/en/about_us/part-8-local-authority-own-developments/housing/part-8-sli-an-choiste-monksland/22571-pla-6.pdf)
+
 Lesson 17 follows three kitchen sockets, including one on the return wall. In lesson 18 the existing ring leaves the board, passes two sitting-room sockets and a bedroom socket, then returns. Lesson 19 adds a fused supply to the study heater. Each lesson opens its own circuit.
 
 Choose **Cables** on the site and select a wire to see it through the wall. **Find** takes you to the fitting at the other end. The overlay starts and ends on the selected terminals, including the actual side-facing terminals in the kitchen. The ceiling routes, wall drops and fixing heights belong to this example house. Wire lengths and resistance still come from the electrical exercise.

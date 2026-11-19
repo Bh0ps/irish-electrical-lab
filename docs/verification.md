@@ -1,5 +1,33 @@
 # Verification summary
 
+## 1.8.0 house practical and phone controls
+
+**Find the lighting breaker.** The released 1.7 job gave the breaker number away and offered only one handle on the job card. In the new job, opening the socket breaker left the lamp at 240 V and the socket at 0 V. Closing it restored both readings to 239.8 V. Opening the lighting breaker put the lamp at 0 V while the socket retained its supply. The simulator also accepted the other breaker when the two outgoing feeds were exchanged in a separate test.
+
+In desktop and phone-sized Chrome and WebKit on Windows, a learner's wrong choice survived a reload. Returning the handle to its starting position took them back to the same check. Finishing the three jobs led to the existing unscored fault exercise. Searching the chapter index for “breaker” found both the short job and the related lessons.
+
+**Walking the stairs.** Both flights, the turning landing, the first-floor landing and the two switch locations share the same plan in the room and the drawing. A keyboard walk reached eye heights of 1.56 m at the foot, 3.03 m on the turn and 4.50 m upstairs. Pressing the lower rocker put the light out. Pressing the upper one brought it back on. Both rockers could also be reached and tapped at a 390 × 844 touch viewport. The upstairs door is scenery. The [site authoring notes](../authoring/site/README.md) document the dwelling references and the limits of the modeled route.
+
+![The lower flight, the view from the upper landing and the switch beside the upstairs door](images/oakfield-stair.jpg)
+
+**Rear of the twin socket.** Full and distance models were checked against the BG 824 rear photograph and dimension drawing. Four conductor entries, their separate screw wells, the open centre and the folded earth connections are visible. The picking check reached each screw from above and all four saved wire ends stayed in place. The smaller moulded ratings are visible in full detail. The comparison uses the same camera and light on the workbench in both versions. [BG 824 product page](https://www.bgelectrical.uk/uk/wiring-devices/800-series/13a-sockets/824-01)
+
+![Same workshop view of the rear of the released and revised twin socket](images/socket-back.jpg)
+
+**Using a phone keyboard.** With a 390 × 844 touch viewport and only 345 px visible above the keyboard, the terminal search and all four luminaire choices were reachable. The first Enter focused a match and the second chose it. Wiring the lamp to the outgoing terminal added one wire. Undo restored the six original wires. Independent probes measured 239.96 V across the lamp and the selected conductor measured 0.25 A. A cancelled touch, including the loss of one contact during a multi-finger gesture, left wire selection alone. If the routing worker was unavailable, all six fallback wires could still be picked individually.
+
+At 200% text on an 844 × 390 landscape viewport, both breaker names and voltage values reached 30 px. Enter restored the same handle with no further Tab presses. The next instruction took keyboard focus. The completion controls wrapped within the 312 px content column.
+
+**Installed and offline builds.** The Windows installer replaced 1.7.0 on this PC. The Desktop and Start menu shortcuts opened the per-user executable. A disposable profile retained its draft, named build and progress through the upgrade. The installed runtime exercised all 80 circuits, made zero external requests and logged one warning from the linked antialiasing shader. A fresh-profile launch using the installed renderer reached the site canvas and two frames in 1.58 seconds. The matching Electron runtime used 429 MiB across its processes 1.3 seconds later.
+
+Windows Chromium and WebKit downloaded the 41.4 MiB offline pack after an interrupted download. With the web server stopped, both opened a previously unvisited PLC lesson and reopened a saved 80-piece plant with all 228 wires. Neither browser made a request to the origin while offline.
+
+A separate Windows Chrome run downloaded the published 1.7.0 pack and paused the stair job after the lower switch. A failed 1.8.0 socket download left the old pack usable. On retry, the new pack waited for the open tab to close. With the server then stopped and the browser offline, the job reopened at the upper switch. Pressing it gave 240 V and completed the job. The socket file in that offline session matched the new model's checksum.
+
+**Workbench speed on this PC.** Two desktop camera runs at 1440 × 900 on the RTX 5070 Ti averaged 158 and 176 frames/s for 30 fittings and 42 wires. The corresponding runs with 80 fittings and 228 wires averaged 35 and 52 frames/s. The larger plant still falls below the 60 frames/s target. In the second run its wire paths took 2.29 seconds to calculate after import. A supply change took a median 168 ms to show a fresh result, compared with 16 ms on the smaller bench. Neither scene sent simulation or routing requests during the idle check.
+
+**Regression coverage.** All 347 source tests passed. All 80 example circuits and their 80 faults ran through the electrical audit. The teaching audit checked 1,382 electrical results across 240 operating steps. All 2,471 activities kept their identifiers and stage mappings. Phone measurements above used Windows browser emulation. A physical iPhone session, first-time learner observation and a qualified electrician’s assessment of the installation examples are outstanding.
+
 ## 1.7.0 fittings, wiring and house jobs
 
 **Courses and fault finding.** All 340 source tests passed. All 80 working circuits and their 80 set faults were exercised. The teaching audit checked 240 operating steps and 1,382 electrical results across the supply settings. The six-stage index retained all 2,471 exercises. In a full one-way build, each correct wire advanced the instruction. A seventh wire from outgoing neutral to earth failed the protective check. Undoing that wire and retesting passed. Independent probe placement at the lamp gave 240 V. Opening the switch dropped the reading across the lamp to zero.

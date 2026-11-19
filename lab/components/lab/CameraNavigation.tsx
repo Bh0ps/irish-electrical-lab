@@ -178,7 +178,9 @@ export default function CameraNavigation(props:CameraNavigationProps) {
       event.stopImmediatePropagation();
       if (event.cancelable) event.preventDefault();
       if (event.type === 'pointercancel' || event.type === 'lostpointercapture') {
-        if (touch.has(sample.id)) cancelTouch.current();
+        // Other fingers may still be on the canvas. Keep their gesture
+        // blocked so adding and releasing another finger cannot pick a wire.
+        if (touch.has(sample.id)) { touch.cancel(sample.id, event.type); clearMove(); }
         return;
       }
       if (!canNavigate()) { cancelTouch.current(); return; }
@@ -238,6 +240,15 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     const visibility=()=>{if(document.hidden)clear();};
     const touchEvents = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture'] as const;
     for (const name of touchEvents) canvas.addEventListener(name, captureTouch, { capture: true, passive: false });
+    const releaseOutside = (event: PointerEvent) => {
+      if (event.target !== canvas && touch.has(event.pointerId)) {
+        touch.cancel(event.pointerId);
+        clearMove();
+      }
+    };
+    // After early capture loss the final release can land on another element.
+    window.addEventListener('pointerup', releaseOutside, true);
+    window.addEventListener('pointercancel', releaseOutside, true);
     canvas.addEventListener('click', touchClick, true);
     canvas.addEventListener('dblclick', touchClick, true);
     canvas.addEventListener('contextmenu', touchClick, true);
@@ -245,6 +256,8 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     window.addEventListener('orientationchange', clear);
     canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointermove',pointerMove);canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',pointerUp);canvas.addEventListener('lostpointercapture',pointerUp);canvas.addEventListener('wheel',wheel,{passive:false});canvas.addEventListener('keydown',keyDown);canvas.addEventListener('keyup',keyUp);canvas.addEventListener('blur',clear);canvas.addEventListener('contextmenu',contextMenu);window.addEventListener('blur',clear);document.addEventListener('visibilitychange',visibility);
     return()=>{
+      window.removeEventListener('pointerup', releaseOutside, true);
+      window.removeEventListener('pointercancel', releaseOutside, true);
       canvas.removeEventListener('pointerdown',pointerDown);canvas.removeEventListener('pointermove',pointerMove);canvas.removeEventListener('pointerup',pointerUp);canvas.removeEventListener('pointercancel',pointerUp);canvas.removeEventListener('lostpointercapture',pointerUp);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('keydown',keyDown);canvas.removeEventListener('keyup',keyUp);canvas.removeEventListener('blur',clear);canvas.removeEventListener('contextmenu',contextMenu);window.removeEventListener('blur',clear);document.removeEventListener('visibilitychange',visibility);
       for (const name of touchEvents) canvas.removeEventListener(name, captureTouch, true);
       canvas.removeEventListener('click', touchClick, true);

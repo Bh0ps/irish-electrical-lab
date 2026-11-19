@@ -32,10 +32,11 @@ def build_power_accessory(recipe, root, api):
     def words(text,p,parent,mat,size,front=False):
         return api.label(text,mm(p),parent,mat,size*.01,rear=front)
     white=api.material('Moulded ivory faceplate',(.83,.84,.82),0,.31)
-    grey=api.material('Warm grey moulded cassette',(.32,.34,.33),0,.43)
-    raised=api.material('Raised moulding legend',(.43,.46,.44),0,.47)
+    grey=api.material('Warm grey moulded cassette',(.44,.445,.43) if socket else (.32,.34,.33),0,.43)
+    raised=api.material('Raised moulding legend',(.57,.58,.56) if socket else (.43,.46,.44),0,.47)
     dark=api.material('Contact recess',(.028,.033,.031),0,.46)
     steel=api.material('Zinc plated steel',(.54,.59,.60),.84,.29)
+    strap_metal=api.material('Satin zinc earth strap',(.65,.69,.69),.66,.42) if socket else steel
     brass=api.material('Brass lining',(.55,.33,.095),.79,.31)
     red=api.material('Printed line marking',(.40,.065,.047),0,.40)
     blue=api.material('Printed neutral marking',(.045,.24,.49),0,.40)
@@ -47,6 +48,10 @@ def build_power_accessory(recipe, root, api):
         rings=[(1.6,3.2,-front_depth),(.65,3.7,-front_depth+.55),
                (.12,4,-front_depth+1.75),(0,4,0),(1.7,2.3,0),
                (1.9,2.2,-front_depth+2.6),(2.6,2,-front_depth+2)]
+        if socket:
+            rings=[(10,3,-7),(5,3.3,-6.91),(2.7,3.6,-6.52),
+                   (1.23,3.8,-5.79),(.42,3.96,-4.8),(.10,4,-3.75),
+                   (0,4,0),(1.7,2.3,0),(1.9,2.2,-3.75),(3.2,2,-4.5)]
         vertices=[]
         for inset,r,z in rings:
             for corner,(sx,sy) in enumerate(((1,1),(-1,1),(-1,-1),(1,-1))):
@@ -66,7 +71,7 @@ def build_power_accessory(recipe, root, api):
         obj=bpy.data.objects.new('Tapered face and recessed back',mesh)
         bpy.context.collection.objects.link(obj);api.setmesh(obj,cover,white)
         for poly in mesh.polygons:
-            poly.use_smooth=1<=poly.index<=count*3
+            poly.use_smooth=1<=poly.index<=count*(6 if socket else 3)
         return obj
     tray=faceplate()
     for x in (-pitch/2,pitch/2):
@@ -75,14 +80,27 @@ def build_power_accessory(recipe, root, api):
         cut(washer,cyl('Tapped fixing bore',(x,0,1.45),1.9,4,mount,None))
         cyl('Recess round face cap',(x,0,-front_depth+.02),3.9,.37,cover,grey)
         cyl('Flush white screw cap',(x,0,-front_depth-.10),3.73,.30,cover,white)
-    for side in (-1,1):
-        x=side*(width/2-5.4)
-        for y in (-25,-18,17,24):
-            box('Cross rib stem',(x,y,-1.3),(1.3,4.5,3.1),body,white,.22)
-            box('Cross rib arm',(x,y,-1.3),(4.4,1.3,3.1),body,white,.22)
-        for y in (-30,29):
-            box('Horizontal rear reinforcing web',(side*(width/2-12),y,-1.15),(20,1.65,3.1),body,white,.35)
-    feet=(-56,-26,26,56) if socket else (-32,0,32)
+    if socket:
+        for x in (-67,-57.5):
+            for y in (9,18):
+                box('Cruciform plate rib',(x,y,-1.1),(2.1,6.4,6.2),body,white,.48)
+                box('Cruciform plate rib',(x,y,-1.1),(6.2,2.1,6.2),body,white,.48)
+        for y in (-23,26.8):
+            box('Moulded cross rail',(0,y,-2.35),(142.4,1.7,4.2),body,white,.55)
+        for x in (-59,68):
+            for y in (-30,-23):
+                box('Rounded rail end',(x,y,-.65),(5.0,1.9,6.1),body,white,.72)
+    else:
+        for side in (-1,1):
+            x=side*(width/2-5.4)
+            for y in (-25,-18,17,24):
+                box('Cross rib stem',(x,y,-1.3),(1.3,4.5,3.1),body,white,.22)
+                box('Cross rib arm',(x,y,-1.3),(4.4,1.3,3.1),body,white,.22)
+            for y in (-30,29):
+                box('Horizontal rear reinforcing web',(side*(width/2-12),y,-1.15),(20,1.65,3.1),body,white,.35)
+    # Keep the stiffening ribs between the plug apertures. A rib at x=26
+    # crosses one shutter in each outlet and is visible from the front.
+    feet=(-59,-17,0,17,59) if socket else (-32,0,32)
     for x in feet:
         box('Plate stiffening rib',(x,0,-front_depth+3.15),(1.8,81,2.8),body,white,.42)
     def screw(name,p,parent,r,style='cross',direction=(0,0,1)):
@@ -94,6 +112,21 @@ def build_power_accessory(recipe, root, api):
             cut(head,box('Transverse driver slot',(0,0,.53),(.65,r*1.62,.82),pivot,None,.06))
         cyl('Screw shank',(0,0,-2.23),r*.50,3.5,pivot,steel)
     def ribbon(name,points,widths,owner):
+        if socket:
+            # Small bends in stamped sheet catch softer highlights than a
+            # single sharp edge at every change of direction.
+            rounded=[points[0]];spans=[widths[0]]
+            for i in range(1,len(points)-1):
+                prev,corner,nxt=(Vector(p) for p in points[i-1:i+2])
+                before=min(.27,.95/(corner-prev).length)
+                after=min(.27,.95/(nxt-corner).length)
+                a=corner.lerp(prev,before);b=corner.lerp(nxt,after)
+                wa=widths[i]+before*(widths[i-1]-widths[i])
+                wb=widths[i]+after*(widths[i+1]-widths[i])
+                for t in (0,.25,.5,.75,1):
+                    rounded.append(tuple(a*(1-t)**2+corner*(2*t*(1-t))+b*t*t))
+                    spans.append(wa*(1-t)**2+widths[i]*(2*t*(1-t))+wb*t*t)
+            points=rounded+[points[-1]];widths=spans+[widths[-1]]
         vertices=[]
         for i,(x,y,z) in enumerate(points):
             a=Vector(points[max(0,i-1)][:2]);b=Vector(points[min(len(points)-1,i+1)][:2])
@@ -107,43 +140,125 @@ def build_power_accessory(recipe, root, api):
                 faces.append((i+a,i+b,i+4+b,i+4+a))
         n=len(vertices);faces.append((n-4,n-3,n-1,n-2))
         mesh=bpy.data.meshes.new(name);mesh.from_pydata(vertices,[],faces);mesh.update()
-        obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj);api.setmesh(obj,owner,steel)
+        obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj);api.setmesh(obj,owner,strap_metal)
         for poly in mesh.polygons: poly.use_smooth=False
         return obj
     strap=detail('linked-earth-strap','This strip joins both earth terminals and the metal fixing bushes.',mount)
     for x in (-pitch/2,pitch/2):
-        eye=cyl('Rolled eye of earthing strap',(x,0,.1),4.35,1.05,strap,steel)
+        eye=cyl('Rolled eye of earthing strap',(x,0,.1),4.35,1.05,strap,strap_metal)
         cut(eye,cyl('Fixing eye centre',(x,0,.1),2.55,3,strap,None))
     if socket:
+        def moulding(name,outline,back,face,parent,radius):
+            # Closed extrusion of the traced rear silhouette. Its planar end
+            # faces stay flat, including the deep open slot between the banks.
+            n=len(outline)
+            vertices=[mm((x,y,z)) for z in (back,face) for x,y in outline]
+            faces=[tuple(reversed(range(n))),tuple(range(n,2*n))]
+            for i in range(n):
+                j=(i+1)%n
+                faces.append((i,j,j+n,i+n))
+            mesh=bpy.data.meshes.new(name)
+            mesh.from_pydata(vertices,[],faces);mesh.update()
+            obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj)
+            api.setmesh(obj,parent,grey)
+            bevel=obj.modifiers.new('Mould radius','BEVEL')
+            bevel.width=radius*.01;bevel.segments=3
+            obj.modifiers.new('Flat moulded faces','WEIGHTED_NORMAL')
+            return obj
+
+        cover['keepDistanceSurface']=True
         contact=detail('socket-contact-system','Shutters sit in front of the line and neutral contacts at both outlets.',part('pins'))
+        contact['keepDistanceSurface']=True
+        shutter=api.material('Ivory shutter slide',(.55,.53,.49),0,.41)
+        trigger=api.material('Shutter actuator inside earth guide',(.30,.29,.27),0,.49)
+        def aperture(x,y,w,h):
+            cut(tray,box('Pin aperture',(x,y,-4),(w+.65,h+.65,14),cover,None,.22))
+            # Four moulded lead-in faces run from the plate surface to the
+            # parallel guide. Their changing normals catch the light at the lip.
+            verts=[]
+            for width,height,z in ((w+.65,h+.65,-7),(w-.1,h-.1,-6.18),(w-.1,h-.1,-5.25)):
+                for sx,sy in ((1,1),(-1,1),(-1,-1),(1,-1)):
+                    verts.append(mm((x+sx*width/2,y+sy*height/2,z)))
+            faces=[]
+            for layer in (0,4):
+                for i in range(4):
+                    j=(i+1)%4
+                    faces.append((layer+j,layer+i,layer+i+4,layer+j+4))
+            mesh=bpy.data.meshes.new('Pin entry bevel')
+            mesh.from_pydata(verts,[],faces);mesh.update()
+            obj=bpy.data.objects.new('Moulded lead-in around pin',mesh);bpy.context.collection.objects.link(obj)
+            api.setmesh(obj,cover,white)
+            for face in mesh.polygons:face.use_smooth=False
         for x in (-37.5,37.5):
             for dx,y,w,h in ((0,7,5.25,8.8),(-11,-15,8.0,4.75),(11,-15,8.0,4.75)):
-                cut(tray,box('Pin aperture',(x+dx,y,-4),(w,h,14),cover,None,.4))
-                box('Recessed shutter' if dx else 'Earth contact well',(x+dx,y,-front_depth+2.8),(w+.3,h+.3,.8),contact,grey if dx else dark,.3)
-                if not dx:
-                    for edge in (-1,1):
-                        box('Earth spring jaw',(x+edge*1.8,y,-front_depth+2.1),(.65,7,1.15),contact,brass,.15)
-            box('Contact spring housing',(x,-16,3.5),(35,20,12),body,grey,1.55)
-            for offset in (-13,13):
-                box('Folded shutter cassette leg',(x+offset,-21,8.5),(8,13,10),body,grey,.95)
-            box('Recessed cassette web',(x,-21,5),(24,2.4,7),body,grey,.35)
-            screw('Lower case fixing',(x*.84,-28,6.3),body,2.5)
-        for x in (-17.5,17.5):
-            box('Separated terminal cassette cheek',(x,9,7.8),(32.7,28,15.1),body,grey,1.5)
+                aperture(x+dx,y,w,h)
+                if dx:
+                    slide=box('Ivory shutter slide',(x+dx,y,-5.15),(w+.65,h+.65,.64),contact,shutter,.19)
+                    slide.rotation_euler.x=.13
+                else:
+                    box('Dark earth pin well',(x,y,-2.5),(w+1,h+1,1),contact,dark,.35)
+                    leaf=box('Earth shutter actuator',(x,y-1.52,-4.2),(2.55,5,.47),contact,trigger,.16)
+                    leaf.rotation_euler.x=.27
+            # The two feet have a narrow exposed web between them. The
+            # contact housing is much shallower behind the web.
+            box('Lower contact housing',(x,-15.7,-.35),(35,18.7,7.6),body,grey,1.3)
+            box('Shutter case neck',(x,-5.6,1.0),(22,12.1,5.6),body,grey,.7)
+            for offset in (-11.8,11.8):
+                box('Spring housing foot',(x+offset,-18.9,6.0),(10.8,11.0,13.2),body,grey,1.05)
+                box('Side latch on spring housing foot',(x+offset+(-5.8 if offset<0 else 5.8),-18.7,3.1),(1.5,6.5,4.7),body,grey,.45)
+            box('Web between contact feet',(x,-19.1,6),(16,1.55,8.5),body,grey,.36)
+            cyl('Lower case fixing boss',(x,-24.9,1.35),3.55,8.6,body,grey)
+            screw('Lower case fixing',(x,-24.9,6.15),body,2.5)
+        outline=[(-42.7,7.85),(-42.7,2.0),(-30.1,-6.9),(-26.4,-7.15),
+                 (-24.5,-8.2),(24.5,-8.2),(26.4,-7.15),(30.1,-6.9),
+                 (42.7,2.0),(42.7,7.85),(21.1,7.85),(21.1,22.2),
+                 (2.35,22.2),(2.35,2.1),(-2.35,2.1),(-2.35,22.2),
+                 (-21.1,22.2),(-21.1,7.85)]
+        cassette=detail('socket-rear-cassette','The central moulding separates the contact banks. A slot between them exposes the cross ties.',body)
+        cassette['preservePlanarLod']=True
+        moulding('Stepped cassette with open central slot',outline,-.7,16.05,cassette,.7)
+        box('Recessed case back',(0,12.7,1.75),(86.6,25.6,5.6),body,grey,1)
+        for y in (4.3,12.2,20):
+            box('Moulded cross tie in the slot',(0,y,10.8),(6.8,1.25,2.2),body,grey,.28)
+        box('Mounting ledge for upper terminal bank',(0,23.55,3.35),(91,5.2,6.6),body,grey,.8)
+        box('Case retaining bridge',(0,25,8.6),(47.2,2.65,4.45),body,grey,.72)
+        for x in (-20.6,20.6):
+            cyl('Upper case fixing boss',(x,25,6.9),3.6,10.2,body,grey)
+            screw('Upper case fixing',(x,25,12.35),body,2.6)
+        for x in (-9.3,9.3):
+            box('Rib below retaining bridge',(x,22.7,9.15),(1.25,5.7,6.3),body,grey,.4)
+        # The batch exporter omits fine rear legends in the distance model.
+        # The larger L, N and earth symbols stay on both versions.
+        rating=api.material('Rear terminal legend · socket moulded rating',(.56,.57,.55),0,.47)
+        def rating_line(caption,x,y,size):
+            curve=bpy.data.curves.new('Moulded rating','FONT')
+            curve.body=caption;curve.size=size*.01;curve.resolution_u=4
+            curve.align_x='CENTER';curve.align_y='CENTER';curve.extrude=.0006
+            obj=bpy.data.objects.new('Rating '+caption,curve)
+            bpy.context.collection.objects.link(obj);obj.parent=body;obj.location=mm((x,y,16.10))
+            curve.materials.append(rating)
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select_set(True);bpy.context.view_layer.objects.active=obj
+            bpy.ops.object.convert(target='MESH')
+        rating_line('BS1363-2',-11.6,15.1,2.65)
+        for caption,y in [('50/60 Hz',18.0),('13 A',14.7),('250 V~',11.4)]:
+            rating_line(caption,11.5,y,2.75)
         for sign in (-1,1):
-            box('Integral cheek under outer terminal',(sign*37.5,10.7,6.7),(11.3,21.5,12.9),body,grey,1)
-            ribbon('Bonding lug below outer earth entry',
-                   [(sign*39,0,14),(sign*37.5,4.5,17),(sign*37.5,8.8,18.1),
-                    (sign*37.5,10,16.8)], [5.8,5.8,5.3,4.4],strap)
-        for caption,y in [('50/60 Hz',15.3),('13 A',11.7),('250 V~',8.1)]:
-            words(caption,(11.3,y,15.47),body,raised,2.7)
-        for y in (2,10,17):
-            box('Tie across central moulded slot',(0,y,7),(6,1.8,4),body,grey,.38)
-        box('Rear retaining bridge',(0,25,7.7),(49,4.1,4.2),body,grey,1)
-        for x in (-22,22): screw('Upper case fixing',(x,25,10),body,2.45)
-        ribbon('Formed bonding strip between the fixing eyes',
-               [(-60.3,0,.3),(-53,0,.3),(-49,-5,6),(-39,0,14),(-30,-6,16),(30,-6,16),(39,0,14),(49,-5,6),(53,0,.3),(60.3,0,.3)],
-               [5,5,5,6,3.4,3.4,6,5,5,5],strap)
+            def formed(name,points,widths):
+                return ribbon(name,[(sign*x,y,z) for x,y,z in points],widths,strap)
+            formed('Pressed strip between fixing eye and cassette',
+                   [(60.3,0,.4),(52.5,0,.4),(50.2,.1,1.2),(47.9,-3.1,6.3),
+                    (45.4,-4.7,8.3),(37.5,1.9,17.0),(29.0,-5.8,16.85),
+                    (26.2,-6.9,16.05)], [4.9,4.9,5.2,5.2,5.25,5.75,2.1,1.55])
+            lug=ribbon('Bonding lug below outer earth entry',
+                   [(sign*37.5,1.8,16.95),(sign*37.5,4.8,18.6),
+                    (sign*37.5,8.55,18.6),(sign*37.5,10.0,17.8),
+                    (sign*37.5,10.5,15.2)], [6.6,6.5,6.05,5.5,5.4],strap)
+            cut(lug,box('Punched window in bonding lug',(sign*37.5,5.6,18.6),(2.3,1.05,3.5),strap,None,.14))
+            box('Contact visible through punched lug',(sign*37.5,5.6,17.9),(2.65,1.4,.5),strap,brass,.12)
+        ribbon('Thin visible return below the case',
+               [(-26.4,-6.9,16.05),(-24.7,-7.65,16.05),(24.7,-7.65,16.05),
+                (26.4,-6.9,16.05)], [1.55,1.45,1.45,1.55],strap)
     else:
         contact=detail('socket-contact-system','The switch operates the line and neutral contacts. The fuse sits in the line path.',part('contacts'))
         box('Stepped rear mechanism',(0,0,2.2),(44,52,8.2),body,grey,2)
@@ -172,7 +287,8 @@ def build_power_accessory(recipe, root, api):
         bore=cyl('Cord passage',(16,-33,1.2),3.3,24,grip,None);bore.rotation_euler.x=math.pi/2;cut(block,bore)
         bridge=box('Two-screw cord grip',(16,-29,4.3),(20.5,5.6,4),grip,grey,1)
         for x in (8.3,23.7):screw('Cord grip screw',(x,-29,6.55),grip,2.1)
-    box('Upper bank retaining ledge',(0,22 if socket else 19,5),(84 if socket else 41,3,5),body,grey,.6)
+    if not socket:
+        box('Upper bank retaining ledge',(0,19,5),(41,3,5),body,grey,.6)
     # Each port owns the whole local cage so the learner can pick the screw,
     # moulded legend or lip as well as the actual entry. Wires end at the mouth.
     for term in recipe['terminals']:
@@ -181,7 +297,31 @@ def build_power_accessory(recipe, root, api):
         node=api.empty('port:'+tid,ports,mm((x,y,z)),data={'terminalId':tid,'contactForm':'pressure plate',
             'fieldMarking':term['label'],'fieldLegendModelled':True,'entryDirection':term['entryDirection']})
         cage=detail('terminal-clamp:'+tid,'The conductor enters from the rear. The screw bears down through the separate tool opening.',node)
-        side=not socket and tid in ('PE','PE2','LOUT','NIN')
+        if socket:
+            crown=detail('socket-entry:'+tid,'The cable passes through the rounded rear window. The recessed screw is reached from the top.',cage)
+            crown['preservePlanarLod']=True
+            housing=box('Terminal tower and crown',(0,2.55,-6.2),(10.7,14.8,12.4),crown,grey,.78)
+            cut(housing,box('Rounded cable window',(0,-.18,-.6),(7.8,6.8,4.8),cage,None,1.42))
+            cut(housing,box('Wire bore into clamp',(0,-.18,-6.9),(6.65,5.65,14.5),cage,None,1.03))
+            cut(housing,box('Open screwdriver pocket',(0,8.95,-6.1),(8.25,10.1,10.9),cage,None,.86))
+            cross_bore=cyl('Clamp screw passage',(0,3.95,-4.4),2.45,5.4,cage,None)
+            cross_bore.rotation_euler.x=math.pi/2
+            cut(housing,cross_bore)
+            collar=box('Brass terminal inside the cable window',(0,-.18,-6.8),(6.7,5.65,5.3),cage,brass,.4)
+            cut(collar,box('Brass tunnel',(0,-.18,-6.8),(5.3,4.05,7.6),cage,None,.68))
+            box('Captive clamp tongue',(0,1.2,-6),(5.25,.74,3.8),cage,steel,.21)
+            box('Back of terminal pocket',(0,-.16,-10.9),(6.05,4.4,.95),cage,dark,.32)
+            screw('Captive terminal screw',(0,7.85,-4.1),cage,2.38,'slot',(0,1,0))
+            box('White insert in terminal crown',(0,9.25,-9.45),(7.5,1.42,4.25),cage,white,.46)
+            if earth:
+                api.torus('Moulded protective earth circle',mm((0,6.4,.09)),.0251,.00145,cage,raised)
+                box('Earth marking stem',(0,7.31,.16),(.30,1.7,.25),cage,raised,.075)
+                for i,w in enumerate((3.25,2.18,1.05)):
+                    box('Earth marking stroke',(0,6.42-i*.62,.16),(w,.29,.25),cage,raised,.075)
+            else:
+                words(tid,(0,6.3,.13),cage,raised,5.55)
+            continue
+        side=tid in ('PE','PE2','LOUT','NIN')
         axis=(1,0,0) if tid!='NIN' else (-1,0,0)
         if not side: axis=(0,1,0)
         housing=box('Moulded terminal tower',(0,1.4,-3.8),(9.9,11.8,7.8),cage,grey,1)
@@ -200,7 +340,7 @@ def build_power_accessory(recipe, root, api):
             box('Earth marking stem',(0,5.45,.2),(.24,1.4,.18),cage,raised,.05)
         else:
             words('N' if tid.startswith('N') else 'L',(0,4.9,.26),cage,raised,3.6)
-        if not socket and not earth:
+        if not earth:
             box('Printed terminal colour',(3.7,2.4,.22),(1.35,3.6,.16),cage,blue if tid.startswith('N') else red,.06)
             words('IN' if tid.endswith('IN') else 'LOAD',(-.8,-3.9,.35),cage,raised,1.85)
     return ['individual-electrical-terminations','socket-contact-system','linked-earth-strap']+([] if socket else ['accessory-strain-relief'])

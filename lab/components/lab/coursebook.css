@@ -71,3 +71,13 @@
 
 .call-readings{display:flex;flex-wrap:wrap;gap:.6rem 1.3rem;padding:.6rem 0;margin:.25rem 0 .6rem;border-block:1px solid var(--line)}
 .call-readings dt{font-size:.85rem}.call-readings dd{margin:0;font-weight:650;font-variant-numeric:tabular-nums}
+.call-breakers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(8rem,100%),1fr));gap:.5rem}
+.call-breakers button{display:flex;justify-content:space-between;width:100%;min-height:44px;height:auto;white-space:normal}
+.call-breaker-choice .task-feedback{margin-block:.2rem 0}
+.call-breakers button span{font-size:.85em;font-weight:400}
+.house-call h3,.house-call button{scroll-margin-block:3rem .5rem}
+.house-call h3:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.installation-lab .learn-column .house-call :is(p,button,dd){font-size:.9375rem;line-height:1.45}
+.installation-lab .learn-column .house-call :is(summary,.task-support-actions button){font-size:.875rem}
+.installation-lab .learn-column .house-call>button{max-width:100%;min-height:44px;height:auto;white-space:normal;padding-block:.5rem;overflow-wrap:anywhere}
+.installation-lab .learn-column .house-call>.primary-button{font-size:.9375rem!important}

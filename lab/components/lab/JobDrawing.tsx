@@ -6,7 +6,7 @@ import {endpointKey} from '../../lib/types';
 import {COMPONENTS} from '../../lib/components';
 import {getComponentTerminals} from '../../lib/terminal-layout';
 import {type JobSite,drawingKind,BACK} from '../../lib/job-site';
-import {HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
+import {HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,HOME_STAIR,STAIR_FOOT,STAIR_LANDING,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
 import {ServicePlan,serviceSpaces} from './ServicePlan';
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {installedWireRoute} from '../../lib/house-installation';
@@ -64,7 +64,8 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
   const goto=(id:string,terminal?:string)=>{if(doc.components.some(c=>c.id===id))goTo(id,terminal);};
   function reset(){setZoom(1);diagram.current?.scrollTo({top:0,left:0});}
   const house=site.kind==='home',bathroom=site.building.rooms[1]==='Bathroom';
-  const rooms=site.kind==='home'?HOME_ROOMS:serviceSpaces(site.kind);
+  const stair=doc.lessonId===9?HOME_STAIR:undefined;
+  const rooms=site.kind==='home'?(stair?[...HOME_ROOMS,STAIR_LANDING]:HOME_ROOMS):serviceSpaces(site.kind);
   const annex=site.kind==='home'?undefined:SERVICE_AREAS[site.kind];
   const left=Math.min(-6.6,annex?.left??-6.6),right=Math.max(6.6,annex?.right??6.6),back=Math.min(-2.8,annex?.back??-2.8);
   const x=(n:number)=>42+(n-left)*41, y=(n:number)=>24+(n-(house?HOME_BACK:back))*41;
@@ -96,14 +97,21 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
         {house?<g data-oakfield-plan>
           {HOME_ROOMS.filter(r=>r.id!==3).map(r=><rect key={r.id} x={x(r.left)} y={y(r.back)} width={(r.right-r.left)*41} height={(r.front-r.back)*41} fill={r.id===6||r.id===1?'#f2f0de':'#f8f8ea'}/>)}
           {Object.entries(HOUSE_FURNITURE).map(([name,b])=><rect key={name} x={x(b.x-b.w/2)} y={y(b.z-b.d/2)} width={b.w*41} height={b.d*41} rx="2" fill="#dcded0" stroke="#b5bdac"><title>{name}</title></rect>)}
-          {HOME_WALLS.map(w=><g key={w.id}>{wallSpans(w,bathroom).map(([a,b])=>{
+          {HOME_WALLS.map(w=><g key={w.id}>{wallSpans(w,bathroom,!!stair).map(([a,b])=>{
             const p=alignWall(w,a,0,0,0),q=alignWall(w,b,0,0,0);
             return <path key={a} d={`M${x(p.x)} ${y(p.z)} L${x(q.x)} ${y(q.z)}`} stroke="#4c655d" strokeWidth="4"/>;})}
-            {doorsOn(w,bathroom).map(d=>{const leaf=doorLeaf(w,d),latch=alignWall(w,d.centre-d.hinge*d.width/2,0,0,0);
+            {doorsOn(w,bathroom,!!stair).map(d=>{const leaf=doorLeaf(w,d),latch=alignWall(w,d.centre-d.hinge*d.width/2,0,0,0);
               const end=alignWall(w,d.centre+d.hinge*d.width/2,d.side*d.width,0,0),hinge=alignWall(w,d.centre+d.hinge*d.width/2,0,0,0);
               return <g key={d.centre}><rect x={x(leaf.x-leaf.w/2)} y={y(leaf.z-leaf.d/2)} width={leaf.w*41} height={leaf.d*41} fill="#889d91"/>
                 <path d={`M${x(latch.x)} ${y(latch.z)} Q${x(end.x+latch.x-hinge.x)} ${y(end.z+latch.z-hinge.z)} ${x(end.x)} ${y(end.z)}`} fill="none" stroke="#9eab9c" strokeDasharray="3 2"/></g>;})}
           </g>)}
+          {stair&&<g fill="none" stroke="#83978c" strokeWidth="1" aria-label="Stair flights and first-floor landing">
+            <rect x={x(stair.west)} y={y(stair.back)} width={(stair.east-stair.west)*41} height={(STAIR_FOOT-stair.back)*41}/>
+            <rect x={x(stair.divider)} y={y(STAIR_FOOT)} width={(stair.east-stair.divider)*41} height={(stair.landingEnd-STAIR_FOOT)*41} strokeDasharray="3 2"/>
+            {Array.from({length:stair.risersPerFlight},(_,i)=><line key={i} x1={x(stair.west)} x2={x(stair.east)} y1={y(stair.turn+i*stair.going)} y2={y(stair.turn+i*stair.going)}/>)}
+            <line x1={x(stair.divider)} x2={x(stair.divider)} y1={y(stair.turn)} y2={y(STAIR_FOOT)}/>
+            <path d={`M${x((stair.west+stair.divider)/2)} ${y(STAIR_FOOT)} V${y(stair.turn-.4)} H${x((stair.divider+stair.east)/2)} V${y(STAIR_FOOT+.15)} m-3 -5 l3 5 3 -5`} stroke="#4c655d"/>
+          </g>}
           {HOME_ROOMS.map(r=><text key={r.id} x={x((r.left+r.right)/2)} y={y(r.id===3?4.8:r.front-.60)} textAnchor="middle" className="room-caption">{site.location(r.id)}</text>)}
         </g>:site.kind!=='home'&&<ServicePlan site={site} kind={site.kind} x={x} y={y}/>}
         {curWire&&floorRoute?.length&&<polyline aria-label="Selected wire route" points={floorRoute.map(p=>x(p[0])+','+y(p[2])).join(' ')} fill="none" stroke={DRAWING_INK[curWire.role]} strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="7 3"/>}

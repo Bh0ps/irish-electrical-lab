@@ -7,11 +7,11 @@ are release downloads rather than Git history.
 
 ## Install
 
-1. Download `Irish-Electrical-Lab-1.7.0-Setup.exe` from the project's GitHub release.
-2. Optionally compare its hash with the published `Irish-Electrical-Lab-1.7.0-SHA256.txt`.
+1. Download `Irish-Electrical-Lab-1.8.0-Setup.exe` from the project's GitHub release.
+2. Optionally compare its hash with the published `Irish-Electrical-Lab-1.8.0-SHA256.txt`.
 
    ```powershell
-   Get-FileHash .\Irish-Electrical-Lab-1.7.0-Setup.exe -Algorithm SHA256
+   Get-FileHash .\Irish-Electrical-Lab-1.8.0-Setup.exe -Algorithm SHA256
    ```
 
 3. Run the installer for your Windows account and open **Irish Electrical Lab**

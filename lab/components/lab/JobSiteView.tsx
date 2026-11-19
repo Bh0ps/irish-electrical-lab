@@ -12,7 +12,7 @@ import { Equipment, type EquipmentProps } from '../../lib/Equipment';
 import { semanticOwner } from '../../lib/blender-model';
 import { getComponentTerminals } from '../../lib/terminal-layout';
 import { walkStep,type JobSite,type SiteItem } from '../../lib/job-site';
-import { HOME_ROOMS, HOME_VISITS, homeRoomAt } from '../../lib/home-floorplan';
+import { HOME_ROOMS, STAIR_EYE, STAIR_LANDING, homeRoomAt, homeVisit, stairFloor } from '../../lib/home-floorplan';
 import { serviceRoomAt,serviceVisit } from '../../lib/service-floorplan';
 import type { CircuitDocument,ComponentInstance,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
 import InstallationRoom from './InstallationRoom';
@@ -86,7 +86,8 @@ function WireTrace({doc,site,id}:{doc:CircuitDocument;site:JobSite;id?:string}){
     </mesh>)}
   </group>;
 }
-function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15):SitePose{
+function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15,touch=false):SitePose{
+  if(id===9&&!close&&item?.id==='near')return {position:[-1.86,STAIR_EYE,2.40],yaw:-.31,pitch:touch?-.12:.01};
   const pose=frontView(item,id,close,height);
   if(!item?.rotation)return pose;
   const [x,y,z]=item.position,dx=pose.position[0]-x,dz=pose.position[2]-z,angle=item.rotation;
@@ -130,9 +131,9 @@ function CameraRig({rig,walking,target,pose,jobKey,site,onRoom,wallSwitch,wallBu
     const dx=Math.cos(r.yaw)*side*distance-Math.sin(r.yaw)*travel,dz=-Math.sin(r.yaw)*side*distance-Math.cos(r.yaw)*travel;
     if(dx||dz){const next=walkStep([p.x,p.y,p.z],dx,dz,site);p.set(...next);}
     if(walking){
-      const stair=site.building.rooms[1]==='Stair hall'&&p.x> -2.13&&p.x< -1.35&&p.z<1.34&&p.z> -1.13;
-      p.y=1.56+(stair?Math.min(8,1+Math.floor((1.34-p.z)/.29))*.17:0);
-      const room=site.kind==='home'?homeRoomAt(p.x,p.z):serviceRoomAt(site.kind,p.x,p.z);if(room!==roomRef.current){roomRef.current=room;onRoom(room);}
+      const stair=site.building.rooms[1]==='Stair hall';
+      p.y=STAIR_EYE+(stair?stairFloor(p.x,p.z):0);
+      const room=site.kind==='home'?homeRoomAt(p.x,p.z,stair):serviceRoomAt(site.kind,p.x,p.z);if(room!==roomRef.current){roomRef.current=room;onRoom(room);}
     }
     camera.position.copy(p);camera.rotation.order='YXZ';camera.rotation.set(r.pitch,r.yaw,0,'YXZ');camera.updateMatrixWorld();
     const button=wallButton.current;
@@ -186,13 +187,14 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const input=useRef<HTMLDivElement>(null),pointers=useRef(new Map<number,{x:number;y:number;startX:number;startY:number}>()),blockTap=useRef(false);
   const selectedId=selected??site.first;
   const jobKey=site.kind+':'+(doc.lessonId??doc.id);
+  const stair=doc.lessonId===9;
   const [visit,setVisit]=useState<{room:number;job:string;jump:number}>();
   const roomVisit=visit?.job===jobKey&&visit.jump===jump.id?visit:undefined;
   const target=useMemo(()=>{
-    if(roomVisit){const view=site.kind==='home'?HOME_VISITS[roomVisit.room]:serviceVisit(site,roomVisit.room);if(view)return view;}
+    if(roomVisit){const view=site.kind==='home'?homeVisit(roomVisit.room,stair):serviceVisit(site,roomVisit.room);if(view)return view;}
     const id=jump.component??site.first,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
-    return pose.current??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined);
-  },[jobKey,jump.id,loadedKey,roomVisit]);
+    return pose.current??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined,touch);
+  },[jobKey,jump.id,loadedKey,roomVisit,touch]);
   const stop=useCallback(()=>{rig.keys.clear();pointers.current.clear();blockTap.current=true;},[rig]);
   useEffect(()=>{window.addEventListener('blur',stop);window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
     function release(e:PointerEvent){pointers.current.delete(e.pointerId);}
@@ -203,7 +205,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   function jumpTo(id:string){stop();if(touch)onExplore();setWalking(false);onFocus(id);}
   function visitRoom(value:string){
     const room=Number(value.slice(5));
-    if(site.kind==='home'?!HOME_VISITS[room]:!serviceVisit(site,room))return;
+    if(site.kind==='home'?!homeVisit(room,stair):!serviceVisit(site,room))return;
     stop();if(touch)onExplore();setWalkRoom(room);setVisit({room,job:jobKey,jump:jump.id});setWalking(true);
     input.current?.focus({preventScroll:true});
   }
@@ -217,7 +219,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
     <div className="site-camera" ref={input} tabIndex={0} aria-label={walking?'Walk around the site. Use WASD or the movement pad.':'Installation view. Choose equipment or enter Walk.'}
       onKeyDown={e=>{if(e.key==='Escape'){stop();setWalking(false);}const key=keyMap[e.code];if(walking&&key){e.preventDefault();rig.keys.add(key);rig.wake();}}}
       onKeyUp={e=>{rig.keys.delete(keyMap[e.code]);}} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))stop();}}
-      onPointerDownCapture={e=>{lastTouchPick.current=undefined;if(!(e.target instanceof Element&&e.target.closest('button')))e.currentTarget.focus({preventScroll:true});blockTap.current=walking||pointers.current.size>0||e.button!==0;
+      onPointerDownCapture={e=>{lastTouchPick.current=undefined;if(!(e.target instanceof Element&&e.target.closest('button')))e.currentTarget.focus({preventScroll:true});blockTap.current=(walking&&!stair)||pointers.current.size>0||e.button!==0;
         pointers.current.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});}}
       onPointerMoveCapture={e=>{const old=pointers.current.get(e.pointerId);if(!old)return;const dx=e.clientX-old.x,dy=e.clientY-old.y;
         if(Math.hypot(e.clientX-old.startX,e.clientY-old.startY)>5)blockTap.current=true;
@@ -244,7 +246,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
             onTouchPick={e=>{lastTouchPick.current={x:e.clientX,y:e.clientY,at:performance.now()};}} equipment={{
             filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
             lowDetail:!focus,preferLowAsset:touch,view:'normal',showLabels:false,onModelAvailability:modelAvailability,
-            onPart:part=>{if(!blockTap.current&&!walking)onPart(c.id,cupboardDoor||part==='body'&&['switch','switch2','pushbutton'].includes(c.type)?'actuator':part);},
+            onPart:part=>{if(!blockTap.current&&(!walking||(stair&&c.type==='switch2')))onPart(c.id,cupboardDoor||part==='body'&&['switch','switch2','pushbutton'].includes(c.type)?'actuator':part);},
             onTerminal:id=>{if(!blockTap.current&&!walking)onTerminal({component:c.id,terminal:id});}
           }}/>;
         })}
@@ -260,7 +262,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
       <SiteCablePeek doc={doc} site={site} selected={selectedId} wireId={wire} onChange={onPeek} visit={jumpTo} plan={onPlan}/>}
     <div className="site-actions">
       <button className={walking?'chosen':''} aria-pressed={walking} onClick={toggleWalk}><Footprints size={17}/>{walking?'Finish walk':'Walk'}</button>
-      <label className="site-jump"><LocateFixed size={17}/><span>Go to</span><select aria-label="Go to equipment" value="" onChange={e=>e.target.value.startsWith('room:')?visitRoom(e.target.value):jumpTo(e.target.value)}><option value="" disabled>Choose a destination</option><optgroup label="Equipment">{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</optgroup><optgroup label="Rooms">{(site.kind==='home'?HOME_ROOMS.map(r=>r.id):[0,1,2,3,4]).map(id=><option key={id} value={'room:'+id}>{site.location(id)}</option>)}</optgroup></select></label>
+      <label className="site-jump"><LocateFixed size={17}/><span>Go to</span><select aria-label="Go to equipment" value="" onChange={e=>e.target.value.startsWith('room:')?visitRoom(e.target.value):jumpTo(e.target.value)}><option value="" disabled>Choose a destination</option><optgroup label="Equipment">{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</optgroup><optgroup label="Rooms">{(site.kind==='home'?HOME_ROOMS.map(r=>r.id).concat(stair?[STAIR_LANDING.id]:[]):[0,1,2,3,4]).map(id=><option key={id} value={'room:'+id}>{site.location(id)}</option>)}</optgroup></select></label>
       {selectedId&&!walking&&<button aria-label="Inspect equipment on the workbench" onClick={()=>onService(selectedId)}><PanelTopOpen size={17}/><span>Inspect</span></button>}
     </div>
     {walking&&<div className="walking-pad" aria-label="Walk controls">{directions.map(([dir,Icon])=><button key={dir} aria-label={'Walk '+dir} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);rig.keys.add(dir);rig.wake();}} onPointerUp={()=>rig.keys.delete(dir)} onLostPointerCapture={()=>rig.keys.delete(dir)} onPointerCancel={()=>rig.keys.delete(dir)} onKeyDown={e=>{if(e.key===' '||e.key==='Enter'){rig.keys.add(dir);rig.wake();}}} onKeyUp={()=>rig.keys.delete(dir)}><Icon size={19}/></button>)}</div>}

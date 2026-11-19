@@ -1,12 +1,12 @@
 # Irish Electrical Lab for Windows
 
-An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **80 configurations** are available in **Learn** and **Sandbox**. Version **1.7.0** lets you tap the hall switch, read the lamp voltage on the fork tester, and follow the same terminal markings in the lesson and on the board.
+An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **80 configurations** are available in **Learn** and **Sandbox**. Start with the hall light, try a short job in Oakfield house, or build a circuit of your own.
 
 ## Start and stop
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Installer: `lab/release/Irish-Electrical-Lab-1.7.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
+Installer: `lab/release/Irish-Electrical-Lab-1.8.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -16,13 +16,15 @@ The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a po
 
 ## Find equipment on a job
 
-In **Site**, use **Go to** to find a fitting. In Oakfield house you can also choose a room, such as the sitting room or bedroom. While walking, drag to look around and use WASD, the arrow keys or the direction pad to move through doors. Choose **Finish walk** to work a switch. **Inspect** opens the fitting on the workbench. You can also operate it from **Equipment list**.
+In **Site**, use **Go to** to find a fitting. In Oakfield house you can also choose a room, such as the sitting room or bedroom. While walking, drag to look around and use WASD, the arrow keys or the direction pad to move through doors. At the stairs you can press either rocker as you walk past. **Finish walk** returns you to the usual site controls. **Inspect** opens the fitting on the workbench. You can also operate it from **Equipment list**.
 
 In **Drawing**, choose **Job drawing** for the intended connections and **My wiring** for the current build. Select an equipment tag on the location plan or a pin on the terminal sheet. Select a conductor to see both ends and whether the current build matches it. **Find** travels to the selected end. The dashed site overlay indicates which endpoints are connected. Its route is illustrative. On applicable jobs, the sheet selector also offers a board schedule or a ladder tracing the control path to a load. Drawing selections are for inspection only.
 
 ## Try a house job
 
-Open **Chapters → Jobs at Oakfield house**. The cupboard light is a good first job. Shut the door, watch the light go out, then open it again. Try the fitting in the room or use the button on the job card. The voltage shown comes from the same circuit in both cases. At the stairs you have to use both switches. At the board you have to turn off the lamp while the socket keeps its supply.
+Open **Chapters → Jobs at Oakfield house**, or search for a job by name. In the cupboard job, shut the door, watch the strip go dark, then open the door again. Use the fitting in the room or its named control. Both operate the same circuit.
+
+In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. Once you have done all three, you can try an unscored fault on the same circuit.
 
 **Continue learning** takes you back to the last check with the controls where you left them. In the chapter index, a lesson shows **Completed** after its practical steps and final explanation have been checked. You can still choose **I’m not sure** on a prediction.
 
