@@ -8,6 +8,7 @@ import math
 import bpy
 from mathutils import Vector
 from bg812_front import build_front
+from b22_insert import make_holder
 
 WALL = {'switch:single-rocker', 'switch2:single-rocker', 'intermediate:single-rocker',
         'switch:gang-module-left', 'switch:gang-module-right'}
@@ -289,10 +290,13 @@ def add_lighting_back(recipe, root, A, previous):
     else:
         # S. Lilley 3015E: fixing centres / base diameter = 40/48.
         base=detail('lamp-mounting','The brass angled batten holder attaches at two fixing holes. The earth block is mechanically bonded to the metal base.',mounting)
+        base['keepDistanceSurface']=True
         c=.270;rad=.254
         flange=ring(base,(0,c),-.141,rad,.168,.040,brass,'Spun brass flange')
         for x in [-rad*40/48,rad*40/48]:
             A.boolean_difference(flange,A.cyl('Mounting clearance',(x,c,-.14),.021,.095,base,None))
+        for poly in flange.data.polygons:
+            if abs(poly.normal.z)>.995:poly.use_smooth=False
         A.torus('Rolled brass mounting rim',(0,c,-.15),rad-.006,.007,base,brass)
         # Keep both the external bulb envelope and its cutaway filament in
         # the same assembly when pitching the lampholder toward its opening.
@@ -313,26 +317,19 @@ def add_lighting_back(recipe, root, A, previous):
                 mesh.scale.z*=1.071
                 mesh.data.materials.clear()
                 mesh.data.materials.append(glass)
-        # The removable upper ring retains the bayonet holder when assembled.
+        # The support wires and filament belong to the bulb being lifted out.
+        # Retain their exact world transform when the rear fixture is inspected.
         cap=next(o for o in root.children_recursive if o.get('partId')=='cover' and o.get('restPosition'))
-        A.torus('Machined retaining collar',(0,.042,0),.139,.009,cap,brass,False)
-        A.cyl('Angled brass socket throat',(0,.057,0),.142,.288,lampaxis,brass,False)
-        for y,r in [(-.056,.148),(.013,.164),(.169,.147)]:
-            A.torus('Union and shade ring rolled rim',(0,y,0),r,.009,lampaxis,brass,False)
-        for i in range(32):
-            angle=i*math.tau/32
-            A.box('Shade ring grip flute',(.161*math.sin(angle),.012,.161*math.cos(angle)),(.010,.034,.010),lampaxis,brass,.002).rotation_euler.y=angle
-        insert=detail('ceramic-terminal-insert','The two current-carrying terminals are insulated by a ceramic insert. A separate brass tag connects the earth block to the shell.',body)
-        backing=A.cyl('Ceramic interior',(0,c,-.120),.167,.089,insert,ceramic)
-        for t in recipe['terminals']:
-            x,y,z=t['anchor'];earth=t['id']=='PE'
-            if earth:A.box('Brass earth continuity tongue',(0,.413,-.146),(.050,.105,.017),insert,brass,.004)
-            g=clamp_owner(t,'A screw clamps the copper in the brass terminal. Line and neutral are insulated from the brass mounting flange.')
-            block=A.box('Brass wire clamp',(0,.012,-.014),(.064,.082,.073),g,brass,.006)
-            A.boolean_difference(block,A.cyl('Real cable entry',(0,0,-.016),.017,.106,g,None,True,24))
-            screw(g,(0,.035),.021,.022,False,-.16 if earth else .25)
-            A.box('Insulating partition',(.039,.015,-.030),(.010,.092,.062),g,ceramic,.003)
-            A.label(t['label'],(x+.046,y-.026,-.163),insert,grey,.025,rear=True)
+        inside=next(o for o in lampaxis.children if o.name.startswith('Detailed family construction'))
+        bpy.context.view_layer.update()
+        world=inside.matrix_world.copy();inside.parent=cap;inside.matrix_world=world
+        pins=next(o for o in cap.children if o.get('partId')=='pins')
+        seal=A.material('B22d insulating seal',(.052,.043,.041),0,.42)
+        silver=A.material('B22d cap contact solder',(.56,.56,.54),.78,.36)
+        A.cyl('Insulated cap end',(0,.049,0),.087,.008,pins,seal,False)
+        for x in (-.050,.050):
+            A.cyl('Separate cap pad',(x,.043,0),.023,.008,pins,silver,False,36)
+        make_holder(A,body,lampaxis,recipe,detail,clamp_owner,screw,(brass,zinc,ceramic))
     # Some historic meshes have been physically replaced. Expose only detail
     # groups that actually contain geometry in the revised editable source.
     existing={}

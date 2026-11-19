@@ -51,7 +51,7 @@ and replacement installations.
 Open the [web app](https://bh0ps.github.io/irish-electrical-lab/) in Safari and
 choose **Share → Add to Home Screen**. Once opened from the Home Screen, choose
 **More → Download for offline use**. The [iPhone guide](docs/iphone.md) covers
-touch controls, offline use and moving a full study backup from Windows.
+touch controls, offline use and moving a full study backup from Windows. Tap **Full screen** beside a job title to walk around, get close to a fitting and make a repair.
 
 ## Run from source
 

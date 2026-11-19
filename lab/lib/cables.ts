@@ -129,11 +129,12 @@ export function furnishCableExamples(document:CircuitDocument):CircuitDocument {
     return next;
   }
   if(!sockets&&!flex)return document;
+  const fusedSpur=id===19 && document.components.some(c=>c.id==='branch-fuse'&&c.type==='fcu');
   let next:CircuitDocument={...document,wires:[]},lead:string|undefined;
   for(const wire of document.wires){
-    if(sockets && wire.from.component.startsWith('socket-') && wire.to.component.startsWith('socket-')){
+    if(sockets && wire.from.component.startsWith('socket-') && (wire.to.component.startsWith('socket-') || fusedSpur&&wire.to.component==='branch-fuse')){
       next=addCableConnection(next,wire,{kind:'flat'}).document;
-    }else if(flex&&wire.to.component==='fixed'){
+    }else if((flex||fusedSpur)&&wire.to.component==='fixed'){
       next=addCableConnection(next,wire,{kind:'flex',runId:lead}).document;
       lead=next.wires.at(-1)?.cable?.runId;
     }else next.wires.push(wire);

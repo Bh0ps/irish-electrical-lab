@@ -50,9 +50,15 @@
     },
     {
       "id": "lilley-batten",
-      "title": "S. Lilley B22 unswitched lampholders · 3015E and ceramic interiors",
-      "url": "https://s-lilley.co.uk/wp-content/uploads/2023/10/catalogue.pdf",
-      "architecture": "The 3015E uses a 48 mm two-fixing base with 40 mm centres, a 45° batten body, shade ring and earth terminal. The original teaching assembly uses an angled brass cap and ceramic live contacts."
+      "title": "S. Lilley 3015E and BC7/BC8 ceramic interiors · catalogue page 2",
+      "url": "https://s-lilley.co.uk/wp-content/uploads/2025/12/Lilley-Cat-2026-27.pdf",
+      "architecture": "The 3015E uses a 48 mm two-fixing base with 40 mm centres, a 45° batten body, shade ring and earth terminal. The catalogue shows two separate brass contacts in a divided ceramic insert. The clamp positions inside the training service view preserve the saved L, N and PE connections."
+    },
+    {
+      "id": "lilley-3015e-section",
+      "title": "S. Lilley 3015E · photograph and section A–A",
+      "url": "https://s-lilley.co.uk/product/angle-batten-bc-shade-ring-earthed-brass-lampholder/",
+      "architecture": "The maker shows a hollow spun-brass back, rolled shade ring, two bayonet slots, a separate earth lug and a 45° mounting angle. The study holder retains its original lamp datum. Internal screw positions, springs and wire seats are illustrative."
     },
     {
       "id": "gamma-entries",
@@ -844,9 +850,9 @@
       "mk-accessory"
     ],
     "lamp:bulb": [
-      "radium-a55",
+      "lilley-3015e-section",
       "lilley-batten",
-      "mk-accessory"
+      "radium-a55"
     ],
     "terminal:default": [
       "phoenix-clamp"

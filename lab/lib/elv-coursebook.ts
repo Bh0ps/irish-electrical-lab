@@ -4,10 +4,10 @@ import type { Endpoint } from './types';
 type Pair = [string, string];
 export interface ExtraLowVoltagePage extends CoursePage {
   id: number; connection: string; procedure: string; reading: string;
-  target: [Pair,Pair]; probes: [Pair,Pair]; symptom: string; hint: string; answer: string;
+  target: [Pair,Pair]; probes: [Pair,Pair]; symptom: string; firstCheck: string; hint: string; answer: string;
 }
 type Answers = [string,string,string];
-type Data = [string,string,string,string,string,string,string,Answers,Answers,[Pair,Pair],[Pair,Pair],string,string,string,string];
+type Data = [string,string,string,string,string,string,string,Answers,Answers,[Pair,Pair],[Pair,Pair],string,string,string,string,string];
 const data: Data[] = [
   [
     'Light a cupboard when its door opens', 'cupboard wardrobe reed contact door strip',
@@ -20,7 +20,7 @@ const data: Data[] = [
     ['The cupboard light is off. Why does the meter still read 24 V across the driver output?', 'The door contact switches the wire feeding the strip', 'The door contact switches the mains feeding the driver'],
     [['door', 'OUT'], ['strip', 'L']], [['strip', 'L'], ['strip', 'N']], 'The door is open, but the strip stays dark.',
     'You worked the cupboard door and checked the strip at its own terminals.',
-    'Check the door contact output with the cupboard open, then check the positive pad on the strip.',
+    'Open the cupboard. Does the driver still show 24 volts even with the strip dark?', 'Check the door contact output with the cupboard open, then check the positive pad on the strip.',
     'The wire from the door switch to the strip’s + pad is broken. The switch still works, but the strip gets no power.',
   ],
   [
@@ -34,7 +34,7 @@ const data: Data[] = [
     ['Why does the right strip stay on?', 'The right switch still feeds its strip from the driver', 'The left strip still carries the right strip’s current'],
     [['right-switch', 'OUT'], ['right', 'L']], [['left', 'L'], ['left', 'N']], 'Both switches are on. The left strip lights up. The right one stays dark.',
     'You switched each worktop strip without disturbing the other.',
-    'Put black on the right strip’s − pad and red on its + pad. Leave black there and move red to the wire leaving the right switch.',
+    'Start at the strip that stays dark. Both worktops use the same driver.', 'Put black on the right strip’s − pad and red on its + pad. Leave black there and move red to the wire leaving the right switch.',
     'There’s a break between the right switch and its strip. The left worktop still works because it uses a separate branch.',
   ],
   [
@@ -48,7 +48,7 @@ const data: Data[] = [
     ['The far end is brighter now. What changed in its wiring?', 'The extra pair gives the far end a feed with less resistance', 'The driver now produces a higher output voltage'],
     [['inject', 'LOUT'], ['far', 'L']], [['far', 'L'], ['far', 'N']], 'You switch on the extra feed. The far end is still dimmer than it should be.',
     'You checked the far-end voltage with and without the extra feed.',
-    'Read the far-end voltage with and without the extra feed. Follow both wires of that extra pair.',
+    'Leave the strip lit. Compare its far end with the extra feed off and on.', 'Read the far-end voltage with and without the extra feed. Follow both wires of that extra pair.',
     'There’s a break in the extra positive wire. The extra return still helps, but the positive feed has to go the long way along the tape.',
   ],
   [
@@ -60,10 +60,10 @@ const data: Data[] = [
     'At 75%, the strip is on for three quarters of the time. The driver still supplies about 24 V.',
     ['Turn the dimmer up. What happens to the watts the strip uses?', 'The average watts go up', 'They stay the same until you change the driver voltage'],
     ['Why is the strip brighter at 75% than at 25%?', 'Over the same second, it spends more time lit', 'Each individual pulse is three times the voltage'],
-    [['pwm', 'W'], ['strip', 'N']], [['pwm', '+'], ['pwm', '-']], 'The control responds but the strip stays dark.',
+    [['pwm', 'W'], ['strip', 'N']], [['pwm', '+'], ['pwm', '-']], 'The dimmer setting changes. The strip stays dark even with it turned right up.',
     'You compared the strip’s average power at two dial settings.',
-    'Check the steady supply at the controller first, then trace the strip return to its switched output.',
-    'The wire between controller W and the strip return is open. The dial can change the pulse setting, but there’s no complete path through the strip.',
+    'Turn the dial up. Check whether the dimmer itself has power.', 'Check the steady supply at the controller first, then trace the strip return to its switched output.',
+    'The wire from W on the dimmer to the strip’s − pad is broken. The strip has no return path.',
   ],
   [
     'Blend warm and cool white strips', 'CCT tunable colour temperature warm cool LED',
@@ -76,8 +76,8 @@ const data: Data[] = [
     ['The wire marked W comes loose. Why can the cool LEDs still light?', 'The cool row has its own return wire', 'The warm and cool rows are in series'],
     [['controller', 'W'], ['tape', 'W']], [['controller', '+'], ['controller', '-']], 'The tape goes dark only when warm white is selected.',
     'You followed the warm and cool channels through a change of colour.',
-    'Try warm only, then cool only. Compare the two return wires with the simulated power off.',
-    'The warm return is open between the controller and the strip. The cool row can still light because its + wire and its own return wire are intact.',
+    'Try fully warm and fully cool. Which row can still light?', 'Try warm only, then cool only. Compare the two return wires with the simulated power off.',
+    'The wire between the two W terminals is broken. The cool LEDs have their own return and can still light.',
   ],
   [
     'Find out why two downlights go out together', 'constant current 350mA series LED downlights compliance driver',
@@ -90,7 +90,7 @@ const data: Data[] = [
     ['Why do you read more volts across the driver than across either downlight?', 'The driver supplies the voltage for both lights in series', 'The second downlight takes twice the current'],
     [['link', 'OUT'], ['second', 'L']], [['first', 'L'], ['first', 'N']], 'Neither downlight lights up even with the link closed.',
     'You opened the series link and saw what happened to both downlights.',
-    'The driver has power. With the simulated supply off, check the wire from the service link to the second module.',
+    'Close the link. Both downlights share one path. Look between them as well as at the driver.', 'Turn off the bench supply. Check the wire from the removable link to the second downlight.',
     'The wire between the link and the second downlight is broken. The lights are in series, so current has to pass through both.',
   ],
   [
@@ -104,7 +104,7 @@ const data: Data[] = [
     ['Why can a visitor ring from either entrance?', 'Either push can complete the circuit through the bell', 'Current has to pass through both pushes'],
     [['rear', 'NO'], ['bell', 'L']], [['tx', '+'], ['tx', '-']], 'Press the front button and the bell rings. Press the back button and it stays quiet.',
     'You rang the same bell from both entrances and measured its AC supply.',
-    'Try the front button first. Then follow the wire from the back button to the bell.',
+    'Let go of both buttons. Try each entrance on its own.', 'Hold the back button down. Compare the voltage leaving that button with the voltage reaching the bell. Keep the other probe on the same transformer return.',
     'There’s a break in the wire from the back button to the bell. The front button still has its own wire to the same bell.',
   ],
   [
@@ -118,7 +118,7 @@ const data: Data[] = [
     ['How does the chime tell which button was pressed?', 'Each button feeds its own call terminal', 'The transformer changes voltage for the back button'],
     [['back', 'NO'], ['chime', 'REAR']], [['chime', 'AC1'], ['chime', 'AC2']], 'The chime has power. The front button rings it, but the back button does nothing.',
     'You used the chime’s two inputs to tell a front-door call from a rear-door call.',
-    'Leave one probe on the supply return. Check each call terminal while its button is held.',
+    'Start at the chime. Compare what happens when you hold each door button on its own.', 'Leave one probe on the supply return. Check each call terminal while its button is held.',
     'The call wire from the back button is broken. The front button can still ring the chime.',
   ],
   [
@@ -132,8 +132,8 @@ const data: Data[] = [
     ['You’ve let go of the button. What’s still feeding the light?', 'The timer’s OUT terminal', 'Current passing through the open push'],
     [['hold', 'OUT'], ['beacon', 'L']], [['beacon', 'L'], ['beacon', 'N']], 'The timer starts when you press the bell button, but the call light stays dark.',
     'You checked why the call light stays on after the visitor releases the button.',
-    'Watch the timer when you press the push. Compare the timer output with voltage across the call light.',
-    'The wire from timer OUT to the call light is open. The timer still counts down, but its output can’t reach the light.',
+    'Hold the call button while you check. Does the timer operate even if the light stays dark?', 'Watch the timer when you press the push. Compare the timer output with voltage across the call light.',
+    'The wire from timer OUT to the light is broken. The timer runs, but the light gets no feed.',
   ],
   [
     'Acknowledge a door alarm', 'door open acknowledge mute annunciator latch buzzer',
@@ -146,7 +146,7 @@ const data: Data[] = [
     ['Why does the buzzer sound the next time the door opens?', 'Closing the door released the holding relay', 'Releasing Acknowledge restarted the buzzer immediately'],
     [['ack', 'NO'], ['memory', 'A1']], [['lamp', 'L'], ['lamp', 'N']], 'The buzzer sounds when you open the door. It keeps sounding when you press Acknowledge.',
     'You silenced the buzzer with the door open, then checked that it sounded again the next time.',
-    'With the door open, hold Acknowledge and check voltage across the holding relay coil.',
+    'Leave the door open. Hold Acknowledge and watch the relay while the buzzer sounds.', 'With the door open, hold Acknowledge and check voltage across the holding relay coil.',
     'There’s a break between Acknowledge and A1 on the relay coil. Pressing the button can’t power the coil, so the buzzer stays on.',
   ],
   [
@@ -160,8 +160,8 @@ const data: Data[] = [
     ['The relay closes. Which supply now lights the heat-call lamp?', 'The equipment supply, through the relay contact', 'The thermostat supply, through the relay coil'],
     [['stat', 'OUT'], ['interface', 'A1']], [['interface', 'A1'], ['interface', 'A2']], 'The thermostat calls for heat, but the relay doesn’t switch.',
     'You turned on the heat-call light using a switch in a separately powered circuit.',
-    'Check the thermostat output and the coil voltage on the same 24 V circuit. Then check the separate equipment input.',
-    'The wire from the thermostat to A1 on the relay is broken. The coil never gets power, so its switch stays open and the heat-call light stays off.',
+    'Turn the thermostat up. Start at the coil before checking the other supply.', 'Leave one probe on A2. Compare A1 with the thermostat output while the room calls for heat.',
+    'The wire from the thermostat to A1 is broken. The relay stays open and the heat-call light stays off.',
   ],
   [
     'Move a valve and stop it halfway', 'floating valve three point 24V open close actuator',
@@ -174,7 +174,7 @@ const data: Data[] = [
     ['Which two terminals should read 24 V while the valve is closing?', 'CLOSE and COM', 'OPEN and COM'],
     [['direction', 'B'], ['actuator', 'CLOSE']], [['actuator', 'OPEN'], ['actuator', 'COM']], 'The valve opens. Choose Close and it stays where it is.',
     'You drove the valve both ways and held it between its end positions.',
-    'Keep one probe on COM. Use the other to check OPEN and CLOSE as you move the selector.',
+    'Open the valve first. Leave movement enabled, then select Close.', 'Keep one probe on COM. Use the other to check OPEN and CLOSE as you move the selector.',
     'There’s a break between B on the selector and CLOSE on the valve. The wire to OPEN is still sound, so the valve can travel one way.',
   ],
   [
@@ -188,8 +188,8 @@ const data: Data[] = [
     ['Why check the alarm as well as the run indicator?', 'The run light can go out even if the warning light has a broken wire', 'Both indicators always share the same switched wire'],
     [['float', 'B'], ['alarm', 'L']], [['permit', 'L'], ['permit', 'N']], 'Lift the float. The run light goes out, but the high-water warning light stays dark.',
     'You raised the float and checked both the run light and the high-water warning light.',
-    'Lift the float. Keep the black probe on the supply’s − terminal. Check for voltage at B on the float, then at + on the warning light.',
-    'The wire from float contact B to the alarm indicator is open. Lifting the float still turns the run light off, but the warning light never gets power.',
+    'Lift the float. Watch the run light and the high-water light together.', 'Lift the float. Keep the black probe on the supply’s − terminal. Check for voltage at B on the float, then at + on the warning light.',
+    'The wire from B on the float switch to the warning light is broken. The float can still turn the run light off.',
   ],
   [
     'Sense a metal target with three wires', 'three wire PNP proximity brown blue black DC sensor',
@@ -202,7 +202,7 @@ const data: Data[] = [
     ['Which sensor wire changes voltage when you move the steel away?', 'The wire at OUT, the switched output', 'The permanent positive supply wire'],
     [['sensor', 'OUT'], ['pilot', 'L']], [['pilot', 'L'], ['pilot', 'N']], 'The sensor has power. Bring the metal close and the light stays off.',
     'You made the indicator respond to a metal target and identified its switched wire.',
-    'With the target close, compare the sensor output with the positive terminal on the indicator.',
+    'Bring the metal up to the sensor. Check the sensor’s supply before testing its output.', 'With the target close, compare the sensor output with the positive terminal on the indicator.',
     'The black wire from the sensor to the light is broken. Brown and blue still supply the sensor.',
   ],
   [
@@ -214,10 +214,10 @@ const data: Data[] = [
     'Follow the two wires from the fuses. One goes to the instrument and the other goes to the beacon. Opening the beacon fuse leaves the instrument on.',
     ['The warning light’s fuse is out. Which light can still work?', 'The instrument light', 'Neither light'],
     ['Why does the instrument still have 24 V?', 'Its supply goes through the other fuse', 'Its current passes through the open beacon fuse'],
-    [['beacon-fuse', 'OUT'], ['beacon', 'L']], [['instrument', 'L'], ['instrument', 'N']], 'The beacon stays dark with its fuse carrier closed.',
+    [['beacon-fuse', 'OUT'], ['beacon', 'L']], [['instrument', 'L'], ['instrument', 'N']], 'The instrument light works but the beacon stays dark. Both fuse carriers are closed.',
     'You opened one fuse carrier and checked the DC branch that stayed on.',
-    'Close the beacon fuse. Compare the voltage at its outgoing terminal with voltage at the beacon.',
-    'The wire from the beacon fuse output to the beacon is open. The instrument is on a separate fused branch and can still work.',
+    'Leave both fuse carriers closed. Which of the two lights still works?', 'Close the beacon fuse. Compare the voltage at its outgoing terminal with voltage at the beacon.',
+    'The wire from the beacon fuse to the beacon is broken. The instrument has its own fuse.',
   ],
   [
     'Build an entrance call and courtesy light', 'practical entrance call bell courtesy light AC DC isolated relay',
@@ -228,15 +228,15 @@ const data: Data[] = [
     'Pressing the button powers the relay coil. Its contact closes the lamp’s DC circuit without joining the supplies.',
     ['The lamp’s return wire breaks. What still gets power when someone presses the doorbell?', 'The bell and the relay coil', 'Only the courtesy lamp'],
     ['How can the bell button also switch the light?', 'The button powers the relay coil and its contact switches the light', 'The bell and lamp share a return wire'],
-    [['interface', 'NO'], ['courtesy', 'L']], [['courtesy', 'L'], ['courtesy', 'N']], 'The bell rings and the relay operates but the courtesy light remains dark.',
+    [['interface', 'NO'], ['courtesy', 'L']], [['courtesy', 'L'], ['courtesy', 'N']], 'Holding the button rings the bell and pulls in the relay. The courtesy light stays dark.',
     'You built and tested one push that rings an AC bell and switches a separate DC light.',
-    'Hold the entrance push. If the bell and relay operate, follow the DC side from the relay contact to the courtesy lamp.',
-    'The wire from the relay’s NO contact to the courtesy lamp is open. The AC bell and coil still have their own complete circuit.',
+    'Hold the entrance push. Check the bell and the DC lamp separately.', 'Keep the button held. Check the lamp supply at the relay, then check the lamp across its own terminals.',
+    'The wire from relay NO to the courtesy light is broken. The bell and coil still get their separate AC supply.',
   ],
 ];
-export const ELV_PAGES: ExtraLowVoltagePage[] = data.map(([title,aliases,situation,connection,procedure,reading,idea,predict,explain,target,probes,symptom,outcome,hint,answer],index)=>{
+export const ELV_PAGES: ExtraLowVoltagePage[] = data.map(([title,aliases,situation,connection,procedure,reading,idea,predict,explain,target,probes,symptom,outcome,firstCheck,hint,answer],index)=>{
   const question=([prompt,right,alternative]:Answers)=>({prompt,right,alternative});
-  return {id:index+65,title,aliases,situation,connection,procedure,reading,idea,outcome,prediction:question(predict),explanation:question(explain),target,probes,symptom,hint,answer};
+  return {id:index+65,title,aliases,situation,connection,procedure,reading,idea,outcome,prediction:question(predict),explanation:question(explain),target,probes,symptom,firstCheck,hint,answer};
 });
 export const elvPage=(id:number)=>ELV_PAGES.find(page=>page.id===id);
 export const lessonIdLimit=64+ELV_PAGES.length;

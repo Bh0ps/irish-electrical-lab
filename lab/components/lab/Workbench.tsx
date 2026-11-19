@@ -1,6 +1,8 @@
 'use client';
+import {b22WireSeats,extendToB22Seats,type B22Seat} from '../../lib/b22-wire-seats';
 import {connectedRockerTerminals} from '../../lib/wall-rocker';
 import React, { Suspense, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { SettledCanvas } from './SettledCanvas';
 import { Canvas, events as pointerEvents, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { mountScale, mountRoll, filledWays } from '../../lib/board-assembly';
@@ -31,6 +33,7 @@ export type Tool = 'select'|'place'|'wire'|'inspect'|'meter';
 export type InspectionView = 'normal'|'open'|'exploded'|'cutaway';
 export interface WorkbenchMetrics { fps:number;drawCalls:number;triangles:number;dpr:number;quality:RenderQuality;idle:boolean }
 export interface WorkbenchProps {
+  fieldLayout?:string;
   onListView?:()=>void;
   onModelAvailability?:(id:string,unavailable:boolean)=>void;
   document:CircuitDocument; result?:SimulationResult; tool:Tool; mode:string; selected?:string; selectedWire?:string;
@@ -64,13 +67,13 @@ function Label({label,position,selected=false,width=1.5}:{label:string;position:
   const texture=useMemo(()=>{const canvas=document.createElement('canvas');canvas.width=768;canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.fillStyle=selected?'#194b46eb':'#23393beb';ctx.beginPath();ctx.roundRect(2,2,764,124,18);ctx.fill();ctx.strokeStyle=selected?'#90e0c7':'#91a7a7';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#f5faf8';ctx.font='34px Segoe UI, Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label.length>46?label.slice(0,43)+'…':label,384,64,730);const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;return map;},[label,selected]);
   useEffect(()=>()=>texture.dispose(),[texture]);return <sprite position={position} scale={[width,width/6,1]} renderOrder={20} raycast={ignoreRaycast}><spriteMaterial map={texture} transparent depthTest={false} depthWrite={false}/></sprite>;
 }
-function Insulation({points,role,core,radius=WIRE_RADIUS,wireId,selected=false,emphasis=false,dim=false,onClick}:{points:Vec3[];role:Wire['role'];core?:CableCore;radius?:number;wireId?:string;selected?:boolean;emphasis?:boolean;dim?:boolean;onClick?:()=>void}) {
+function Insulation({points,startSeat,endSeat,role,core,radius=WIRE_RADIUS,wireId,selected=false,emphasis=false,dim=false,onClick}:{points:Vec3[];startSeat?:B22Seat;endSeat?:B22Seat;role:Wire['role'];core?:CableCore;radius?:number;wireId?:string;selected?:boolean;emphasis?:boolean;dim?:boolean;onClick?:()=>void}) {
   const striped=core?core==='green-yellow':role==='PE';
   const colour=striped?'#ffffff':core?CORE_COLOUR[core]:colours[role];
   const geometry=useMemo(()=>{
-    const curve=createBoundedWireCurve(points);
+    const curve=createBoundedWireCurve(extendToB22Seats(points,startSeat,endSeat));
     return new THREE.TubeGeometry(curve,curve.tubularSegments,radius,12,false);
-  },[radius,points]);
+  },[radius,points,startSeat,endSeat]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
   return <mesh geometry={geometry} userData={wireId?{wireId}:undefined} raycast={onClick?THREE.Mesh.prototype.raycast:ignoreRaycast}
     onClick={onClick?e=>{e.stopPropagation();onClick();}:undefined} castShadow={!dim}>
@@ -154,6 +157,7 @@ function Scene(props:WorkbenchProps&{routing:CircuitRoutes;routingPending:boolea
   const [touchMovePreview, setTouchMovePreview] = useState<{id:string;position:Vec3}>();
   const plane=useMemo(()=>new THREE.Plane(new THREE.Vector3(0,1,0),0),[]),bounds=useMemo(()=>sceneBounds(props.document,props.routing.routes),[props.document,props.routing.routes]),paths=useMemo(()=>tracePresentationPaths(props.document),[props.document]),filter=props.paths===false?'none':props.pathFilter??'all',chosen=props.document.components.find(c=>c.id===props.selected);
   const testPose=useMemo(()=>testerPose(props.document,props.routing,props.tool==='meter'&&props.instrumentType==='forktester'&&props.instrumentParams?.fork?props.selectedWire:undefined),[props.document,props.routing,props.tool,props.instrumentType,props.instrumentParams?.fork,props.selectedWire]);
+  const lampSeats=useMemo(()=>b22WireSeats(props.document),[props.document]);
   const cableTypes=useMemo(()=>new Map(props.document.cableRuns?.map(run=>[run.id,run.kind])),[props.document.cableRuns]);
   const components=useMemo(()=>props.document.components.map(c=>['multimeter','clamp','forktester'].includes(c.type)?{...c,params:{...c.params,...(c.type==='forktester'?props.instrumentParams:{}),reading:c.type==='forktester'&&props.instrumentType!=='forktester'?'—':props.meterReading}}:['source','source3'].includes(c.type)?{...c,params:{...c.params,studyVoltage:props.document.supply.voltage}}:c),[props.document.components,props.document.supply.voltage,props.meterReading,props.instrumentType,props.instrumentParams?.dialPosition,props.instrumentParams?.held,props.instrumentParams?.redOut,props.instrumentParams?.blackOut,props.instrumentParams?.validReference,props.instrumentParams?.signal,props.instrumentParams?.backlight,props.instrumentParams?.hazard]);
   const inspectingTester=props.tool==='meter'&&['focus-instrument','rear-instrument'].includes(props.cameraCommand.action);
@@ -224,7 +228,7 @@ function Scene(props:WorkbenchProps&{routing:CircuitRoutes;routingPending:boolea
       const cableKind=wire.cable&&cableTypes.get(wire.cable.runId);
       const emphasis=pathMatches(paths.get(wire.id),filter),pickable=props.tool!=='wire'&&(props.tool!=='meter'||props.meterMode==='current');
       const mark=parts?.[0]?.[1],showMark=mark&&props.labels&&props.selectedWire===wire.id&&props.tool!=='meter';
-      return <React.Fragment key={wire.id}>{parts?.map((points,i)=>points.length>=2?<Insulation key={i} role={wire.role} core={wire.cable?.core} radius={cableKind?coreRadius(cableKind):WIRE_RADIUS} points={testPose.sampled?.path===points?testPose.sampled.points:points} wireId={wire.id}
+      return <React.Fragment key={wire.id}>{parts?.map((points,i)=>points.length>=2?<Insulation key={i} role={wire.role} core={wire.cable?.core} startSeat={lampSeats.get(wire.from.component)?.get(wire.from.terminal)} endSeat={lampSeats.get(wire.to.component)?.get(wire.to.terminal)} radius={cableKind?coreRadius(cableKind):WIRE_RADIUS} points={testPose.sampled?.path===points?testPose.sampled.points:points} wireId={wire.id}
         selected={props.selectedWire===wire.id} emphasis={filter!=='none'&&emphasis} dim={filter!=='all'&&filter!=='none'&&!emphasis&&props.selectedWire!==wire.id}
         onClick={pickable?()=>props.onWire(wire.id):undefined}/>:null)}
         {showMark&&<Label selected position={[mark[0],mark[1]+.16,mark[2]]} width={1.1} label={wire.cable?CABLE_CORE_LABEL[wire.cable.core]+' · '+wire.role:wire.role+' conductor'}/>}
@@ -282,7 +286,7 @@ export default function Workbench(props:WorkbenchProps) {
   }),[]);
   const retry=()=>{setContextLost(false);setCanvasKey(key=>key+1);};
   const quality=props.touchLayout&&(!props.quality||props.quality==='auto')?'economy':props.quality;
-  return <><CanvasBoundary key={canvasKey} onRetry={retry} onListView={props.onListView}><Canvas events={workbenchEvents} shadows={quality!=='economy'} frameloop="demand" dpr={pixelRatio} camera={{position:[6,8,12],fov:43,near:.025,far:140}} gl={{antialias:!props.touchLayout,powerPreference:props.touchLayout?'default':'high-performance'}} onCreated={({gl})=>{gl.shadowMap.type=THREE.PCFSoftShadowMap;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.05;}}><CanvasRecovery onContextLost={setContextLost}/><Suspense fallback={null}><Scene {...props} onDpr={setPixelRatio} onModelAvailability={availability} quality={quality} routing={routing} routingPending={pending}/></Suspense></Canvas></CanvasBoundary>
+  return <><CanvasBoundary key={canvasKey} onRetry={retry} onListView={props.onListView}><Canvas events={workbenchEvents} shadows={quality!=='economy'} frameloop="demand" dpr={pixelRatio} camera={{position:[6,8,12],fov:43,near:.025,far:140}} gl={{antialias:!props.touchLayout,powerPreference:props.touchLayout?'default':'high-performance'}} onCreated={({gl})=>{gl.shadowMap.type=THREE.PCFSoftShadowMap;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.05;}}><SettledCanvas layout={props.fieldLayout}/><CanvasRecovery onContextLost={setContextLost}/><Suspense fallback={null}><Scene {...props} onDpr={setPixelRatio} onModelAvailability={availability} quality={quality} routing={routing} routingPending={pending}/></Suspense></Canvas></CanvasBoundary>
     {!contextLost&&missingModels.size>0&&<div className="model-download-notice" role="status"><span>{missingModels.size===1?'A 3D model could not open.':missingModels.size+' models could not open.'}</span> <button type="button" onClick={retry}>Retry models</button> {props.onListView&&<button type="button" onClick={props.onListView}>Equipment list</button>}</div>}
     {contextLost&&<div className="canvas-error" role="status"><h3>Graphics paused</h3><p>Your circuit is still here. Wait for the 3D view to recover or restart it.</p>{props.onListView&&<button type="button" onClick={props.onListView}>Use equipment list</button>}<button type="button" onClick={retry}>Restart 3D view</button></div>}
     {(pending||error)&&<div className="routing-status" role="status" style={{position:'absolute',left:12,bottom:42,zIndex:8,maxWidth:'calc(100% - 24px)',padding:'6px 10px',borderRadius:6,background:'#293547f2',color:error?'#f6ddb1':'#dce7e7',fontSize:12,pointerEvents:'none'}}>{error??'Routing wires…'}</div>}

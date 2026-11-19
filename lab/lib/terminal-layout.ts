@@ -10,6 +10,17 @@ export function equipmentVariant(component: Pick<ComponentInstance, 'type' | 'la
     : `${component.type} ${component.variant ?? ''} ${component.label} ${definition.name}`).toLowerCase();
 }
 
+/** Pick the same physical lamp for rendering, wire dressing and meter access. */
+export function lampForm(name:string):string {
+  if(/indicator/.test(name))return 'indicator';
+  if(/emergency|maintained/.test(name))return 'emergency-batten';
+  if(/strip|sign|batten|fluorescent/.test(name))return 'batten';
+  return /\bled\b|downlight|spot/.test(name)&&!/bulb/.test(name)?'downlight':'bulb';
+}
+
+// Depth from the stable B22 rear entry to the metal pillar inside its back.
+export const b22SeatDepth=(terminal:string)=>terminal==='PE'?.034:.082;
+
 /** The lid or terminal door must be opened to reach these installation contacts. */
 export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'variant'|'label'>): boolean {
   if(component.type==='fan'&&component.variant==='xf100s')return true;

@@ -16,7 +16,9 @@ const rose:Feature[]=[
 ];
 const lamp:Feature[]=[
   ['lamp-mounting','mounting','Brass mounting flange','Two holes secure the angled holder. Its metal base connects to the protective earth terminal.'],
-  ['ceramic-terminal-insert','body','Ceramic insert','Ceramic keeps the two lamp contacts apart and insulates them from the brass shell. The earth connection is on its own metal lug.'],
+  ['ceramic-terminal-insert','body','Two lamp contacts','Each wire ends in its own brass pillar. Ceramic separates them. A spring contact carries current from each pillar to the base of the bulb.'],
+  ['b22-earth-bond','body','Earth connection','The earth terminal is joined to the brass body. It gives a fault current a return path if a live wire touches the metal.'],
+  ['b22-bayonet-shell','body','How the bulb locks in','The two side pins enter slots in the holder. A short turn seats them while the two contacts press against the base of the bulb.','front'],
   ['tungsten-coiled-filament','emitter','Filament','Inside the glass, this fine coil heats up and glows when current flows. Watch it as you change the dimmer.','front'],
 ];
 const earth:Feature=['linked-earth-strap','mounting','Earth strap','Follow the folded strip from one earth terminal to the other. It also touches the metal sleeves around the fixing screws.'];
