@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.0 — The loose worktop connector
+
+- **One worktop stays dark** opens with both worktops in view. Compare the dark strip with the output of its wall switch using the same meter and return point.
+- After diagnosis, switch off the simulated supply and open the right-hand switch. Reconnect the strip wire by tapping a blade or choosing its marking. Choosing the incoming blade leaves the wire loose.
+- When you restore the supply, the job shows which strips light up. A fresh circuit test finishes the repair.
+
 ## 1.21.0 — Take the meter to the fitting
 
 - On a small phone the job title has its own line. Use **View** to change between the room, drawing, workbench and equipment list. **Full screen** stays within reach when the job instructions are open.

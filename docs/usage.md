@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.21.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.22.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 On a phone, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting, or tap **Find** and search for its name or room. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. **Put meter away** returns to the site. In the two-door bell job the hall chime gives a short caption and a sound for each new call. The two sounds are examples chosen for this lab. You can turn them off in Settings or Site tools. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -64,7 +64,7 @@ Already finished the earlier lighting-only job? **Continue learning** opens your
 
 In **Meter the worktop lights**, turn off the left light and leave the right one lit. Open **Measure**, choose a strip and touch its two copper pads with the red and black probes. You can also pick the same points by name. Record each reading, then put the lights the other way round. If you move a probe to the wrong strip, you can move it again without starting over.
 
-In **One worktop stays dark**, both switches are on. Put the red probe on the right strip’s + pad and black on its − pad. Record the reading. Leave black there and move red to the wire leaving the right switch. On the new rocker, that’s tab **1**. Record it and compare the two readings. If you prefer, choose the same points by name in **Equipment list**. After the repair, choose **Test the repair** to try both lights. **Continue learning** brings you back if you close halfway through.
+In **One worktop stays dark**, look at the two worktops. Put red on the right strip’s + pad and black on its − pad. Record the reading. Leave black there and move red to the blade that feeds the strip. Compare the two readings. Once you have found the break, choose **Find repair on site**, switch off the simulated supply and open the right switch. Look for the loose push-on connector. Tap the blade it belongs on or choose its marking under **Reconnect strip wire**. Restore the supply, check the lights and choose **Test the repair**. The **Equipment list** lets you do the same job by name. [See the loose connector and both blades](images/worktop-connector.png).
 
 In **Check the bathroom fan timer**, switch the bathroom light off. Watch the fan keep running, then stop five seconds later. Try the fan isolator with the light on. The light has a separate feed and stays lit. Choose **Go to → Outside fan grille** to see where the air leaves the house.
 

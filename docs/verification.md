@@ -1,5 +1,23 @@
 # Verification summary
 
+## 1.22.0 — The loose worktop connector
+
+**Finding and repairing the break.** In the 24 V kitchen job, the dark strip read 0 V. With the same return point, both metal blades of the closed switch read 24 V. Recording the incoming blade alone did not identify the break. The reading at the outgoing blade and the one at the strip supported the diagnosis. The original 1.21.0 job then accepted a generic repair button. In this version, the right-hand wire ends in a loose push-on. With the simulated supply off, we withdrew the switch plate and could see the stationary blade and the loose jaws. Touching the sleeve, dragging past a blade or choosing the occupied blade left the fault in place.
+
+**Using the controls.** In a 390 × 844 touch WebKit session, we tried the wrong diagnosis and the wrong blade, fitted the wire to blade 1, and restored the supply. The lit/dark labels for both strips stayed visible when the view turned to 844 × 390. Both strips lit, and completion required a fresh powered test. In 1280 px Chromium, the keyboard and equipment list completed the same job. Undoing the repair restored the fault and kept the earlier achievement. After Redo and reopening the app, the job still required another test. [View the withdrawn switch and loose connector](images/worktop-connector.png).
+
+**Model and circuit.** The full and Economy models move the original crimp, jaws and insulating sleeve together. Their wire runs to the loose barrel. In this installation the centres of the two insulated cores stayed at least 2.59 mm apart inside the closed box and 3.00 mm apart with the plate withdrawn (each core has a 0.8 mm radius). The repair leaves other faults and the state of the protection intact. A regression test repaired the lighting feed with a separate earth fault still present. Both strips lit and the protection check still failed.
+
+**Walking to the repair.** At 390 × 844 and 844 × 390 in touch WebKit, we visited the working switch before going to the faulty one. Only the right-hand switch offered the repair. At 320 × 568 in Chrome with 150% text, we could choose the blade by name and see the state of both strips before retesting. At 2× zoom the loose connector and both blades stayed in view. These checks ran on Windows. Physical iPhone use and first-time learner feedback are still unverified.
+
+**Updating an unfinished job.** Two interrupted downloads left 1.21.0 usable. After a successful retry we stopped the server, closed the old lab tab and reopened the updated app. The WebKit session retained the 0 V and 24 V readings, both probes, the named build, the repair step and the earlier practice award. We then repaired the switch and retested offline. In a separate cold-open test we checked all 259 offline files against their hashes and completed the repair with the server stopped.
+
+**Workbench performance.** In desktop Chrome on an RTX 5070 Ti, the 30-component bench with 42 wires took a median 4.0 ms per frame during a mouse pan and 5.1 ms at the 95th percentile. During three seconds at rest it rendered zero frames and sent zero worker requests. Eight supply changes took a median 4.1 ms to solve and 16.2 ms for the worker round trip.
+
+**Course and electrical checks.** All 492 automated tests passed. All 80 examples, 80 authored fault targets and 115 model registrations passed their catalogue and simulation checks. All 2,485 activities kept their stage and evaluator. All 1,119 example conductors routed.
+
+**Windows replacement.** The installer upgraded this PC from 1.21.0 to 1.22.0. In a disposable study profile all five records matched their pre-upgrade hashes. Both shortcuts, shutdown and restart worked. The installed app ran all 80 circuits and passed 120 guided-build checks with zero remote requests and zero console errors. The driver issued one shader warning. The window opened in 1.01 s, the first geometry appeared at 5.16 s and the measured processes used 547 MiB of private memory.
+
 ## 1.21.0 — Take the meter to the fitting
 
 **Opening the job on a small phone.** We opened the heater repair at 320 × 568 with its instructions expanded. In 1.20.0 the canvas was only 44 px high and its controls covered the room. In the revised layout, 194 px of the room remained clear in touch WebKit. With text enlarged to 150%, the clear height was 177 px in WebKit and 176 px in Chromium. We operated the wall switch, followed the next instruction, switched to the drawing and back, and entered full screen. The full job title, first action, supply switch and circuit test stayed reachable.

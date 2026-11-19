@@ -9,6 +9,7 @@ import type { JobSite, SiteItem } from './job-site';
 import { fixturePoint,installedTerminalPoint, type FixturePose } from './site-fixtures';
 import {KITCHEN_LIGHTS as kitchen,ROCKER_BOX,rockerLead,rockerPose,stripLead} from './kitchen-lighting';
 import {rockerWireEntry} from './dc-rocker';
+import {worktopLooseEnd} from './worktop-connector';
 import {BATH_EXTRACT as bath} from './bathroom-extract';
 import { getComponentTerminals } from './terminal-layout';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types';
@@ -123,8 +124,9 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openR
   }
   if(item.fixture?.worktopRocker){
     const open=typeof openRocker==='string'?openRocker===item.id:!!openRocker?.has(item.id),pose=rockerPose(item.position,open);
-    const contact=fixturePoint(pose.position,item.scale,item.fixture,component,rockerWireEntry(terminal.id),pose.rotation);
-    const lead=rockerLead(item.position,contact,terminal.id,open);
+    const detached=worktopLooseEnd(doc,wire),loose=detached?.component===end.component&&detached.terminal===end.terminal;
+    const contact=fixturePoint(pose.position,item.scale,item.fixture,component,rockerWireEntry(terminal.id,loose),pose.rotation);
+    const lead=rockerLead(item.position,contact,terminal.id,open,loose);
     return {pin:contact,chase:lead[lead.length-1],riser,item,component,lead};
   }
   if(doc.lessonId===36&&item.fixture?.bellService){

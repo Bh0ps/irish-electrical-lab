@@ -1,7 +1,7 @@
 import { COMPONENTS } from './components';
 import { fixturePoint,installedTerminalPoint } from './site-fixtures';
 import {rockerPanelCentre,rockerPose} from './kitchen-lighting';
-import {rockerProbeContact} from './dc-rocker';
+import {rockerProbeContact,rockerWireEntry} from './dc-rocker';
 import {cromaProbeContact} from './croma-chime';
 import {fcuProbeContact} from './bg851';
 import {fusedPlatePose,fusedPlateView} from './fused-heater-site';
@@ -111,4 +111,19 @@ export function padCamera(fitting:SiteTestFitting,open:boolean,touch:boolean,scr
   const centre=a.position.map((n,i)=>(n+b.position[i])/2) as Vec3;
   const position:Vec3=[centre[0],centre[1]-.072,centre[2]+.056];
   return {position,yaw:0,pitch:Math.atan2(.072,.056)};
+}
+
+/** Frame the exposed rear tabs and the loose receptacle alongside them. A
+ * narrow phone needs more clearance to keep both in the shot at 2×. */
+export function looseRockerView(fitting:SiteTestFitting,aspect:number){
+  const pose=rockerPose(fitting.item.position,true);
+  const installed=(v:Vec3)=>fixturePoint(pose.position,fitting.item.scale,fitting.item.fixture,fitting.component,v,pose.rotation);
+  const blades=installed(rockerProbeContact('COM').map((value,i)=>(value+rockerProbeContact('OUT')[i])/2) as Vec3);
+  const barrel=installed(rockerWireEntry('OUT',true));
+  const centre=barrel.map((value,i)=>(value+blades[i])/2) as Vec3,eye=installed([-1.3,1.80,-2.90]);
+  const offset=eye.map((v,i)=>v-centre[i]);
+  const distance=Math.max(.082,.072/(.912*Math.max(.32,aspect)));
+  const direction=offset.map(v=>v/Math.hypot(...offset));
+  const position=centre.map((v,i)=>v+direction[i]*distance) as Vec3;
+  return {position,yaw:Math.atan2(direction[0],direction[2]),pitch:-Math.atan2(direction[1],Math.hypot(direction[0],direction[2]))};
 }

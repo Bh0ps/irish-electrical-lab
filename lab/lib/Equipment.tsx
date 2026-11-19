@@ -36,6 +36,8 @@ export interface EquipmentProps {
   contactPiece?: 'reed' | 'magnet';
   /** Space-separated IDs with a fitted push-on or a seated core in the clamp. */
   connectedTerminals?:string;
+  /** The installed RG1's push-on socket remains attached to this wire after coming off the tab. */
+  looseRockerTerminal?:string;
   /** The installed scene supplies the continuous lead from the heater gland to the FCU. */
   installedHeaterFlex?:boolean;
   onModelAvailability?: (id:string,unavailable:boolean) => void;

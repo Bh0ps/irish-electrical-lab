@@ -5,6 +5,7 @@ import type {SitePose} from './site-camera';
 import {fittedHeaterView} from './fused-heater-site';
 import type {Vec3} from './types';
 import {cupboardView} from './consumer-unit-site';
+import {worktopOverview} from './kitchen-lighting';
 
 /** At arm's reach a tap operates the fitting; farther away it takes a closer look. */
 export function withinFittingReach(eye:Vec3|undefined,cap:Vec3){
@@ -15,6 +16,7 @@ export function withinFittingReach(eye:Vec3|undefined,cap:Vec3){
 export function standingView(site:JobSite,item?:SiteItem,aspect=1):SitePose {
   const stair=site.kind==='home'&&site.building.rooms[1]==='Stair hall';
   const room=item?.room??site.room;
+  if(room===0&&item?.fixture?.tapeProfile&&['left','right'].every(id=>site.items.some(i=>i.id===id&&i.fixture?.tapeProfile)))return worktopOverview(aspect,true);
   const board=site.cupboardBoard&&site.items.find(i=>i.id===site.cupboardBoard);
   if(board&&room===board.room)return cupboardView(board,'walk',aspect);
   const heater=site.items.find(i=>i.fixture?.panelHeater);
