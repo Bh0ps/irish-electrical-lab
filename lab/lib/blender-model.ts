@@ -148,7 +148,10 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
   for(const mesh of presentation.meshes){
     const visibleBulbStem=clearBulb&&mesh.part==='electronics';
     const conceptualInternal=!visibleBulbStem&&(mesh.conceptualInternal||['electronics','coil','thermal','magnetic'].includes(mesh.part)||mesh.part==='winding'&&!['transformer','dcsupply'].includes(component.type));
-    mesh.node.visible=!(view==='cutaway'&&mesh.coverAssembly||view==='normal'&&(conceptualInternal||mesh.serviceChamber));
+    // The bulb is removable as an assembly. Keep its glass, stem and filament
+    // together in Open, and show the inner lamp through the glass in Cutaway.
+    const bulbInterior=clearBulb&&(visibleBulbStem||mesh.filament||mesh.node.userData.lampEnvelope);
+    mesh.node.visible=!(view==='cutaway'&&mesh.coverAssembly&&!bulbInterior||view==='normal'&&(conceptualInternal||mesh.serviceChamber));
     if(component.variant==='door-contact' && contactPiece){
       mesh.node.visible &&= (mesh.part==='actuator')===(contactPiece==='magnet');
     }

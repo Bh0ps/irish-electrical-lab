@@ -16,7 +16,7 @@ test('compact reports show one relevant finding first while retaining every verd
   const html = render(checks);
   const firstCard = html.slice(html.indexOf('aria-label="First test finding"'), html.indexOf('<details'));
   assert.match(firstCard, /No result · unresolved-model/); assert.doesNotMatch(firstCard, /FAIL · protection/);
-  assert.match(firstCard, /Show on bench/); assert.match(firstCard, /check the supply/i);
+  assert.match(firstCard, /Show connection/); assert.match(firstCard, /check the supply/i);
   assert.match(html, /All checks \(6\)/);
   for (const item of checks) assert.match(html, new RegExp(item.title));
   assert.match(html, /PASS · stopped-state/); assert.match(html, /NOT RUN · not-run/); assert.match(html, /passed checks.*2026/);

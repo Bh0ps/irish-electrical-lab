@@ -28,6 +28,31 @@ export const faultChoices=[
   ['missing-earth','Missing earth wire (PE)'],['short-circuit','Short between line and neutral'],['earth-fault','Current leaking to earth'],
   ['overload','Overload · too much current'],['wrong-control','Fault in the control wiring'],['phase-loss','One phase missing'],
 ];
+
+export function lessonFaultChoices(id:number):string[][] {
+  if(id===13)return [
+    ['open-live','Break in the positive wire to the LED light'],
+    ['open-neutral','Break in the negative wire back to the driver'],
+    ['overload','The light is drawing too much current'],
+  ];
+  if(id===24)return [
+    ['open-live','Break in the wire from SEC 1 to the outlet'],
+    ['open-neutral','Break in the wire from SEC 2 to the outlet'],
+    ['overload','The shaver is drawing too much current'],
+  ];
+  if(id===43)return [
+    ['open-neutral','Break in the wire from the chime back to the transformer'],
+    ['overload','The chime is drawing too much current'],
+    ['open-live','Break in the wire from the transformer to the push'],
+  ];
+  if(id>=65)return [
+    ['wrong-control','The control is stuck in one position'],
+    ['open-wire','A break in one of the wires'],
+    ['short-circuit','A short between the two supply wires'],
+    ['overload','The load is drawing too much current'],
+  ];
+  return faultChoices.filter(([value])=>value!=='open-wire'&&(value!=='phase-loss'||id>=53));
+}
 export const kitchenFaultChoices=[
   ['wrong-control','The right switch has not closed'],['open-wire','A break between the right switch and the strip'],
   ['open-neutral','A break in the wire back from the strip to the driver'],

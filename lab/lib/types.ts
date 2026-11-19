@@ -37,7 +37,7 @@ export interface ConfigurationLesson {
   id: number; title: string; category: string; level: 'Foundation' | 'Intermediate' | 'Advanced';
   context: string; tag: 'Routine' | 'Existing' | 'Equipment dependent' | 'Advanced';
   summary: string; sections: LessonSection[]; steps: string[]; objectives: string[];
-  challenge: { title: string; briefing: string; fault: string; hint: string; answer: string; wire?: string; component?: string };
+  challenge: { title: string; briefing: string; fault: string; firstCheck: string; hint: string; answer: string; wire?: string; component?: string };
   references: { title: string; url: string }[]; circuit: CircuitDocument;
 }
 export const endpointKey = (e: Endpoint) => `${e.component}.${e.terminal}`;

@@ -100,7 +100,7 @@ const explanationClues: Partial<Record<number,string>> = {
   34: 'Put the probes across the heat pump’s supply. Which part of the unit does that reading check?',
   36: 'With the wall switch off, follow the fan timer’s supply wire back. Does it pass through the wall switch?',
   37: 'Leave the manual switch off. Try the humidity sensor on its own and watch the fan.',
-  39: 'Find the dry-run contact. Trace the feed to the pump coil. What happens to that path if the contact opens?',
+  39: 'Trace the wire from the pump motor back to the dry-run relay. Can the motor get power with that contact open?',
   41: 'Trace the Down coil’s wire back to the Up contactor. What happens to that contact when Up pulls in?',
   51: 'Trace the valve light’s wire back to the unloader relay. Which contact feeds it with the motor stopped?',
   55: 'Trace the coil wire back from A1. Is there a way round the Start button once the contactor pulls in?',

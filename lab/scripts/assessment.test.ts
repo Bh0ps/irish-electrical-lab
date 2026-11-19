@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
-import { LESSONS } from '../lib/lessons.ts';
+import { getLesson, LESSONS } from '../lib/lessons.ts';
 import { measureResistance, simulate } from '../lib/simulation.ts';
-import { assessBuild, assessConnections } from '../lib/assessment.ts';
+import { assessBuild, assessConnections, investigationReport } from '../lib/assessment.ts';
 import TestReport from '../components/lab/TestReport.tsx';
 import type { CircuitDocument, Endpoint } from '../lib/types.ts';
 
@@ -37,6 +37,41 @@ test('a bypass retains every original wire but fails the actual switch-OFF objec
   const d=circuit();extra(d,{component:'protect',terminal:'LOUT'},{component:'light',terminal:'L'},'L');
   assert.ok(simulate(d).componentPower.light>50);
   const a=fails(d,'switch-off');assert.ok(a.checks.some(c=>c.id==='extra:extra'&&c.status==='fail'));
+  const html=renderToStaticMarkup(React.createElement(TestReport,{assessment:a,running:false,stale:false,onSelect:()=>{}}));
+  assert.match(html.split('All checks')[0],/Hall light still draws power with the switch off/);
+  assert.match(html,/Switch off<\/dt><dd>240 V[\s\S]+Switch on<\/dt><dd>240 V/);
+});
+test('a neutral-earth link is reported once through a trip and never points to a broken parallel wire',()=>{
+  const d=circuit(), from={component:'supply',terminal:'PE'}, to={component:'protect',terminal:'NOUT'};
+  d.wires.push({id:'broken',from,to,role:'PE',resistance:.01,bends:[]});
+  extra(d,to,from);d.faults=[{wire:'broken',type:'open-wire',enabled:true}];
+  const r=simulate(d), a=assessBuild(d,r,example);
+  const links=a.checks.filter(c=>c.id.startsWith('finding:neutralEarth:'));
+  assert.deepEqual(links.map(c=>c.wire),['extra']);
+  assert.equal(links[0].component,'protect');
+  assert.match(links[0].explanation,/Hall light is off.*N · Load.*PE.*tripped/);
+  assert.ok(!investigationReport(a).checks.some(c=>c.id.startsWith('finding:neutralEarth:') || c.id.startsWith('fault:')));
+  const html=renderToStaticMarkup(React.createElement(TestReport,{assessment:a,running:false,stale:false,onSelect:()=>{},undoWire:{id:'extra',undo:()=>{}}}));
+  assert.match(html,/Show connection/);assert.match(html,/Undo this wire/);
+});
+
+test('the ring feeds all three cores at socket B. A blown fuse only opens line, and an earlier saved branch still passes its own wiring',()=>{
+  const d=structuredClone(getLesson(19)!.circuit), spur=d.components.find(c=>c.id==='branch-fuse')!;
+  assert.equal(spur.type,'fcu');
+  for(const run of d.cableRuns!.filter(run=>[run.from.component,run.to.component].includes(spur.id))){
+    assert.equal(d.wires.filter(w=>w.cable?.runId===run.id).length,3);
+  }
+  assert.equal(d.wires.filter(w=>w.from.component==='socket-b'&&w.to.component===spur.id).length,3);
+  d.faults.push({type:'overload',component:'fixed',enabled:true});
+  const r=simulate(d,{},1);
+  assert.equal(r.deviceStates[spur.id].tripped,true);assert.equal(r.deviceStates.protect.tripped,false);
+  assert.ok(r.componentPower['socket-a']>70);assert.ok((r.componentPower.fixed??0)<1e-8);
+  const feed=r.terminalVoltages[spur.id+'.NIN'],out=r.terminalVoltages[spur.id+'.NOUT'];
+  assert.equal(feed.reference,'mains');assert.equal(out.reference,feed.reference);
+  assert.ok(Math.hypot(feed.re-out.re,feed.im-out.im)<.01);
+  const old=getLesson(19,{...d,components:d.components.map(c=>c.id===spur.id?{...c,type:'fuse'}:c)})!;
+  assert.equal(old.circuit.wires.find(w=>w.id==='w17')!.from.component,'protect');
+  assert.equal(assessBuild(old.circuit,simulate(old.circuit),getLesson(19)!.circuit).passed,true);
 });
 test('missing live or neutral stops load and reports the exact missing connection',()=>{
   for(const id of ['w4','w5']){const d=circuit();d.wires=d.wires.filter(w=>w.id!==id);assert.ok((simulate(d).componentPower.light??0)<.05);fails(d,`connection:${id}`);}

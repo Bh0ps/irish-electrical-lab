@@ -1,5 +1,21 @@
 # Verification summary
 
+## 1.16.0 — Full screen on site
+
+**Phone controls.** The kitchen repair ran in touch Chromium and Windows WebKit at 390 × 844, 844 × 390 and 320 × 844 with text enlarged to 150%. We used touch coordinates on the strip pads and the back of the switch, hid the Job sheet, then reopened it to record each reading. The dark strip measured 0 V DC. The switch output measured 24 V DC. A wrong diagnosis left the repair locked. After the accepted diagnosis we found the fitting in the room, turned off the bench supply, opened the fitting and repaired the wire. Turning the supply back on and running a fresh test completed the job.
+
+**Walking and floors.** A touch session walked up both flights of stairs, returned to the same downstairs destination and found the landing switch. Holding the movement pad while dragging with a second finger changed both position and direction. Lifting or cancelling the touch stopped movement.
+
+**Rendering and offline.** We reproduced a blank kitchen on rotation in Windows WebKit even though the scene had drawn. A fresh frame after the viewport settles now makes the room visible again. The tests checked pixels in the room, movement and the opened fitting. A cold WebKit run completed the same repair with its local HTTP server stopped. The offline download covers 257 files, including both workers and the low-detail equipment library. A backup from the Windows app made the round trip through WebKit.
+
+**Circuits and learning.** All 80 working circuits and their 80 planted faults passed their electrical checks. The 2,485 activities map once each into the six stages. The course simulations ran 1,414 operating checks. All 1,118 example wires passed the routing clearance check. The evidence checks tested two readings and a wrong diagnosis on each fault. Course 19 now takes all three conductors from socket B through the switched fused unit. The switch opens both poles and the fuse opens line. The older separate-fuse example still passes its own checks.
+
+**Lamp holder.** We compared the S. Lilley 3015E holder and BC7/BC8 insert with manufacturer drawings and photos. Tests on both detail levels check the terminal screw heads, cable entries, two spring contacts and the separate earth connection. Open and exploded views retain the filament and bulb cap. The internal geometry is an original reconstruction. [S. Lilley holder photograph and section](https://s-lilley.co.uk/product/angle-batten-bc-shade-ring-earthed-brass-lampholder/)
+
+**Screen space and performance.** At 390 × 844 the Sandbox canvas grew from 374 × 664 CSS pixels in the standard layout to 390 × 794 in full screen. At 844 × 390 it grew from 828 × 271 to 844 × 340. On the Windows RTX 5070 Ti PC, an uncapped Chrome run with 30 fittings and 42 wires averaged 7.48 ms per frame during a 6.53-second pan, with 95% at or below 11.30 ms. The median solver run took 4.20 ms across eight supply edits. Three seconds at idle produced zero frames and zero worker requests. These are Windows browser measurements on release candidate `c3f96b0c0158f319b0dfa5e2`.
+
+**Limits of verification.** Touch and Home Screen checks used browser emulation on Windows. Physical iPhone performance, field use and independent learner or electrician feedback remain unverified.
+
 ## 1.15.0 — Put the probes on the chime
 
 **Lesson wording.** We compared the predictions and explanations in all 80 courses with the controls, wiring and readings on each bench. When a learner needs a clue, the stairs lesson names the switch to try. The motor starter points to the holding contact marked 13 and 14. The earlier saved door chime uses FRONT and REAR in its hints. The newer one uses C1 and C2. Learner and electrician feedback on the wording is still outstanding.

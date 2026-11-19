@@ -31,7 +31,9 @@ test('neutral-to-earth wiring remains a protective hint with the switch OFF with
   const hint = getBuildHint({ document, result, expected });
   assert.equal(hint?.kind, 'protection'); assert.match(hint!.id, /neutralEarth:/);
   assert.equal(hint?.wire, 'extra-n-pe'); assert.doesNotMatch(hint!.title, /trip|short/i);
-  assert.match(hint!.explanation, /remains when the switch is off/);
+  assert.match(hint!.explanation, /Hall light is off/);
+  assert.match(hint!.explanation, /N · Load/);
+  assert.doesNotMatch(hint!.explanation, /breaker is tripped/);
   assert.deepEqual({ document, result }, before);
 });
 
@@ -40,6 +42,7 @@ test('neutral-to-earth ON uses the actual protective result and prioritises the 
   assert.equal(result.deviceStates.protect.tripped, true);
   const hint = getBuildHint({ document, result, expected });
   assert.equal(hint?.kind, 'protection'); assert.match(hint!.id, /neutralEarth:/); assert.equal(hint?.wire, 'extra-n-pe');
+  assert.match(hint!.explanation, /breaker is tripped/);
 });
 
 test('earlier-revision diagnostics cannot accuse the current build', () => {

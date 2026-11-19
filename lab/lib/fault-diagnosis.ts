@@ -5,7 +5,7 @@ import type { CircuitDocument, Complex, ConfigurationLesson, Endpoint, FaultSett
 import { validateDiagnosisEvidence, type MeasurementEvidence } from './learning.ts';
 import { worktopFaultPoints, worktopFaultReadings } from './worktop-fault.ts';
 
-export type DiagnosisTarget = Pick<ConfigurationLesson['challenge'], 'fault' | 'wire' | 'component'>;
+export type DiagnosisTarget = Pick<ConfigurationLesson['challenge'], 'fault' | 'wire' | 'component'> & {hint?:string};
 export interface FaultDiagnosisAssessment { accepted: boolean; explanation: string }
 const reject = (explanation: string): FaultDiagnosisAssessment => ({ accepted: false, explanation });
 const accept = (explanation: string): FaultDiagnosisAssessment => ({ accepted: true, explanation });
@@ -61,7 +61,7 @@ export function assessFaultDiagnosis(
       comparison=`The meter showed ${volts(switchOutput)} V at the switch and ${volts(strip)} V across the strip.`;
     }
   }
-  if (diagnosis !== fault.type) return reject(comparison ? comparison+' You left one probe on the same pad. Which wire did you check at each end?' : 'Follow the feed to the fitting. Where does the reading change? Check the return wire too.');
+  if (diagnosis !== fault.type) return reject(comparison ? comparison+' You left one probe on the same pad. Which wire did you check at each end?' : challenge.hint??'Where does the reading change? Check both the feed and the return.');
   try {
     const clear = repaired(document, fault);
     if (openFaults.has(fault.type)) {
@@ -84,7 +84,7 @@ export function assessFaultDiagnosis(
       const restored = simulate(clear, result.deviceStates, 0);
       const restoredCurrent = magnitude(restored.wireCurrents[wire.id]);
       if (restored.converged && restoredCurrent !== undefined && restoredCurrent > 1e-5) return accept(`No current flows between ${ends}. In a copy of your circuit, repairing this wire lets current flow again.`);
-      return reject('A sound wire can read 0 A when the load is off. Try the switch. To check the wire for a break, turn off all supplies and measure continuity between its ends.');
+      return reject(document.lessonId===43?'Keep the bell push held with the supply on. Check the transformer output and the wire feeding the push.':challenge.hint??'A sound wire can read 0 A when the load is off. Try the control and check the reading again.');
     }
 
     if (!targetComponent || !['short-circuit', 'earth-fault', 'overload'].includes(fault.type)) return reject('The bench has no meter check for this fault. Restart the exercise.');

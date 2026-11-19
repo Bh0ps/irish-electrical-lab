@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.16.0 — Full screen on site
+
+- Open a job full screen on a phone. Walk with one thumb and drag to look with the other. Find a fitting, take your readings and open it for a repair. Job and Tools stay within reach when you rotate the phone.
+- Fault practice starts with what you can see on the job. The next clues give you two readings to try. You can compare your own readings when you choose a diagnosis. A fresh test checks the repair.
+- A test on the hall light shows what it did with the switch on and off. If a wire joins neutral to earth, the report points to that wire. The fused heater branch now takes line, neutral and earth from socket B. Older saved branches keep their wiring.
+- Inspect the brass shell, ceramic insert, wire entries and earth lug behind the hall lamp holder.
+
 ## 1.15.0 — Put the probes on the chime
 
 - Each of the 80 lessons has a short clue about its own circuit. A wrong answer gives you something to look at or try. The explanation is still available under Help.

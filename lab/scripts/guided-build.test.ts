@@ -134,7 +134,7 @@ test('every authored connection in all 80 lessons accepts its own isolated addit
     }
     assert.equal(document.wires.length, lesson.circuit.wires.length);
   }
-  assert.equal(checked, 1115);
+  assert.equal(checked, 1117);
 });
 
 test('guided setup isolates all represented sources without mutating equipment, examples or stored formats', () => {
@@ -198,6 +198,6 @@ test('isolation instructions retain all activity IDs and only extend two source 
     assert.equal(new Set(activities.map(activity => activity.id)).size, activities.length);
     count += activities.length;
   }
-  assert.equal(count, 2483);
+  assert.equal(count, 2485);
   assert.deepEqual(localContracts, [47, 48]);
 });

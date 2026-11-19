@@ -299,12 +299,18 @@
       "lamp-internal-construction",
       "tungsten-coiled-filament",
       "lamp-mounting",
-      "ceramic-terminal-insert"
+      "b22-spun-back",
+      "b22-bayonet-shell",
+      "ceramic-terminal-insert",
+      "b22-insert-L",
+      "b22-insert-N",
+      "b22-earth-bond",
+      "b22-insert-PE"
     ],
-    "sourceMeshCount": 63,
-    "meshCount": 21,
-    "triangles": 34554,
-    "lowTriangles": 6472,
+    "sourceMeshCount": 116,
+    "meshCount": 24,
+    "triangles": 64836,
+    "lowTriangles": 23138,
     "terminals": [
       {
         "id": "L",
@@ -361,8 +367,8 @@
         ]
       }
     ],
-    "bytes": 852256,
-    "lowBytes": 214148,
+    "bytes": 1655276,
+    "lowBytes": 703692,
     "bespokeBlender": true
   },
   {

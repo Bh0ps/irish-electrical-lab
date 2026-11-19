@@ -28,7 +28,7 @@ export function nextCheckForFinding(finding: Finding): string {
   const id = finding.id;
   if (id === 'scenario:unassigned') return 'Open Live readings to check your own circuit.';
   if (finding.status === 'unresolved' || finding.category === 'model') return 'Check the supply and the fittings shown on the bench. Then choose Test circuit again.';
-  if (id.includes('neutralEarth:')) return 'Switch off the bench supply. Follow the neutral and earth wires to find where they meet.';
+  if (id.includes('neutralEarth:')) return finding.wire ? 'Switch off the bench supply and check both ends of this wire.' : 'Switch off the bench supply. Follow neutral and earth to find where they meet.';
   if (id.includes('cpc:')) return 'Follow the wire from the earth terminal (PE) back to the supply earth.';
   if (id.includes('polarity:')) return 'Follow the wire on L back to the line supply. Then do the same for N and neutral.';
   if (id.includes('tripped:')) return 'Look at the reading saved just before it tripped. Fix the fault, reset it and test again.';
@@ -40,6 +40,8 @@ export function nextCheckForFinding(finding: Finding): string {
   if (id.startsWith('extra:')) return 'Select the wire and compare its two ends with the lesson drawing.';
   if (id.startsWith('identity:')) return 'Compare the marking on the wire with the one in the lesson.';
   if (id.startsWith('fault:')) return 'Record a reading at the fitting, then repair the fault and test again.';
+  if (id==='switch-off') return 'Follow the wire on L at the lamp. See where it can still get a feed with the switch off.';
+  if (id==='switch-on') return 'Check the feed leaving the switch, then the two connections at the lamp.';
   if (id === 'supply') return finding.title==='No bench supply connected' ? 'Choose Add equipment and pick a supply for your circuit.' : 'Turn the bench supply on and test again.';
   if (finding.status === 'not-run') return 'Try the control named in this step, then test again.';
   if (finding.category === 'protection') return 'Check the wiring at both ends before you reset the device or test again.';
@@ -48,11 +50,11 @@ export function nextCheckForFinding(finding: Finding): string {
 }
 
 /** Presentation priority; it does not change assessment status or suppress checks. */
-export function findingPriority(finding: Pick<AssessmentCheck, 'category' | 'status'>): number {
+export function findingPriority(finding: Pick<AssessmentCheck, 'category' | 'status'> & {id?:string}): number {
   if (finding.category === 'model') return 0;
   if (finding.category === 'protection') return 1;
   if (finding.category === 'operation') return 2;
-  return 3;
+  return finding.id==='switch-off' ? 3 : 4;
 }
 
 function diagnosticHint(document: CircuitDocument, result: SimulationResult, diagnostic: Diagnostic): BuildHint {

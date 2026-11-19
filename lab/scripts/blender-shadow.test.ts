@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
-import {castsEquipmentShadow,prepareBlenderModel,presentBlenderModel} from '../lib/blender-model';
+import {castsEquipmentShadow,prepareBlenderModel,presentBlenderModel,semanticOwner} from '../lib/blender-model';
 import {createGalleryInventory} from '../components/lab/ModelGallery';
 import {COMPONENTS} from '../lib/components';
 import {equipmentAsset} from '../lib/equipment-assets';
@@ -67,8 +67,8 @@ test('actual bulb light has a clear route to the forward bench receiver through 
     const model=prepareBlenderModel(await load(url));
     try{
       presentBlenderModel(model,'normal',component,state);model.scene.updateMatrixWorld(true);
-      const ceramicCap=model.meshes.filter(mesh=>mesh.part==='cover');
-      assert.ok(ceramicCap.length>0&&ceramicCap.every(mesh=>!mesh.lampOutput&&!mesh.light&&mesh.node.castShadow),'opaque B22 retaining collar stays unlit and keeps its physical shadow');
+      const barrel=model.meshes.filter(mesh=>semanticOwner(mesh.node).detail==='b22-bayonet-shell');
+      assert.ok(barrel.length>0&&barrel.every(mesh=>mesh.part==='body'&&!mesh.lampOutput&&!mesh.light&&mesh.node.castShadow),'the brass B22 barrel and shade collar stay on the fixed holder and cast shadows');
       const light=lampIllumination(component,{deviceStates:{[component.id]:state}} as SimulationResult)!;
       const start=new THREE.Vector3(...light.position),receiver=new THREE.Vector3(0,.01,1.4),direction=receiver.clone().sub(start);
       const ray=new THREE.Raycaster(start,direction.clone().normalize(),.03,direction.length());

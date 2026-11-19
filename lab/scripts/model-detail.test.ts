@@ -264,7 +264,10 @@ test('normal lamp and gang-module retaining hardware lies on its physical assemb
     const scene=await load(asset.url),hardware=details(scene).get('lamp-mounting')![0];
     const definition=COMPONENTS[asset.type],scaleY=definition.size[1]/1.45;
     const centre=new THREE.Box3().setFromObject(hardware).getCenter(new THREE.Vector3());
-    if(asset.key==='lamp_bulb')assert.ok(centre.y<.28*scaleY,'bulb pedestal fixings stay at its base');
+    if(asset.key==='lamp_bulb'){
+        const flange=new THREE.Box3().setFromObject(hardware,true);
+        assert.ok(Math.abs(centre.y-.270)<.001&&Math.abs(flange.min.z+.161)<.001&&Math.abs(flange.getSize(new THREE.Vector3()).x-.510)<.001,'48 mm holder flange remains on its wall mounting plane');
+      }
     else assert.ok(centre.y>.45*scaleY&&centre.y<.9*scaleY,asset.key+' hardware stays near the fitting rather than below it');
   }
   const right=manifest.find(a=>a.key==='switch_gang-module-right')!;

@@ -135,7 +135,11 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
       }
     } else if (isType(item, 'mcb', 'fuse', 'cable')) {
       contact(item, 'main', 'IN', 'OUT', closed);
-    } else if (isType(item, 'rcd', 'rcbo', 'isolator', 'fcu')) {
+    } else if (item.type==='fcu') {
+      contact(item,'L','LIN','LOUT',closed);
+      // The fuse is in line. Only the double-pole switch opens neutral.
+      contact(item,'N','NIN','NOUT',closedCommand(item));
+    } else if (isType(item, 'rcd', 'rcbo', 'isolator')) {
       contact(item, 'L', 'LIN', 'LOUT', closed); contact(item, 'N', 'NIN', 'NOUT', closed);
     } else if (isType(item, 'rcd3', 'isolator3', 'mcb3', 'plug3')) {
       for (const name of ['L1', 'L2', 'L3', 'N']) if (has(`${name}IN`) && has(`${name}OUT`)) contact(item, name, `${name}IN`, `${name}OUT`, closed);
@@ -345,16 +349,25 @@ function installationDiagnostics(document: CircuitDocument, net: Network, solved
   const protective = new Set(document.components.flatMap(item => (definition(item)?.terminals || []).filter(t => t.role === 'PE').map(t => paths.find(terminal(item, t.id)))));
   const mainsNeutrals = document.components.flatMap(item => (definition(item)?.terminals || []).filter(t => t.role === 'N' && ['N','NIN','NOUT'].includes(t.id) && !isType(item, 'source', 'source3')).map(t => ({item, name:terminal(item,t.id)})));
   const reported = new Set<string>();
+  const terminals = new Map(document.components.flatMap(item => (definition(item)?.terminals ?? []).map(t => [terminal(item,t.id), t.role] as const)));
+  const conductingWires = new Set(net.branches.filter(b => b.key.startsWith('wire:')).map(b => b.key.slice(5)));
   for (const {item,name} of mainsNeutrals) {
     const group = paths.find(name);
     if (!protective.has(group) || reported.has(group)) continue;
     reported.add(group);
-    const wire = document.wires.find(w => {
-      const a = document.components.find(c => c.id === w.from.component), b = document.components.find(c => c.id === w.to.component);
-      const ar = a && definition(a)?.terminals.find(t => t.id === w.from.terminal)?.role, br = b && definition(b)?.terminals.find(t => t.id === w.to.terminal)?.role;
-      return paths.find(endpointKey(w.from)) === group && (ar === 'PE' && br === 'N' || ar === 'N' && br === 'PE');
+    const links = document.wires.filter(w => {
+      if (!conductingWires.has(w.id) || paths.find(endpointKey(w.from)) !== group) return false;
+      const ar = terminals.get(endpointKey(w.from)), br = terminals.get(endpointKey(w.to));
+      return ar === 'PE' && br === 'N' || ar === 'N' && br === 'PE';
     });
-    findings.push({...diag(`neutralEarth:${name}`, 'Neutral and protective earth are linked', 'Neutral and earth meet in this wiring. With a load on, some current can return along the earth wire and trip the protection. The link remains when the switch is off.', item.id, 'warning', 'protection'), ...(wire ? {wire:wire.id} : {})});
+    const reportLink = (id:string, component:string) => diag('neutralEarth:'+id, 'Neutral and earth are joined', 'This link gives return current a path through the earth wire. The link remains when the switch is off.', component, 'warning', 'protection');
+    if (!links.length) findings.push(reportLink(name,item.id));
+    // A trip can split a group at its neutral pole. The physical wire keeps
+    // the same identity on either side of the trip and in a saved test report.
+    for (const wire of links) {
+      const neutralEnd = terminals.get(endpointKey(wire.from))==='N' ? wire.from : wire.to;
+      findings.push({...reportLink('wire:'+wire.id,neutralEnd.component),wire:wire.id});
+    }
   }
   for (const item of document.components) {
     const ts = definition(item)?.terminals || [];

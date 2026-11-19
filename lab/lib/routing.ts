@@ -1,6 +1,6 @@
 import { dinForm, DIN_BENCH_LIFT, DIN_UNIT } from './din-devices.ts';
 import { COMPONENTS, definitionFor } from './components.ts';
-import { getComponentTerminals } from './terminal-layout.ts';
+import { b22SeatDepth, equipmentVariant, getComponentTerminals, lampForm } from './terminal-layout.ts';
 import { isBoard, mountVector, dinBodyWidth, boardSidePanels } from './board-assembly.ts';
 import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types.ts';
 import { cableCores } from './cables.ts';
@@ -62,6 +62,14 @@ export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
 
 export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;normal:Vec3} {
   const c=doc.components.find(item=>item.id===e.component);
+  if(c?.type==='lamp'&&lampForm(equipmentVariant(c,COMPONENTS.lamp))==='bulb'){
+    const t=getComponentTerminals(c,COMPONENTS.lamp).find(t=>t.id===e.terminal);
+    if(t){
+      // The clamp head is separate from its occupied conductor bore.
+      const local:Vec3=[t.anchor[0],t.anchor[1]+.046,t.anchor[2]+b22SeatDepth(e.terminal)-.0025];
+      return {position:localToWorld(c,mountVector(c,local)),normal:terminalDirection(doc,e)};
+    }
+  }
   if(c?.type==='callchime'&&c.variant==='croma-100a'){
     const contact=cromaProbeContact(e.terminal);
     if(contact)return {position:localToWorld(c,contact.position),normal:rotateDirection(c.rotation,contact.normal)};

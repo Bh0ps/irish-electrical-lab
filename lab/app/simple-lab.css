@@ -27,7 +27,8 @@
 .book-shell .canvas-top-label,.book-shell .canvas-bottom,.showing-equipment-list .canvas-top-label,.showing-equipment-list .canvas-bottom,.book-landing .heading-actions,.book-landing .bench-status,.book-landing .phone-sheet-heading,.book-landing .canvas-wrap .toolbar,.book-shell .desktop-bench-action {display:none!important;}
 .book-shell:not(.book-landing) .simple-workspace .bench-status:not(:has(.attached-lesson)) { display:none; }
 .book-landing .learn-column { background:#fcfaf5; }
-.wiring-observation { border-inline-start:3px solid #ac7226; padding:8px 12px; background:#fff7e7; }
+.report-actions { display:flex; flex-wrap:wrap; gap:.5rem; }
+.simple-lab .report-actions .quiet-button { min-height:44px; padding:6px 12px; }
 .wire-identification { padding:.45rem 0; }
 .wire-identification summary { cursor:pointer; }
 .mobile-lab.book-landing .book-home { padding:12px 4px max(12px,env(safe-area-inset-bottom)); }
@@ -397,3 +398,17 @@ body:has(.mobile-lab) [data-slot=dialog-content] button { min-height: 44px; }
 .point-picker:focus-visible{outline:2px solid #366747;outline-offset:2px}
 
 .scene-loading{display:grid;place-items:center;min-height:10rem;height:100%;color:#38523e;background:#e6e9e3}
+
+.fault-practice .fault-readings {
+  display:grid; gap:.35rem; margin:.3rem 0 .85rem; padding:.55rem 0;
+  border-block:1px solid #d4ded7;
+}
+.fault-readings > div { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:.8rem; }
+.fault-readings dt { font-size:.875rem; line-height:1.35; overflow-wrap:anywhere; }
+.fault-readings dd { margin:0; font-weight:650; font-variant-numeric:tabular-nums; }
+.fault-help { margin:.35rem 0; }
+.fault-help > summary { min-height:44px; align-content:center; cursor:pointer; }
+.fault-help > p { margin:.2rem 0 .5rem; }
+.fault-help > button { min-height:44px; white-space:normal; }
+.fault-practice .task-topline { flex-wrap:wrap; column-gap:.6rem; }
+.mobile-lab .learn-column .fault-practice.active-task > .primary-button { position:static; box-shadow:none; }
