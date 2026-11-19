@@ -11,6 +11,7 @@ export function bg812Contact(id:string):{position:Vec3;normal:Vec3}|undefined {
 /** Each occupied terminal shows its wire end independently, also after Undo. */
 export function connectedRockerTerminals(c:Pick<ComponentInstance,'id'|'type'|'variant'>,wires:readonly Wire[]):string|undefined {
   const ids=c.type==='switch2'?['COM','T1','T2']:c.type==='switch'&&c.variant==='dc-rocker'?['COM','OUT']
+    :c.type==='pushbutton'&&c.variant==='sesame'?['COM','NO']
     :c.type==='lamp'?['L','N','PE']:c.type==='fcu'?['LIN','NIN','LOUT','NOUT','PE','PE2']
     :c.type==='callchime'&&c.variant==='croma-100a'?CROMA_PINS:undefined;
   if(!ids)return;

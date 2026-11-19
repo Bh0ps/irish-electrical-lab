@@ -17,7 +17,7 @@ import { checkSwitchPress, lessonSwitch, type LessonControlPress } from '../../l
 import { describeEndpoint } from '../../lib/build-hints';
 
 interface Props {
-  onWorktopFault?:()=>void; onHeaterFault?:()=>void; onStairJob?:()=>void;
+  onBellFault?:()=>void; onWorktopFault?:()=>void; onHeaterFault?:()=>void; onStairJob?:()=>void;
   lesson: ConfigurationLesson; document: CircuitDocument; result?: SimulationResult; selected?: string; selectedPart: string;
   record: LearningRecord; evidence: MeasurementEvidence[]; depth: 'foundation' | 'apprentice'; challengeStarted: boolean; mode: string;
   assessment?: BuildAssessment; diagnosisAccepted: boolean; challengeRepaired: boolean;
@@ -390,7 +390,7 @@ export default function LearningPanel(props: Props) {
         </details>)}
       </details>}
       {course&&props.onStairJob&&<Button variant="outline" onClick={props.onStairJob}>Try both stair switches</Button>}
-      {course&&(props.onWorktopFault?<Button variant="outline" onClick={props.onWorktopFault}>One worktop stays dark</Button>:props.onHeaterFault?<Button variant="outline" onClick={props.onHeaterFault}>The heater stays cold</Button>:<Button variant="outline" onClick={props.onChallenge}>Try a fault on this circuit</Button>)}
+      {course&&(props.onBellFault?<Button variant="outline" onClick={props.onBellFault}>The back doorbell is quiet</Button>:props.onWorktopFault?<Button variant="outline" onClick={props.onWorktopFault}>One worktop stays dark</Button>:props.onHeaterFault?<Button variant="outline" onClick={props.onHeaterFault}>The heater stays cold</Button>:<Button variant="outline" onClick={props.onChallenge}>Try a fault on this circuit</Button>)}
       {course && props.onFullExercises && <Button variant="outline" onClick={props.onFullExercises}>Open all six exercise stages</Button>}
       <details className="reference-notes"><summary>Lesson notes</summary>
         <p>{props.lesson.summary}</p><span className="context-tag">{props.lesson.tag}</span>

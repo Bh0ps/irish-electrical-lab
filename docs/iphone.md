@@ -9,11 +9,13 @@ Safari, the Home Screen app, and Windows keep separate study data. On Windows, c
 ## Walk around and make a repair
 
 1. Open a job and tap **Walk** or **Full screen**. Tap an arrow to take a short step, or hold it to keep walking. Drag the room to look around. To steer with the same thumb, open **Tools**, turn on **One-thumb walking** and close the tools. The side arrows now turn you. Hold the pad diagonally to walk round a corner. [See the one-thumb controls in the kitchen](images/iphone-one-thumb.png).
-2. Face a fitting. A small frame marks the fitting named on **Go closer**. Tap **Go closer**, or tap **Find** and choose it by name. In a close-up, tap **Zoom** to double the size of the fitting. Pinch to adjust it or tap **1×** to get the whole fitting back. Tap **Walk** to step back into the room.
-3. Tap **Tools** for the meter, workbench, drawing or equipment list. **Job** opens and closes your instructions. You can hide the sheet to touch a meter point, then bring it back to record the reading. Your probes stay in place.
+2. Face a fitting. A small frame marks the fitting named on **Go closer**. Tap **Go closer** to bring it within reach. **Find** also lets you search by room, fitting name or drawing reference. Choose a room to walk there, or a fitting to see it up close. In a close-up, tap **Zoom** to double the size of the fitting. Pinch to adjust it or tap **1×** to get the whole fitting back. Tap **Walk** to step back into the room.
+3. Tap **Tools** for the meter, workbench, drawing or equipment list. **Job** opens and closes your instructions. You can hide the sheet to touch a meter point, then bring it back to record the reading. Your probes stay in place. In full screen, **Put meter away** takes you back to the site.
 4. For a repair, choose **Chapters → The heater stays cold**. Use the virtual bench meter to find where the feed stops. After diagnosis, tap **Find repair on site**. Switch off the simulated supply and open the wall fitting. Tap a terminal for the loose brown wire, or tap **Reconnect flex** to choose its marking from a list. Turn the supply back on. With the new panel heater, work the wall switch and check that element power falls to zero and comes back. Tap **Test the repair** to finish.
 
 ![Oakfield kitchen in full screen with Move in the lower left, Go closer on the right, and Job and Tools at the top](images/iphone-site-walk.png)
+
+For the two-door bell job, walk through the house or around it by the side passage. Tap a door button once to hold it for a reading and again to let go. The short message at the top tells you which call reached the hall chime. Turn **Doorbell sounds** off in **Tools** if you prefer. [See the front entrance in full screen](images/oakfield-front-door.png). To trace a broken call wire, open **Chapters → The back doorbell is quiet**.
 
 **Exit** brings back the regular layout. Turn your phone sideways for a wider room view. Launching the Home Screen icon gives the lab the space normally used by Safari’s controls. [See the heater switch at 2× zoom](images/kitchen-heater-repair.png).
 

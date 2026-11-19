@@ -1,3 +1,4 @@
+import {bellReadings,bellComparisonReady,bellInput,backPushOutput} from './bell-fault.ts';
 import { definitionFor } from './components.ts';
 import { describeEndpoint } from './endpoint-description.ts';
 import { measureResistance, measureVoltage, simulate } from './simulation.ts';
@@ -62,6 +63,17 @@ export function assessFaultDiagnosis(
       comparison=`The meter showed ${volts(switchOutput)} V at the switch and ${volts(strip)} V across the strip.`;
     }
   }
+  let bellComparison=false;
+  if(document.lessonId===72&&evidence&&hasEnd(bellInput)&&hasEnd(backPushOutput)){
+    const rows=bellReadings(document,result,evidence);
+    if(bellComparisonReady(rows)){
+      const volts=(sample:MeasurementEvidence)=>sample.instrument?.displayed??sample.value!.toLocaleString('en-IE',{maximumSignificantDigits:3});
+      const mark=describeEndpoint(document,bellInput)?.pointLabel??'back call';
+      comparison='The back button gave '+volts(rows.push!)+' V. At '+mark+' on the chime you found '+volts(rows.call!)+' V.';
+      if(diagnosis!==fault.type)return reject(comparison+' Which wire joins those points?');
+      bellComparison=true;
+    }
+  }
   const feed=heaterFeed(document);
   if(feed&&evidence&&hasEnd(feed)&&hasEnd(heaterLine)){
     const readings=heaterFaultReadings(document,result,evidence);
@@ -83,6 +95,7 @@ export function assessFaultDiagnosis(
       if (current === undefined || current > 1e-6) return reject('Check the current in this wire, then put one voltage probe at each end.');
       const voltage = measureVoltage(result, wire.from, wire.to).value;
       if (voltage !== null && voltage > 1) {
+        if(bellComparison)return accept(comparison+' The back call is lost between the button and the hall chime.');
         if(comparison)return accept(comparison+(feed?' The fault is in the line between those two points.':' Both checks used the same − pad. There’s a break in the wire between the switch and the strip.'));
         return accept(`There’s a break between ${ends}. No current flows in that wire. The voltage across it is ${voltage.toLocaleString('en-IE',{maximumSignificantDigits:3})} V.`);
       }

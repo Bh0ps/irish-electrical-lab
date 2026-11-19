@@ -655,8 +655,9 @@ def main():
         for obj in root.children_recursive:obj.select_set(True)
         export_glb(ASSETS/f"{entry['key']}.glb")
         meshes=[obj for obj in root.children_recursive if obj.type=='MESH'];triangles=sum(sum(len(p.vertices)-2 for p in obj.data.polygons) for obj in meshes)
-        if recipe['galleryKey'] == 'fan:xf100s':
-            build_bathroom_fan(recipe,root,api,distance=True)
+        if recipe['galleryKey'] in ('fan:xf100s','pushbutton:sesame'):
+            model_builder=build_bathroom_fan if recipe['galleryKey']=='fan:xf100s' else build_sesame_push
+            model_builder(recipe,root,api,distance=True)
             merge_static(root);tag_inspection_shells(root)
             bpy.ops.object.select_all(action='DESELECT');root.select_set(True)
             for obj in root.children_recursive:obj.select_set(True)

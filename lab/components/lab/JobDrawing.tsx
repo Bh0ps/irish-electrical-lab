@@ -6,7 +6,7 @@ import {endpointKey} from '../../lib/types';
 import {COMPONENTS} from '../../lib/components';
 import {getComponentTerminals} from '../../lib/terminal-layout';
 import {type JobSite,drawingKind,BACK} from '../../lib/job-site';
-import {GARDEN_DOOR,HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,HOME_STAIR,REAR_GARDEN,STAIR_FOOT,STAIR_LANDING,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
+import {BELL_FORECOURT,GARDEN_DOOR,HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,HOME_STAIR,REAR_GARDEN,SIDE_PASSAGE,STAIR_FOOT,STAIR_LANDING,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
 import {ServicePlan,serviceSpaces} from './ServicePlan';
 import BellCupboardDrawing,{insideBellCupboard} from './BellCupboardDrawing';
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
@@ -67,7 +67,7 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
   function reset(){setZoom(1);diagram.current?.scrollTo({top:0,left:0});}
   const house=site.kind==='home',bathroom=site.building.rooms[1]==='Bathroom';
   const stair=doc.lessonId===9?HOME_STAIR:undefined;
-  const rooms=site.kind==='home'?(stair?[...HOME_ROOMS,STAIR_LANDING]:HOME_ROOMS):serviceSpaces(site.kind);
+  const rooms=site.kind==='home'?[...HOME_ROOMS,...(stair?[STAIR_LANDING]:[]),...(site.doorsteps?[SIDE_PASSAGE]:[])]:serviceSpaces(site.kind);
   const annex=site.kind==='home'?undefined:SERVICE_AREAS[site.kind];
   const left=Math.min(-6.6,annex?.left??-6.6),right=Math.max(6.6,annex?.right??6.6),back=Math.min(-2.8,annex?.back??-2.8);
   const x=(n:number)=>42+(n-left)*41, y=(n:number)=>24+(n-(house?HOME_BACK:back))*41;
@@ -78,7 +78,8 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
   const planTop=showGarden?Math.floor(y(REAR_GARDEN.back)-12):0;
   // A close plan of the entrance keeps the tag, wall penetration and door swing together on a phone.
   const crop=planRoom?.id===REAR_GARDEN.id?{left:GARDEN_DOOR.centre-1.9,right:GARDEN_DOOR.centre+1.9,back:HOME_BACK-1.75,front:HOME_BACK+1.12}:planRoom;
-  const planBox=crop?[x(crop.left)-12,y(crop.back)-12,(crop.right-crop.left)*41+24,(crop.front-crop.back)*41+24].join(' '):house?[0,planTop,640,592-planTop].join(' '):[0,0,84+(right-left)*41,48+(6-back)*41].join(' ');
+  const planLeft=site.doorsteps?Math.floor(x(SIDE_PASSAGE.left))-12:0;
+  const planBox=crop?[x(crop.left)-12,y(crop.back)-12,(crop.right-crop.left)*41+24,(crop.front-crop.back)*41+24].join(' '):house?[planLeft,planTop,640-planLeft,(site.doorsteps?y(BELL_FORECOURT)+16:592)-planTop].join(' '):[0,0,84+(right-left)*41,48+(6-back)*41].join(' ');
   const width=page==='wiring'?sheet.width:640;
   const ladder=useMemo(()=>page==='ladder'?ladderPaths(docForSheet):[],[page,docForSheet]);
   const ladderWidth=Math.max(640,240+Math.max(0,...ladder.map(r=>r.path.length))*85);
@@ -103,11 +104,12 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
         <defs><pattern id="site-hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 6L6 0" stroke="#b6c3b9" fill="none" strokeWidth=".5"/></pattern></defs>
         {house?<g data-oakfield-plan>
           {HOME_ROOMS.filter(r=>r.id!==3&&(r.id!==REAR_GARDEN.id||showGarden)).map(r=><rect key={r.id} x={x(r.left)} y={y(r.back)} width={(r.right-r.left)*41} height={(r.front-r.back)*41} fill={r.id===REAR_GARDEN.id?'#e0e8d8':r.id===6||r.id===1?'#f2f0de':'#f8f8ea'}/>)}
+          {site.doorsteps&&<g aria-label="Paved side passage"><path d={`M ${x(.12)} ${y(3)} V ${y(4.26)} H ${x(-7.43)} V ${y(HOME_BACK-1.03)} H ${x(GARDEN_DOOR.centre)} V ${y(HOME_BACK-.15)}`} fill="none" stroke="#d8d7c9" strokeWidth={41*1.15}/><text className="room-caption" textAnchor="middle" transform={`translate(${x(-7.43)} ${y(-2.2)}) rotate(-90)`}>Side passage</text></g>}
           {Object.entries(HOUSE_FURNITURE).map(([name,b])=><rect key={name} x={x(b.x-b.w/2)} y={y(b.z-b.d/2)} width={b.w*41} height={b.d*41} rx="2" fill="#dcded0" stroke="#b5bdac"><title>{name}</title></rect>)}
-          {HOME_WALLS.map(w=><g key={w.id}>{wallSpans(w,bathroom,!!stair).map(([a,b])=>{
+          {HOME_WALLS.map(w=><g key={w.id}>{wallSpans(w,bathroom,!!stair,site.doorsteps).map(([a,b])=>{
             const p=alignWall(w,a,0,0,0),q=alignWall(w,b,0,0,0);
             return <path key={a} d={`M${x(p.x)} ${y(p.z)} L${x(q.x)} ${y(q.z)}`} stroke="#4c655d" strokeWidth="4"/>;})}
-            {doorsOn(w,bathroom,!!stair).map(d=>{const leaf=doorLeaf(w,d),latch=alignWall(w,d.centre-d.hinge*d.width/2,0,0,0);
+            {doorsOn(w,bathroom,!!stair,site.doorsteps).map(d=>{const leaf=doorLeaf(w,d),latch=alignWall(w,d.centre-d.hinge*d.width/2,0,0,0);
               const end=alignWall(w,d.centre+d.hinge*d.width/2,d.side*d.width,0,0),hinge=alignWall(w,d.centre+d.hinge*d.width/2,0,0,0);
               return <g key={d.centre}><rect x={x(leaf.x-leaf.w/2)} y={y(leaf.z-leaf.d/2)} width={leaf.w*41} height={leaf.d*41} fill="#889d91"/>
                 <path d={`M${x(latch.x)} ${y(latch.z)} Q${x(end.x+latch.x-hinge.x)} ${y(end.z+latch.z-hinge.z)} ${x(end.x)} ${y(end.z)}`} fill="none" stroke="#9eab9c" strokeDasharray="3 2"/></g>;})}

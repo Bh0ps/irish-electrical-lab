@@ -1,3 +1,4 @@
+import {bellFaultActivity,bellFaultTitle} from '../../lib/bell-fault';
 import { worktopFaultTitle } from '../../lib/fault-practice';
 import { heaterFaultActivity, heaterFaultTitle } from '../../lib/heater-fault';
 import { useState, useMemo } from 'react';
@@ -18,7 +19,8 @@ export function BookHome({ resume, start, index }: { resume?: string; start: () 
   </section>;
 }
 
-export function BookIndex({ open, practice, quick, currentLessonId, resumeCurrent, houseCall, progress, showJobs, resumeJobId, worktopFault, savedWorktopFault, heaterFault, savedHeaterFault }: {
+export function BookIndex({ open, practice, quick, currentLessonId, resumeCurrent, houseCall, progress, showJobs, resumeJobId, worktopFault, savedWorktopFault, heaterFault, savedHeaterFault, bellFault,savedBellFault }: {
+  bellFault?:()=>void; savedBellFault?:boolean;
   worktopFault:()=>void; savedWorktopFault:boolean;
   heaterFault:()=>void; savedHeaterFault:boolean;
   open: (lessonId: number, practical: boolean) => void; practice: () => void; quick: string;
@@ -30,9 +32,12 @@ export function BookIndex({ open, practice, quick, currentLessonId, resumeCurren
   const searching = Boolean(search.trim());
   const matches = LESSONS.filter(lesson => courseMatchesQuery(lesson, search));
   const jobs = HOUSE_CALLS.filter(job=>matchesStudyQuery(['Jobs at Oakfield house',job.title,job.request,job.searchTerms,...job.steps.map(step=>step.instruction)].join(' '),search));
-  const kitchen=matchesStudyQuery('Kitchen fault finding at Oakfield house '+worktopFaultTitle+' right worktop strip switch meter',search);
-  const heater=matchesStudyQuery('Oakfield house '+heaterFaultTitle+' fused spur heater wall switch flex meter fault repair',search);
-  const jobCount=jobs.length+Number(kitchen)+Number(heater);
+  const faultJobs=[
+    {title:worktopFaultTitle,lesson:66,activity:'lesson:66:fault:worktop',terms:'kitchen right worktop strip switch meter',open:worktopFault,saved:savedWorktopFault},
+    {title:heaterFaultTitle,lesson:20,activity:heaterFaultActivity,terms:'fused spur heater wall switch flex meter',open:heaterFault,saved:savedHeaterFault},
+    {title:bellFaultTitle,lesson:72,activity:bellFaultActivity,terms:'hall chime doorbell back door button quiet',open:bellFault,saved:savedBellFault},
+  ].filter(job=>job.open&&matchesStudyQuery('Fault finding repair at Oakfield house '+job.title+' '+job.terms,search));
+  const jobCount=jobs.length+faultJobs.length;
   return <div className="book-index">
     <label className="book-search"><Search size={17} aria-hidden="true"/><input aria-label="Search lessons and jobs" type="search" value={search}
       placeholder="Search lessons and jobs" onChange={event => setSearch(event.target.value)}/></label>
@@ -41,8 +46,7 @@ export function BookIndex({ open, practice, quick, currentLessonId, resumeCurren
       <summary>Jobs at Oakfield house<small>{jobCount} {jobCount===1?'job':'short jobs'}</small></summary>
       <div className="chapter-rows">{jobs.map(job=><button type="button" key={job.lesson} onClick={()=>job.lesson===resumeJobId&&resumeCurrent?resumeCurrent():houseCall(job.lesson)}>
         <span>{job.title}{resumeJobId===job.lesson&&<small className="book-saved-place"><Bookmark size={12} aria-hidden="true"/>Saved place</small>}{resumeJobId!==job.lesson&&progress.learning[job.lesson]?.activityIds.includes(houseStepId(job,job.steps.length-1))&&<small className="book-saved-place">Completed</small>}</span><ChevronRight size={16} aria-hidden="true"/>
-      </button>)}{kitchen&&<button type="button" onClick={worktopFault}><span>{worktopFaultTitle}<small>{savedWorktopFault?'Saved place':progress.learning[66]?.activityIds.includes('lesson:66:fault:worktop')?'Completed':'Fault practice'}</small></span><ChevronRight size={16} aria-hidden="true"/></button>}
-      {heater&&<button type="button" onClick={heaterFault}><span>{heaterFaultTitle}<small>{savedHeaterFault?'Saved place':progress.learning[20]?.activityIds.includes(heaterFaultActivity)?'Completed':'Fault practice'}</small></span><ChevronRight size={16} aria-hidden="true"/></button>}</div>
+      </button>)}{faultJobs.map(job=><button type="button" key={job.activity} onClick={job.open}><span>{job.title}<small>{job.saved?'Saved place':progress.learning[job.lesson]?.activityIds.includes(job.activity)?'Completed':'Fault practice'}</small></span><ChevronRight size={16} aria-hidden="true"/></button>)}</div>
     </details>}
     {CHAPTERS.map(chapter => {
       const lessons = chapter.lessons.map(id => matches.find(lesson => lesson.id === id)).filter(lesson => !!lesson);

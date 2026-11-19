@@ -9,6 +9,7 @@ import {rockerProbeApproach,rockerProbeContact,rockerSleeveEndZ} from './dc-rock
 import {fcuProbeContact} from './bg851';
 import {bg812Contact} from './wall-rocker';
 import {CROMA_ENVELOPE,cromaLeadPath,cromaProbeContact} from './croma-chime';
+import {sesameProbeContact} from './sesame-push';
 
 // Shared with the renderer: selection changes colour, never the cable diameter.
 export const WIRE_RADIUS = .018;
@@ -63,6 +64,10 @@ export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
 
 export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;normal:Vec3} {
   const c=doc.components.find(item=>item.id===e.component);
+  if(c?.type==='pushbutton'&&c.variant==='sesame'){
+    const contact=sesameProbeContact(e.terminal);
+    if(contact)return {position:localToWorld(c,contact.position),normal:rotateDirection(c.rotation,contact.normal)};
+  }
   if(c?.type==='fcu'){
     const contact=fcuProbeContact(e.terminal);
     if(contact)return {position:localToWorld(c,mountVector(c,contact.position)),normal:rotateDirection(c.rotation,contact.normal)};

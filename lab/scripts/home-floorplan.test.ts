@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HOME_BACK,HOME_POINTS,HOME_ROOMS,HOME_VISITS,HOUSE_FURNITURE,GARDEN_DOOR,REAR_GARDEN,HOME_STAIR,STAIR_EYE,STAIR_FOOT,STAIR_HALF,STAIR_TOP,STAIR_LANDING,homeRoomAt,walkHome,stairFloor } from '../lib/home-floorplan.ts';
+import { HOME_BACK,HOME_POINTS,HOME_ROOMS,HOME_VISITS,HOUSE_FURNITURE,BELL_FRONT_DOOR,GARDEN_DOOR,REAR_GARDEN,SIDE_PASSAGE,HOME_STAIR,STAIR_EYE,STAIR_FOOT,STAIR_HALF,STAIR_TOP,STAIR_LANDING,doorstepView,homeRoomAt,walkHome,stairFloor } from '../lib/home-floorplan.ts';
+import {doorbellGrounds} from '../components/lab/DoorstepExterior.ts';
 import {stairHall} from '../components/lab/StairHall.ts';
 import type {Vec3} from '../lib/types.ts';
 
@@ -72,4 +73,41 @@ test('the garden doorway opens onto paving and a walker can turn back at the fen
   assert.ok(walkHome(garden,0,-8,false,false)[2]>REAR_GARDEN.back);
   const wall=walkHome([x-.8,1.56,HOME_BACK-.65],0,1.65,false,false);
   assert.ok(wall[2]<HOME_BACK);
+});
+
+test('the two-door house has a continuous paved outside walk and a way inside through either door',()=>{
+  let point:Vec3=[BELL_FRONT_DOOR.centre,1.56,2.3];
+  const floor:{position:Vec3;size:Vec3}[]=[];
+  doorbellGrounds((position,size,material)=>{
+    if(material.startsWith('stoneFlag')&&position[1]<0)floor.push({position,size});
+  });
+  function arrive(x:number,z:number,room:number,paved=true){
+    point=walkHome(point,x-point[0],z-point[2],false,false,undefined,true);
+    assert.ok(Math.hypot(point[0]-x,point[2]-z)<1e-8,'could not walk to '+[x,z]);
+    assert.equal(homeRoomAt(x,z,false,true),room);
+    if(paved)assert.ok(floor.some(({position:p,size:s})=>Math.abs(x-p[0])<s[0]/2+.004&&Math.abs(z-p[2])<s[2]/2+.004));
+  }
+  arrive(BELL_FRONT_DOOR.centre,4.26,3);
+  const side=(SIDE_PASSAGE.left+SIDE_PASSAGE.right)/2;
+  arrive(side,4.26,3);arrive(side,2.05,10);arrive(side,-4.04,10);arrive(side,HOME_BACK-1.03,9);
+  arrive(-4,HOME_BACK-1.03,9);arrive(GARDEN_DOOR.centre,HOME_BACK-1.03,9,false);
+  arrive(GARDEN_DOOR.centre,HOME_BACK+.6,4,false);
+  arrive(GARDEN_DOOR.centre,HOME_BACK-1.03,9,false);arrive(side,HOME_BACK-1.03,9);arrive(side,4.26,3);
+  arrive(BELL_FRONT_DOOR.centre,4.26,3);arrive(BELL_FRONT_DOOR.centre,2.3,1,false);
+  assert.ok(walkHome([.48,1.56,3.8],0,-3,false,false,undefined,true)[2]>2.8,'the fixed sidelight stops a walker');
+  assert.ok(walkHome([side,1.56,-4],2,0,false,false,undefined,true)[0]<-6.6,'the side wall stops a walker');
+  assert.ok(walkHome([side,1.56,1.90],-4,0,false,false,undefined,true)[0]>SIDE_PASSAGE.left+.22,'the open side gate has a solid leaf');
+  assert.ok(walkHome([-5,1.56,4.26],-5,0,false,false)[0]>-6.6,'other training layouts keep their footprint');
+});
+
+test('arrival faces the door and fitted bell even on a narrow screen',()=>{
+  for(const ratio of [.37,.49,1.24,2.56])for(const room of [3,9]){
+    const view=doorstepView(room,ratio),[x,y,z]=view.position;
+    assert.equal(homeRoomAt(x,z,false,true),room);
+    const [bx,bz]=room===3?[1,2.875]:[GARDEN_DOOR.centre-.58,HOME_BACK-.15];
+    const dx=bx-x,dz=bz-z,depth=-Math.sin(view.yaw)*dx-Math.cos(view.yaw)*dz;
+    const horizontal=(Math.cos(view.yaw)*dx-Math.sin(view.yaw)*dz)/(depth*Math.tan(49*Math.PI/360)*ratio);
+    assert.ok(depth>0&&Math.abs(horizontal)<.85,'bell is inside the walk target area');
+    assert.equal(y,1.56);
+  }
 });

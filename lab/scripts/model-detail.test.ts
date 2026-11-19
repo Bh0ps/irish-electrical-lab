@@ -8,6 +8,9 @@ import manifest from '../public/models/manifest.json';
 import {COMPONENTS} from '../lib/components';
 import {animateBlenderModel,prepareBlenderModel,presentBlenderModel,semanticOwner} from '../lib/blender-model';
 import type {ComponentInstance} from '../lib/types';
+import {getLesson} from '../lib/lessons';
+import {probeContact,terminalPosition} from '../lib/routing';
+import {connectedRockerTerminals} from '../lib/wall-rocker';
 
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const loader=new GLTFLoader();
@@ -70,6 +73,49 @@ test('the Sesame has two rear wire screws, a plain cover and a separate push cap
       assert.equal(surface(x-.02,y,-1).terminal,terminal.id);
       assert.equal(surface(x,y,1).detail,'sesame-cover');
     }
+  }
+});
+
+test('each D814 wire hooks under its screw while the cap presses inward and the clip-on cover lifts clear',async()=>{
+  const asset=manifest.find(model=>model.key==='pushbutton_sesame')!;
+  const doc=structuredClone(getLesson(72)!.circuit),button=doc.components.find(c=>c.id==='back')!;
+  button.position=[0,0,0];button.rotation=0;
+  const bottom={component:button.id,terminal:'NO'};
+  const onlyTop=doc.wires.filter(w=>![w.from,w.to].some(e=>e.component===bottom.component&&e.terminal===bottom.terminal));
+  const actual=connectedRockerTerminals(button,doc.wires),removed=connectedRockerTerminals(button,onlyTop);
+  assert.equal(actual,'COM NO');assert.equal(removed,'COM');
+  for(const url of [asset.url,asset.lowUrl]){
+    const m=prepareBlenderModel(await load(url),true);
+    presentBlenderModel(m,'normal',button,undefined,undefined,actual);
+    for(const id of ['COM','NO']){
+      const clip=m.receptacles.find(r=>r.terminal===id)!;
+      assert.ok(clip.node.visible);
+      const bare=new THREE.Box3().setFromObject(clip.node,true);
+      const endpoint={component:button.id,terminal:id};
+      const seam=new THREE.Vector3(...terminalPosition(doc,endpoint));
+      assert.ok(bare.containsPoint(seam),'the stripped end meets the insulation');
+      const screw=probeContact(doc,endpoint),p=new THREE.Vector3(...screw.position),n=new THREE.Vector3(...screw.normal);
+      assert.ok(p.distanceTo(seam)>.045,'distinct probe and wire access');
+      const hit=new THREE.Raycaster(p.clone().addScaledVector(n,.35),n.negate()).intersectObject(m.scene,true)[0];
+      assert.equal(semanticOwner(hit.object).terminal,id);
+      const mesh=hit.object as THREE.Mesh<THREE.BufferGeometry,THREE.Material>;
+      assert.match(mesh.material.name,/Zinc screw head/);assert.ok(hit.point.distanceTo(p)<.001);
+    }
+    const lip=()=>new THREE.Raycaster(new THREE.Vector3(0,.55,1),new THREE.Vector3(0,0,-1)).intersectObject(m.scene,true)[0];
+    const rest=lip().point.clone(),cover=m.covers[0],coverRest=cover.node.matrixWorld.clone();
+    const pressed={...button,params:{...button.params,pressed:true}};
+    animateBlenderModel(m,pressed,undefined,0,true);m.scene.updateMatrixWorld(true);
+    assert.equal(semanticOwner(lip().object).detail,'sesame-plunger');
+    assert.ok(Math.abs(rest.z-lip().point.z-.045)<.001&&cover.node.matrixWorld.equals(coverRest));
+    animateBlenderModel(m,button,undefined,0,true);m.scene.updateMatrixWorld(true);
+    assert.ok(rest.distanceTo(lip().point)<.001);
+    presentBlenderModel(m,'open',button,undefined,undefined,removed);
+    assert.deepEqual(m.receptacles.map(r=>[r.terminal,r.node.visible]).sort(),[['COM',true],['NO',false]]);
+    assert.ok(cover.node.quaternion.angleTo(cover.quaternion)<.00001,'released clip-on cover has no hinge');
+    assert.equal(semanticOwner(lip().object).detail,'sesame-plunger');
+    presentBlenderModel(m,'normal',button,undefined,undefined,actual);
+    assert.ok(m.receptacles.every(r=>r.node.visible)&&cover.node.matrixWorld.equals(coverRest),'restore both wires and the cover');
+    for(const mat of m.owned)mat.dispose();
   }
 });
 

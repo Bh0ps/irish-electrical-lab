@@ -28,7 +28,7 @@ for(const call of HOUSE_CALLS){
         continue;
       }
       if(step.measure){
-        const [pin,reference]=step.chimeReading?[step.chimeReading==='supply'?'AC1':'FRONT','AC2']:['L','N'];
+        const [pin,reference]=step.chimeReading?[step.chimeReading==='supply'?'AC1':step.chimeReading==='back-held'?'REAR':'FRONT','AC2']:['L','N'];
         const evidence={...captureMeasurement(doc,reading,{mode:'voltage',a:{component:step.target,terminal:pin},b:{component:step.target,terminal:reference}}),assisted:false};
         assert.equal(checkCallSample(call,index,doc,reading,{activity:id,evidence})?.pass,true);
         assert.equal(verifiedCallStep(call,index,doc,reading,action),false);

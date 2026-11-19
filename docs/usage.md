@@ -6,9 +6,9 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.18.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.19.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
-On a phone, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
+On a phone, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting, or tap **Find** and search for its name or room. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. **Put meter away** returns to the site. In the two-door bell job the hall chime gives a short caption and a sound for each new call. The two sounds are examples chosen for this lab. You can turn them off in Settings or Site tools. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
 
 Open **Chapters → Quick practice** to try a working circuit. Make a prediction, or choose **I’m not sure — let me try**. Use the switch, dial or Start button on the lesson card or on the equipment itself. Compare the readings before and after. **Back to lesson** opens the full course.
 

@@ -610,6 +610,7 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
         return dry || chimeInputInRange(input,(solved.frequencies?.[terminal(item,pin)] ?? 0)>0,true);
       };
       const front=inputOn('FRONT'), rear=inputOn('REAR');
+      state.supplyReady=supplied;
       set(state,'energized',front||rear);state.call=front&&rear?'Both':front?'Front':rear?'Rear':'Idle';
       state.details=croma&&!supplied?'Check for 8 to 12 volts between 8/12V and =/~ on the chime.':front&&rear?'Both door buttons are calling.':front?'The front door button is calling.':rear?'The back door button is calling.':'Neither door button is calling.';
       if (croma) state.supplyOutOfRange = !!supply && abs(supply) > .05 && !supplied;

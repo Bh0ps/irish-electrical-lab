@@ -38,3 +38,20 @@
 .panel-heat-setting {display:flex;gap:1rem;align-items:center}
 .panel-heat-setting button {display:grid;place-items:center;min-width:46px;min-height:46px;border:1px solid #9aafa1;border-radius:6px;background:#f8faf6;color:#183e2d;cursor:pointer}
 .panel-heat-setting button:disabled {opacity:.5}
+.site-finder[data-slot=dialog-content] {top:calc(var(--lab-visible-top,0px) + var(--lab-visible-height,100dvh)/2);width:min(32rem,calc(100vw - 20px));max-width:none;max-height:calc(var(--lab-visible-height,100dvh) - max(24px,env(safe-area-inset-top)) - env(safe-area-inset-bottom,0px));padding:16px;gap:12px;grid-template-rows:auto auto minmax(0,1fr);color:#173a2b;background:#fbfcf7}
+.site-finder [data-slot=dialog-header] {text-align:start;padding-inline-end:44px}
+.site-finder [data-slot=dialog-close] {top:0;right:2px;display:grid;place-items:center;width:48px;height:48px}
+.field-dialog[data-state=closed],.site-finder[data-state=closed] {animation:none;pointer-events:none}
+.site-destination-search {display:flex;align-items:center;gap:8px;border:1px solid #82968a;border-radius:7px;padding-inline:10px;background:white}
+.site-destination-search input {font:inherit;font-size:max(16px,1rem);color:inherit;min-width:0;width:100%;min-height:44px}
+.site-destination-list {overflow-y:auto;overscroll-behavior:contain}
+.site-destination-list h3 {font-size:.88rem;color:#4b665a;margin:8px 0 2px}
+.site-destination-list section+section {margin-top:14px}
+.site-destination-list section button {min-height:48px;width:100%;padding:.55rem .35rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;cursor:pointer;border-bottom:1px solid #dce3da;text-align:start;font:inherit}
+.site-destination-list section button:focus-visible,.site-destination-list section button:hover {background:#e9f1e6}
+.site-destination-list button span {display:grid;gap:.12rem}
+.site-destination-list small {color:#496054}
+.site-destination-list p button {display:block;min-height:44px;text-decoration:underline}
+.field-signal {min-width:0;flex:1;color:#f4ffed;font-weight:600;font-size:.9rem;line-height:1.2;overflow-wrap:anywhere;padding-block:.25rem}
+.field-signal:empty,.door-call-caption:empty {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0;pointer-events:none}
+.door-call-caption {position:absolute;z-index:4;top:4.3rem;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 20px);padding:.55rem .9rem;border-radius:8px;background:#18392ef5;color:#fff;text-align:center;line-height:1.3;pointer-events:none}
