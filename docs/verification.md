@@ -14,6 +14,10 @@
 
 **Offline.** The offline download verified 257 files, about 46 MiB. In Chrome, interrupting the new chime download twice kept the previous app and its saved lesson usable. After retrying, closing the old tab and stopping the server, the updated app opened an unvisited chime job and measured 12 V AC. No requests reached the disconnected origin. Windows WebKit also restored a Windows backup, rejected an invalid import and reopened the valid saved study offline.
 
+**Installed Windows app.** The unsigned installer upgraded 1.14.0 to 1.15.0 on the test PC. Desktop and Start menu shortcuts and the local storage origin stayed the same. A disposable profile retained its five saved records, including a named build. Restart, all 80 worker circuits and 120 guided checks passed. The installed runtime opened in 1.01 seconds. Workbench geometry was ready 5.09 seconds from launch. The graphics driver logged one shader warning.
+
+**Desktop performance.** With 30 fittings and 42 wires in uncapped headless Chrome at 1440 × 900 on the Windows RTX 5070 Ti PC, a 6.53-second mouse pan averaged 259.6 rendered frames per second. The median frame took 3.7 ms and the 95th percentile took 4.7 ms. The idle bench drew zero frames and made zero solver or routing requests over three seconds. Eight supply changes took a median 4.35 ms in the worker and 11.25 ms for the response to reach the page. These are desktop renderer measurements.
+
 ## 1.14.0 — Try both stair switches
 
 **Working the switches.** On the standard stairs circuit, the downstairs switch took the lamp from 240 V to 0 V. With the lamp dark, L2 read about 240 V to lamp neutral and L1 read 0 V. Flipping the landing switch brought the lamp back to 240 V. Tests also crossed the two connecting wires, opened a wire and linked the wires together. An unused wire can have no meter reading. The lesson checks the learner’s choice against their own circuit and keeps a missing reading distinct from 0 V. Automatic readings give no credit for placing probes.
