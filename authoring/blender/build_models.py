@@ -22,6 +22,7 @@ from sesame_push import build_sesame_push
 from white_tape import build_white_tape
 from bathroom_fan import build_bathroom_fan
 from shaver_face import build_shaver_face
+from croma_chime import build_croma_chime
 from png_metadata import strip_text_metadata
 from portable_source import clear_browser_locations
 
@@ -448,8 +449,10 @@ def set_view(root,view):
         if obj.get('partId')=='cover' and obj.get('restPosition'):
             p=Vector(obj['restPosition']);obj.location=p
             obj.rotation_euler=(0,0,0);obj.hide_render=False
-            if view=='open':obj.location=p+Vector((travel,.08,.15));obj.rotation_euler[1]=math.pi/2.5
-            if view=='exploded':obj.location=p+Vector((.5,.5,.65))
+            if view=='open':
+                if obj.get('leftHandChimeLid'):obj.rotation_euler[1]=-math.pi*.52
+                else:obj.location=p+Vector((travel,.08,.15));obj.rotation_euler[1]=math.pi/2.5
+            if view=='exploded':obj.location=p+Vector((-1.9,.13,.48) if obj.get('leftHandChimeLid') else (.5,.5,.65))
         if obj.type=='MESH':
             part=next((p.get('partId') for p in ancestors(obj) if p.get('partId')),'')
             internal=any(p.get('conceptualInternal') for p in ancestors(obj)) or part in ('electronics','coil','thermal','magnetic') or part=='winding' and component_type not in ('transformer','dcsupply')
@@ -609,6 +612,8 @@ def main():
         workshop=any(o.get('detailId') for o in root.children_recursive) or recipe['component']['type'] in ('forktester','stripper','crimper','torquedriver')
         if recipe['galleryKey']=='switch:dc-rocker':
             features=build_dc_rocker(recipe,root,api)
+        elif recipe['galleryKey']=='callchime:croma-100a':
+            features=build_croma_chime(recipe,root,api)
         elif recipe['galleryKey']=='isolator3:fan-isolator':
             features=build_fan_isolator(recipe,root,api)
         elif recipe['component']['type'] == 'shaveroutlet':

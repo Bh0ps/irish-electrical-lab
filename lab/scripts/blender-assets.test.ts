@@ -16,6 +16,7 @@ import type { ComponentInstance,DeviceState } from '../lib/types';
 import { getLesson } from '../lib/lessons';
 import { mountRoll, mountScale } from '../lib/board-assembly';
 import { DIN_UNIT } from '../lib/din-devices';
+import {cromaProbeContact} from '../lib/croma-chime';
 import { InstalledHardware } from '../components/lab/WorkshopGeometry';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -28,7 +29,7 @@ function terminals(scene:THREE.Object3D){scene.updateMatrixWorld(true);const fou
 function geometryDigest(scene:THREE.Group,materials=false){const hash=createHash('sha256');scene.updateMatrixWorld(true);scene.traverse(node=>{if(node instanceof THREE.Mesh){hash.update(Buffer.from(node.geometry.getAttribute('position').array.buffer));hash.update(JSON.stringify(node.matrixWorld.toArray().map(n=>Math.round(n*1e6)/1e6)));if(materials)for(const material of Array.isArray(node.material)?node.material:[node.material])if(material instanceof THREE.MeshStandardMaterial)hash.update(JSON.stringify([material.color.toArray(),material.metalness,material.roughness]));}});return hash.digest('hex');}
 
 test('all authored variants have original Blender sources and full/distance offline GLBs',async()=>{
-  assert.equal(inventory.length,113);const keys=new Set<string>();let total=0,lowTotal=0;
+  assert.equal(inventory.length,114);const keys=new Set<string>();let total=0,lowTotal=0;
   for(const entry of inventory){
     const definition=COMPONENTS[entry.component.type],asset=equipmentAsset(entry.component,definition);assert.ok(asset,entry.key);assert.ok(!keys.has(asset.key));keys.add(asset.key);
     const source=root+'authoring/blender/models/'+asset.key+'.blend';assert.ok(existsSync(source),source);const header=readFileSync(source).subarray(0,4);assert.ok(header.subarray(0,2).toString()==='BL'||header[0]===0x1f&&header[1]===0x8b||header.equals(Buffer.from([0x28,0xb5,0x2f,0xfd])),'Blender, gzip or zstd-compressed Blender source');
@@ -154,7 +155,9 @@ test('closed service compartments conceal installation hardware and opened compa
       presentBlenderModel(model,'open',component,state);
       const visible=model.meshes.filter(m=>m.node.visible).map(m=>m.node);
       for(const t of getComponentTerminals(component,definition)){
-        const look=new THREE.Vector3(...terminalInspectionDirection(component,definition,t.id)),anchor=new THREE.Vector3(...t.anchor);
+        // The K1 screw is in front; its wire enters a separate side opening.
+        const contact=component.type==='callchime'&&component.variant==='croma-100a'?cromaProbeContact(t.id):undefined;
+        const look=new THREE.Vector3(...terminalInspectionDirection(component,definition,t.id)),anchor=new THREE.Vector3(...(contact?.position??t.anchor));
         const up=new THREE.Vector3(0,1,0);
         if(Math.abs(up.dot(look))>.8)up.set(0,0,1);
         // A clamp can be selected on its mouth or its screw, including where
@@ -179,7 +182,7 @@ test('renaming a custom one-way switch to Start preserves its compatible rocker 
 
 test('each named fitting detail maps to a real selectable assembly and its original parent at either detail level',async()=>{
   const identified=inventory.filter(e=>fittingDetails(e.component,COMPONENTS[e.component.type]).length);
-  assert.equal(identified.length,22);
+  assert.equal(identified.length,23);
   for(const entry of identified){
     const c=entry.component,def=COMPONENTS[c.type],asset=equipmentAsset(c,def)!;
     for(const url of [asset.url,asset.lowUrl]){

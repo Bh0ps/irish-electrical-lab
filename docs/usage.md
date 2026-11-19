@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.14.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.15.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -18,7 +18,15 @@ The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a po
 
 Choose **Show terminals** to see the marks on a fitting. In the one-way lighting lesson the breaker has two terminals marked **N**. **Supply** identifies the incoming neutral and **Load** identifies the outgoing neutral. On the stair switches, look for **COM**, **L1** and **L2** on the back.
 
+In a lesson asking for volts, choose the fitting. Pick the marked point for the red probe, then the one for black. You can also touch the points on the 3D fitting. Choose **Record reading**. If you picked the wrong pair, the lesson names the two points you measured and lets you try again. Open **Meter controls** to change instruments or use the fork.
+
 Open **Saved readings** in either meter to see what you recorded. A fork reading shows the number on the tester. For a voltage reading it also shows the earth reference you used. A reading from before a circuit edit is marked **Earlier reading**. Expand **Where it was measured** to see the saved points.
+
+## Check both doorbell buttons
+
+Open **Chapters → Jobs at Oakfield house → Check both doorbell buttons**. The two buttons ring the same chime. One tap holds a button down in the lab, and a second tap lets go. Open the chime’s front panel to reach the five screws. You can also choose a screw by its marking from the probe list.
+
+Leave one probe on **=/~**. With the other on **C1**, compare the reading with the front button pressed and released. Then move that probe to **8/12V** to check whether the chime still has its supply. **C2** is the back door in this circuit. **V** is for another way of connecting the buttons and is spare here. The bench reports which input is active. The sensing voltage on V and the length of the chime sound depend on the electronics. [Grothe CROMA 100A installation sheet, page 5](https://www.grothe.de/media/a8/32/9a/1669388291/iba_croma100a_43170-mv003000_2021-08-10.pdf)
 
 ## Find equipment on a job
 
@@ -119,7 +127,7 @@ Replacing changed work offers **Save and continue**, **Discard and continue**, o
 
 Use **Show terminals** to turn the workbench to the wiring side. On the updated switches, lamp holder, rose, socket and fused connection unit, select a detail or look under **Recognise this fitting** to find out what it does. On the double socket, for example, the pressed metal strap joins the two earth terminals. On the ceiling rose, the permanent loop terminals stay separate from the switched feed to the lamp. The shaver lesson shows the transformer separately on the bench so you can measure its input and output.
 
-There are 113 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
+There are 114 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
 
 The environments use locally generated albedo, roughness and normal textures with local reflections. Contact shading, restrained emitter bloom and antialiasing run while frames are needed; **More → Graphics and supply settings → Graphics quality** selects automatic, high or economy settings. Each lamp's dynamic light follows its actual emitting power. Available dynamic-light slots are bounded for performance; all lamps retain their own power-driven surface brightness. Optical output is an illustrative proxy, not a lighting-design calculation.
 

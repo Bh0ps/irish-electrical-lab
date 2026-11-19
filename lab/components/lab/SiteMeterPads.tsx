@@ -29,11 +29,18 @@ export default function SiteMeterPads({fitting,open,showLabels,meter,pick,blocke
   fitting:SiteTestFitting; open:boolean; showLabels:boolean; meter:SiteMeter; pick:(point:Endpoint)=>void; blocked:RefObject<boolean>;
 }){
   const pressed=useRef<Endpoint|undefined>(undefined);
-  return <>{siteContacts(fitting,open).map(({position,endpoint,label})=>{
+  const contacts=siteContacts(fitting,open);
+  return <>{contacts.map(({position,endpoint,label})=>{
     const here=(point?:Endpoint)=>point?.component===endpoint.component&&point.terminal===endpoint.terminal;
     const leads=[here(meter.red)?'Red':'',here(meter.black)?'Black':''].filter(Boolean).join(' + ');
     const positive=endpoint.terminal==='L'||endpoint.terminal==='OUT';
     const tip=(red:boolean):Vec3=>{
+      if(fitting.kind==='chime'){
+        const other=red?meter.black:meter.red;
+        const at=contacts.find(p=>p.endpoint.component===other?.component&&p.endpoint.terminal===other.terminal);
+        const above=at&&at.position[1]!==position[1]?position[1]>at.position[1]:red;
+        return [.61,above?.52:-.27,.70];
+      }
       if(fitting.kind==='strip')return [red?-.68:.68,-.47,.40];
       const [x,y]=rockerProbeApproach,angle=ROCKER_BOX.rearYaw;
       return [x*Math.cos(angle),y+(!red&&here(meter.red)?.20:0),-x*Math.sin(angle)];
@@ -41,7 +48,7 @@ export default function SiteMeterPads({fitting,open,showLabels,meter,pick,blocke
     return <group key={endpoint.terminal} position={position}>
       {here(meter.red)&&<PlacedProbe red direction={tip(true)}/>}
       {here(meter.black)&&<PlacedProbe red={false} direction={tip(false)}/>}
-      {showLabels&&<Html center zIndexRange={[2,1]}>
+      {showLabels&&fitting.kind!=='chime'&&<Html center zIndexRange={[2,1]}>
         <div className={'site-pad '+(positive?'site-pad-positive':'site-pad-negative')+(fitting.kind==='rocker'?' site-pad-rocker':'')}>
           <i aria-hidden="true"/>
           <button type="button" aria-label={`Place ${meter.probe} probe on ${fitting.component.label} ${label}${leads?', '+leads+' here':''}`}

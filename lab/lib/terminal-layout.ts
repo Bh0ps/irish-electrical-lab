@@ -1,5 +1,6 @@
 import { dinPort } from './din-devices.ts';
 import {rockerBladeY} from './dc-rocker';
+import {cromaTerminals} from './croma-chime';
 import type { ComponentDefinition, ComponentInstance, TerminalDefinition, Vec3 } from './types';
 
 /** Original workshop models use +Z for the operating face and +Y for up. */
@@ -18,6 +19,7 @@ export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'vari
 }
 
 export function getComponentTerminals(component: Pick<ComponentInstance, 'type' | 'label' | 'variant' | 'params'>, definition: ComponentDefinition): TerminalDefinition[] {
+  if(component.type==='callchime'&&component.variant==='croma-100a')return cromaTerminals();
   if(component.type==='switch'&&component.variant==='dc-rocker')return definition.terminals.map(t=>{
     const middle=t.id==='COM';
     return {...t,label:middle?'2':'1',role:'DC+',group:middle?'Centre blade · from driver':'Outer blade · to strip',
@@ -304,6 +306,7 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
 
 /** Local direction from the equipment towards a clear inspection camera. */
 export function terminalInspectionDirection(component: Pick<ComponentInstance, 'type'|'label'|'variant'|'params'>, definition: ComponentDefinition, terminalId?: string): Vec3 {
+  if(component.type==='callchime'&&component.variant==='croma-100a')return [0,0,1];
   if(component.type==='fan'&&component.variant==='xf100s')return [0,.06,Math.sqrt(1-.06**2)];
   const terminals=getComponentTerminals(component,definition);
   const selected=terminalId ? terminals.filter(t=>t.id===terminalId) : terminals;

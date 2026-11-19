@@ -1,6 +1,7 @@
 import { dinDimensions, dinForm } from './din-devices.ts';
 import type { CircuitDocument, ComponentDefinition, ComponentInstance, TerminalDefinition, TerminalRole, Parameters, Vec3 } from './types';
 import { getComponentTerminals } from './terminal-layout.ts';
+import {CROMA_ENVELOPE,cromaTerminals} from './croma-chime';
 
 const purpose: Record<string, string> = {
   L: 'Line brings power to the fitting. Its usual marking is L.',
@@ -292,6 +293,7 @@ add('proximity','Three-wire PNP proximity sensor','Controls','sensor','This sens
 // Physical forms share stable electrical terminals and differ only in presentation.
 const physicalForms:Record<string,{id:string;name:string}[]>={
   fan:[{id:'xf100s',name:'100 mm bathroom extractor'}],
+  callchime:[{id:'croma-100a',name:'Grothe CROMA 100A · two-door electronic chime'}],
   pwmcontrol:[{id:'single-channel',name:'Single-channel PWM'},{id:'tunable-white',name:'Warm / cool controller'}],
   led:[{id:'strip',name:'Constant-voltage strip'},{id:'series-module',name:'Series downlight module'}],
   switch:[{id:'door-contact',name:'Door-operated contact'},{id:'dc-rocker',name:'DC panel rocker for cabinet lights'}],selector:[{id:'float-changeover',name:'Changeover float switch'}],
@@ -331,6 +333,15 @@ const sesameDefinition:ComponentDefinition={
   name:'Two-wire bell push',
   terminals:getComponentTerminals({type:'pushbutton',variant:'sesame',label:'',params:{}},COMPONENTS.pushbutton),
 };
+const cromaDefinition:ComponentDefinition={
+  ...COMPONENTS.callchime,name:'Grothe CROMA 100A · two-door electronic chime',size:CROMA_ENVELOPE,
+  description:'Each door has its own input behind the front panel. Press a button to send that input a signal and hear the corresponding call.',
+  abstraction:'The lab models the two call inputs and the alternative contact-sensing connection. The electronic sound settings and battery operation are shown as physical features.',
+  parts:COMPONENTS.callchime.parts.map(p=>p.id==='electronics'?{...p,name:'Call electronics and loudspeaker',purpose:'The electronics tell the two call inputs apart and drive the loudspeaker.'}
+    :p.id==='actuator'?{...p,name:'Sound settings',purpose:'The real fitting has a volume wheel and two setup buttons behind its front panel.'}
+    :p.id==='cover'?{...p,name:'Frosted front panel',purpose:'Open the front panel to reach the five K1 connections.'}:p),
+  terminals:cromaTerminals()
+};
 const fanIsolatorDefinition:ComponentDefinition={
   ...COMPONENTS.isolator3, name:'Three-pole fan isolator',defaults:{...COMPONENTS.isolator3.defaults,currentRating:10},
   description:'One rocker disconnects the permanent line, switched line and neutral together. The light switch can still operate the bathroom light.',
@@ -338,6 +349,7 @@ const fanIsolatorDefinition:ComponentDefinition={
 };
 /** Named fittings can have their own terminal groups and mounting envelope. */
 export function definitionFor(item:Pick<ComponentInstance,'type'|'variant'>):ComponentDefinition {
+  if(item.type==='callchime'&&item.variant==='croma-100a')return cromaDefinition;
   if(item.type==='switch2')return bg812Definition;
   if(item.type==='switch'&&item.variant==='dc-rocker')return dcRockerDefinition;
   if(item.type==='fan'&&item.variant==='xf100s')return xf100sDefinition;
@@ -349,6 +361,7 @@ export const COMPONENT_LIST = defs;
 export const getComponent = (type:string) => COMPONENTS[type];
 
 const variantPurpose: Record<string, string> = {
+  'callchime:croma-100a':cromaDefinition.description,
   'switch:dc-rocker':dcRockerDefinition.description,
   'fan:xf100s':'Air comes in through the front grille and leaves through the round duct at the back. Under the cover are two motor connections, L and N. This double-insulated fan has no earth terminal. In the bathroom job a separate timer keeps it running.',
   'isolator3:fan-isolator': fanIsolatorDefinition.description,

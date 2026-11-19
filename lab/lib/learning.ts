@@ -1,6 +1,7 @@
 import { COURSE_BOARD_ID,COURSE_BOND_ID } from './board-examples.ts';
 import { lessonProbePoints } from './lesson-probe-points.ts';
 import { coursePage } from './coursebook-content.ts';
+import { lessonClue } from './lesson-clues.ts';
 import { describeEndpoint } from './build-hints.ts';
 import { definitionFor, COMPONENTS, equipmentPurpose } from './components.ts';
 import { forkMode, forkRead, instrumentData, type InstrumentEvidence } from './fork-tester.ts';
@@ -28,6 +29,7 @@ export interface LessonActivity {
   measurement?:{mode:'voltage'|'current'|'resistance';a?:Endpoint;b?:Endpoint;wire?:string;instrument?:InstrumentEvidence};competency:string;
   bookStep?:'intro'|'switch-off'|'switch-on'|'contact'|'meter-demo'|'dimmer'|'finish';
   independentMeasurement?:boolean;
+  clue?:string;
   wire?:string;expectedRole?:string;expectedParams?:Record<string,string|number|boolean>;expectedSupplyEnabled?:boolean;expectedObservations?:ScenarioExpectation[];
   expectedControls?:{component:string;params:Record<string,string|number|boolean>}[];
   expectedSignalOpen?:{a:Endpoint;b:Endpoint};scenarioStep?:number;
@@ -156,7 +158,7 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
     const content=kind==='predict'?page.prediction:page.explanation;
     const options=[{id:'expected',label:content.right},{id:'alternative',label:content.alternative}];
     return {...base(kind,kind,kind==='predict'?'What do you expect?':'Why did that happen?',content.prompt,content.feedback??page.idea),
-      answer:'expected',options:predictionOrder(lesson.id+(kind==='explain'?1:0),'expected',options)};
+      clue:lessonClue(lesson.id,kind,lesson.circuit),answer:'expected',options:predictionOrder(lesson.id+(kind==='explain'?1:0),'expected',options)};
   }
   activities.push(questionActivity('predict'));
   for(const w of lesson.circuit.wires.filter(w=>w.id!==COURSE_BOND_ID)){
@@ -217,7 +219,10 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
 }
 export function evaluateActivity(activity:LessonActivity,document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[]=[],answer?:string,context:{assessment?:BuildAssessment;inspected?:string[];challengeStarted?:boolean;diagnosisAccepted?:boolean;repairVerified?:boolean}={}):ActivityOutcome{
   const outcome=(status:ActivityOutcome['status'],explanation:string)=>({status,explanation});
-  if(activity.kind==='predict'||activity.kind==='explain')return answer?outcome(answer===activity.answer?'pass':'fail',activity.explanation):outcome('not-run','Choose the answer you think fits.');
+  if(activity.kind==='predict'||activity.kind==='explain'){
+    if(!answer)return outcome('not-run','Choose the answer you think fits.');
+    return answer===activity.answer ? outcome('pass',activity.explanation) : outcome('fail',activity.clue??activity.explanation);
+  }
   if(activity.kind==='inspect')return context.inspected?.includes(`${activity.component}.${activity.part}`)||answer===`${activity.component}.${activity.part}`?outcome('pass',activity.explanation):outcome('not-run','Select the part named in this step.');
   if(activity.kind==='connect'){
     const [a,b]=activity.endpoints??[];
@@ -283,6 +288,15 @@ export function evaluateActivity(activity:LessonActivity,document:CircuitDocumen
       if(match)return saved(match);
       const taken=readingPoints(document,probes[0]?.a,probes[0]?.b);
       const wanted=readingPoints(document,target.a,target.b);
+      if(taken && target.a && target.b){
+        const last=probes[0];
+        for(const [lead,point,other] of [['red',last.a,'black'],['black',last.b,'red']] as const){
+          const next=eq(point,target.a)?target.b:eq(point,target.b)?target.a:undefined;
+          if(!point||!next)continue;
+          const here=describeEndpoint(document,point),there=describeEndpoint(document,next);
+          if(here&&there)return outcome('not-run',`You measured ${taken}. Leave ${lead} on ${here.pointLabel}. Move ${other} to ${there.pointLabel}${point.component===next.component?'':' on '+there.equipmentName}.`);
+        }
+      }
       if(taken&&wanted)return outcome('not-run',`You measured ${taken}. For this step, measure ${wanted}.`);
     }
     return outcome('not-run',activity.independentMeasurement?'Choose each measuring point yourself and record a fresh reading.':'Put the probes on the two marked points and record the reading.');

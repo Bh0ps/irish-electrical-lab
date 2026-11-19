@@ -98,7 +98,7 @@ test('assisted placement cannot demonstrate choosing probes, even when the readi
   assert.equal(evaluateActivity(task,doc,r,[{...reading,assisted:true}]).status,'not-run');
   const independent={...reading,assisted:false,id:'independent',recordedAt:reading.recordedAt+1};
   const otherPoint={...captureMeasurement(doc,r,{...task.measurement!,b:{component:'light',terminal:'PE'}}),assisted:false};
-  assert.deepEqual(evaluateActivity(task,doc,r,[otherPoint]),{status:'not-run',explanation:'You measured L to PE on Hall light. For this step, measure L to N on Hall light.'});
+  assert.deepEqual(evaluateActivity(task,doc,r,[otherPoint]),{status:'not-run',explanation:'You measured L to PE on Hall light. Leave red on L. Move black to N.'});
   assert.doesNotMatch(evaluateActivity(task,{...doc,revision:doc.revision+1},r,[otherPoint]).explanation,/You measured/);
   assert.equal(evaluateActivity(task,doc,r,[{...reading,assisted:true},independent]).status,'pass');
   assert.equal(evaluateActivity(task,{...doc,revision:doc.revision+1},r,[independent]).status,'not-run');

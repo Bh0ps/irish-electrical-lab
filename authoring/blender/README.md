@@ -1,6 +1,6 @@
 # Original Blender equipment library
 
-The complete offline library contains 113 equipment variants covering 80 component types. Each has an editable original `.blend` source under `models/`, an original geometry recipe under `recipes/`, and locally bundled full-detail and distance-detail GLB assets under `lab/public/models/`.
+The complete offline library contains 114 equipment variants covering 80 component types. Each has an editable original `.blend` source under `models/`, an original geometry recipe under `recipes/`, and locally bundled full-detail and distance-detail GLB assets under `lab/public/models/`.
 
 Every variant receives a family-specific construction layer in `detail_library.py`, covering the original 29 authoring families and documented workshop forms. It models pressure-plate terminal cages, real apertures, helical fastener threads and washers, contact tips, trip mechanisms, bearings and cages, valve gears, process assemblies, electronic converter architectures and individually stranded cable cores. The [construction audit](MODEL-GAPS.md) identifies the earlier gaps and the requirements for each family. The [primary reference map](reference-map.json) records manufacturer material consulted for representative architecture and the explicit conceptual assumptions.
 

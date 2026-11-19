@@ -1,5 +1,19 @@
 # Verification summary
 
+## 1.15.0 — Put the probes on the chime
+
+**Lesson wording.** We compared the predictions and explanations in all 80 courses with the controls, wiring and readings on each bench. When a learner needs a clue, the stairs lesson names the switch to try. The motor starter points to the holding contact marked 13 and 14. The earlier saved door chime uses FRONT and REAR in its hints. The newer one uses C1 and C2. Learner and electrician feedback on the wording is still outstanding.
+
+**Taking a reading.** In Chrome at 1280 pixels and Windows WebKit at 390 pixels and 320 pixels with enlarged type, we operated the hall switch, left the worked example and placed both probes ourselves. L to PE read 240 V. The step stayed open and told us to leave red on L and move black to N. Recording L to N passed. The full tester still opens under Meter controls.
+
+**The two doors.** The hall job records three independent readings. At the front call screw the tester read 12 V AC with the button held and 0 V after release. The permanent feed still read 12 V. The checks rejected a wrong door, the same 12 V at the wrong pair, previously recorded readings and probes placed by the worked example. A backup from 1.14 reopened at the correct step with the earlier terminal markings. Chrome and Windows WebKit exercised the compact controls with keyboard and touch input, including a landscape layout. Physical iPhone testing remains outstanding.
+
+**The fitting.** The new Grothe model exposes the five marked K1 terminals behind its front cover. Leads pass through the shared opening in the back. Circuit tests covered both doors together, a broken call wire, 8 V and 12 V supplies, DC call polarity and the alternative volt-free button wiring. A meter on the internal sense connection shows a message explaining where the supply can be measured. The bench uses assumed input and load resistances. It does not reproduce Grothe’s internal sensing voltage, sound settings or tune duration. [Grothe CROMA installation sheet, pages 4–5](https://www.grothe.de/media/a8/32/9a/1669388291/iba_croma100a_43170-mv003000_2021-08-10.pdf)
+
+**Coverage.** TypeScript and all 426 automated tests passed. The catalog contains 80 lessons and 114 equipment variants. All 2,483 original activities still map to their six stages. The electrical audit passed 80 working circuits and all 80 fault targets. All 1,116 wires in the examples cleared their fittings. The new chime passed wire-clearance checks at eight mounting angles in both model detail levels.
+
+**Offline.** The offline download verified 257 files, about 46 MiB. In Chrome, interrupting the new chime download twice kept the previous app and its saved lesson usable. After retrying, closing the old tab and stopping the server, the updated app opened an unvisited chime job and measured 12 V AC. No requests reached the disconnected origin. Windows WebKit also restored a Windows backup, rejected an invalid import and reopened the valid saved study offline.
+
 ## 1.14.0 — Try both stair switches
 
 **Working the switches.** On the standard stairs circuit, the downstairs switch took the lamp from 240 V to 0 V. With the lamp dark, L2 read about 240 V to lamp neutral and L1 read 0 V. Flipping the landing switch brought the lamp back to 240 V. Tests also crossed the two connecting wires, opened a wire and linked the wires together. An unused wire can have no meter reading. The lesson checks the learner’s choice against their own circuit and keeps a missing reading distinct from 0 V. Automatic readings give no credit for placing probes.

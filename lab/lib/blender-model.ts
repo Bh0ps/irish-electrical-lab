@@ -136,8 +136,11 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
   for(const cover of presentation.covers){
     cover.node.position.copy(cover.position);cover.node.quaternion.copy(cover.quaternion);
     if(component.mount&&COMPONENTS[component.type].model==='protection'&&!cover.node.userData.fittedDin)cover.node.position.add(sourceVector([0,0,.24]));
-    if(view==='open'){cover.node.position.add(sourceVector([presentation.chamber?1:.55,.08,.15]));cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),Math.PI/2.5));}
-    if(view==='exploded')cover.node.position.add(sourceVector([.5,.5,.65]));
+    if(view==='open'){
+      if(cover.node.userData.leftHandChimeLid)cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),-Math.PI*.52));
+      else{cover.node.position.add(sourceVector([presentation.chamber?1:.55,.08,.15]));cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),Math.PI/2.5));}
+    }
+    if(view==='exploded')cover.node.position.add(sourceVector(cover.node.userData.leftHandChimeLid?[-1.9,.13,.48]:[.5,.5,.65]));
   }
   const active=!!state?.energized;
   const brightness=lampBrightness(component,state);

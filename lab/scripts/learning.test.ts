@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LESSONS } from '../lib/lessons.ts';
-import { COMPONENTS } from '../lib/components.ts';
+import { COMPONENTS, definitionFor } from '../lib/components.ts';
 import { simulate } from '../lib/simulation.ts';
 import { getScenario, runLessonScenarios, evaluateScenarioExpectation } from '../lib/scenarios.ts';
 import { getLessonActivities, evaluateActivity, captureMeasurement, currentEvidence, validateDiagnosisEvidence, needsSimulationTick } from '../lib/learning.ts';
@@ -11,6 +11,30 @@ import type { CircuitDocument } from '../lib/types.ts';
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!;
 const copy=(id=7)=>structuredClone(lesson(id).circuit);
 const failed=(checks:ReturnType<typeof runLessonScenarios>)=>checks.filter(c=>c.status!=='pass');
+test('each course gives a specific bench clue after a wrong answer and explains a correct one',()=>{
+  const distinct={predict:new Set<string>(),explain:new Set<string>()};
+  for(const l of LESSONS) {
+    for(const task of getLessonActivities(l).filter(a=>a.kind==='predict'||a.kind==='explain')){
+      const wrong=evaluateActivity(task,l.circuit,undefined,[],'alternative');
+      assert.equal(wrong.status,'fail');assert.ok(task.clue);assert.equal(wrong.explanation,task.clue);
+      assert.notEqual(wrong.explanation,task.explanation);
+      assert.equal(evaluateActivity(task,l.circuit,undefined,[],'expected').explanation,task.explanation);
+      if(task.kind==='predict'||task.kind==='explain')distinct[task.kind].add(task.clue);
+    }
+  }
+  assert.equal(distinct.predict.size,LESSONS.length);
+  assert.equal(distinct.explain.size,LESSONS.length);
+});
+test('stairs clues follow the switch or readings in the question, and chime clues match the fitted terminals',()=>{
+  const stairs=getLessonActivities(lesson(9));
+  assert.match(stairs.find(a=>a.kind==='predict')!.clue!,/Flick the downstairs switch/);
+  assert.match(stairs.find(a=>a.kind==='explain')!.clue!,/COM.*L1 and L2/);
+  const current=lesson(72),earlier=structuredClone(current);
+  delete earlier.circuit.components.find(c=>c.id==='chime')!.variant;
+  const clue=(l:typeof current)=>getLessonActivities(l).find(a=>a.kind==='explain')!.clue!;
+  assert.match(clue(current),/C1 and C2/);
+  assert.match(clue(earlier),/FRONT and REAR/);
+});
 test('operating and measuring report the fresh lamp reading in everyday feedback',()=>{
   const doc=copy(7);
   doc.supply.voltage=230;
@@ -83,7 +107,7 @@ test('all 80 authored operating sequences pass at requested and nominal supplies
   assert.deepEqual(failures,[]);
 });
 test('every activity is unique and references real equipment, physical parts and terminals',()=>{
-  for(const l of LESSONS){const activities=getLessonActivities(l);assert.equal(new Set(activities.map(a=>a.id)).size,activities.length);for(const a of activities){assert.ok(a.competency);if(a.component){const c=l.circuit.components.find(c=>c.id===a.component);assert.ok(c,`${l.id}:${a.id}`);if(a.part)assert.ok(COMPONENTS[c.type].parts.some(p=>p.id===a.part));}for(const e of a.endpoints??[]){const c=l.circuit.components.find(c=>c.id===e.component)!;assert.ok(COMPONENTS[c.type].terminals.some(t=>t.id===e.terminal));}if(a.kind==='operate')assert.doesNotMatch(a.instruction, /(?:closed|pressed|active|sensorValue|position|on)\s*=/);}assert.equal(activities.filter(a=>a.kind==='connect').length,l.circuit.wires.filter(w=>w.id!=='course-enclosure-bond').length);for(const k of ['inspect','predict','connect','operate','measure','explain','repair','retest'])assert.ok(activities.some(a=>a.kind===k),`${l.id} missing ${k}`);}
+  for(const l of LESSONS){const activities=getLessonActivities(l);assert.equal(new Set(activities.map(a=>a.id)).size,activities.length);for(const a of activities){assert.ok(a.competency);if(a.component){const c=l.circuit.components.find(c=>c.id===a.component);assert.ok(c,`${l.id}:${a.id}`);if(a.part)assert.ok(definitionFor(c).parts.some(p=>p.id===a.part));}for(const e of a.endpoints??[]){const c=l.circuit.components.find(c=>c.id===e.component)!;assert.ok(definitionFor(c).terminals.some(t=>t.id===e.terminal));}if(a.kind==='operate')assert.doesNotMatch(a.instruction, /(?:closed|pressed|active|sensorValue|position|on)\s*=/);}assert.equal(activities.filter(a=>a.kind==='connect').length,l.circuit.wires.filter(w=>w.id!=='course-enclosure-bond').length);for(const k of ['inspect','predict','connect','operate','measure','explain','repair','retest'])assert.ok(activities.some(a=>a.kind===k),`${l.id} missing ${k}`);}
 });
 test('stopped starters, chime and emergency standby pass declared outcomes instead of requiring an active load',()=>{
   for(const id of [40,43,44,55,56,57,60,61,64]){const d=copy(id),r=simulate(d);const report=assessBuild(d,r,lesson(id).circuit);assert.equal(report.passed,true,`${id}:${JSON.stringify(failed(report.checks))}`);}

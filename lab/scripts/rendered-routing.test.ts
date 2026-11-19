@@ -145,7 +145,7 @@ interface FixtureGeometry { groups:Map<string,Box3>; triangles:MeasuredTriangle[
 const modelKey=(c:ComponentInstance)=>c.variant?c.type+':'+c.variant:c.type==='switch2'?'switch2:single-rocker':c.type;
 async function measuredFixtures(low=false) {
   const byType=new Map<string,FixtureGeometry>(),loader=new GLTFLoader();
-  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo','fan:xf100s','isolator3:fan-isolator','switch:dc-rocker','switch2:single-rocker']){
+  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo','fan:xf100s','isolator3:fan-isolator','switch:dc-rocker','switch2:single-rocker','callchime:croma-100a']){
     const named=type.includes(':'),stem=named?type.replace(':','_'):type+'_default';
     const bytes=readFileSync(new URL('../public/models/'+stem+(low?'.low':'')+'.glb',import.meta.url));
     const {scene}=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
@@ -157,7 +157,10 @@ async function measuredFixtures(low=false) {
       for(let owner=node.parent;owner;owner=owner.parent)if(owner.userData.standMember)key=owner.userData.standMember;
       const bounds=groups.get(key)??new Box3();
       bounds.union(new Box3().setFromObject(node,true));groups.set(key,bounds);
-      if(type==='fan:xf100s'){
+      if(type==='fan:xf100s'||type==='callchime:croma-100a'){
+        // A conditional stripped wire tip continues its own routed conductor
+        // inside the clamp. It is absent from the empty fixture.
+        for(let owner=node.parent;owner;owner=owner.parent)if(owner.userData.occupiedTerminal)return;
         const g=node.geometry,p=g.getAttribute('position'),indices=g.index;
         const vertex=(i:number)=>new Vector3().fromBufferAttribute(p,indices?indices.getX(i):i).applyMatrix4(node.matrixWorld);
         for(let i=0;i<(indices?.count??p.count);i+=3){
@@ -171,10 +174,10 @@ async function measuredFixtures(low=false) {
   }
   return byType;
 }
-// The XF's rear feed slot, front service chamber and clamp mouths are genuine
+// The extractor's rear duct and the chime's K1 entry and clamps are genuine
 // openings. Test the swept wire against mesh triangles inside the housing
 // instead of granting the whole wire or compartment an exemption.
-function hitsFanSurface(a:Vec3,b:Vec3,radius:number,triangles:MeasuredTriangle[]){
+function hitsFixtureSurface(a:Vec3,b:Vec3,radius:number,triangles:MeasuredTriangle[]){
   const start=new Vector3(...a),end=new Vector3(...b),bounds=new Box3().setFromPoints([start,end]).expandByScalar(radius);
   const ray=new Ray(start,end.clone().sub(start).normalize()),length=start.distanceToSquared(end),point=new Vector3();
   return triangles.find(({vertices:t,bounds:box})=>{
@@ -209,7 +212,7 @@ function fixtureIssues(document: CircuitDocument, rendered: RenderedWire, measur
       const hit = rendered.segments.find(segment=>{
         const a=inLocal(component,segment.a),b=inLocal(component,segment.b);
         if(!entersBox(a,b,inflatedLow,inflatedHigh))return false;
-        if(actual?.triangles.length){surface=hitsFanSurface(a,b,rendered.radius,actual.triangles);return Boolean(surface);}
+        if(actual?.triangles.length){surface=hitsFixtureSurface(a,b,rendered.radius,actual.triangles);return Boolean(surface);}
         return !isTerminalAccess(document,rendered,segment,component);
       });
       if (hit) issues.push({ kind: surface?'rendered tube touches '+surface.part:'rendered tube enters fixture clearance', wire: rendered.wire.id, other: component.id, position: hit.a });
@@ -320,9 +323,9 @@ test('both extractor leads pass through the exported rear inlet at eight bench r
     const plate=models.get('isolator3:fan-isolator')!.groups.get('device')!;
     assert.ok(Math.abs(plate.max.x-plate.min.x-.86)<.003&&Math.abs(plate.max.y-plate.min.y-.86)<.003);
     // Verify solid material beside the hole and air inside it in the GLB.
-    assert.ok(hitsFanSurface([-.71,.95,-.025],[-.71,.95,.035],.001,extractor.triangles));
+    assert.ok(hitsFixtureSurface([-.71,.95,-.025],[-.71,.95,.035],.001,extractor.triangles));
     for(const x of [-.64,-.548]){
-      assert.equal(hitsFanSurface([x,.95,-.025],[x,.95,.035],WIRE_RADIUS,extractor.triangles),undefined);
+      assert.equal(hitsFixtureSurface([x,.95,-.025],[x,.95,.035],WIRE_RADIUS,extractor.triangles),undefined);
     }
     for(let turn=0;turn<8;turn++){
       const rotation=turn*Math.PI/4;
@@ -347,6 +350,40 @@ test('both extractor leads pass through the exported rear inlet at eight bench r
         return rendered;
       });
       assert.ok(minimumWireGap(doc,wires[0],wires[1])>=MINIMUM_GAP);
+    }
+  }
+});
+
+test('the four routed chime cores clear the measured K1 throat and their neighbours at eight wall rotations',async()=>{
+  const course=LESSONS.find(l=>l.id===72)!.circuit;
+  const original=course.components.find(c=>c.id==='chime')!;
+  const owners=new Set(course.wires.filter(w=>w.from.component===original.id||w.to.component===original.id).flatMap(w=>[w.from.component,w.to.component]));
+  const associated=course.components.filter(c=>owners.has(c.id));
+  const joined=course.wires.filter(w=>w.from.component===original.id||w.to.component===original.id)
+    .map(w=>({...w,cable:undefined})); // exercise the larger Sandbox singles at K1 as well as the lesson's bell pair above
+  assert.equal(joined.length,4);
+  for(const low of [false,true]){
+    const models=await measuredFixtures(low),body=models.get('callchime:croma-100a')!;
+    // Positive control: the plastic beside K1 has material, its centre is open.
+    assert.ok(hitsFixtureSurface([-.15,.937,-.012],[-.15,.937,.046],.001,body.triangles));
+    assert.equal(hitsFixtureSurface([-.04,.937,-.012],[-.04,.937,.19],.001,body.triangles),undefined);
+    for(let turn=0;turn<8;turn++){
+      const angle=turn*Math.PI/4;
+      const cs=Math.cos(angle),sn=Math.sin(angle);
+      const doc={...course,cableRuns:[],components:associated.map(c=>({...c,position:[cs*c.position[0]+sn*c.position[2],c.position[1],-sn*c.position[0]+cs*c.position[2]] as Vec3,rotation:c.rotation+angle})),
+        wires:joined.map((w,i)=>(turn+i)%2?{...w,from:w.to,to:w.from}:w)};
+      const plan=routeCircuit(doc),chime=doc.components.find(c=>c.id===original.id)!;
+      assert.deepEqual(auditRoutes(doc,plan),[],String(turn));
+      const tubes=doc.wires.map(w=>{
+        const wire=renderedWire(w,plan.routes.get(w.id)!);
+        const throat=wire.segments.map(s=>[inLocal(chime,s.a),inLocal(chime,s.b)]).find(([p,q])=>p[2]*q[2]<=0&&Math.abs(p[1]-.937)<.072&&Math.abs(p[0]+.04)<.082);
+        assert.ok(throat,'real curve passes through K1 at yaw '+turn);
+        const [p,q]=throat,v=interpolate(p,q,-p[2]/(q[2]-p[2]));
+        assert.ok(Math.abs(v[0]+.04)+wire.radius<=.080&&Math.abs(v[1]-.937)+wire.radius<=.070);
+        assert.deepEqual(fixtureIssues(doc,wire,models),[],(low?'Economy':'Full')+' housing, yaw '+turn);
+        return wire;
+      });
+      for(const [i,w] of tubes.entries())for(const other of tubes.slice(i+1))assert.ok(minimumWireGap(doc,w,other)>=MINIMUM_GAP,'independent rendered curves touch at yaw '+turn);
     }
   }
 });

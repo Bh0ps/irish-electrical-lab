@@ -17,6 +17,7 @@ export interface FixturePose {
   scale: Vec3;
   bellService?:BellServicePart;
   hallChime?:boolean;
+  croma?:boolean;
   kitchenDriver?:boolean;
   worktopRocker?:boolean;
   extractor?:boolean;
@@ -48,6 +49,7 @@ export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboar
   if(backWall&&c.type==='fan'&&c.variant==='xf100s')return {scale:[.1,.1,.1],extractor:true};
   if(backWall&&c.type==='isolator3'&&c.variant==='fan-isolator')return {scale:[.1,.1,.1],flushPlate:true};
   if(doorbellHall&&(c.type==='chime'||c.type==='callchime')){
+    if(c.type==='callchime'&&c.variant==='croma-100a')return {scale:[.1,.1,.1],hallChime:true,croma:true};
     const {size,model}=chimeEnvelope(c.type);
     return {scale:size.map((dimension,i)=>dimension/model[i]) as Vec3,hallChime:true};
   }

@@ -48,13 +48,15 @@ function focusFirstResult(event: KeyboardEvent<HTMLInputElement>) {
 type Probe = 'red' | 'black';
 type ProbePoints = Partial<Record<Probe, Endpoint>>;
 
-export function ProbePicker({ circuit, points, active, onProbe, onPick, defaultOpen=false }: {
+export interface ChimeProbeChoice {component:ComponentInstance;covered:boolean}
+export function ProbePicker({ circuit, points, active, onProbe, onPick, defaultOpen=false, chime }: {
   circuit: CircuitDocument;
   points: ProbePoints;
   active: Probe;
   onProbe: (probe: Probe) => void;
   onPick: (endpoint: Endpoint) => void;
   defaultOpen?: boolean;
+  chime?:ChimeProbeChoice;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const id = useId();
@@ -72,7 +74,12 @@ export function ProbePicker({ circuit, points, active, onProbe, onPick, defaultO
       })}
     </div>
     <div id={id} hidden={!open}>
-      {open && <TerminalPicker circuit={circuit} label={active+' probe terminal'} probes={points} activeProbe={active} onPick={onPick}/>}
+      {open && (chime?<fieldset className="chime-probe-choice"><legend>Chime terminals</legend>
+        {chime.covered&&<p>Choosing a terminal opens the front cover.</p>}
+        <div>{getComponentTerminals(chime.component,COMPONENTS[chime.component.type]).map(t=><button type="button" key={t.id}
+          aria-label={'Place '+active+' probe on '+t.label} aria-pressed={points[active]?.component===chime.component.id&&points[active]?.terminal===t.id}
+          onClick={()=>onPick({component:chime.component.id,terminal:t.id})}>{t.label}</button>)}</div>
+      </fieldset>:<TerminalPicker circuit={circuit} label={active+' probe terminal'} probes={points} activeProbe={active} onPick={onPick}/>)}
     </div>
   </div>;
 }

@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
 import {BELL_CUPBOARD as b} from '../lib/bell-cupboard';
+import {CROMA_K1} from '../lib/croma-chime';
 import {KITCHEN_LIGHTS as kitchen,stripLead,rockerPanelCentre,rockerPose,ROCKER_BOX} from '../lib/kitchen-lighting';
 import {rockerProbeContact,rockerWireEntry} from '../lib/dc-rocker';
-import {siteContacts,worktopTestPoints} from '../lib/site-meter';
+import {siteContacts,installedTestFittings} from '../lib/site-meter';
 import {BATH_EXTRACT as bath,BATH_SHOWER,bathroomWireNote,outsideGrillePose} from '../lib/bathroom-extract';
 import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,HOME_STAIR,REAR_GARDEN,STAIR_FOOT,STAIR_TOP,stairFloor,stairSwitchView} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
@@ -33,7 +34,7 @@ test('a late frame from downstairs cannot replace the landing view, while saved 
   assert.equal(previousSiteView(resumed,'home:9',returnFromMeter),resumed);
 });
 test('only the withdrawn worktop panel exposes its two real blade shoulders; flex follows the occupied crimp',()=>{
-  const doc=lesson(66),before=electricalKey(doc),site=jobSite(doc),fittings=worktopTestPoints(doc,site);
+  const doc=lesson(66),before=electricalKey(doc),site=jobSite(doc),fittings=installedTestFittings(doc,site);
   assert.deepEqual(fittings.map(f=>f.component.id).sort(),['left','left-switch','right','right-switch']);
   const strip=fittings.find(f=>f.component.id==='right')!,rocker=fittings.find(f=>f.component.id==='right-switch')!;
   const {item,component}=rocker,open=rockerPose(item.position,true),fixed=rockerPanelCentre(item.position,false);
@@ -56,7 +57,7 @@ test('only the withdrawn worktop panel exposes its two real blade shoulders; fle
     assert.deepEqual(connected.from.component===item.id?out[0]:out.at(-1),drawn.pin);
   }
   const legacy={...doc,components:doc.components.map(c=>c.type==='switch'?{...c,variant:undefined}:c)};
-  assert.ok(worktopTestPoints(legacy,jobSite(legacy)).every(f=>f.kind==='strip'));
+  assert.ok(installedTestFittings(legacy,jobSite(legacy)).every(f=>f.kind==='strip'));
   assert.equal(electricalKey(doc),before);
 });
 test('bathroom fittings face their own rooms and both fan cores pass through the separate rear cable inlet',()=>{
@@ -141,6 +142,31 @@ test('the bell transformer supply cores share the side conduit and the chime cir
     assert.equal(electricalKey(doc),before);
   }
 });
+test('the installed hall chime has five separate screw heads behind its door and four real wires through K1',()=>{
+  const doc=lesson(72),site=jobSite(doc),signature=electricalKey(doc);
+  const fittings=installedTestFittings(doc,site);assert.deepEqual(fittings.map(f=>f.component.id),['chime']);
+  const [chime]=fittings,contacts=siteContacts(chime,true);
+  assert.deepEqual(siteContacts(chime,false),[]);
+  assert.deepEqual(contacts.map(p=>p.label),['=/~','8/12V','C1','C2','V']);
+  const wires=doc.wires.filter(w=>[w.from,w.to].some(e=>e.component==='chime'));
+  assert.equal(wires.length,4);
+  const [x,y,z]=chime.item.position,ports=new Set<string>();
+  for(const wire of wires){
+    const end=wire.from.component==='chime'?wire.from:wire.to;
+    const fitted=installedEnd(doc,site,end)!,core=fitted.lead!;
+    assert.deepEqual(core[0],fitted.pin);assert.notEqual(end.terminal,'V');
+    const screw=contacts.find(c=>c.endpoint.terminal===end.terminal)!;
+    assert.ok(screw.position[2]>fitted.pin[2]&&core.at(-1)![2]<z);
+    const entry=core.find((p,i)=>i&&p[2]<z&&core[i-1][2]>=z)!;
+    assert.ok(Math.abs(entry[0]-x-CROMA_K1.centre[0]*.1)<CROMA_K1.width*.05);
+    assert.ok(Math.abs(entry[1]-y-CROMA_K1.centre[1]*.1)<CROMA_K1.height*.05);
+    ports.add(entry[0]+','+entry[1]);
+  }
+  assert.equal(ports.size,4);assert.equal(electricalKey(doc),signature);
+  const old={...doc,components:doc.components.map(c=>c.id==='chime'?{...c,variant:undefined}:c)};
+  assert.equal(installedTestFittings(old,jobSite(old)).length,0);
+  assert.ok(runLessonScenarios(doc).every(r=>r.status==='pass'));
+});
 test('socket plates sit on the correct face with clear wall above and rear pins behind it',()=>{
   for(const id of [17,18,19,21]){
     const doc=lesson(id),site=jobSite(doc);
@@ -179,8 +205,8 @@ test('installed runs follow the actual terminals, turn at fitted walls and remai
       const path=installedWireRoute(doc,site,wire)!;
       assert.deepEqual(path[0],anchor(wire.from));assert.deepEqual(path.at(-1),anchor(wire.to));
       const [from,to]=[wire.from,wire.to].map(end=>installedEnd(doc,site,end)!);
-      const start=from.item.fixture?.worktopRocker?from.lead!.length:1;
-      const stop=to.item.fixture?.worktopRocker?path.length-to.lead!.length+1:path.length;
+      const start=from.item.fixture?.worktopRocker||from.item.fixture?.croma?from.lead!.length:1;
+      const stop=to.item.fixture?.worktopRocker||to.item.fixture?.croma?path.length-to.lead!.length+1:path.length;
       for(let i=start;i<stop;i++)assert.equal(path[i].filter((v,k)=>!near(v,path[i-1][k])).length,1);
     }
     assert.equal(electricalKey(doc),fingerprint);
