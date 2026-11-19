@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {
-  CAMERA_MAX_SPEED, CAMERA_MIN_SPEED, DEFAULT_CAMERA_SPEED, cameraFarPlane, cameraHasMotion, cameraLookQuaternion,
+  CAMERA_MAX_SPEED, CAMERA_MIN_SPEED, DEFAULT_CAMERA_SPEED, workbenchCameraRange, cameraHasMotion, cameraLookQuaternion,
   clampCameraSpeed, createCameraNavigationState, createCameraTransition, queueCameraGesture,
   sampleCameraTransition, stepCameraNavigation, stopCameraNavigation,
   type CameraInput, type CameraNavigationState, type CameraPose,
@@ -75,7 +75,15 @@ test('idle mode changes preserve an extreme imported workbench pose exactly',()=
   assert.equal(stepCameraNavigation(state,'orbit',idle,1/60,viewport),state);assert.equal(stepCameraNavigation(state,'free',idle,1/60,viewport),state);
 });
 test('distant free camera clipping contains the actual scene without moving the camera',()=>{
-  const position:[number,number,number]=[600,-80,-900],bounds={min:[-8,-1,-6] as [number,number,number],max:[9,8,7] as [number,number,number]},before=structuredClone({position,bounds}),far=cameraFarPlane(position,bounds);
+  const position:[number,number,number]=[600,-80,-900],bounds={min:[-8,-1,-6] as [number,number,number],max:[9,8,7] as [number,number,number]},before=structuredClone({position,bounds}),far=workbenchCameraRange(position,bounds).farPlane;
   for(const x of [bounds.min[0],bounds.max[0]])for(const y of [bounds.min[1],bounds.max[1]])for(const z of [bounds.min[2],bounds.max[2]])assert.ok(far>vector(position).distanceTo(new THREE.Vector3(x,y,z)));
-  assert.ok(far<1400);assert.deepEqual({position,bounds},before);assert.equal(cameraFarPlane([0,0,10],bounds),140);assert.equal(cameraFarPlane([NaN,0,0],bounds),140);assert.equal(cameraFarPlane([1e308,1e308,1e308],bounds),1e7);
+  assert.ok(far<1400);assert.deepEqual({position,bounds},before);assert.deepEqual(workbenchCameraRange([0,0,10],bounds),{farPlane:140,fogNear:35,fogFar:110});assert.deepEqual(workbenchCameraRange([NaN,0,0],bounds),{farPlane:140,fogNear:35,fogFar:110});assert.equal(workbenchCameraRange([1e308,1e308,1e308],bounds).farPlane,1e7);
+});
+test('a portrait overview keeps the far end of the process plant ahead of the fog',()=>{
+  const camera:[number,number,number]=[48,75,116];
+  const bounds={min:[-23,0,-16] as [number,number,number],max:[23,2,12] as [number,number,number]};
+  const range=workbenchCameraRange(camera,bounds);
+  const furthest=vector(camera).distanceTo(new THREE.Vector3(-23,0,-16));
+  assert.ok(furthest>110);
+  assert.ok(range.fogNear>=furthest&&range.fogFar>=range.fogNear+75);
 });

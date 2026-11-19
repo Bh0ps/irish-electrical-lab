@@ -64,6 +64,18 @@ export const STAIR_FOOT = HOME_STAIR.turn + stairRun;
 export const STAIR_HALF = HOME_STAIR.rise * HOME_STAIR.risersPerFlight;
 export const STAIR_TOP = 2 * STAIR_HALF;
 export const STAIR_EYE = 1.56;
+export type StairStation='near'|'far';
+export function isStairStation(id?:string):id is StairStation{return id==='near'||id==='far';}
+
+/** Camera approaches the switch from its own level, with the stair or
+ * upstairs door still in view. +Z faces out of each installed faceplate. */
+export function stairSwitchView(station:StairStation){
+  const upstairs=station==='far',level=upstairs?STAIR_TOP:0;
+  const position:Vec3=upstairs?[-.50,level+1.34,.48]:[-1.58,1.33,1.71];
+  const look:Vec3=upstairs?[.16,level+1.17,1.04]:[-1.07,1.15,.87];
+  const dx=look[0]-position[0],dy=look[1]-position[1],dz=look[2]-position[2];
+  return {position,yaw:Math.atan2(-dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};
+}
 const stairVisit = {position: [-1.63, STAIR_EYE, 1.62] as Vec3, yaw: 0, pitch: .02};
 export const STAIR_LANDING:FloorRoom = {
   id:8,name:'First-floor landing',left:HOME_STAIR.divider,right:HOME_STAIR.east,back:STAIR_FOOT,front:HOME_STAIR.landingEnd,

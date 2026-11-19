@@ -76,6 +76,7 @@ export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboar
     return {scale: tw?[TAPE_SECTION_LENGTH/2.058,.010/.396,.0012/.125]:[.1,.1,.1],tape:true,tilt:cupboard?Math.PI/2:0};
   }
   if (backWall && !c.params.gangGroup && !c.variant && ['switch','switch2','intermediate'].includes(c.type)) {
+    if(c.type==='switch2')return {scale:[.1,.1,.1],flushPlate:true};
     const one = c.type === 'switch';
     return {scale: [.086/(one ? .876 : .892), .086/(one ? .964 : .981), .052]};
   }

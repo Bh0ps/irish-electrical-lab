@@ -3,7 +3,7 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { HouseCallPanel } from '../components/lab/HouseCallPanel';
-import { HOUSE_CALLS, callActivityId } from '../lib/house-calls';
+import { HOUSE_CALLS, callActivityId, houseStepId, savedCallStep } from '../lib/house-calls';
 import { LESSONS } from '../lib/lessons';
 
 test('a tool opened during a house job keeps its instruction and a way back to the same step', () => {
@@ -15,16 +15,25 @@ test('a tool opened during a house job keeps its instruction and a way back to t
     onActivity: noop, onCredit: async () => {}, operate: noop, locate: noop,
     restart: noop, choose: noop, undo: noop, startFault: noop, closeTools: noop, openMeter:noop,
   };
-  const instruction = call.steps[1].instruction;
+  const step = call.steps[savedCallStep(call,props.start)!];
+  const instruction = step.instruction;
   const tool = createElement('output', null, 'Stair light 0 V');
   const toolsOpen = renderToStaticMarkup(createElement(HouseCallPanel, { ...props, context: tool }));
   assert.ok(toolsOpen.includes(instruction));
   assert.ok(toolsOpen.includes('Stair light 0 V'));
   assert.ok(toolsOpen.includes('Back to job'));
-  assert.ok(!toolsOpen.includes(call.steps[1].label));
+  assert.ok(!toolsOpen.includes(step.label));
 
   const toolsClosed = renderToStaticMarkup(createElement(HouseCallPanel, props));
   assert.ok(toolsClosed.includes(instruction));
-  assert.ok(toolsClosed.includes(call.steps[1].label));
+  assert.ok(toolsClosed.includes(step.label));
   assert.ok(!toolsClosed.includes('Back to job'));
+
+  const wireStep={...props,start:houseStepId(call,1)};
+  const wireTool=renderToStaticMarkup(createElement(HouseCallPanel,{...wireStep,context:tool}));
+  const wireTask=renderToStaticMarkup(createElement(HouseCallPanel,wireStep));
+  for(const view of [wireTool,wireTask])assert.ok(view.includes(call.steps[1].instruction));
+  assert.ok(wireTool.includes('Back to job'));
+  assert.ok(!wireTool.includes('Downstairs wire'));
+  assert.ok(wireTask.includes('Downstairs wire'));
 });

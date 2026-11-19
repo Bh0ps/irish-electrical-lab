@@ -102,3 +102,12 @@
 .site-pad-rocker.site-pad-positive::after{left:0;right:auto;transform-origin:left;transform:rotate(-32deg)}
 .site-pad-rocker.site-pad-negative button{top:5px}
 .site-pad button small{font-size:.75rem}
+.stair-locations{position:absolute;inset:6px 6px auto;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:4px;pointer-events:none}
+.stair-locations>*{pointer-events:auto}
+.stair-locations>.site-cable-toggle{position:static;margin-left:auto}
+.stair-stations{display:flex;padding:2px;border:1px solid #bdcbbd;border-radius:8px;background:#fafbf5}
+.stair-stations button{min-height:44px;padding:4px 9px;border:none;border-radius:5px;background:transparent;color:#263d31;font:inherit;font-size:.8rem;font-weight:650;cursor:pointer}
+.stair-stations button[aria-pressed=true]{color:#fff;background:#234d3b}
+.stair-stations button:focus-visible{outline:2px solid #ae762e;outline-offset:1px}
+.site-wall-switch[data-side=left] span{right:100%;left:auto}
+.site-wall-switch[data-side=left] span::before{left:100%;right:auto}

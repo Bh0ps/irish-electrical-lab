@@ -20,6 +20,8 @@ For model changes, preserve the authoritative rear layout in `lab/lib/terminal-l
 
 Document educational assumptions beside new electrical behaviour. Use current Irish terminology and primary public references for lesson content. Identify specialist, equipment-dependent and existing arrangements appropriately. The simulator is a study tool; it must not claim installation approval or manufacturer-specific certification.
 
+Write each step as you would give it to someone beside the bench. Name the fitting, say what to do and use the lettering they can see. “Put black on N at the lamp” gives someone a place to start. Introduce a trade word when its meaning is visible: after the learner finds the two wires between the stair switches, give them the name *strappers*. Feedback should describe what happened on that particular circuit. Keep theory and exceptions in the notes where the learner can open them.
+
 ## Writing a lesson
 
 Give the learner something to do and something to look for. “Flick the landing switch. What happened to the lamp?” is enough for a first step. Keep the marking they can see on the fitting. For example, “COM is where the feed comes in on this switch.” When a test fails, name the part, say what the meter or lamp actually did, and give them one thing to check. Put the calculation and the exceptions in the expanded notes.

@@ -10,6 +10,7 @@ import {
 } from '../../lib/quick-practice';
 import type { CircuitDocument, SimulationResult } from '../../lib/types';
 import { COURSE_PAGES } from '../../lib/coursebook-content';
+import { TermsInThisStep } from './TermsInThisStep';
 
 interface Props {
   experiment: QuickPracticeExperiment;
@@ -20,6 +21,10 @@ interface Props {
   onPrediction?: (success: boolean) => void;
   onReflection?: (success: boolean) => void;
   onTarget: () => void;
+  onUseControl?: () => void;
+  onLevel?: (level: number) => void;
+  onStartDial?: () => void;
+  onEndDial?: () => void;
   onTrace?: () => void;
   onRestart: () => void;
   onExit: () => void;
@@ -68,6 +73,8 @@ export default function QuickPracticePanel(props: Props) {
   const showRestart = !!comparison || !!simulationError || start?.status === 'unresolved' || observation?.status === 'unresolved';
   const statusClass = showRestart ? 'attention' : '';
   const phase = comparison ? 'compare' : baseline ? 'operate' : 'predict';
+  const target = document.components.find(component => component.id === experiment.target);
+  const waitingForTimer = experiment.sequence === 'run-on' && target?.params.active === false;
   const prompt = comparison ? 'Compare the readings from the bench.' : baseline ? experiment.instruction : experiment.question;
   useEffect(() => { onPromptChange?.(phase, prompt); }, [phase, prompt, onPromptChange]);
 
@@ -88,6 +95,14 @@ export default function QuickPracticePanel(props: Props) {
     </>}
     {baseline && !comparison && <>
       <p className="task-instruction">{experiment.instruction}</p>
+      {target && (experiment.targetKeys.includes('level') && props.onLevel ?
+        <label className="practice-dial"><span>{experiment.controlLabel} <output>{Math.round(Number(target.params.level) * 100)}%</output></span>
+          <input type="range" aria-label="Practice dimmer setting" min="0" max="100" step="1" value={Math.round(Number(target.params.level)*100)}
+            onPointerDown={props.onStartDial} onPointerUp={props.onEndDial} onPointerCancel={props.onEndDial} onBlur={props.onEndDial}
+            onChange={event=>props.onLevel?.(Number(event.currentTarget.value)/100)}/>
+        </label> : props.onUseControl && <Button className="primary-button full" disabled={waitingForTimer || result?.revision !== document.revision || !!simulationError || observation?.status==='unresolved'} onClick={props.onUseControl}>
+          {waitingForTimer ? 'Waiting for the light to go out…' : experiment.sequence==='press-release' && target.params.pressed ? 'Let go of Start' : experiment.controlLabel}
+        </Button>)}
       <Button variant="outline" size="sm" onClick={props.onTarget}><Eye size={14}/>Show me where</Button>
       {props.context && <div className="lesson-context">{props.context}</div>}
     </>}
@@ -119,5 +134,6 @@ export default function QuickPracticePanel(props: Props) {
       <Button variant="ghost" size="sm" onClick={props.onExit}><ArrowLeft size={14} />Back to lesson</Button>
       {showRestart && <Button variant="ghost" size="sm" onClick={props.onRestart}>{comparison ? 'Try again' : 'Restart experiment'}</Button>}
     </div>
+    <TermsInThisStep key={phase} text={comparison ? experiment.explanation+' '+reflectionQuestion.prompt : baseline ? experiment.instruction : experiment.question}/>
   </section>;
 }

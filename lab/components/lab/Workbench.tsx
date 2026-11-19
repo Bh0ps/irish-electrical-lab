@@ -1,5 +1,5 @@
 'use client';
-import {connectedRockerTerminals} from '../../lib/dc-rocker';
+import {connectedRockerTerminals} from '../../lib/wall-rocker';
 import React, { Suspense, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, events as pointerEvents, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';

@@ -27,6 +27,7 @@ open source under the [MIT license](LICENSE).
   full backups. After installation, study and building work offline.
 - Try **Check the bathroom fan timer** to work the bathroom light and fan. Turn the light off, watch the five-second timer, then see what the fan isolator switches off.
 - Try **One worktop stays dark**. Both switches are on, but only the left strip lights. Use the meter to find the break, repair it and test both lights.
+- In **Try both stair switches**, work the light from both floors. Turn the light off downstairs, read the markings on the back of the switch and see which of the two wires still has power. Go to the landing and use the other switch to light the stairs again.
 - Try **Meter the worktop lights** at Oakfield house. Put the probes on the LED tape and compare a dark worktop with a lit one.
 - Navigate with orbit controls or a **WASD free camera** in four training environments.
 

@@ -7,6 +7,7 @@ approach. No manufacturer's artwork or certification marking is reproduced.
 import math
 import bpy
 from mathutils import Vector
+from bg812_front import build_front
 
 WALL = {'switch:single-rocker', 'switch2:single-rocker', 'intermediate:single-rocker',
         'switch:gang-module-left', 'switch:gang-module-right'}
@@ -93,18 +94,24 @@ def add_lighting_back(recipe, root, A, previous):
     if key in WALL:
         gang=recipe['component']['params'].get('gangModule')
         bg_single=key in {'switch:single-rocker','switch2:single-rocker'}
+        bg812=key=='switch2:single-rocker'
+        stripped=A.material('BG812 stripped solid copper',(.62,.286,.110),.78,.30) if bg812 else None
         plate_center=.23 if gang=='left' else 0
         if gang!='right':
             # The screw spacing is 60.3 mm on the 86 mm reference plate.
             ribs=detail('ribbed-switch-plate',
                 'The moulded ribs stiffen the back of the faceplate. The two through bosses locate the plate fixing screws.',body)
-            cy=.651; width=.965 if gang else .876; height=.955
-            plate=A.box('Rear faceplate skin',(plate_center,cy,.069),(width,height,.035),ribs,plastic,.017)
+            cy=.651; width=.86 if bg812 else .965 if gang else .876; height=.86 if bg812 else .955
+            if bg812:
+                ribs.location.z=-.047
+                ribs['preservePlanarLod']=True
+            plate=A.box('Rear faceplate skin',(plate_center,cy,.069),(width-.020 if bg812 else width,height-.020 if bg812 else height,.012 if bg812 else .035),ribs,plastic,.017)
+            if bg812:pocket(plate,ribs,0,cy,.069,.148,.286,.12)
             for side in [-1,1]:
-                x=plate_center+side*width*.3506
+                x=plate_center+side*(.3015 if bg812 else width*.3506)
                 A.boolean_difference(plate,A.cyl('Fixing passage',(x,cy,.069),.022,.09,ribs,None))
-                ring(ribs,(x,cy),.052,.038,.023,.050,plastic,'Full depth fixing boss')
-                if side==1:
+                ring(ribs,(x,cy),.052,.038,.023,.038 if bg812 else .050,plastic,'Full depth fixing boss')
+                if side==1 and not bg812:
                     for y in [cy-height*.5+.012,cy+height*.5-.012]:
                         A.box('Top and bottom return',(plate_center,y,.050),(width-.024,.019,.050),ribs,plastic,.006)
                 for delta in ([.194,.259] if bg_single else [-.145,.145]):
@@ -114,7 +121,7 @@ def add_lighting_back(recipe, root, A, previous):
                         cx=plate_center+side*width*.373
                         for dims in [(.057,.018,.049),(.018,.057,.049)]:
                             A.box('Cruciform locating rib',(cx,cy+delta,.032),dims,ribs,plastic,.005)
-                A.box('Side return',(plate_center+side*(width*.5-.011),cy,.050),(.019,height-.04,.050),ribs,plastic,.005)
+                if not bg812:A.box('Side return',(plate_center+side*(width*.5-.011),cy,.050),(.019,height-.04,.050),ribs,plastic,.005)
             for ratio in [-.29,-.10,.10,.29]:
                 A.box('Longitudinal stiffener',(plate_center+width*ratio,cy,.050),(.012,height-.027,.035),ribs,plastic,.003)
             for delta in [-.244,-.049,.049,.244]:
@@ -130,7 +137,7 @@ def add_lighting_back(recipe, root, A, previous):
         fixings=detail('switch-case-fixings',
             'These three screws hold the switch case together. The screws that grip the wires are reached from the ends.',cassette) if bg_single else cassette
         width=.295 if inter else .245; half=width/2
-        core=A.box('Recessed cassette body',(0,.650,-.044),(width,.472,.188),cassette,grey,.019)
+        core=A.box('Recessed cassette body',(0,.650,-.0685 if bg812 else -.044),(width,.472,.139 if bg812 else .188),cassette,grey,.019)
         top=.886; bottom=.414
         if bg_single:
             # The 811/812 photographs show three case fixings. The top two
@@ -140,6 +147,12 @@ def add_lighting_back(recipe, root, A, previous):
                 step=A.box('Tool for recessed upper ear',(side*.118,top,-.136),
                            (.140,.113,.110),cassette,None,.014)
                 A.boolean_difference(core,step)
+                if bg812:
+                    # Lower edges of the actual feet slope toward the centre.
+                    foot=A.box('Chamfer at lower outside corner',(side*.139,bottom-.061,-.068),
+                                (.090,.156,.223),cassette,None,.006)
+                    foot.rotation_euler.z=-side*.30
+                    A.boolean_difference(core,foot)
             relief=A.cyl('Lower skirt clearance tool',(0,bottom-.003,-.135),.048,.134,cassette,None)
             A.boolean_difference(core,relief)
             lower=A.empty('Lower case fixing seat',fixings,(0,bottom+.031,-.071))
@@ -158,6 +171,13 @@ def add_lighting_back(recipe, root, A, previous):
             # The screw is captured along the length of the cassette, outside
             # the aperture. Its tip is visible only down the cable window.
             A.cyl('Captive clamp screw tip',(0,.016,-.048),.010,.024,g,zinc,False,20)
+            if bg812:
+                # One copper continuation per occupied mouth; the insulation on
+                # the actual rendered wire meets its original rear entry. Only
+                # the section inside the clamp appears when the wire is landed.
+                seat=detail('bg812-insert-'+t['id'],'The insulated wire reaches the grey mouth. Its bare copper continues inside the clamp, between the tongue and the brass floor.',g)
+                seat['occupiedTerminal']=t['id'];seat['keepDistanceSurface']=True
+                A.cyl('Inserted copper beneath clamp',(0,0,-.028),.0068,.055,seat,stripped,vertices=24)
             field_mark = t['label'].split(' (')[0]
             A.label(field_mark,(x,y+(.043 if y>.65 else -.044),-.142),cassette,edge,.030,rear=True)
             # Separate screwdriver access on the ends of the moulding, as on
@@ -169,6 +189,13 @@ def add_lighting_back(recipe, root, A, previous):
             A.boolean_difference(core,cutter)
             tool=A.empty('Axial screwdriver recess',cassette,(x,end-sign*.042,-.078))
             tool.rotation_euler.x=-sign*math.pi/2
+            if bg812:
+                bpy.context.view_layer.update()
+                world=tool.matrix_world.copy();tool.parent=term_nodes[t['id']];tool.matrix_world=world
+                tool['detailId']='clamp-screw:'+t['id']
+                tool['detailPurpose']='This recessed metal screw bears on the pressure tongue. Its head is electrically connected to this terminal.'
+                tool['probeTerminal']=t['id'];tool['keepDistanceSurface']=True
+                A.cyl('Captive screw shank',(0,0,-.024),.009,.043,tool,zinc,vertices=20)
             screw(tool,(0,0),0,.019,False,.32)
         for side in [-1,1]:
             for y in [.52,.78]:
@@ -195,13 +222,18 @@ def add_lighting_back(recipe, root, A, previous):
             margin.rotation_euler.z=math.pi/2
             A.box('Raised rating surround',(0,0,0),(.177,.034,.004),margin,grey,.004)
             A.label('20 A 16AX 250 V~',(0,0,-.003),margin,rating,.017,rear=True)
-            A.label(name,(0,.646,-.141),cassette,edge,.019,rear=True)
+            if not bg812:A.label(name,(0,.646,-.141),cassette,edge,.019,rear=True)
+            else:
+                sideText=A.empty('Embossed frequency',cassette,(.086,.674,-.140))
+                sideText.rotation_euler.z=math.pi/2
+                A.label('50/60 Hz',(0,0,-.002),sideText,rating,.014,rear=True)
         else:
             A.box('Raised specification surround',(0,.643,-.140),(.188,.064,.009),cassette,grey,.007)
             A.label('20A   16AX',(0,.650,-.146),cassette,edge,.020,rear=True)
             A.label('250V~',(0,.626,-.146),cassette,edge,.018,rear=True)
             A.label(name,(0,.689,-.141),cassette,edge,.019,rear=True)
         A.box('Recessed mould parting land',(0,.612,-.140),(width*.71,.006,.003),cassette,grey,.001)
+        if bg812:build_front(root,A,detail)
 
     elif key=='rose:default':
         # BG 661 photo A6, viewed with its screw cap removed. The base is

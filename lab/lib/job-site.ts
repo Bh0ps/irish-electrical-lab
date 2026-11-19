@@ -142,7 +142,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
       z = BACK - .01 - (c.type === 'switch' ? .081 : .103)*fixture.scale[2] + .0005;
     if (fixture && ['gammaboard','invictaboard'].includes(c.type))
       z = BACK - .01 + COMPONENTS[c.type].size[2]*scale/2;
-    if (fixture?.flushPlate) z=BACK-.01+.0001;
+    if (fixture?.flushPlate) z=BACK-.01+(c.type==='switch2'?.0014:.0001);
     if (id===24&&c.type==='shaveroutlet'){x=.73;y=1.36;}
     if (id===24&&c.id==='isolation'&&all.some(p=>p.type==='shaveroutlet')){
       // The two working components share one wall unit. Only the outlet plate is visible from the room.

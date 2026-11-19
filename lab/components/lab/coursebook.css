@@ -78,6 +78,7 @@
 .call-readings{display:flex;flex-wrap:wrap;gap:.6rem 1.3rem;padding:.6rem 0;margin:.25rem 0 .6rem;border-block:1px solid var(--line)}
 .call-readings dt{font-size:.85rem}.call-readings dd{margin:0;font-weight:650;font-variant-numeric:tabular-nums}
 .call-breakers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(8rem,100%),1fr));gap:.5rem}
+.call-breakers.stair-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
 .call-breakers button{display:flex;justify-content:space-between;width:100%;min-height:44px;height:auto;white-space:normal}
 .call-breaker-choice .task-feedback{margin-block:.2rem 0}
 .house-call[data-house-tools] .house-job-heading.with-reading-feedback{position:sticky;top:0;z-index:4;flex-wrap:wrap}

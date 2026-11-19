@@ -1,3 +1,4 @@
+import { describeEndpoint } from './endpoint-description';
 import { measureVoltage } from './simulation';
 import { currentEvidence, type MeasurementEvidence } from './learning';
 import { validateCircuit } from './storage';
@@ -14,14 +15,19 @@ export interface CallStep {
   /** Put one probe on each pad of this fitting. */
   measure?:boolean;
   waitForFan?:boolean;
+  /** Printed-terminal question between the two switch operations. */
+  stairCheck?:'near'|'far';
+  savedId?:string;
 }
 export interface HouseCall {
   lesson: number; title: string; request: string; done: string; steps: CallStep[];
+  finishedId?:string;
+  searchTerms?:string;
   breakers?: readonly { id:string; label:string }[];
   bellPushes?:readonly { id:string; door:string }[];
 }
 
-const lamp = (on:boolean):CallReading => ({id:'light',label:'Stair light',on});
+const lamp = (on:boolean):CallReading => ({id:'light',label:'Stair light',on,emitter:true});
 const strip = (on:boolean):CallReading => ({id:'strip',label:'Cupboard strip',on,dc:true});
 const worktops=(left:boolean,right:boolean):CallReading[]=>[
   {id:'left',label:'Left strip',on:left,nominal:24,emitter:true},{id:'right',label:'Right strip',on:right,nominal:24,emitter:true},
@@ -41,9 +47,11 @@ export const HOUSE_CALLS:HouseCall[] = [
     {target:'door',label:'Move the cupboard door',instruction:'Shut the cupboard door. Does the strip go out?',changed:'The strip went out when the magnet reached the door contact.',before:[strip(true)],after:[strip(false)]},
     {target:'door',label:'Move the cupboard door',instruction:'Open the door and check that the shelf lights up again.',changed:'Opening the door moved the magnet away and the strip came back on.',before:[strip(false)],after:[strip(true)]},
   ]},
-  {lesson:9,title:'Try both stair switches',request:'There’s one stair light and a switch at each end. Try them as you would on the way to bed.',done:'You switched one light from both ends of the stairs.',steps:[
-    {target:'near',label:'Press switch A',instruction:'Use switch A to turn off the stair light.',changed:'The downstairs switch turned the stair light off.',before:[lamp(true)],after:[lamp(false)]},
-    {target:'far',label:'Press switch B',instruction:'Leave A alone. Use switch B to turn the light back on.',changed:'The landing switch turned the same light back on.',before:[lamp(false)],after:[lamp(true)]},
+  {lesson:9,searchTerms:'stairs light strappers travellers two way',title:'Try both stair switches',request:'The stair light is on. There’s a switch downstairs and one on the landing.',done:'You worked the stair light from both ends.',finishedId:'book:9:call-2',steps:[
+    {target:'near',label:'Use downstairs switch',instruction:'Turn the stair light off at the foot of the stairs.',changed:'The stair light went out.',before:[lamp(true)],after:[lamp(false)]},
+    {target:'near',label:'Choose a wire',instruction:'Which downstairs wire is at mains voltage?',changed:'',before:[lamp(false)],after:[lamp(false)],stairCheck:'near',savedId:'book:9:strapper-downstairs'},
+    {target:'far',label:'Choose a wire',instruction:'Which wire has the landing switch picked?',changed:'',before:[lamp(false)],after:[lamp(false)],stairCheck:'far',savedId:'book:9:strapper-landing'},
+    {target:'far',label:'Use landing switch',instruction:'Use the landing switch to turn the light back on.',changed:'The landing switch connected the lamp to the live strapper.',before:[lamp(false)],after:[lamp(true)],savedId:'book:9:call-1'},
   ]},
   {lesson:2,title:'Find the lighting breaker',request:'There are two breakers in the board. The lamp is on and the kitchen socket has power.',done:'You found the breaker that switches off just the lamp, then put it back on.',breakers:[{id:'branch1',label:'Breaker 1'},{id:'branch2',label:'Breaker 2'}],steps:[
     {target:'branch1',label:'Choose a breaker',instruction:'Which breaker turns off the lamp and leaves the socket on?',changed:'The lamp went out. The socket still has power.',before:branches(true),after:branches(false)},
@@ -73,15 +81,23 @@ export const HOUSE_CALLS:HouseCall[] = [
 ];
 
 export const callActivityId = (id:number,step:number) => 'book:'+id+':call-'+step;
+export function houseStepId(call:HouseCall,index:number){
+  return (index===call.steps.length?call.finishedId:call.steps[index]?.savedId)??callActivityId(call.lesson,index);
+}
 export function nextHouseCall(call:HouseCall,progress:StudyProgress){
   const start=HOUSE_CALLS.indexOf(call);
   for(let offset=1;offset<HOUSE_CALLS.length;offset++){
     const candidate=HOUSE_CALLS[(start+offset)%HOUSE_CALLS.length];
-    if(!progress.learning[candidate.lesson]?.activityIds.includes(callActivityId(candidate.lesson,candidate.steps.length-1)))return candidate;
+    if(!progress.learning[candidate.lesson]?.activityIds.includes(houseStepId(candidate,candidate.steps.length-1)))return candidate;
   }
 }
 /** Old lesson copies named the supply breaker in each load's label. Keep user labels. */
 export function houseJobLabels(doc:CircuitDocument):CircuitDocument{
+  if(doc.lessonId===9)return {...doc,components:doc.components.map(c=>{
+    if(c.id==='near'&&c.label==='Two-way switch A')return {...c,label:'Downstairs switch'};
+    if(c.id==='far'&&c.label==='Two-way switch B')return {...c,label:'Landing switch'};
+    return c;
+  })};
   if(doc.lessonId!==2)return doc;
   return {...doc,components:doc.components.map(c=>{
     if(c.id==='load1'&&c.label==='Lamp on breaker 1')return {...c,label:'Lamp'};
@@ -90,14 +106,14 @@ export function houseJobLabels(doc:CircuitDocument):CircuitDocument{
   })};
 }
 export function savedCallStep(call:HouseCall,id?:string) {
-  return Array.from({length:call.steps.length+1},(_,index)=>index).find(index=>callActivityId(call.lesson,index)===id);
+  return Array.from({length:call.steps.length+1},(_,index)=>index).find(index=>houseStepId(call,index)===id);
 }
 export interface CallOperation { component:string; activity:string; before:CircuitDocument; reading?:SimulationResult }
 export interface CallSample {activity:string; evidence:MeasurementEvidence}
 
 export function checkCallSample(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,sample?:CallSample){
   const step=call.steps[index];
-  if(!step?.measure||!sample||sample.activity!==callActivityId(call.lesson,index)||doc.lessonId!==call.lesson||!result?.converged||result.revision!==doc.revision)return;
+  if(!step?.measure||!sample||sample.activity!==houseStepId(call,index)||doc.lessonId!==call.lesson||!result?.converged||result.revision!==doc.revision)return;
   const entry=currentEvidence(doc,result,[sample.evidence])[0];
   if(!entry)return;
   const side=step.target==='left'?'left':'right';
@@ -136,9 +152,56 @@ export function callReadings(points:CallReading[],doc:CircuitDocument,result?:Si
   return readings;
 }
 
+export type StairPin='T1'|'T2';
+export type StairChoice={circuitId:string;revision:number;activity:string;pin:StairPin};
+const strapperPins:readonly StairPin[]=['T1','T2'];
+
+/** Fixed meter leads in the learning display use the actual lamp neutral as their reference. */
+export function stairReadings(side:'near'|'far',doc:CircuitDocument,result?:SimulationResult){
+  const fitting=doc.components.find(c=>c.id===side&&c.type==='switch2');
+  if(doc.lessonId!==9||!fitting||!result?.converged||result.revision!==doc.revision)return;
+  const neutral={component:'light',terminal:'N'},common={component:side,terminal:'COM'};
+  const commonVoltage=measureVoltage(result,common,neutral).value;
+  const wires=strapperPins.map(pin=>{
+    const end={component:side,terminal:pin};
+    return {pin,mark:describeEndpoint(doc,end)?.pointLabel??pin,value:measureVoltage(result,end,neutral).value,
+      acrossContact:measureVoltage(result,common,end).value};
+  });
+  const live=wires.filter(w=>w.value!==null&&w.value>=doc.supply.voltage*.9);
+  // Comparing voltages alone cannot identify a closed contact if the two wires have been linked.
+  const contact:StairPin=Number(fitting.params.position??0)===0?'T1':'T2';
+  const selected=wires.find(w=>w.pin===contact&&w.acrossContact!==null&&w.acrossContact<=1);
+  const other=wires.find(w=>w.pin!==contact);
+  const lampVoltage=measureVoltage(result,{component:'light',terminal:'L'},neutral).value;
+  const dark=result.deviceStates.light?.energized===false&&lampVoltage!==null&&lampVoltage<=1;
+  const comparable=doc.supply.enabled&&dark&&commonVoltage!==null&&wires.every(w=>w.value!==null)&&live.length===1;
+  let answer:typeof selected;
+  if(comparable&&selected){
+    if(side==='near'&&live[0].pin===contact&&commonVoltage>=doc.supply.voltage*.9)answer=selected;
+    if(side==='far'&&typeof other?.acrossContact==='number'&&other.acrossContact>=doc.supply.voltage*.9)answer=selected;
+  }
+  return {wires,commonVoltage,lampVoltage,answer,dark};
+}
+
+export function checkStairChoice(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,choice?:StairChoice){
+  const side=call.steps[index]?.stairCheck;
+  if(!side||!choice||choice.circuitId!==doc.id||choice.revision!==doc.revision||choice.activity!==houseStepId(call,index))return;
+  const reading=stairReadings(side,doc,result);
+  if(!reading?.answer)return;
+  const picked=reading.wires.find(w=>w.pin===choice.pin);
+  if(!picked||picked.value===null)return;
+  const volts=(v:number)=>new Intl.NumberFormat('en-IE',{maximumFractionDigits:1}).format(v)+' V';
+  if(picked.pin!==reading.answer.pin)return {pass:false,message:side==='near'
+    ?picked.mark+' reads '+volts(picked.value)+'. Which wire has close to '+volts(doc.supply.voltage)+'?'
+    :'COM reads '+volts(reading.commonVoltage!)+'. Compare that with each wire.'};
+  return {pass:true,message:side==='near'
+    ?picked.mark+' is at '+volts(picked.value)+' to neutral. The downstairs switch is feeding that wire.'
+    :'COM and '+picked.mark+' are at the same voltage. The landing switch has joined those two terminals.'};
+}
+
 export function verifiedCallStep(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,action?:CallOperation){
   const step=call.steps[index];
-  if(!step || step.measure || step.waitForFan || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==callActivityId(call.lesson,index)
+  if(!step || step.measure || step.waitForFan || step.stairCheck || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==houseStepId(call,index)
     || doc.lessonId!==call.lesson || doc.id!==action.before.id || doc.revision!==action.before.revision+1) return false;
   const allowed = call.breakers ? call.breakers.some(b=>b.id===action.component) : action.component===step.target;
   if(!allowed)return false;

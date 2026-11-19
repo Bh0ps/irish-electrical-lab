@@ -33,7 +33,12 @@ const byModel:Record<string,Feature[]>={
     ['rg-clips','mounting','Panel clips','The ridged spring clips squeeze in as the switch enters the rectangular cutout, then hold the frame against the panel.'],
     ['rg-base','body','Numbered base','Positions 1 and 2 have blades. Position 3 is moulded into the base but has no blade on this on/off switch.'],
   ],
-  'switch:single-rocker':rocker,'switch2:single-rocker':rocker,'intermediate:single-rocker':rocker,
+  'switch:single-rocker':rocker,'switch2:single-rocker':[
+    ['bg812-operator','actuator','Two-way rocker','Press either end of the rocker. It chooses which of the two paths joins COM.','front'],
+    ['faceplate-fixing','cover','Plate and wall box','Two white caps hide the screws that secure this plate to the wall box. The box has a threaded lug at either side.','front'],
+    ['switch-contact-mechanism','contacts','Changeover contact','In cutaway view, operate the rocker. A moving contact reaches one strapper at a time. Its hidden shape is illustrated for study.'],
+    ...rocker,
+  ],'intermediate:single-rocker':rocker,
   'switch:gang-module-left':rocker,'switch:gang-module-right':rocker,
   'led:strip':[
     ['flexible-copper-tracks','body','Cut mark and copper pads','The printed line marks the end of a section. Put the probes on the bare pads beside it. Look for +24V and −.','front'],

@@ -17,6 +17,7 @@ interface ExperimentDefinition {
   title: string;
   question: string;
   instruction: string;
+  controlLabel: string;
   target: string;
   trace?: 'L' | 'control';
   options: readonly { id: string; label: string }[];
@@ -63,7 +64,7 @@ const definitions: readonly ExperimentDefinition[] = [
   {
     id: 'switch-voltage', lessonId: 7, title: 'Voltage across the lamp',
     question: 'The lamp is lit. What will the meter read across it when you switch it off?',
-    instruction: 'Turn the wall switch off. Watch the lamp and the voltage across it.',
+    instruction: 'Watch the lamp and the meter as you switch the light off.', controlLabel: 'Press the wall switch',
     target: 'switch', trace: 'L', targetKeys: ['closed'], answer: 'near-zero',
     options: [{ id: 'mains', label: 'About the same as the supply' }, { id: 'near-zero', label: 'Close to zero volts' }],
     explanation: 'With the switch open, current stops flowing through the lamp. Its two terminals are now at almost the same voltage.',
@@ -75,24 +76,24 @@ const definitions: readonly ExperimentDefinition[] = [
   },
   {
     id: 'traveller-route', lessonId: 9, title: 'One lamp, two switches',
-    question: 'What happens to the lamp if you move switch A and leave switch B alone?',
-    instruction: 'Flick switch A once. Leave B where it is and look at which connecting wire is live.',
+    question: 'The stair light is on. What happens if you flip the downstairs switch?',
+    instruction: 'Leave the landing switch where it is. Try the switch at the foot of the stairs.', controlLabel: 'Flip the downstairs switch',
     target: 'near', trace: 'control', targetKeys: ['position'], answer: 'off',
     options: [{ id: 'off', label: 'It goes out' }, { id: 'on', label: 'It stays on' }],
-    explanation: 'On the back of switch A, the feed now goes to L2. Switch B is still on L1. That leaves a break in the path to the lamp.',
-    nextCheck: 'Check that B is still where you left it.', reflectionHint:'Think back to which rocker you moved. The wires behind the other switch stayed put.',
+    explanation: 'Downstairs, the switch now feeds the wire marked L2. The landing switch is still on L1, so there’s a break in the path to the lamp.',
+    nextCheck: 'Check that the landing switch is still where you left it.', reflectionHint:'Think back to which switch you moved. The other one stayed put.',
     action: params => params.position === 1,
     before: result => drawingPower(result, 'light') && liveTraveller(result) === 'T1',
     after: result => isOff(result, 'light') && liveTraveller(result) === 'T2',
     read: result => {
       const traveller = liveTraveller(result);
-      return [reading('Lamp L–N', voltage(result, 'light'), 'V'), traveller ? { label: 'Live at switch A', value: traveller === 'T1' ? 'L1' : 'L2' } : null];
+      return [reading('Lamp L–N', voltage(result, 'light'), 'V'), traveller ? { label: 'Live terminal downstairs', value: traveller === 'T1' ? 'L1' : 'L2' } : null];
     },
   },
   {
     id: 'dimmer-power', lessonId: 12, title: 'Turn the light down',
     question: 'You turn the dimmer down. What will happen to the lamp’s power reading?',
-    instruction: 'Turn the dimmer down to 30% or less. Leave its switch on.',
+    instruction: 'Turn the dimmer down to 30% or less. Leave its switch on.', controlLabel: 'Turn the dimmer',
     target: 'dimmer', trace: 'L', initial: { level: .8, closed: true }, targetKeys: ['level'], answer: 'lower',
     options: [{ id: 'same', label: 'It stays about the same' }, { id: 'lower', label: 'It falls' }, { id: 'higher', label: 'It rises' }],
     explanation: 'Turning down this bench dimmer adds resistance. Less current flows through the lamp and it uses fewer watts.',
@@ -110,7 +111,7 @@ const definitions: readonly ExperimentDefinition[] = [
   {
     id: 'pir-run-on', lessonId: 14, title: 'When motion stops',
     question: 'Someone leaves the hall. When will the light go out?',
-    instruction: 'Set the detector to no movement. Watch how long the light stays on.',
+    instruction: 'Step out of the detector’s view. Watch how long the light stays on.', controlLabel: 'Step out of view',
     target: 'pir', trace: 'control', targetKeys: ['on', 'active', 'demand'], answer: 'delay', sequence: 'run-on',
     options: [{ id: 'instant', label: 'Straight away' }, { id: 'never', label: 'When someone resets it' }, { id: 'delay', label: 'After a short delay' }],
     explanation: 'When movement stops, the timer keeps its contact closed for a few more seconds. The light goes out when the contact opens.',
@@ -123,7 +124,7 @@ const definitions: readonly ExperimentDefinition[] = [
   {
     id: 'independent-branches', lessonId: 2, title: 'What goes off with the breaker?',
     question: 'The lamp and socket both have power. Which will go off when you switch off MCB 1?',
-    instruction: 'Switch off MCB 1. Leave the other breaker on and compare the readings.',
+    instruction: 'Leave the socket breaker on. Switch off the lamp breaker and check both readings.', controlLabel: 'Switch off the lamp breaker (MCB 1)',
     target: 'branch1', trace: 'L', targetKeys: ['closed'], answer: 'first',
     options: [{ id: 'both', label: 'Both the lamp and the socket' }, { id: 'first', label: 'Only the lamp' }, { id: 'second', label: 'Only the socket' }],
     explanation: 'MCB 1 cuts the feed to the lamp. The socket stays on because it has its own breaker.',
@@ -136,7 +137,7 @@ const definitions: readonly ExperimentDefinition[] = [
   {
     id: 'starter-hold', lessonId: 55, title: 'What happens after Start?',
     question: 'Give Start a quick press. What do you think the motor will do when you let go?',
-    instruction: 'Press and release the green Start button. Look at the motor and the coil reading.',
+    instruction: 'Hold the green Start button until the motor runs. Then let go.', controlLabel: 'Press and hold Start',
     target: 'start', trace: 'control', targetKeys: ['pressed'], answer: 'holds', sequence: 'press-release',
     options: [{ id: 'drops', label: 'It stops' }, { id: 'holds', label: 'It keeps running' }],
     explanation: 'Pressing Start pulls in the contactor. A small switch on it keeps power on the coil when you let go. That switch is called the holding contact.',

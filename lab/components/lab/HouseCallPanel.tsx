@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import MeterHistory from './MeterHistory';
 import type { LessonActivity, MeasurementEvidence } from '../../lib/learning';
 import type { CircuitDocument, SimulationResult } from '../../lib/types';
-import { callActivityId, callReadings, checkCallSample, fanRunPhase, savedCallStep, verifiedCallStep, type CallOperation, type CallSample, type HouseCall } from '../../lib/house-calls';
+import { houseStepId, callReadings, checkCallSample, checkStairChoice, stairReadings, type StairChoice, fanRunPhase, savedCallStep, verifiedCallStep, type CallOperation, type CallSample, type HouseCall } from '../../lib/house-calls';
 
 interface Props {
   context?:ReactNode; closeTools:()=>void;
@@ -17,6 +17,7 @@ export function HouseCallPanel(props:Props){
   const {call,document:doc,result,operation,onActivity,onCredit}=props;
   const index=savedCallStep(call,props.start)??0;
   const [observation,setObservation]=useState('');
+  const [pickedStrapper,setPickedStrapper]=useState<StairChoice>();
   const [seenRun,setSeenRun]=useState<number>();
   const [confirmedStop,setConfirmedStop]=useState<number>();
   const credited=useRef('');
@@ -38,12 +39,19 @@ export function HouseCallPanel(props:Props){
   },[toolsOpen]);
   const step=call.steps[index];
   const activity=useMemo<LessonActivity>(()=>({
-    id:callActivityId(call.lesson,index),kind:step?.measure?'measure':'operate',title:call.title,
+    id:houseStepId(call,index),kind:step?.stairCheck?'explain':step?.measure?'measure':'operate',title:call.title,
     instruction:step?.instruction??call.done,explanation:step?.changed??call.done,
-    component:step&&call.breakers?'course-enclosure':step?.target,competency:'house-call',part:step?.measure?'terminals':step&&!call.breakers?'actuator':undefined,
+    component:step&&call.breakers?'course-enclosure':step?.target,competency:step?.stairCheck?'reading-switch-contacts':'house-call',part:step?.measure||step?.stairCheck?'terminals':step&&!call.breakers?'actuator':undefined,
   }),[call,index,step]);
   useEffect(()=>onActivity(activity),[onActivity,activity]);
   const sample=checkCallSample(call,index,doc,result,props.sample);
+  const stairs=call.lesson===9;
+  const stairView=stairs?stairReadings(step?.stairCheck??'far',doc,result):undefined;
+  const stairAnswer=checkStairChoice(call,index,doc,result,pickedStrapper);
+  const wrongWire=stairAnswer?.pass===false;
+  useLayoutEffect(()=>{
+    if(wrongWire)heading.current?.closest('.learn-column')?.scrollTo({top:0,behavior:'instant'});
+  },[wrongWire,pickedStrapper]);
   const bathroom=call.lesson===36;
   const runPhase=bathroom&&index<=1?fanRunPhase(call,doc,result,operation):undefined;
   useEffect(()=>{
@@ -53,13 +61,13 @@ export function HouseCallPanel(props:Props){
   },[runPhase,doc.revision,toolsOpen]);
   const witnessed=seenRun===doc.revision;
   const confirmable=runPhase==='stopped'&&witnessed;
-  const verified=step?.measure?sample?.pass:step?.waitForFan?confirmable&&confirmedStop===doc.revision:
+  const verified=step?.stairCheck?stairAnswer?.pass:step?.measure?sample?.pass:step?.waitForFan?confirmable&&confirmedStop===doc.revision:
     (!bathroom||index!==0||runPhase==='running'&&witnessed)&&verifiedCallStep(call,index,doc,result,operation);
-  const observed=sample?.pass?sample.message:step?.changed??'';
+  const observed=stairAnswer?.pass?stairAnswer.message:sample?.pass?sample.message:step?.changed??'';
   useEffect(()=>{
     if(!step || !verified || credited.current===activity.id)return;
     credited.current=activity.id;
-    void onCredit(activity.id,callActivityId(call.lesson,index+1)).then(()=>{
+    void onCredit(activity.id,houseStepId(call,index+1)).then(()=>{
       setObservation(observed);
     });
   },[activity.id,call,index,verified,step,onCredit,observed]);
@@ -151,16 +159,28 @@ export function HouseCallPanel(props:Props){
     {props.context}
     {!toolsOpen&&<>
     {!index&&<p>{call.request}</p>}
-    {observation&&step&&!bellFeedback&&!restoreFan&&<p className="task-feedback success" role="status">{observation}</p>}
+    {observation&&step&&!step.stairCheck&&!bellFeedback&&!restoreFan&&<p className="task-feedback success" role="status">{observation}</p>}
     {!step&&<p className="task-instruction">{call.done}</p>}
     {!step&&worktops&&props.meterHistory&&<MeterHistory circuit={doc} readings={props.meterHistory.filter(r=>r.circuitId===doc.id)}/>}
+    {step?.stairCheck&&<>
+      {stairAnswer&&!stairAnswer.pass?<p className="task-feedback attention" role="status">{stairAnswer.message}</p>
+        :<p>{step.stairCheck==='near'?'The two wires between the switches are called strappers.':'COM joins one of these wires. Look for the same reading as COM.'}</p>}
+      {wireReadings()}
+    </>}
+    {stairs&&!step&&<details className="lesson-more-detail"><summary>See the landing switch readings</summary>{wireReadings(true)}</details>}
     {call.bellPushes && <p className="call-chime" role="status">Chime <strong>{readings?chimeStatus:result?.revision===doc.revision?'No reading':'Waiting…'}</strong></p>}
     {bathroom?<><dl className="call-readings" aria-label="Bathroom light and fan">{readings?.map((r,i)=><div key={r.label}><dt>{r.label}</dt><dd>{r.lit===undefined?'No reading':i===1?(r.lit?'Running':'Stopped'):(r.lit?'Lit':'Dark')}</dd></div>)}</dl>
-      {step?.waitForFan&&<p role="status">{runPhase==='running'?'Timer running · '+remaining+' s left':confirmable?'The timer finished. Check the fan indicator.':isolatorOpen?'Switch the fan isolator back on to try the timer.':lampSwitchOn?'Switch the light off to start the timer.':'Try the timing check again. Switch the light on first.'}</p>}</>:worktops?<dl className="call-readings" aria-label="Worktop lights">{readings?.map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.lit===undefined?'No reading':r.lit?'Lit':'Dark'}</dd></div>)}</dl>:call.bellPushes?<details className="call-bell-readings"><summary>See the voltages</summary>{voltageReadings()}</details>:voltageReadings()}
+      {step?.waitForFan&&<p role="status">{runPhase==='running'?'Timer running · '+remaining+' s left':confirmable?'The timer finished. Check the fan indicator.':isolatorOpen?'Switch the fan isolator back on to try the timer.':lampSwitchOn?'Switch the light off to start the timer.':'Try the timing check again. Switch the light on first.'}</p>}</>:worktops?<dl className="call-readings" aria-label="Worktop lights">{readings?.map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.lit===undefined?'No reading':r.lit?'Lit':'Dark'}</dd></div>)}</dl>:call.bellPushes?<details className="call-bell-readings"><summary>See the voltages</summary>{voltageReadings()}</details>:!step?.stairCheck&&voltageReadings()}
     {restoreFan?<p className="task-feedback attention" role="status">{undoIsolator?'You used '+otherControl+'. ':''}The fan isolator is off. The fan has stopped{lamp?.lit?' and the light is still on':''}. Switch the isolator back on to try the light switch.</p>:otherControl&&<div className="task-feedback attention" role="status"><p>You used {otherControl}. Try the fitting named in the job.</p><Button variant="outline" size="sm" onClick={props.undo}>Undo that change</Button></div>}
-    {unresolved&&<p className="task-feedback attention" role="status">The lab couldn’t get a reading. Check the wiring at the fitting, or open Help to start this job again.</p>}
-    {(bellFeedback||wrongState)&&!step?.waitForFan&&!otherControl&&!boardFeedback&&!unresolved&&!restoreFan&&<p className="task-feedback attention" role="status">{bellFeedback||(!doc.supply.enabled?'The supply is off. Switch it on to try the job.':wasTried?'The readings didn’t change as expected. Try the control again to return to the starting position.':'Return the controls to their starting positions, or start this job again.')}</p>}
-    {step?<>{restoreFan?<Button className="primary-button full" onClick={e=>undoIsolator?props.undo():operateFromButton(e,'fan-isolation')}>{undoIsolator?'Undo that change':'Switch fan isolator on'}</Button>:step.waitForFan?<Button className="primary-button full" disabled={!readings||runPhase==='running'} onClick={confirmOrRepeat}>{runPhase==='running'?'Waiting for fan':confirmable?step.label:isolatorOpen?'Switch fan isolator on':lampSwitchOn?'Switch the light off again':'Switch the light back on to repeat'}</Button>:step.measure?<Button className="primary-button full" onClick={props.openMeter}>{step.label}</Button>:call.bellPushes?<div className="call-breakers call-bell-buttons" role="group" aria-label="Doorbell buttons">{call.bellPushes.map(push=>{
+    {unresolved&&!step?.stairCheck&&<p className="task-feedback attention" role="status">The lab couldn’t get a reading. Check the wiring at the fitting, or open Help to start this job again.</p>}
+    {(bellFeedback||wrongState)&&!step?.stairCheck&&!step?.waitForFan&&!otherControl&&!boardFeedback&&!unresolved&&!restoreFan&&<p className="task-feedback attention" role="status">{bellFeedback||(!doc.supply.enabled?'The supply is off. Switch it on to try the job.':wasTried?'The readings didn’t change as expected. Try the control again to return to the starting position.':'Return the controls to their starting positions, or start this job again.')}</p>}
+    {step?<>{step.stairCheck?<><div className="call-breakers stair-choices" role="group" aria-label={step.stairCheck==='near'?'Downstairs wire':'Landing contact'}>{(['T1','T2'] as const).map(pin=><Button key={pin} variant="outline" disabled={!stairView?.answer} onClick={e=>{
+        keyboardControl.current=e.detail===0?e.currentTarget:null;
+        setPickedStrapper({circuitId:doc.id,revision:doc.revision,activity:activity.id,pin});
+      }}>{stairView?.wires.find(w=>w.pin===pin)?.mark??(pin==='T1'?'L1':'L2')}</Button>)}</div>
+      {!stairView?.answer&&result?.revision===doc.revision&&!otherControl&&<p className="task-feedback attention" role="status">{!doc.supply.enabled?'Switch the bench supply on to compare the two wires.':!stairView||stairView.lampVoltage===null?'There’s no reading for this check. Check the switch and the neutral at the lamp.':!stairView.dark?'The stair light needs to be off for this check. Undo the last switch movement, or use Help to start again.':'These readings don’t show a single path. Check the two wires between the switches and the neutral at the lamp.'}</p>}
+      {!stairView?.answer&&recentAction&&!otherControl&&<Button variant="outline" onClick={props.undo}>Undo that change</Button>}
+    </>:restoreFan?<Button className="primary-button full" onClick={e=>undoIsolator?props.undo():operateFromButton(e,'fan-isolation')}>{undoIsolator?'Undo that change':'Switch fan isolator on'}</Button>:step.waitForFan?<Button className="primary-button full" disabled={!readings||runPhase==='running'} onClick={confirmOrRepeat}>{runPhase==='running'?'Waiting for fan':confirmable?step.label:isolatorOpen?'Switch fan isolator on':lampSwitchOn?'Switch the light off again':'Switch the light back on to repeat'}</Button>:step.measure?<Button className="primary-button full" onClick={props.openMeter}>{step.label}</Button>:call.bellPushes?<div className="call-breakers call-bell-buttons" role="group" aria-label="Doorbell buttons">{call.bellPushes.map(push=>{
       const fitting=doc.components.find(c=>c.id===push.id),held=Boolean(fitting?.params.pressed);
       return <div className="call-breaker-choice" key={push.id}><Button variant="outline" disabled={!fitting} aria-pressed={held} aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,push.id)}>{held?'Let go of ':'Hold '}{push.door} button</Button></div>;
     })}</div>:call.breakers?<div className="call-breakers" role="group" aria-label="Breakers on the board">{call.breakers.map(b=>{
@@ -171,11 +191,24 @@ export function HouseCallPanel(props:Props){
           {hint&&<p id="call-board-feedback" className="task-feedback attention" role="status">{hint}</p>}</div>;
       })}</div>:<Button className="primary-button full" aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,step.target)}>{step.label}</Button>}
       <div className="task-support-actions">{step.waitForFan&&confirmable&&<Button variant="ghost" onClick={e=>operateFromButton(e,'light-switch')}>Watch it again</Button>}<Button variant="ghost" onClick={()=>props.locate(call.breakers?'course-enclosure':step.target)}>{call.breakers?'Show the board':'Show me where'}</Button></div>
-      <details className="lesson-more-detail"><summary>Help</summary><p>{bathroom?'The wall switch controls the light and starts the timer. The fan isolator switches off the timer and the fan, so you can still use the light.':step.measure?'Find the two copper pads at the end of the strip. Put a probe on each one, or choose the strip and its + and − pads by name. Then choose Record reading.':worktops?'Use the switch named above, or find it in the equipment list. Look at which strip goes dark.':call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button>{props.worktopFault&&<Button variant="ghost" onClick={props.worktopFault}>{worktopFaultTitle}</Button>}</details>
+      <details className="lesson-more-detail"><summary>Help</summary><p>{stairs?'Each switch joins COM to L1 or L2. Two wires run from the downstairs switch to the landing. The lamp lights when the landing switch connects it to the wire with the feed.':bathroom?'The wall switch controls the light and starts the timer. The fan isolator switches off the timer and the fan, so you can still use the light.':step.measure?'Find the two copper pads at the end of the strip. Put a probe on each one, or choose the strip and its + and − pads by name. Then choose Record reading.':worktops?'Use the switch named above, or find it in the equipment list. Look at which strip goes dark.':call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button>{props.worktopFault&&<Button variant="ghost" onClick={props.worktopFault}>{worktopFaultTitle}</Button>}</details>
     </>:<><Button className="primary-button full" onClick={props.nextJob?.open??props.startFault}>{props.nextJob?'Next job · '+props.nextJob.title:'Try a fault on this circuit'}</Button>{props.worktopFault&&<Button variant="outline" onClick={props.worktopFault}>{worktopFaultTitle}</Button>}<Button variant="ghost" onClick={props.choose}>Choose another job</Button></>}
     </>}
   </section>;
+  function wireReadings(includeCommon=step?.stairCheck==='far'){
+    const format=(value:number|null|undefined)=>value===undefined&&result?.revision!==doc.revision?'Waiting…':value==null?'No reading':value.toLocaleString('en-IE',{maximumFractionDigits:1})+' V';
+    return <><span className="small-copy">Volts to N (neutral) at the lamp</span><dl className="call-readings" aria-label="Switch voltages to the lamp neutral">
+      {includeCommon&&<div><dt>COM</dt><dd>{format(stairView?.commonVoltage)}</dd></div>}
+      {(['T1','T2'] as const).map((pin,i)=><div key={pin}><dt>{stairView?.wires[i].mark??(i?'L2':'L1')}</dt><dd>{format(stairView?.wires[i].value)}</dd></div>)}
+    </dl>{stairView?.wires.some(w=>w.value===null)&&<p className="small-copy">The lab has no steady voltage to show for that wire. An unused wire can float when neither switch connects it.</p>}</>;
+  }
   function voltageReadings(){
+    if(stairs){
+      const lamp=readings?.[0];
+      const value=lamp?.value;
+      const volts=typeof value==='number'?value.toLocaleString('en-IE',{maximumFractionDigits:1})+' V':result?.revision===doc.revision?'No reading':'Waiting…';
+      return <dl className="call-readings" aria-label="Stair light"><div><dt>Stair light</dt><dd>{typeof lamp?.lit==='boolean'&&<>{lamp.lit?'On':'Off'} · </>}{volts}</dd></div></dl>;
+    }
     const points=readings??(step??call.steps[call.steps.length-1]).after.map(p=>({label:p.label,value:null}));
     return <dl className="call-readings" aria-label={call.bellPushes?'Voltage at the chime':'Voltage across each fitting'}>{points.map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.value===null?(result?.revision===doc.revision?'No reading':'Waiting…'):r.value.toLocaleString('en-IE',{maximumFractionDigits:1})+' V'}</dd></div>)}</dl>;
   }

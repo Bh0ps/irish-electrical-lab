@@ -27,12 +27,14 @@ const copyPose=(p:CameraPose):CameraPose=>({position:[...p.position],quaternion:
 export function clampCameraSpeed(speed=DEFAULT_CAMERA_SPEED):number {
   return THREE.MathUtils.clamp(finite(speed,DEFAULT_CAMERA_SPEED),CAMERA_MIN_SPEED,CAMERA_MAX_SPEED);
 }
-/** Fit/rear targets are artificial navigation anchors. Far clipping follows the
- * actual scene bounds too, so flying away and looking back does not hide it. */
-export function cameraFarPlane(position:Vec3,bounds:{min:Vec3;max:Vec3}):number {
-  if(![...position,...bounds.min,...bounds.max].every(Number.isFinite))return 140;
+/** Keep the entire circuit visible when Fit backs away on a narrow screen.
+ * Small benches retain the original atmospheric depth of the workshop. */
+export function workbenchCameraRange(position:Vec3,bounds:{min:Vec3;max:Vec3}) {
+  if(![...position,...bounds.min,...bounds.max].every(Number.isFinite))return {farPlane:140,fogNear:35,fogFar:110};
   const axes=position.map((p,i)=>Math.max(Math.abs(p-bounds.min[i]),Math.abs(p-bounds.max[i])));
-  return THREE.MathUtils.clamp((Math.hypot(...axes)+30)*1.2,140,1e7);
+  const farthestCorner=Math.min(Math.hypot(...axes),1e7);
+  const fogNear=Math.max(35,farthestCorner);
+  return {farPlane:THREE.MathUtils.clamp((farthestCorner+30)*1.2,140,1e7),fogNear,fogFar:fogNear+75};
 }
 export function cameraLookQuaternion(position:Vec3,target:Vec3):CameraQuaternion {
   const from=vector(position),to=vector(target);
