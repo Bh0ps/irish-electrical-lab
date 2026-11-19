@@ -2,7 +2,7 @@
 
 An offline 3D electrical study game for Irish domestic, commercial and industrial
 arrangements. Explore detailed equipment, build your own circuits, operate the
-controls and investigate faults through actual simulated connections.
+controls and use a meter to find out why a lamp, socket or motor has stopped working.
 
 The lab runs as a Windows desktop app and an iPhone Home Screen app. The original
 source, lesson data and editable Blender models are
@@ -11,6 +11,7 @@ open source under the [MIT license](LICENSE).
 ## What you can do
 
 - Start with **One switch, one light**. Follow nine chapters covering 80 configurations, or jump straight to a chapter practical. The six-stage exercises are available under lesson details.
+- Open **Chapters → Jobs at Oakfield house** for a short job. Try both stair switches, check a cupboard light or find the breaker for a lamp. Read the voltage at each fitting as you go.
 - Try six **Quick practice** experiments with a prediction, a real control action,
   and a comparison of live simulated readings.
 - Walk through domestic, shop and industrial installations. Select a device by its drawing reference, follow a wire between terminals, or open it on the workbench.

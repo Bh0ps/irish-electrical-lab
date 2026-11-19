@@ -1,12 +1,12 @@
 # Irish Electrical Lab for Windows
 
-An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **80 configurations** are available in **Learn** and **Sandbox**. Version **1.6.0** updates the lesson instructions, meter feedback and close-up views of lighting and power accessories.
+An offline 3D study game for Irish domestic, commercial and industrial electrical arrangements. All **80 configurations** are available in **Learn** and **Sandbox**. Version **1.7.0** lets you tap the hall switch, read the lamp voltage on the fork tester, and follow the same terminal markings in the lesson and on the board.
 
 ## Start and stop
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Installer: `lab/release/Irish-Electrical-Lab-1.6.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
+Installer: `lab/release/Irish-Electrical-Lab-1.7.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -16,9 +16,19 @@ The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a po
 
 ## Find equipment on a job
 
-Choose **Site** to see the installation. Try the rocker or button. **Walk** lets you look around by dragging and move with WASD, arrow keys or the on-screen pad. Finish walking before operating equipment. **Go to equipment** brings a named device into reach. **Inspect** opens its service view on the workbench. **Equipment list** offers the same operating controls by name.
+In **Site**, use **Go to** to find a fitting. In Oakfield house you can also choose a room, such as the sitting room or bedroom. While walking, drag to look around and use WASD, the arrow keys or the direction pad to move through doors. Choose **Finish walk** to work a switch. **Inspect** opens the fitting on the workbench. You can also operate it from **Equipment list**.
 
 In **Drawing**, choose **Job drawing** for the intended connections and **My wiring** for the current build. Select an equipment tag on the location plan or a pin on the terminal sheet. Select a conductor to see both ends and whether the current build matches it. **Find** travels to the selected end. The dashed site overlay indicates which endpoints are connected. Its route is illustrative. On applicable jobs, the sheet selector also offers a board schedule or a ladder tracing the control path to a load. Drawing selections are for inspection only.
+
+## Try a house job
+
+Open **Chapters → Jobs at Oakfield house**. The cupboard light is a good first job. Shut the door, watch the light go out, then open it again. Try the fitting in the room or use the button on the job card. The voltage shown comes from the same circuit in both cases. At the stairs you have to use both switches. At the board you have to turn off the lamp while the socket keeps its supply.
+
+**Continue learning** takes you back to the last check with the controls where you left them. In the chapter index, a lesson shows **Completed** after its practical steps and final explanation have been checked. You can still choose **I’m not sure** on a prediction.
+
+## Connect two terminals
+
+Choose **Connect**, then pick the first terminal on the fitting or open **Choose terminal by name**. The **From** line shows your choice. Pick the other end to finish the wire. The wire marking and cable type are just below the two ends. Use **Cancel connection** to clear the first end, or **Undo** to take out a wire you just finished.
 
 ## Extra-low voltage
 
@@ -50,7 +60,7 @@ Choose **Sandbox**, then **My builds → New circuit** or **Start from example**
 
 - **Add equipment:** search or choose a category, then click the bench. A snapped ghost shows size and occupied space. Placement returns to Select.
 - **Select:** click a rocker, lever or button to operate it; drag the housing to move it. Selected equipment offers Rotate, Duplicate, Delete and **Operate**.
-- **Connect:** choose two terminals on the device or in the named list. Expand **Cable** to choose an insulated single, flat twin and earth, round flex, bell pair, two-core LED cable or multi-core strip cable. A shared sheath holds individual cores. Select the core you want to connect, inspect or remove. Undo restores that edit. The context describes source and hovered destination. For an attached lesson, the exact terminal pair sets the default conductor identification in either click order, including control wires fed from a line terminal. A manual identification choice takes priority for that pending wire, allowing deliberate mistakes. Existing wires keep their identification. Escape or **Cancel connection** cancels the pending wire.
+- **Connect:** choose two terminals on the device or in the named list. Expand **Cable** to see the cut ends of the usual cables for the lesson. Choose **More cable types** for the full set. A shared sheath holds individual cores. Select the core you want to connect, inspect or remove. Undo restores that edit. The context describes source and hovered destination. For an attached lesson, the exact terminal pair sets the default conductor identification in either click order, including control wires fed from a line terminal. A manual identification choice takes priority for that pending wire, allowing deliberate mistakes. Existing wires keep their identification. Escape or **Cancel connection** cancels the pending wire.
 - **Measure:** click terminals for probes, or a conductor for current.
 
 In the default **Orbit camera**, drag the background to orbit, scroll to zoom and right- or middle-drag to pan. **View** also offers **Free camera**: click the bench for keyboard focus, use **W/A/S/D** to move, **Q/E** to lower or raise and **Shift** for faster movement. Right-drag looks, middle-drag pans and scrolling moves forward or backward smoothly. Camera movement settles when released; typing, modal dialogs and equipment dragging suspend it. Left-click still operates equipment, selects wires and connects terminals.
@@ -69,7 +79,7 @@ Wrong connections remain allowed. **More → Wiring hints** shows one non-blocki
 
 **Test circuit** stays above the bench, with visible testing feedback and a dated report retained after reload and in full backups. The first finding offers a next check and **Show on bench**; expand **All checks** for every result. Connection matching, operation and protective findings remain separate. Tests preserve controls and wires, recognise valid stopped states and mark older reports when the circuit changes.
 
-Choose voltage, current or resistance in Measure, or change mode with the virtual meter dial. **Record reading** in a lesson, or **Record this measurement** in the tools context, saves actual evidence. Probe clicks alone earn no credit. Resistance requires represented sources isolated. **OL** means an established open circuit; unresolved readings show dashes and an explanation. **Hold button for a measurement** maintains a momentary command until released.
+Choose voltage, current or resistance in Measure, or change mode with the virtual meter dial. **Record reading** saves the meter value and the points you measured. Resistance requires represented sources isolated. **OL** means an established open circuit; unresolved readings show dashes and an explanation. **Hold button for a measurement** maintains a momentary command until released.
 
 An extra PE-to-neutral-out connection is detected with the switch off; residual-current interruption follows actual imbalance when a load operates. A lit lamp alone does not prove correct wiring.
 

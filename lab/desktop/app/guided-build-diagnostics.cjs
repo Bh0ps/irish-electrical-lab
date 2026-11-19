@@ -14,7 +14,7 @@ function guidedRendererHarness() {
     const element = document.querySelector('[aria-label="Active lesson activity"]');
     return element ? {
       id: element.dataset.activityId, stage: element.dataset.stageId, kind: element.dataset.activityKind,
-      instruction: v.text(element.querySelector('.task-instruction')),
+      instruction: v.text(element.querySelector('.task-instruction, .wiring-step')),
       text: v.text(element), primary: element.querySelector('[data-learning-primary]')?.dataset.learningPrimary,
     } : null;
   };
@@ -135,10 +135,13 @@ async function runGuidedBuildDiagnostics({ app, window, directory, output, fixtu
     add('native terminal ' + endpoint.component + '.' + endpoint.terminal + ' is present once', target?.inView && target.instances === 1, target);
     return target.screen;
   };
-  const connect = async endpoints => {
+  const connect = async (endpoints, checkToolRoundTrip = false) => {
     // Re-project the second endpoint after selecting the first: its contextual
     // card may change the canvas width, so old screen coordinates are unsafe.
     await nativeClick(await terminal(endpoints[0]));
+    if(checkToolRoundTrip){
+      await run(`v.click('Measure','.toolbar button');await v.until(()=>document.querySelector('[aria-label="Instrument"]'),'meter opened');v.click('Connect','.toolbar button');await v.until(()=>v.control('Cancel connection'),'chosen first end restored');`);
+    }
     await nativeClick(await terminal(endpoints[1]));
   };
   const stage = id => run(`const e=document.querySelector('[data-lesson-stage="${id}"]');if(!e)throw new Error('Lesson stage missing: ${id}');e.click();await v.sleep(180);`);
@@ -180,7 +183,7 @@ async function runGuidedBuildDiagnostics({ app, window, directory, output, fixtu
       const activity = steps[index], nextId = steps[index + 1]?.id ?? fixture.activities.find(item => item.kind === 'operate').id;
       add('lesson ' + fixture.id + ' presents connection ' + (index + 1), current.task?.id === activity.id, { expected: activity.id, actual: current.task?.id });
       const before = current;
-      await connect(activity.endpoints);
+      await connect(activity.endpoints,index===0&&fixture.id===7);
       current = await waitState(fixture.id, value => value.task?.id === nextId && value.draft?.wires.length === before.draft.wires.length + 1 && value.successes === before.successes + 1, 'Automatic single-step advancement');
       const added = current.draft.wires.find(wire => !before.draft.wires.some(old => old.id === wire.id));
       const expected = { from: activity.endpoints[0], to: activity.endpoints[1], role: activity.expectedRole };

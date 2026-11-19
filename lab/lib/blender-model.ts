@@ -49,7 +49,8 @@ export interface AssetPresentation {
   probeDocks:{node:THREE.Object3D;red:boolean}[];
   doors:{node:THREE.Object3D;rest:THREE.Quaternion}[];
   shields:THREE.Object3D[];
-  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
+  benchStands:THREE.Object3D[];
+  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   motions:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;angle:number;current:number}[];
   owned:THREE.Material[];
   initialized:boolean;
@@ -65,13 +66,14 @@ export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:strin
 }
 /** Clone transforms and selectable identity while sharing immutable mesh data. */
 export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
-  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],motions:[],doors:[],shields:[],probeDocks:[],owned:[],initialized:false,chamber:false};
+  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],motions:[],doors:[],shields:[],benchStands:[],probeDocks:[],owned:[],initialized:false,chamber:false};
   scene.userData.equipmentSource='Blender';
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
     const part=semanticOwner(node).part??'';
     if(node.userData.probeSide)presentation.probeDocks.push({node,red:node.userData.probeSide==='red'});
     if(node.userData.boardDoor)presentation.doors.push({node,rest:node.quaternion.clone()});
+    if(node.userData.benchOnly)presentation.benchStands.push(node);
     if(node.userData.boardShield)presentation.shields.push(node);
     if(node.userData.partId==='cover'&&Array.isArray(node.userData.restPosition))presentation.covers.push({node,position:node.position.clone(),quaternion:node.quaternion.clone()});
     if(node.userData.animation){const axis=sourceAxis(String(node.userData.axis??'z'));const q=node.quaternion,angle=2*Math.atan2(new THREE.Vector3(q.x,q.y,q.z).dot(axis),q.w);presentation.motions.push({node,position:node.position.clone(),quaternion:node.quaternion.clone(),angle,current:angle});}
@@ -96,7 +98,8 @@ export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
     // identities rather than moving these surfaces into the electrical emitter.
     const lampOutput=original instanceof THREE.MeshStandardMaterial&&lampTypes.has(componentType)&&(part==='emitter'||part==='cover'&&componentVariant!=='bulb'&&original.color.getHexString()==='f5f2e9'||part==='electronics'&&original.color.getHexString()==='eee8df');
     const indicator=part==='display'&&(componentType==='indicator'||!!dimensions&&Math.max(dimensions.x,dimensions.y,dimensions.z)<.085);
-    if(original instanceof THREE.MeshStandardMaterial&&(lampOutput||part==='emitter'||indicator||original.emissive.r+original.emissive.g+original.emissive.b>0)){
+    for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.contactFlag){entry.contactFlag=true;break;}
+    if(original instanceof THREE.MeshStandardMaterial&&(entry.contactFlag||lampOutput||part==='emitter'||indicator||original.emissive.r+original.emissive.g+original.emissive.b>0)){
       const light=original.clone();entry.light=light;presentation.owned.push(light);
       entry.indicator=indicator;entry.lampOutput=lampOutput;
       for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.emitterKind==='filament'){entry.filament=true;break;}
@@ -116,10 +119,11 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
 export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet'):void{
   for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
   for(const door of presentation.doors)door.node.quaternion.copy(door.rest).multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),component.params.doorOpen!==false||view!=='normal'?-1.69:0));
+  for(const stand of presentation.benchStands)stand.visible=!component.mount&&view==='normal';
   for(const shield of presentation.shields)shield.visible=view==='normal'&&!component.params.frontOff;
   for(const cover of presentation.covers){
     cover.node.position.copy(cover.position);cover.node.quaternion.copy(cover.quaternion);
-    if(component.mount&&COMPONENTS[component.type].model==='protection')cover.node.position.add(sourceVector([0,0,.24]));
+    if(component.mount&&COMPONENTS[component.type].model==='protection'&&!cover.node.userData.fittedDin)cover.node.position.add(sourceVector([0,0,.24]));
     if(view==='open'){cover.node.position.add(sourceVector([presentation.chamber?1:.55,.08,.15]));cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),Math.PI/2.5));}
     if(view==='exploded')cover.node.position.add(sourceVector([.5,.5,.65]));
   }
@@ -136,7 +140,8 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
     mesh.node.material=view==='cutaway'&&mesh.cutaway?mesh.cutaway:mesh.light??mesh.material;
     mesh.node.castShadow=castsEquipmentShadow(mesh.node.material,!!mesh.lampOutput,!!mesh.node.userData.lampEnvelope);
     if(mesh.light){
-      if(mesh.lampOutput){
+      if(mesh.contactFlag){mesh.light.color.set(closedForPresentation(component,state)?'#b33529':'#417f49');}
+      else if(mesh.lampOutput){
         if(mesh.node.userData.lampEnvelope && component.type==='lamp' && mesh.light.transparent){
           // A clear GLS bulb emits at the tungsten coil. Keep the glass
           // transparent and allow a small reflection when the coil is hot.
@@ -175,7 +180,7 @@ export function animateBlenderModel(presentation:AssetPresentation,component:Com
       moving ||= motion.node.position.distanceToSquared(destination)>1e-8;
       continue;
     }
-    const target=animation==='valvePosition'?-Math.PI*.5*Number(state?.level??0):animation==='pwmLevel'||animation==='pwmMix'?(Number(component.params[animation==='pwmMix'?'mix':'level']??.5)-.5)*-4.0:animation==='testerDial'?-THREE.MathUtils.clamp(Number(component.params.dialPosition??0),0,3)*.59:animation==='dimmer'?(THREE.MathUtils.clamp(Number(component.params.level??.65),0,1)-.5)*4:animation==='valve'?(active?Number(data.onAngle??.6):Number(data.offAngle??-.6)):closed?Number(data.onAngle??-.115):Number(data.offAngle??.115);
+    const target=animation==='valvePosition'?-Math.PI*.5*Number(state?.level??0):animation==='pwmLevel'||animation==='pwmMix'?(Number(component.params[animation==='pwmMix'?'mix':'level']??.5)-.5)*-4.0:animation==='testerDial'?-THREE.MathUtils.clamp(Number(component.params.dialPosition??0),0,3)*.55:animation==='dimmer'?(THREE.MathUtils.clamp(Number(component.params.level??.65),0,1)-.5)*4:animation==='valve'?(active?Number(data.onAngle??.6):Number(data.offAngle??-.6)):closed?Number(data.onAngle??-.115):Number(data.offAngle??.115);
     if(immediate)motion.current=target;else motion.current=THREE.MathUtils.lerp(motion.current,target,1-Math.exp(-Math.min(dt,.05)*18));
     motion.node.quaternion.copy(motion.quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(axis,motion.current-motion.angle));
     moving ||= Math.abs(motion.current-target)>.001;

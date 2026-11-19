@@ -7,10 +7,12 @@
 .tester-title img,.sample-equipment img { width:65px; height:58px; object-fit:contain; border-radius:5px; background:#e5ebe7; }
 .tester-title small { display:block; font-size:.85em; }
 .tester-lcd { border:5px solid #374240; border-radius:7px; background:#ccd2b6; color:#1a241f; min-height:58px; text-align:right; padding:.25rem .65rem; font-variant-numeric:tabular-nums; }
+.tester-lcd.illuminated { background:#e5edd8; }
 .tester-lcd.referenced { background:#baddaa; }
 .tester-lcd small { display:block; min-height:.9em; }
 .tester-lcd output { font:600 1.55rem/1.3 monospace; }
 .tester-lcd output span { font-size:1rem; }
+.tester-lcd output .tester-digits { font-size:inherit; }
 .tester-controls button:not(.book-primary),.termination-practice button:not(.book-primary) { min-height:40px; padding:.36rem .58rem; border:1px solid #98acb1; border-radius:.4rem; background:#f2f5f6; color:#17343b; }
 .tester-controls button[aria-pressed=true] { box-shadow:inset 0 0 0 2px #356d66; }
 .tester-controls button.tester-function { background:#f6c859; }

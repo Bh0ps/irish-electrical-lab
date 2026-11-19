@@ -1,11 +1,15 @@
 'use client';
-import {useMemo,useState,useRef,type ReactNode} from 'react';
+import {useEffect,useMemo,useState,useRef,type ReactNode} from 'react';
 import {Minus,Plus,Scan,MapPin,ChevronRight} from 'lucide-react';
 import type {CircuitDocument,ConfigurationLesson,Endpoint,Wire} from '../../lib/types';
 import {endpointKey} from '../../lib/types';
 import {COMPONENTS} from '../../lib/components';
 import {getComponentTerminals} from '../../lib/terminal-layout';
-import {type JobSite,drawingKind,ROOM_WALLS,FRONT,BACK,DOOR_Z,DOOR_WIDTH} from '../../lib/job-site';
+import {type JobSite,drawingKind,BACK} from '../../lib/job-site';
+import {HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
+import {ServicePlan,serviceSpaces} from './ServicePlan';
+import {SERVICE_AREAS} from '../../lib/service-floorplan';
+import {installedWireRoute} from '../../lib/house-installation';
 import {DRAWING_INK,terminalSheet,shortPoint,matchConnection,ladderPaths} from '../../lib/installation-drawing';
 
 function Symbol({type}:{type:string}){
@@ -27,16 +31,26 @@ function Hot({name,choose,children}:{name:string;choose:()=>void;children:ReactN
     onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();choose();}}}>{children}</g>;
 }
 type Page='plan'|'wiring'|'schedule'|'ladder';
-export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo,highlightWire,openLocation,initialPage='plan'}:{
+export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo,highlightWire,openLocation,initialPage='plan',planTrace}:{
   doc:CircuitDocument;lesson?:ConfigurationLesson;site:JobSite;selected?:string;part:string;highlight:(id:string,terminal?:string)=>void;
-  goTo:(id:string,terminal?:string)=>void;highlightWire:(wire?:string)=>void;openLocation:boolean;initialPage?:Page;
+  goTo:(id:string,terminal?:string)=>void;highlightWire:(wire?:string)=>void;openLocation:boolean;initialPage?:Page;planTrace?:{sequence:number;wire:string};
 }){
   const [version,setVersion]=useState<'job'|'actual'>(lesson?'job':'actual'),[page,setPage]=useState<Page>(lesson?initialPage:'wiring');
   const [zoom,setZoom]=useState(1),[wireId,setWireId]=useState<string>(),[which,setWhich]=useState('');
+  const [planArea,setPlanArea]=useState<'selected'|'whole'|number>(()=>typeof window!=='undefined'&&window.matchMedia('(max-width:760px), (max-height:550px) and (pointer:coarse)').matches?'selected':'whole');
   const docForSheet=version==='job'&&lesson?lesson.circuit:doc;
   const sheet=useMemo(()=>terminalSheet(docForSheet,site),[docForSheet,site]);
   const diagram=useRef<HTMLDivElement>(null);
+  const lastTrace=useRef<number|undefined>(undefined);
+  useEffect(()=>{
+    if(!openLocation||!planTrace||lastTrace.current===planTrace.sequence)return;
+    lastTrace.current=planTrace.sequence;
+    if(!doc.wires.some(w=>w.id===planTrace.wire))return;
+    setPage('plan');setVersion('actual');setWireId(planTrace.wire);setPlanArea('whole');setZoom(1);
+    diagram.current?.scrollTo({top:0,left:0});
+  },[openLocation,planTrace,doc.wires]);
   const curWire=docForSheet.wires.find(w=>w.id===wireId);
+  const floorRoute=useMemo(()=>curWire?installedWireRoute(docForSheet,site,curWire):undefined,[curWire,site,docForSheet]);
   const reference=(id:string)=>site.items.find(item=>item.id===id)?.ref??id;
   const pair=(e:Endpoint)=>shortPoint(site,docForSheet,e);
   const equip=docForSheet.components.find(c=>c.id===selected);
@@ -49,7 +63,14 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
     highlight(wire.from.component,wire.from.terminal);setWhich(endpointKey(wire.from));};
   const goto=(id:string,terminal?:string)=>{if(doc.components.some(c=>c.id===id))goTo(id,terminal);};
   function reset(){setZoom(1);diagram.current?.scrollTo({top:0,left:0});}
-  const x=(n:number)=>42+(n+6.6)*41, y=(n:number)=>45+(n+2.8)*26;
+  const house=site.kind==='home',bathroom=site.building.rooms[1]==='Bathroom';
+  const rooms=site.kind==='home'?HOME_ROOMS:serviceSpaces(site.kind);
+  const annex=site.kind==='home'?undefined:SERVICE_AREAS[site.kind];
+  const left=Math.min(-6.6,annex?.left??-6.6),right=Math.max(6.6,annex?.right??6.6),back=Math.min(-2.8,annex?.back??-2.8);
+  const x=(n:number)=>42+(n-left)*41, y=(n:number)=>24+(n-(house?HOME_BACK:back))*41;
+  const areaId=planArea==='selected'?(curWire?'whole':site.items.find(i=>i.id===selected)?.room??site.room):planArea;
+  const planRoom=areaId!=='whole'?rooms.find(r=>r.id===areaId):undefined;
+  const planBox=planRoom?[x(planRoom.left)-12,y(planRoom.back)-12,(planRoom.right-planRoom.left)*41+24,(planRoom.front-planRoom.back)*41+24].join(' '):house?'0 0 640 592':[0,0,84+(right-left)*41,48+(6-back)*41].join(' ');
   const width=page==='wiring'?sheet.width:640;
   const ladder=useMemo(()=>page==='ladder'?ladderPaths(docForSheet):[],[page,docForSheet]);
   const ladderWidth=Math.max(640,240+Math.max(0,...ladder.map(r=>r.path.length))*85);
@@ -68,26 +89,37 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
       <div className="drawing-zoom"><button aria-label="Zoom out drawing" disabled={zoom<=.4} onClick={()=>setZoom(z=>Math.max(.4,z-.25))}><Minus size={14}/></button><button aria-label="Fit drawing" onClick={fit}><Scan size={14}/></button><button aria-label="Zoom in drawing" disabled={zoom>=4} onClick={()=>setZoom(z=>Math.min(4,z+.25))}><Plus size={14}/></button></div>
     </div>
     <div ref={diagram} className="drawing-paper" tabIndex={0} aria-label="Scrollable drawing">
-      <div className="drawing-legendhead"><b>{site.name}</b><span>{page==='plan'?'Location plan':page==='wiring'?'Terminal connections':page==='ladder'?'Control ladder':'Board schedule'} · {lesson?'EL-'+String(lesson.id).padStart(3,'0'):'CUSTOM'} · {version==='job'?'Design':'As wired'}</span></div>
-      {page==='plan'?<svg className="electrical-sheet floor-sheet" role="group" aria-label="Installation floor plan" viewBox="0 0 640 302" style={{width:Math.max(100,zoom*100)+'%',minWidth:420*zoom}}>
+      <div className="drawing-title"><div className="drawing-legendhead"><b>{site.name}</b><span>{page==='plan'?'Location plan':page==='wiring'?'Terminal connections':page==='ladder'?'Control ladder':'Board schedule'} · {lesson?'EL-'+String(lesson.id).padStart(3,'0'):'CUSTOM'} · {version==='job'?'Design':'As wired'}</span></div>
+      {page==='plan'&&<label className="house-plan-area"><span className="sr-only">Area on plan</span><select aria-label="Area on plan" value={areaId} onChange={e=>{setPlanArea(e.target.value==='whole'?'whole':Number(e.target.value));reset();}}><option value="whole">{house?'Whole house':'Whole site'}</option>{rooms.map(r=><option key={r.id} value={r.id}>{site.location(r.id)}</option>)}</select></label>}</div>
+      {page==='plan'?<svg className="electrical-sheet floor-sheet" role="group" aria-label="Installation floor plan" viewBox={planBox} style={{width:Math.max(100,zoom*100)+'%',minWidth:340*zoom}}>
         <defs><pattern id="site-hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 6L6 0" stroke="#b6c3b9" fill="none" strokeWidth=".5"/></pattern></defs>
-        <rect x={x(-6.6)} y={y(BACK)} width={13.2*41} height={(FRONT-BACK)*26} fill="#f4f4e8" stroke="none"/>
-        {ROOM_WALLS.slice(0,3).map((left,i)=><text key={left} x={x(left+2.2)} y={y(.35)} textAnchor="middle" className="room-caption">{site.location(i)}</text>)}
-        <text x={x(0)} y={y(5.43)} className="room-caption" textAnchor="middle">{site.location(3)}</text>
-        <g stroke="#4c655d" strokeWidth="4" fill="none"><path d={`M${x(-.74)} ${y(FRONT)}H${x(-6.6)}V${y(BACK)}H${x(6.6)}V${y(FRONT)}H${x(.74)}`}/>
-          {ROOM_WALLS.slice(1,3).map(w=><path key={w} d={`M${x(w)} ${y(BACK)}V${y(DOOR_Z-DOOR_WIDTH/2)} M${x(w)} ${y(DOOR_Z+DOOR_WIDTH/2)}V${y(FRONT)}`}/>)}</g>
-        <path d={`M${x(-.74)} ${y(FRONT)}v-38 q38 0 59 38`} fill="none" stroke="#899b91" strokeDasharray="3 2"/>
-        {site.items.filter(item=>docForSheet.components.some(c=>c.id===item.id)).map(item=>{
+        {house?<g data-oakfield-plan>
+          {HOME_ROOMS.filter(r=>r.id!==3).map(r=><rect key={r.id} x={x(r.left)} y={y(r.back)} width={(r.right-r.left)*41} height={(r.front-r.back)*41} fill={r.id===6||r.id===1?'#f2f0de':'#f8f8ea'}/>)}
+          {Object.entries(HOUSE_FURNITURE).map(([name,b])=><rect key={name} x={x(b.x-b.w/2)} y={y(b.z-b.d/2)} width={b.w*41} height={b.d*41} rx="2" fill="#dcded0" stroke="#b5bdac"><title>{name}</title></rect>)}
+          {HOME_WALLS.map(w=><g key={w.id}>{wallSpans(w,bathroom).map(([a,b])=>{
+            const p=alignWall(w,a,0,0,0),q=alignWall(w,b,0,0,0);
+            return <path key={a} d={`M${x(p.x)} ${y(p.z)} L${x(q.x)} ${y(q.z)}`} stroke="#4c655d" strokeWidth="4"/>;})}
+            {doorsOn(w,bathroom).map(d=>{const leaf=doorLeaf(w,d),latch=alignWall(w,d.centre-d.hinge*d.width/2,0,0,0);
+              const end=alignWall(w,d.centre+d.hinge*d.width/2,d.side*d.width,0,0),hinge=alignWall(w,d.centre+d.hinge*d.width/2,0,0,0);
+              return <g key={d.centre}><rect x={x(leaf.x-leaf.w/2)} y={y(leaf.z-leaf.d/2)} width={leaf.w*41} height={leaf.d*41} fill="#889d91"/>
+                <path d={`M${x(latch.x)} ${y(latch.z)} Q${x(end.x+latch.x-hinge.x)} ${y(end.z+latch.z-hinge.z)} ${x(end.x)} ${y(end.z)}`} fill="none" stroke="#9eab9c" strokeDasharray="3 2"/></g>;})}
+          </g>)}
+          {HOME_ROOMS.map(r=><text key={r.id} x={x((r.left+r.right)/2)} y={y(r.id===3?4.8:r.front-.60)} textAnchor="middle" className="room-caption">{site.location(r.id)}</text>)}
+        </g>:site.kind!=='home'&&<ServicePlan site={site} kind={site.kind} x={x} y={y}/>}
+        {curWire&&floorRoute?.length&&<polyline aria-label="Selected wire route" points={floorRoute.map(p=>x(p[0])+','+y(p[2])).join(' ')} fill="none" stroke={DRAWING_INK[curWire.role]} strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="7 3"/>}
+        {site.items.filter(item=>(!planRoom||item.room===planRoom.id)&&docForSheet.components.some(c=>c.id===item.id)).map(item=>{
           const c=docForSheet.components.find(c=>c.id===item.id)!;
           const roomItems=site.items.filter(p=>p.room===item.room),index=roomItems.indexOf(item);
           // Offset tags from their true fixing points; the leader stays on the installation location.
-          const bx=x(item.room===3?0:ROOM_WALLS[item.room]+.65)+(index%5)*28;
-          const by=item.room===3?y(4.22)+Math.floor(index/5)*25:y(-1.84)+Math.floor(index/5)*25;
+          const space=rooms.find(r=>r.id===item.room);
+          const columns=space?Math.min(6,Math.max(2,Math.floor((space.right-space.left-.45)*41/29))):5;
+          const bx=x(item.room===3?0:(space?.left??-6.6)+.65)+(index%columns)*28;
+          const by=(item.room===3?y(4.22):y((space?.back??BACK)+.96))+Math.floor(index/columns)*25;
           return <Hot key={item.id} name={item.ref+' '+c.label} choose={()=>choose(item.id)}>
             <path d={`M${x(item.position[0])} ${y(item.position[2])}L${bx} ${by}`} stroke="#96a59c" fill="none"/><circle cx={x(item.position[0])} cy={y(item.position[2])} r="2" fill="#37564b"/>
             <rect x={bx-12} y={by-10} width="26" height="20" rx="2" fill={selected===item.id?'#f6c56f':'#fffef5'} stroke="#738d81"/><text x={bx+1} y={by+4} textAnchor="middle" fontSize="9">{item.ref}</text></Hot>;
         })}
-        <text x="42" y="281" fontSize="10">Equipment tags show fixing locations. Select a tag to find the device.</text>
+        {!planRoom&&<text x="42" y={house?573:y(6)+10} fontSize="12">Choose an equipment tag to find it on site.</text>}
       </svg>:page==='wiring'?<svg className="electrical-sheet" width={width*zoom} height={sheet.height*zoom} viewBox={`0 0 ${width} ${sheet.height}`} aria-label="Terminal-to-terminal wiring" role="group">
         {sheet.blocks.map(b=><g key={b.id}><Hot name={'Select '+b.ref+' '+b.name} choose={()=>choose(b.id)}><rect x={b.x} y="21" width={b.width} height="106" rx="3" fill={selected===b.id?'#fbefd5':'#f7f8ef'} stroke="#496456"/>
           <text x={b.x+9} y="43" fontWeight="700">{b.ref}</text><g transform={`translate(${b.x+b.width-21} 40)`} stroke="#365343" strokeWidth="1.5" fill="none"><Symbol type={b.type}/></g>

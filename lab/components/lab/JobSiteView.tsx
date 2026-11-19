@@ -1,32 +1,39 @@
 'use client';
 import React,{useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
-import { Canvas,useFrame,useThree } from '@react-three/fiber';
+import { Canvas,useFrame,useThree,type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ArrowUp,ArrowLeft,ArrowRight,ArrowDown,Footprints,LocateFixed,PanelTopOpen } from 'lucide-react';
 import { mountScale,mountRoll,filledWays } from '../../lib/board-assembly';
 import { DRAWING_INK } from '../../lib/installation-drawing';
+import { installedWireRoute } from '../../lib/house-installation';
+import { Line } from '@react-three/drei';
 import { COMPONENTS } from '../../lib/components';
 import { Equipment, type EquipmentProps } from '../../lib/Equipment';
+import { semanticOwner } from '../../lib/blender-model';
 import { getComponentTerminals } from '../../lib/terminal-layout';
 import { walkStep,type JobSite,type SiteItem } from '../../lib/job-site';
+import { HOME_ROOMS, HOME_VISITS, homeRoomAt } from '../../lib/home-floorplan';
+import { serviceRoomAt,serviceVisit } from '../../lib/service-floorplan';
 import type { CircuitDocument,ComponentInstance,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
 import InstallationRoom from './InstallationRoom';
+import SiteCablePeek from './SiteCablePeek';
 import { BATTEN_FILAMENT, CUPBOARD_HINGE, CUPBOARD_SWING, fixturePoint, TAPE_SECTION_LENGTH, TAPE_SECTIONS } from '../../lib/site-fixtures';
 
 export interface SitePose {position:Vec3;yaw:number;pitch:number}
-interface Rig {keys:Set<string>; turn:[number,number];zoom:number; wake:()=>void; pose?:SitePose}
+interface Rig {keys:Set<string>; turn:[number,number];zoom:number; wake:()=>void; moved:boolean; pose?:SitePose}
 interface Props {
   site:JobSite; doc:CircuitDocument; result?:SimulationResult; selected?:string; terminalId?:string; wire?:string; touch:boolean; tool:string;
-  jump:{id:number;component?:string}; pose:React.MutableRefObject<SitePose|undefined>;
+  jump:{id:number;component?:string}; pose:React.MutableRefObject<SitePose|undefined>; showWallSwitch?:boolean;
+  onPeek:(id?:string)=>void;onPlan:(wire:string)=>void;onExplore:()=>void;
   onPart:(id:string,part:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
 }
-function InstalledFixture({item, equipment, cupboardDoor, optical, pin}:{
-  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:Vec3;
+function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick}:{
+  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:Vec3;onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;
 }){
   const {component:c,definition:def,state}=equipment;
   const {fixture,position}=item;
   const scale=fixture?.scale??[item.scale,item.scale,item.scale] as Vec3;
-  const rotation:Vec3=[fixture?.tilt??0,item.rotation,fixture?.roll??0];
+  const rotation=new THREE.Euler(fixture?.tilt??0,item.rotation,fixture?.roll??0,'YXZ');
   const count=fixture?.tape?TAPE_SECTIONS:1;
   // The two halves share one component and two terminals. Only the magnet rides the leaf.
   const magnet=cupboardDoor&&<group position={CUPBOARD_HINGE} rotation={[0,c.params.closed?CUPBOARD_SWING:0,0]}>
@@ -41,7 +48,18 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin}:{
     : [0,def.size[1]*scale[1]*.65,.055];
   const warm=Number(state?.warmWatts??0),cool=Number(state?.coolWatts??0);
   const tint=useMemo(()=>new THREE.Color('#ffe9bd').lerp(new THREE.Color('#d9eaff'),cool/Math.max(.001,warm+cool)),[warm,cool]);
-  return <group userData={{siteComponent:item.id}}>
+  const touched=useRef<{id:number;key:string}|undefined>(undefined);
+  const point=(e:ThreeEvent<PointerEvent>)=>{const o=semanticOwner(e.object);return o.terminal??o.part??'body';};
+  return <group userData={{siteComponent:item.id}}
+    onPointerDown={e=>{if(e.pointerType==='touch'){e.stopPropagation();touched.current={id:e.pointerId,key:point(e)};}}}
+    onPointerCancel={()=>{touched.current=undefined;}}
+    onPointerUp={e=>{
+      const start=touched.current;touched.current=undefined;
+      if(e.pointerType!=='touch'||start?.id!==e.pointerId||start.key!==point(e))return;
+      e.stopPropagation();onTouchPick(e);
+      const owner=semanticOwner(e.object);
+      if(owner.terminal)equipment.onTerminal(owner.terminal);else equipment.onPart(owner.part??'body',owner.detail);
+    }}>
     {magnet}
     <group position={position} rotation={rotation}>
       {Array.from({length:count},(_,i)=><group key={i} position={[(i-(count-1)/2)*TAPE_SECTION_LENGTH,0,0]} scale={scale}>
@@ -51,34 +69,40 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin}:{
       </group>)}
       {illuminated&&<pointLight position={emitter} color={c.type==='cctstrip'?tint:'#fff0d0'} intensity={.34*optical} distance={2.9}/>}
     </group>
-    {pin&&<mesh position={fixturePoint(position,item.scale,fixture,c,pin)} renderOrder={15} raycast={()=>{}}>
+    {pin&&<mesh position={fixturePoint(position,item.scale,fixture,c,pin,item.rotation)} renderOrder={15} raycast={()=>{}}>
       <sphereGeometry args={[Math.max(.0018,Math.min(.008,.065*item.scale)),12,8]}/><meshBasicMaterial color="#ffb34a" depthTest={false}/>
     </mesh>}
   </group>;
 }
 function WireTrace({doc,site,id}:{doc:CircuitDocument;site:JobSite;id?:string}){
-  const trace=useMemo(()=>{
-    const wire=doc.wires.find(w=>w.id===id);if(!wire)return;
-    const endpoint=(e:Endpoint)=>{const c=doc.components.find(c=>c.id===e.component),item=site.items.find(i=>i.id===e.component);
-      if(!c||!item)return;const t=getComponentTerminals(c,COMPONENTS[c.type]).find(t=>t.id===e.terminal);if(!t)return;
-      return new THREE.Vector3(...fixturePoint(item.position,item.scale,item.fixture,c,t.anchor));};
-    const a=endpoint(wire.from),b=endpoint(wire.to);if(!a||!b)return;
-    const points=[a,new THREE.Vector3(a.x,a.y,a.z+.03),new THREE.Vector3(a.x,2.52,a.z+.03),new THREE.Vector3(b.x,2.52,a.z+.03),new THREE.Vector3(b.x,2.52,b.z+.03),new THREE.Vector3(b.x,b.y,b.z+.03),b];
-    const geometry=new THREE.BufferGeometry().setFromPoints(points);
-    const material=new THREE.LineDashedMaterial({color:DRAWING_INK[wire.role],dashSize:.04,gapSize:.018,depthTest:false});
-    const line=new THREE.Line(geometry,material);line.computeLineDistances();line.renderOrder=25;line.raycast=()=>{};return line;
-  },[doc,site,id]);
-  useEffect(()=>()=>{trace?.geometry.dispose();trace?.material.dispose();},[trace]);
-  return trace?<primitive object={trace}/>:null;
+  const wire=doc.wires.find(w=>w.id===id);
+  const points=useMemo(()=>wire&&installedWireRoute(doc,site,wire),[doc,site,wire]);
+  if(!wire||!points||points.length<2)return null;
+  return <group>
+    <Line points={points} color="#fff8e4" lineWidth={5} renderOrder={24} depthTest={false} depthWrite={false} raycast={()=>{}}/>
+    <Line points={points} color={DRAWING_INK[wire.role]} lineWidth={2.5} renderOrder={25} depthTest={false} depthWrite={false} raycast={()=>{}}/>
+    {[points[0],points[points.length-1]].map((p,i)=><mesh key={i} position={p} renderOrder={26} raycast={()=>{}}>
+      <sphereGeometry args={[.0035,12,8]}/><meshBasicMaterial color="#f5bc53" depthTest={false} depthWrite={false}/>
+    </mesh>)}
+  </group>;
 }
 function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15):SitePose{
+  const pose=frontView(item,id,close,height);
+  if(!item?.rotation)return pose;
+  const [x,y,z]=item.position,dx=pose.position[0]-x,dz=pose.position[2]-z,angle=item.rotation;
+  return {position:[x+dx*Math.cos(angle)+dz*Math.sin(angle),pose.position[1],z+dz*Math.cos(angle)-dx*Math.sin(angle)],yaw:pose.yaw+angle,pitch:pose.pitch};
+}
+function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,height:number):SitePose{
   const p=item?.position??[0,1.3,-2.5];
   if(id===24&&item?.id==='shaver')return {position:[p[0]-.09,p[1]+.098,p[2]+(close?.31:.51)],yaw:close?-.27:-.17,pitch:-.03};
   if(item?.fixture?.board){
     const distance=height*(close?1.63:2.28);
     return {position:[p[0]+distance*.13,p[1]+height*.53,p[2]+distance],yaw:.13,pitch:-.01};
   }
-  if(!close&&id===7&&item?.id==='switch')return {position:[p[0]-.60,1.54,p[2]+1.83],yaw:-.39,pitch:.012};
+  if(!close&&id===7&&item?.id==='switch')return {position:[p[0]-.09,p[1]+.37,p[2]+1.22],yaw:-.24,pitch:0};
+  if(!close&&(id===18||id===19)&&item?.id==='socket-a')
+    return {position:[-4.03,1.37,-4.95],yaw:.47,pitch:-.23};
+  if(close&&item?.fixture?.flushPlate)return {position:[p[0]+.115,p[1]+.075,p[2]+.365],yaw:.30,pitch:-.08};
   if(close&&item?.fixture?.batten)return {position:[p[0]-.155,p[1]+.085,p[2]+.34],yaw:-.43,pitch:-.045};
   if(close&&item?.fixture?.tape&&item.fixture.tilt)return {position:[p[0]-.08,p[1]-.24,p[2]+.43],yaw:-.17,pitch:.49};
   if(!close&&id!==undefined&&[13,66,68,69].includes(id))return {position:[-4.97,1.32,-.89],yaw:-.28,pitch:.08};
@@ -88,27 +112,36 @@ function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15)
   const distance=close?Math.max(.32,Math.min(1.20,height*2.7)):item?.room===3?1.58:1.26;
   return {position:[p[0]+distance*.07,p[1]+height*.65+.025,p[2]+distance],yaw:.07,pitch:-.04};
 }
-function CameraRig({rig,walking,target,pose,jobKey,site,onRoom}:{site:JobSite;onRoom:(room:number)=>void;rig:Rig;walking:boolean;target:SitePose;pose:Props['pose'];jobKey:string}){
-  const {camera,invalidate}=useThree();
+function CameraRig({rig,walking,target,pose,jobKey,site,onRoom,wallSwitch,wallButton}:{site:JobSite;onRoom:(room:number)=>void;rig:Rig;walking:boolean;target:SitePose;pose:Props['pose'];jobKey:string;wallSwitch?:THREE.Vector3;wallButton:React.RefObject<HTMLButtonElement|null>}){
+  const {camera,invalidate,size}=useThree();
+  const screenPoint=useMemo(()=>new THREE.Vector3(),[]);
   const roomRef=useRef(-1);const position=useRef(new THREE.Vector3()),rotation=useRef({yaw:0,pitch:0});
   useLayoutEffect(()=>{rig.wake=invalidate;return()=>{rig.wake=()=>{};rig.keys.clear();};},[invalidate,rig]);
   useLayoutEffect(()=>{roomRef.current=-1;},[jobKey]);
-  useLayoutEffect(()=>{position.current.set(...target.position);rotation.current={yaw:target.yaw,pitch:target.pitch};rig.turn=[0,0];rig.zoom=0;invalidate();},[target,jobKey,invalidate,rig]);
+  useLayoutEffect(()=>{position.current.set(...target.position);rotation.current={yaw:target.yaw,pitch:target.pitch};rig.turn=[0,0];rig.zoom=0;rig.moved=false;invalidate();},[target,jobKey,invalidate,rig]);
   useFrame((_,dt)=>{
     const p=position.current,r=rotation.current,keys=rig.keys;
+    if(rig.zoom||rig.turn[0]||rig.turn[1]||walking)rig.moved=true;
     r.yaw-=rig.turn[0]*.003;r.pitch=Math.max(-1.18,Math.min(1.18,r.pitch-rig.turn[1]*.003));rig.turn=[0,0];
     const fwd=(Number(keys.has('up'))-Number(keys.has('down')))*(walking?1:0);
     const side=(Number(keys.has('right'))-Number(keys.has('left')))*(walking?1:0);
     const distance=Math.min(dt,.045)*1.8/Math.max(1,Math.hypot(fwd,side));
     const travel=distance*fwd+rig.zoom;rig.zoom=0;
     const dx=Math.cos(r.yaw)*side*distance-Math.sin(r.yaw)*travel,dz=-Math.sin(r.yaw)*side*distance-Math.cos(r.yaw)*travel;
-    if(dx||dz){const next=walkStep([p.x,p.y,p.z],dx,dz,walking?site:undefined);p.set(...next);}
+    if(dx||dz){const next=walkStep([p.x,p.y,p.z],dx,dz,site);p.set(...next);}
     if(walking){
       const stair=site.building.rooms[1]==='Stair hall'&&p.x> -2.13&&p.x< -1.35&&p.z<1.34&&p.z> -1.13;
       p.y=1.56+(stair?Math.min(8,1+Math.floor((1.34-p.z)/.29))*.17:0);
-      const room=p.z>2.8?3:p.x< -2.2?0:p.x>2.2?2:1;if(room!==roomRef.current){roomRef.current=room;onRoom(room);}
+      const room=site.kind==='home'?homeRoomAt(p.x,p.z):serviceRoomAt(site.kind,p.x,p.z);if(room!==roomRef.current){roomRef.current=room;onRoom(room);}
     }
     camera.position.copy(p);camera.rotation.order='YXZ';camera.rotation.set(r.pitch,r.yaw,0,'YXZ');camera.updateMatrixWorld();
+    const button=wallButton.current;
+    if(button&&wallSwitch){
+      screenPoint.copy(wallSwitch).project(camera);
+      const x=(screenPoint.x+1)*size.width/2,y=(1-screenPoint.y)*size.height/2;
+      button.hidden=rig.moved||screenPoint.z< -1||screenPoint.z>1||x<22||x>size.width-22||y<22||y>size.height-22;
+      if(!button.hidden)button.style.transform=`translate(${x-22}px, ${y-22}px)`;
+    }
     pose.current={position:[p.x,p.y,p.z],...r};
     if(walking&&keys.size)invalidate();
   });
@@ -138,8 +171,10 @@ class SiteBoundary extends React.Component<{children:React.ReactNode;onList:()=>
 }
 const directions=[['up',ArrowUp],['left',ArrowLeft],['down',ArrowDown],['right',ArrowRight]] as const;
 const keyMap:Record<string,string>={KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
-export default function JobSiteView({site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList}:Props){
-  const rig=useMemo<Rig>(()=>({keys:new Set(),turn:[0,0],zoom:0,wake:()=>{}}),[]);
+export default function JobSiteView({site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList,showWallSwitch,onPeek,onPlan,onExplore}:Props){
+  const rig=useMemo<Rig>(()=>({keys:new Set(),turn:[0,0],zoom:0,moved:false,wake:()=>{}}),[]);
+  const wallButton=useRef<HTMLButtonElement>(null);
+  const lastTouchPick=useRef<{x:number;y:number;at:number}|undefined>(undefined);
   const [walkRoom,setWalkRoom]=useState(site.room);const [walking,setWalking]=useState(false),[lost,setLost]=useState(false),[loadedKey,setLoadedKey]=useState(0);
 
   const recoverGraphics=useCallback((paused:boolean)=>{setLost(paused);if(!paused)setLoadedKey(n=>n+1);},[]);
@@ -151,33 +186,49 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const input=useRef<HTMLDivElement>(null),pointers=useRef(new Map<number,{x:number;y:number;startX:number;startY:number}>()),blockTap=useRef(false);
   const selectedId=selected??site.first;
   const jobKey=site.kind+':'+(doc.lessonId??doc.id);
+  const [visit,setVisit]=useState<{room:number;job:string;jump:number}>();
+  const roomVisit=visit?.job===jobKey&&visit.jump===jump.id?visit:undefined;
   const target=useMemo(()=>{
+    if(roomVisit){const view=site.kind==='home'?HOME_VISITS[roomVisit.room]:serviceVisit(site,roomVisit.room);if(view)return view;}
     const id=jump.component??site.first,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
     return pose.current??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined);
-  },[jobKey,jump.id,loadedKey]);
+  },[jobKey,jump.id,loadedKey,roomVisit]);
   const stop=useCallback(()=>{rig.keys.clear();pointers.current.clear();blockTap.current=true;},[rig]);
   useEffect(()=>{window.addEventListener('blur',stop);window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
     function release(e:PointerEvent){pointers.current.delete(e.pointerId);}
     return()=>{window.removeEventListener('blur',stop);window.removeEventListener('pointerup',release);window.removeEventListener('pointercancel',release);stop();};},[stop]);
   useEffect(()=>{setWalking(false);stop();},[jump.id,jobKey,tool,stop]);
   useEffect(()=>{setWalkRoom(site.room);},[jobKey,site.room]);
-  function toggleWalk(){stop();setWalking(!walking);rig.wake();input.current?.focus({preventScroll:true});}
-  function jumpTo(id:string){stop();setWalking(false);onFocus(id);}
+  function toggleWalk(){stop();if(!walking&&touch)onExplore();setWalking(!walking);rig.wake();input.current?.focus({preventScroll:true});}
+  function jumpTo(id:string){stop();if(touch)onExplore();setWalking(false);onFocus(id);}
+  function visitRoom(value:string){
+    const room=Number(value.slice(5));
+    if(site.kind==='home'?!HOME_VISITS[room]:!serviceVisit(site,room))return;
+    stop();if(touch)onExplore();setWalkRoom(room);setVisit({room,job:jobKey,jump:jump.id});setWalking(true);
+    input.current?.focus({preventScroll:true});
+  }
   const fixtureMap=new Map(doc.components.map(c=>[c.id,c]));
   const selectedItem=site.items.find(s=>s.id===selectedId);
   const visible=site.items.filter(item=>fixtureMap.has(item.id));
+  const rocker=site.items.find(item=>item.id==='switch'),wallControl=fixtureMap.get('switch');
+  const wallSwitch=rocker&&wallControl&&showWallSwitch&&!walking&&!lost&&!jump.component&&(tool==='select'||tool==='inspect')
+    ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,[0,COMPONENTS.switch.size[1]/2,.20])):undefined;
   return <div className="jobsite" data-site={site.kind}>
     <div className="site-camera" ref={input} tabIndex={0} aria-label={walking?'Walk around the site. Use WASD or the movement pad.':'Installation view. Choose equipment or enter Walk.'}
       onKeyDown={e=>{if(e.key==='Escape'){stop();setWalking(false);}const key=keyMap[e.code];if(walking&&key){e.preventDefault();rig.keys.add(key);rig.wake();}}}
-      onKeyUp={e=>{rig.keys.delete(keyMap[e.code]);}} onBlur={stop}
-      onPointerDownCapture={e=>{const el=e.currentTarget;el.focus({preventScroll:true});blockTap.current=walking||pointers.current.size>0||e.button!==0;
+      onKeyUp={e=>{rig.keys.delete(keyMap[e.code]);}} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))stop();}}
+      onPointerDownCapture={e=>{lastTouchPick.current=undefined;if(!(e.target instanceof Element&&e.target.closest('button')))e.currentTarget.focus({preventScroll:true});blockTap.current=walking||pointers.current.size>0||e.button!==0;
         pointers.current.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});}}
       onPointerMoveCapture={e=>{const old=pointers.current.get(e.pointerId);if(!old)return;const dx=e.clientX-old.x,dy=e.clientY-old.y;
         if(Math.hypot(e.clientX-old.startX,e.clientY-old.startY)>5)blockTap.current=true;
         if(pointers.current.size===2){const other=[...pointers.current.entries()].find(([k])=>k!==e.pointerId)![1];const diff=Math.hypot(e.clientX-other.x,e.clientY-other.y)-Math.hypot(old.x-other.x,old.y-other.y);rig.zoom+=diff*.003;}
         else if(blockTap.current){rig.turn[0]+=dx;rig.turn[1]+=dy;}
         old.x=e.clientX;old.y=e.clientY;rig.wake();}}
-      onPointerCancelCapture={()=>{stop();}} onClickCapture={e=>{if(blockTap.current){e.stopPropagation();e.preventDefault();}}}
+      onPointerCancelCapture={()=>{stop();}} onClickCapture={e=>{
+        const picked=lastTouchPick.current;
+        const duplicate=picked&&performance.now()-picked.at<900&&Math.hypot(e.clientX-picked.x,e.clientY-picked.y)<10;
+        if(e.detail&&(blockTap.current||duplicate)){e.stopPropagation();e.preventDefault();}
+      }}
       onWheel={e=>{rig.zoom+=Math.max(-.18,Math.min(.18,-e.deltaY*.001));rig.wake();}}>
       <SiteBoundary key={loadedKey} onList={onList}><Canvas shadows={!touch} frameloop="demand" dpr={touch?1:[1,1.5]} camera={{fov:49,near:.012,far:55}} gl={{antialias:!touch,powerPreference:'default'}}
         onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=.99;}}>
@@ -189,22 +240,27 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
           const focus=item.id===selectedId;const t=focus?getComponentTerminals(c,def).find(t=>t.id===terminalId):undefined;
           const cupboardDoor=doc.lessonId===65&&c.id==='door';
-          return <InstalledFixture key={item.id} item={item} optical={optical} pin={t?.anchor} cupboardDoor={cupboardDoor} equipment={{
+          return <InstalledFixture key={item.id} item={item} optical={optical} pin={t?.anchor} cupboardDoor={cupboardDoor}
+            onTouchPick={e=>{lastTouchPick.current={x:e.clientX,y:e.clientY,at:performance.now()};}} equipment={{
             filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
             lowDetail:!focus,preferLowAsset:touch,view:'normal',showLabels:false,onModelAvailability:modelAvailability,
             onPart:part=>{if(!blockTap.current&&!walking)onPart(c.id,cupboardDoor||part==='body'&&['switch','switch2','pushbutton'].includes(c.type)?'actuator':part);},
             onTerminal:id=>{if(!blockTap.current&&!walking)onTerminal({component:c.id,terminal:id});}
           }}/>;
         })}
-        <WireTrace id={wire} doc={doc} site={site}/><CameraRig rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom}/></>}
+        <WireTrace id={wire} doc={doc} site={site}/><CameraRig rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom} wallSwitch={wallSwitch} wallButton={wallButton}/></>}
       </Canvas></SiteBoundary>
+      {wallSwitch&&<button ref={wallButton} type="button" className="site-wall-switch" hidden aria-label="Wall switch" aria-pressed={wallControl?.params.closed===true}
+        onClick={e=>{e.stopPropagation();if(!e.detail||!blockTap.current)onPart('switch','actuator');}}><span>Wall switch</span></button>}
     </div>
     {!lost&&visible.some(item=>unavailable.has(item.id))&&<div className="site-model-error" role="status" aria-live="polite">Equipment model unavailable. <button onClick={onList}>Use equipment list</button></div>}
     {lost&&<div className="site-unavailable" role="status"><p>Graphics paused. Your circuit is saved in the workbench.</p><button onClick={()=>{setLost(false);setLoadedKey(n=>n+1);}}>Restart site</button><button onClick={onList}>Equipment list</button></div>}
-    <div className="site-location"><span className="location-dot"/>{site.building.name} <span> / </span> {site.location(walking?walkRoom:(selectedItem?.room??site.room))}{wire&&<span> · Connection trace</span>}</div>
+    <div className="site-location"><span className="location-dot"/>{site.building.name} <span> / </span> {site.location(walking||roomVisit?walkRoom:(selectedItem?.room??site.room))}</div>
+    {!lost&&(wire||[1,2,3,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61].includes(doc.lessonId??0))&&
+      <SiteCablePeek doc={doc} site={site} selected={selectedId} wireId={wire} onChange={onPeek} visit={jumpTo} plan={onPlan}/>}
     <div className="site-actions">
       <button className={walking?'chosen':''} aria-pressed={walking} onClick={toggleWalk}><Footprints size={17}/>{walking?'Finish walk':'Walk'}</button>
-      <label className="site-jump"><LocateFixed size={17}/><span>Go to equipment</span><select aria-label="Go to equipment" value="" onChange={e=>jumpTo(e.target.value)}><option value="" disabled>Go to equipment</option>{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</select></label>
+      <label className="site-jump"><LocateFixed size={17}/><span>Go to</span><select aria-label="Go to equipment" value="" onChange={e=>e.target.value.startsWith('room:')?visitRoom(e.target.value):jumpTo(e.target.value)}><option value="" disabled>Choose a destination</option><optgroup label="Equipment">{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</optgroup><optgroup label="Rooms">{(site.kind==='home'?HOME_ROOMS.map(r=>r.id):[0,1,2,3,4]).map(id=><option key={id} value={'room:'+id}>{site.location(id)}</option>)}</optgroup></select></label>
       {selectedId&&!walking&&<button aria-label="Inspect equipment on the workbench" onClick={()=>onService(selectedId)}><PanelTopOpen size={17}/><span>Inspect</span></button>}
     </div>
     {walking&&<div className="walking-pad" aria-label="Walk controls">{directions.map(([dir,Icon])=><button key={dir} aria-label={'Walk '+dir} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);rig.keys.add(dir);rig.wake();}} onPointerUp={()=>rig.keys.delete(dir)} onLostPointerCapture={()=>rig.keys.delete(dir)} onPointerCancel={()=>rig.keys.delete(dir)} onKeyDown={e=>{if(e.key===' '||e.key==='Enter'){rig.keys.add(dir);rig.wake();}}} onKeyUp={()=>rig.keys.delete(dir)}><Icon size={19}/></button>)}</div>}

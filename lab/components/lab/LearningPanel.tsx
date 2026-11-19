@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { ArrowLeft, ArrowRight, Cable, CheckCircle2, Eye, Gauge, Lightbulb, Power, Wrench, type LucideIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { TermsInThisStep } from './TermsInThisStep';
-import { getLessonActivities, evaluateActivity, type LessonActivity, type MeasurementEvidence } from '../../lib/learning';
+import { getLessonActivities, evaluateActivity, wireMarking, type LessonActivity, type MeasurementEvidence } from '../../lib/learning';
 import { activityCheckKey, getActivityStage, getLessonPrimaryAction, getStageProgress, groupLessonActivities, type LessonStageId } from '../../lib/lesson-stages';
 import type { LearningRecord } from '../../lib/progress';
 import type { CircuitDocument, ConfigurationLesson, SimulationResult } from '../../lib/types';
@@ -13,6 +13,7 @@ import { evaluateGuidedWireAddition, type GuidedWireAddition } from '../../lib/g
 import { bookLampVoltage, chapterFor, getCoursebookActivities, nextCourseId } from '../../lib/coursebook';
 import { COURSE_PAGES } from '../../lib/coursebook-content';
 import { electricalKey } from '../../lib/simulation-identity';
+import { describeEndpoint } from '../../lib/build-hints';
 
 interface Props {
   lesson: ConfigurationLesson; document: CircuitDocument; result?: SimulationResult; selected?: string; selectedPart: string;
@@ -24,6 +25,8 @@ interface Props {
   onStageChange?: (stageId: LessonStageId) => void;
   onRecord?: () => void;
   wireAddition?: GuidedWireAddition;
+  onUndoWire?: (addition: GuidedWireAddition) => boolean;
+  wallSwitchPress?: {circuitId:string;revision:number};
   guidedSession?: string;
   context?: ReactNode;
   path?: 'coursebook' | 'full';
@@ -52,6 +55,7 @@ export default function LearningPanel(props: Props) {
   const claimedComparison = useRef('');
   const [checkedState, setCheckedState] = useState('');
   const [connectionNotice, setConnectionNotice] = useState('');
+  const [wireToUndo, setWireToUndo] = useState<GuidedWireAddition>();
   const seenWireAddition = useRef(props.wireAddition?.sequence ?? 0);
   const currentDocument = useRef(props.document);
   const navigationSequence = useRef(0);
@@ -132,14 +136,15 @@ export default function LearningPanel(props: Props) {
     }
     const baseline = benchBaseline.current;
     const key = [activity.id,props.document.id,props.document.revision].join('/');
-    if (!atEnd || switchClosed === startingClosed || !baseline || baseline.activity !== activity.id ||
+    if (props.wallSwitchPress?.circuitId!==props.document.id || props.wallSwitchPress.revision!==props.document.revision ||
+      !atEnd || switchClosed === startingClosed || !baseline || baseline.activity !== activity.id ||
       baseline.circuit !== props.document.id || baseline.revision >= props.document.revision ||
       baseline.rest !== circuitApartFromSwitch || claimedSwitch.current === key) return;
     claimedSwitch.current = key;
     onAttempt(activity, true);
     setAccepted(true); setCheckedState(stateKey);
     setFeedback(startingClosed ? 'The lamp went dark.' : 'The lamp lit again.');
-  }, [activity, switchStep, startingClosed, lampVoltage, switchClosed, props.document, circuitApartFromSwitch, onAttempt, stateKey]);
+  }, [activity, switchStep, startingClosed, lampVoltage, switchClosed, props.document, props.wallSwitchPress, circuitApartFromSwitch, onAttempt, stateKey]);
   const onActivityChange = props.onActivityChange, onStageChange = props.onStageChange;
   const stageChangeRef = useRef(onStageChange);
   useLayoutEffect(() => { stageChangeRef.current = onStageChange; }, [onStageChange]);
@@ -161,7 +166,7 @@ export default function LearningPanel(props: Props) {
     const addition = wireAddition;
     if (!addition || addition.sequence <= seenWireAddition.current) return;
     seenWireAddition.current = addition.sequence;
-    const evaluated = evaluateGuidedWireAddition(activity, documentState, addition, activityMode);
+    const evaluated = evaluateGuidedWireAddition(activity, documentState, addition, activityMode, props.lesson.circuit);
     if (!evaluated) return;
     const navigation = navigationSequence.current;
     queueMicrotask(() => {
@@ -173,20 +178,22 @@ export default function LearningPanel(props: Props) {
         setIndex(previous => previous === index ? Math.min(previous + 1, activities.length - 1) : previous);
         setAnswer(''); setAccepted(false); setCheckedState('');setHelpLevel(0);
         setFeedback(''); setConnectionNotice('Connection checked.');
+        setWireToUndo(undefined);
       } else {
         setConnectionNotice('');
+        setWireToUndo(addition);
         setFeedback(evaluated.explanation); setAccepted(false); setCheckedState('');
         if (evaluated.status === 'fail') onAttempt(activity, false);
       }
     });
-  }, [wireAddition, documentState, activityMode, onAttempt, activity, index, activities.length]);
+  }, [wireAddition, documentState, activityMode, onAttempt, activity, index, activities.length, props.lesson.circuit]);
 
   function go(next: number) {
     navigationSequence.current++;
     focusNextTask.current = true;
     setIndex(Math.max(0, Math.min(next, activities.length - 1)));
     setAnswer(''); setFeedback(''); setAccepted(false); setCheckedState('');
-    setConnectionNotice(''); setHelpLevel(0); benchBaseline.current = undefined;
+    setConnectionNotice(''); setWireToUndo(undefined); setHelpLevel(0); benchBaseline.current = undefined;
   }
   function goToStage(id: LessonStageId) {
     const next = activities.findIndex(candidate => getActivityStage(candidate) === id);
@@ -194,15 +201,16 @@ export default function LearningPanel(props: Props) {
   }
   function verify() {
     if (!activity || currentAccepted) return;
+    setWireToUndo(undefined);
     setConnectionNotice('');
     if (activity.kind === 'inspect' && activity.component && props.selected !== activity.component) {
-      setFeedback('Select the highlighted equipment first, then inspect its purpose.'); return;
+      setFeedback('Choose the highlighted fitting, then look at the marked part.'); return;
     }
     if (activity.kind === 'connect' && props.mode !== 'build') {
       setFeedback('Start the guided build to practise making this connection.'); return;
     }
     if (activity.kind === 'repair' && (!props.challengeStarted || !props.diagnosisAccepted || !props.challengeRepaired)) {
-      setFeedback('Record the fault measurements, have your diagnosis checked, then repair the defect using the fault controls.'); return;
+      setFeedback('Take the meter readings first. Check where you think the fault is, then use Repair.'); return;
     }
     const deliberate = props.manualInspection;
     const inspected = deliberate ? [`${deliberate.component}.${deliberate.part}`] : [];
@@ -230,7 +238,10 @@ export default function LearningPanel(props: Props) {
     : (startingClosed ? 'Turn on to try again' : 'Turn off to try again'));
   const bookReading = activity.bookStep === 'intro' || activity.bookStep === 'contact' || activity.bookStep === 'meter-demo';
   const question = activity.kind === 'predict' || activity.kind === 'explain';
-  const taskTitle = switchStep ? 'Try the wall switch' : question ? activity.instruction : activity.title;
+  const stepWire = activity.kind==='connect' ? props.lesson.circuit.wires.find(w=>w.id===activity.wire) : undefined;
+  const ends = stepWire && [stepWire.from,stepWire.to].map(e=>describeEndpoint(props.document,e));
+  const namedEnds = ends?.length===2&&ends.every(e=>!!e);
+  const taskTitle = switchStep ? (startingClosed ? 'Switch the hall light off' : 'Switch the hall light back on') : namedEnds && stepWire ? 'Connect the '+wireMarking[stepWire.role]+' wire' : question ? activity.instruction : activity.title;
   const stepNumber = course ? index + 1 : stage.activities.findIndex(candidate => candidate.id === activity.id) + 1;
   const stepCount = course ? activities.length : stage.activities.length;
   const primaryLabel = activity.bookStep === 'finish' ? (nextLesson ? `Next: ${COURSE_PAGES[nextLesson].title}` : 'Return to the first chapter')
@@ -266,7 +277,7 @@ export default function LearningPanel(props: Props) {
     : activity.measurement?.mode === 'current' ? 'Choose one conductor. The current reading tells you how much is flowing in that wire.'
     : activity.measurement?.mode === 'resistance' ? 'Turn off every simulated source, including any battery supply. Put the probes at opposite ends of the wire.'
     : activity.measurement?.mode === 'voltage' ? 'Choose a terminal for each probe. The number on the meter is the voltage between those two points.'
-    : switchStep ? 'Look for the rocker on the wall beside the lamp. You can click it or use the lesson’s on/off button.'
+    : switchStep ? 'Press the white wall switch below the lamp, or use the on/off button here.'
     : activity.kind === 'predict' ? 'You can try the circuit first if you’re unsure.'
     : activity.kind === 'explain' ? 'Think back to which control you moved and what changed on the bench.'
     : activity.kind === 'repair' ? 'Start with the symptom in the fault report. Use the meter to narrow down where the change happens.'
@@ -288,7 +299,7 @@ export default function LearningPanel(props: Props) {
         const StageIcon=demonstrated?CheckCircle2:stageIcons[candidate.id];
         return <button type="button" key={candidate.id} className={`lesson-stage-button${candidate.id === stageId ? ' active' : ''}${demonstrated ? ' complete' : ''}`}
           aria-current={candidate.id === stageId ? 'step' : undefined} disabled={!candidate.activities.length}
-          aria-label={`${candidate.title}${demonstrated ? ' · demonstrated previously' : ''}`} data-lesson-stage={candidate.id} onClick={() => goToStage(candidate.id)}>
+          aria-label={`${candidate.title}${demonstrated ? ' · completed before' : ''}`} data-lesson-stage={candidate.id} onClick={() => goToStage(candidate.id)}>
           <span aria-hidden="true" title={`${stageIndex+1}. ${candidate.title}`}><StageIcon size={12}/></span>{candidate.title}
         </button>;
       })}
@@ -297,22 +308,31 @@ export default function LearningPanel(props: Props) {
       <div className="task-topline"><span>{course ? chapterFor(props.lesson.id).title : stage.title}</span><b>Step {stepNumber} of {stepCount}</b></div>
       <progress className="course-position" aria-label={course ? 'Position in this lesson' : `Position in the ${stage.title} stage`} value={stepNumber} max={stepCount}/>
       <h3 id="current-task-title" ref={taskHeading} tabIndex={-1}>{taskTitle}</h3>
-      {!question && !switchStep && <p className="task-instruction">{activity.instruction}</p>}
+      {namedEnds&&stepWire?<div className="wiring-step">
+        <p>With all supplies off, join these two terminals.</p>
+        <ul aria-label="Terminals to connect">{ends.map(end=><li key={end!.endpoint.component+'.'+end!.endpoint.terminal}><b>{end!.pointLabel}</b><span>{end!.equipmentName}</span></li>)}</ul>
+        {stepWire.resistance>.1&&<p>This length of wire adds {stepWire.resistance} Ω.</p>}
+      </div>:!question && !switchStep && <p className="task-instruction">{activity.instruction}</p>}
       {switchStep && !currentAccepted && !props.document.supply.enabled && <p className="task-feedback attention" role="status">Turn on the simulated supply to try the lamp.</p>}
       {switchStep && !currentAccepted && props.document.supply.enabled && lampVoltage === null && <p className="task-feedback" role="status">{lampReadingPending ? 'Waiting for a reading across the lamp.' : 'The meter can’t get a reading across the lamp. Test the circuit and check its line and neutral.'}</p>}
       {!!activity.options?.length && <div className="prediction-options" role="group" aria-labelledby="current-task-title">{activity.options.map(option => <button type="button" key={option.id} aria-pressed={answer === option.id} className={answer === option.id ? 'chosen' : ''} onClick={() => { if (answer !== option.id) { setAnswer(option.id); setAccepted(false); setFeedback(''); } }}>{option.label}</button>)}</div>}
       {props.lesson.id>=65&&activity.kind==='operate'&&!!activity.expectedObservations?.length&&<ExtraLowVoltageReading lesson={props.lesson.id} activity={activity} doc={props.document} result={props.result} change={props.onPulseSetting}/>}
-      {activity.bookStep === 'contact' && <ContactDiagram closed={switchClosed === true} onOperate={()=>props.onOperateComponent?.('switch')}/>}
+      {activity.bookStep === 'contact' && <ContactDiagram closed={switchClosed === true} lampLit={lampVoltage===null ? undefined : props.result?.deviceStates.light?.energized} onOperate={()=>props.onOperateComponent?.('switch')}/>}
       {measuringDimmer && <p className="meter-demo"><b>Lamp power</b><br/>25% · {low ? low.watts.toFixed(1)+' W' : 'Waiting for reading'}<br/>90% · {low && Math.abs(dimmerLevel-.9)<.001 && dimmerWatts!==undefined ? dimmerWatts.toFixed(1)+' W' : 'Waiting for reading'}</p>}
       {activity.bookStep === 'meter-demo' && <div className="meter-demo"><p><strong>L</strong> · lamp line &nbsp; ↔ &nbsp; <strong>N</strong> · lamp neutral</p>
-        <output>{lampVoltage === null ? lampReadingPending ? 'Waiting for the meter' : 'Reading unavailable' : `${lampVoltage.toLocaleString('en-IE',{maximumFractionDigits:1})} volts (V)`}</output>
+        <output>{lampVoltage === null ? lampReadingPending ? 'Waiting for the meter' : 'Reading unavailable' : `${lampVoltage.toLocaleString('en-IE',{maximumFractionDigits:0})} volts (V)`}</output>
         {!lampReadingPending && <p>{lampVoltage === null ? 'The circuit has no settled voltage between these points. Check the connections.' : lampVoltage <= 1 ? 'The two probe tips are at about the same voltage.' : 'This is the voltage between the two probe tips.'}</p>}
-        <details><summary>Zero, OL and an unavailable reading</summary><p>Zero volts means the meter found no voltage difference between the probes. On a resistance range, OL can mean a broken path or a resistance above the meter’s range. If the lab can’t establish a value, it shows Reading unavailable.</p></details></div>}
-      {props.context && (!course || !activity.bookStep) && <div className="lesson-context">{props.context}</div>}
+        <details><summary>Zero, OL and an unavailable reading</summary><p>Zero volts means the meter found no voltage difference between the probes. On a resistance range, OL can mean a broken path or a resistance above the meter’s range. If the bench cannot get a reading, it shows Reading unavailable.</p></details></div>}
       {connectionNotice && <div className="task-feedback success" role="status" data-guided-connection-checked>{connectionNotice}<span className="sr-only"> Next step: {activity.title}</span></div>}
-      {feedback && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
+      {feedback && (!wireToUndo || wireToUndo.circuitId===props.document.id && wireToUndo.revision===props.document.revision) && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
         {accepted && !currentAccepted ? 'The circuit has changed. Check this step again.' : feedback}
+        {wireToUndo?.circuitId===props.document.id && props.onUndoWire && <Button variant="outline" size="sm" onClick={()=>{
+          if(!props.onUndoWire?.(wireToUndo))return;
+          setWireToUndo(undefined);setFeedback('Wire removed. Try the connection again.');
+          taskHeading.current?.focus({preventScroll:true});
+        }}>Undo this wire</Button>}
       </div>}
+      {props.context && (!course || !activity.bookStep) && <div className="lesson-context">{props.context}</div>}
       <Button onClick={primary} disabled={question && !answer || !!starterText && (lampVoltage === null || !props.document.supply.enabled)} className="primary-button full" data-learning-primary={primaryAction}>
         {primaryLabel}{primaryAction === 'next' || bookReading ? <ArrowRight size={15} aria-hidden="true"/> : null}
       </Button>
@@ -331,8 +351,8 @@ export default function LearningPanel(props: Props) {
       <p className="small-copy">{stage.description}{course?'':' You can revisit any stage.'}</p>
       {!course && !last && <Button variant="outline" size="sm" onClick={() => go(index + 1)}><ArrowRight size={14}/>Skip to the next step</Button>}
       {(currentAccepted || props.depth === 'apprentice' && !props.challengeStarted) && <details className="task-explanation"><summary><Lightbulb size={14} />Why this matters</summary><p>{activity.explanation}</p></details>}
-      {(activity.kind === 'retest' || activity.kind === 'operate') && <Button variant="outline" size="sm" onClick={props.onTest}><Power size={14}/>Run operating tests again</Button>}
-      {!course && <details className="activity-outline"><summary>All steps · {completed} of {activities.length} demonstrated previously</summary>
+      {(activity.kind === 'retest' || activity.kind === 'operate') && <Button variant="outline" size="sm" onClick={props.onTest}><Power size={14}/>Test the controls again</Button>}
+      {!course && <details className="activity-outline"><summary>All steps · {completed} of {activities.length} completed before</summary>
         {stages.map(candidate => <details className="lesson-stage-outline" key={candidate.id}>
           <summary>{candidate.title} · {candidate.activities.length} steps</summary>
           {candidate.activities.map((child, childIndex) => <button type="button" className={child.id === activity.id ? 'active' : ''} key={child.id} onClick={() => go(activities.findIndex(item => item.id === child.id))}>
@@ -351,20 +371,20 @@ export default function LearningPanel(props: Props) {
       <div className="lesson-secondary-actions">
         {!course && <Button onClick={props.onBuild} variant="outline" className="full"><Cable size={14}/>Start a new guided build</Button>}
         <Button onClick={props.onStudied} variant="outline" className="full"><CheckCircle2 size={14}/>Mark reading as studied</Button>
-        <p className="small-copy">Reading progress is separate from demonstrated builds and fault repairs.</p>
+        <p className="small-copy">The lab saves what you have read, built and repaired separately.</p>
       </div>
       <details className="references"><summary>Sources and model limits</summary>{props.lesson.references.map(reference => <button type="button" key={reference.url} onClick={() => props.onReference(reference.url)}>{reference.title}</button>)}<p>This learning model does not certify a real installation.</p></details>
     </details>
   </>;
 }
 
-function ContactDiagram({closed,onOperate}:{closed:boolean;onOperate:()=>void}) {
+function ContactDiagram({closed,lampLit,onOperate}:{closed:boolean;lampLit?:boolean;onOperate:()=>void}) {
   return <div className="contact-demonstration contact-row">
     <div className="contact-diagram" role="img" aria-label={closed ? 'The two metal contacts touch.' : 'The two metal contacts are apart.'}>
       <span className="contact-pin"/><span className={'contact-leaf'+(closed?' closed':'')}/><span className="contact-pin"/>
     </div>
-    <p>{closed ? 'Closed · touching' : 'Open · gap'}</p>
-    <Button variant="outline" size="sm" onClick={onOperate}>Move the switch</Button>
+    <p role="status">{closed ? 'Contacts touching.' : 'Contacts apart.'} {lampLit===undefined ? '' : lampLit ? 'Lamp on.' : 'Lamp off.'}</p>
+    <Button variant="outline" size="sm" onClick={onOperate}>Press the switch</Button>
   </div>;
 }
 

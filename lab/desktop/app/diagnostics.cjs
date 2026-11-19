@@ -2,18 +2,21 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-async function runDesktopDiagnostics({ app, window, directory, startedAt, consoleErrors, networkRequests, dialog }) {
+async function runDesktopDiagnostics({ app, window, directory, startedAt, consoleErrors, linkedShaderWarnings, networkRequests, dialog }) {
   window.showInactive();
   const output = path.join(app.getPath('userData'), 'verification'); fs.mkdirSync(output, { recursive: true });
   const root = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '../assets');
   const fixtures = JSON.parse(fs.readFileSync(path.join(root, 'qa-circuits.json'), 'utf8'));
   function files(directory) { return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? files(path.join(directory, entry.name)) : [path.join(directory, entry.name)]); }
   const assets = files(directory), workerPath = stem => '/' + path.relative(directory, assets.find(file => path.basename(file).startsWith(stem + '.worker-') && file.endsWith('.js'))).replace(/\\/g, '/');
-  const report = { app: 'Irish Electrical Lab', version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, startedAt: new Date(startedAt).toISOString(), origin: 'http://127.0.0.1:4187', userData: app.getPath('userData'), consoleErrors, workerResults: [], graphics: app.getGPUFeatureStatus(),windowVisible:window.isVisible(),backgroundThrottling:window.webContents.getBackgroundThrottling(),measurementMethod:'App-owned diagnostics in the visible Electron application window. Runtime overhead, bundled workers and loaded Blender geometry are included.' };
+  const report = { app: 'Irish Electrical Lab', version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, startedAt: new Date(startedAt).toISOString(), origin: 'http://127.0.0.1:4187', userData: app.getPath('userData'), consoleErrors, linkedShaderWarnings, workerResults: [], graphics: app.getGPUFeatureStatus(),windowVisible:window.isVisible(),backgroundThrottling:window.webContents.getBackgroundThrottling(),measurementMethod:'App-owned diagnostics in the visible Electron application window. Runtime overhead, bundled workers and loaded Blender geometry are included.' };
   try {
     const runtime = await window.webContents.executeJavaScript(`(async()=>{
       for(let tries=0;tries<100&&!document.querySelector('canvas');tries++)await new Promise(resolve=>setTimeout(resolve,100));
       const appReadyMs=performance.now();
+      const workbenchTab=[...document.querySelectorAll('.surface-tabs button')].find(b=>b.textContent.trim()==='Workbench');
+      if(!workbenchTab)throw new Error('The workbench tab is missing.');
+      if(workbenchTab.getAttribute('aria-pressed')!=='true')workbenchTab.click();
       let geometryReadyMs=null,initialScene=null;
       const sceneSnapshot=()=>new Promise(resolve=>{const handler=e=>{clearTimeout(timer);resolve(e.detail);};const timer=setTimeout(()=>{window.removeEventListener('electrical-lab-scene',handler);resolve(null);},1000);window.addEventListener('electrical-lab-scene',handler,{once:true});window.dispatchEvent(new Event('electrical-lab-scene-request'));});
       for(let tries=0;tries<100;tries++){const scene=await sceneSnapshot();if(scene?.components?.length&&scene.components.every(component=>component.assetKeys?.length)&&!scene.routingPending){initialScene=scene;geometryReadyMs=performance.now();break;}await new Promise(resolve=>setTimeout(resolve,100));}
@@ -28,8 +31,9 @@ async function runDesktopDiagnostics({ app, window, directory, startedAt, consol
       return {workerResults,evidence,appReadyMs,geometryReadyMs,initialScene,appTimeOrigin:performance.timeOrigin};
     })()`);
     Object.assign(report, runtime);report.elapsedMs=Date.now()-startedAt;report.graphics=app.getGPUFeatureStatus();report.processMetrics=app.getAppMetrics().map(metric=>({type:metric.type,cpu:metric.cpu,memory:metric.memory}));
-    report.passed=runtime.evidence.bridge==='windows'&&runtime.evidence.invalidFileRequestRejected&&!runtime.evidence.nodeAvailable&&runtime.evidence.webgl&&runtime.geometryReadyMs!==null&&runtime.workerResults.length===64&&runtime.workerResults.every(result=>result.routes===result.wires&&result.issues===0&&!result.routingError&&!result.error&&result.converged);
+    report.passed=runtime.evidence.bridge==='windows'&&runtime.evidence.invalidFileRequestRejected&&!runtime.evidence.nodeAvailable&&runtime.evidence.webgl&&runtime.geometryReadyMs!==null&&fixtures.length>0&&runtime.workerResults.length===fixtures.length&&runtime.workerResults.every(result=>result.routes===result.wires&&result.issues===0&&!result.routingError&&!result.error&&result.converged);
     report.startupMs=runtime.appTimeOrigin+runtime.appReadyMs-startedAt;
+    report.workbenchGeometryAfterOpeningTabMs=runtime.geometryReadyMs===null?null:runtime.geometryReadyMs-runtime.appReadyMs;
     report.geometryReadyStartupMs=runtime.geometryReadyMs===null?null:runtime.appTimeOrigin+runtime.geometryReadyMs-startedAt;
     fs.writeFileSync(path.join(output,'desktop-runtime.png'),(await window.webContents.capturePage()).toPNG());
     if(process.argv.includes('--verify-ui')){report.ui=await require('./ui-v1-1-diagnostics.cjs').runUiDiagnostics({app,window,output,root,fixtures,dialog});report.passed=report.passed&&report.ui.passed;}

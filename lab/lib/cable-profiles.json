@@ -1,0 +1,8 @@
+{
+  "single": {"form":"single","width":2.8,"height":2.8,"coreDiameter":2.8,"copperDiameter":1.365,"stranded":false,"centres":{"brown":[0,0]}},
+  "flat": {"form":"flat","width":10.4,"height":4.7,"coreDiameter":2.765,"copperDiameter":1.365,"stranded":false,"centres":{"brown":[-2.82,0],"green-yellow":[0,0],"blue":[2.82,0]}},
+  "flex": {"form":"round","width":8.1,"height":8.1,"coreDiameter":2.9,"copperDiameter":1.5,"stranded":true,"centres":{"brown":[0,1.69],"blue":[-1.47,-0.85],"green-yellow":[1.47,-0.85]}},
+  "bell-pair": {"form":"twisted","width":2.54,"height":2.54,"coreDiameter":1.27,"copperDiameter":0.812,"stranded":false,"centres":{"red":[-0.635,0],"white":[0.635,0]}},
+  "led-pair": {"form":"ribbon","width":4.8,"height":2.4,"coreDiameter":2.4,"copperDiameter":0.8,"stranded":true,"centres":{"red":[-1.2,0],"black":[1.2,0]}},
+  "multi-strip": {"form":"ribbon","width":6,"height":1.5,"coreDiameter":1.5,"copperDiameter":0.65,"stranded":true,"centres":{"yellow":[-2.25,0],"white":[-0.75,0],"red":[0.75,0],"black":[2.25,0]}}
+}

@@ -6,9 +6,11 @@ import { mountScale, mountRoll, filledWays } from '../../lib/board-assembly';
 import { createBoundedWireCurve, Equipment } from '../../lib/Equipment';
 import { COMPONENTS } from '../../lib/components';
 import { prioritizeTerminalHit } from '../../lib/terminal-picking';
-import { CABLE_CORE_LABEL, CORE_COLOUR, sheathStyle } from '../../lib/cables';
+import { CABLE_CORE_LABEL, CORE_COLOUR } from '../../lib/cables';
+import { coreRadius } from '../../lib/cable-form';
+import { createBareTip, createCableMesh } from '../../lib/cable-mesh';
 import { getComponentTerminals } from '../../lib/terminal-layout';
-import { terminalDirection, terminalPosition, SHEATH_RADIUS, WIRE_RADIUS, type CableGeometry, type CircuitRoutes } from '../../lib/routing';
+import { terminalDirection, terminalPosition, WIRE_RADIUS, type CableGeometry, type CircuitRoutes } from '../../lib/routing';
 import { endpointEquals, hasOperatingAnimation, pathMatches, placementClear, sceneBounds, selectedPartBounds, snapWorkbenchPoint, tracePresentationPaths, type PathFilter, type RenderQuality } from '../../lib/workbench-presentation';
 import { ToolGeometry } from './ToolGeometry';
 import { MaterialSample, testerPose, TestLead } from './ToolPlacement';
@@ -16,7 +18,7 @@ import type { WorkshopVisual } from '../../lib/termination-practice';
 import { BenchStage } from './BenchStage';
 import { SceneLighting } from './SceneLighting';
 import { GraphicEffects } from './GraphicEffects';
-import type { SceneryId } from '../../lib/scene-settings';
+import { adaptWorkbenchDpr, type SceneryId } from '../../lib/scene-settings';
 import { useCircuitRouting } from './useCircuitRouting';
 import CameraNavigation from './CameraNavigation';
 import type { CameraMode } from '../../lib/camera-navigation';
@@ -44,6 +46,13 @@ export interface WorkbenchProps {
 }
 const createRoutingWorker=()=>new RoutingWorker();
 const ignoreRaycast:THREE.Mesh['raycast']=()=>{};
+// Tube UVs run lengthwise in U and around the core in V. Both colour bands
+// share the original indexed tube, including the rings used for wire picking.
+const earthStripe=new THREE.DataTexture(new Uint8Array([39,117,64,255,233,205,48,255]),1,2);
+earthStripe.colorSpace=THREE.SRGBColorSpace;
+earthStripe.magFilter=THREE.NearestFilter;
+earthStripe.minFilter=THREE.NearestFilter;
+earthStripe.needsUpdate=true;
 const workbenchEvents: typeof pointerEvents = store => ({
   ...pointerEvents(store),
   filter: (hits, state) => prioritizeTerminalHit(hits, state.pointer, state.camera, state.size),
@@ -54,69 +63,35 @@ function Label({label,position,selected=false,width=1.5}:{label:string;position:
   const texture=useMemo(()=>{const canvas=document.createElement('canvas');canvas.width=768;canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.fillStyle=selected?'#194b46eb':'#23393beb';ctx.beginPath();ctx.roundRect(2,2,764,124,18);ctx.fill();ctx.strokeStyle=selected?'#90e0c7':'#91a7a7';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#f5faf8';ctx.font='34px Segoe UI, Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label.length>46?label.slice(0,43)+'…':label,384,64,730);const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;return map;},[label,selected]);
   useEffect(()=>()=>texture.dispose(),[texture]);return <sprite position={position} scale={[width,width/6,1]} renderOrder={20} raycast={ignoreRaycast}><spriteMaterial map={texture} transparent depthTest={false} depthWrite={false}/></sprite>;
 }
-function Insulation({points,role,core,wireId,selected=false,emphasis=false,dim=false,onClick}:{points:Vec3[];role:Wire['role'];core?:CableCore;wireId?:string;selected?:boolean;emphasis?:boolean;dim?:boolean;onClick?:()=>void}) {
+function Insulation({points,role,core,radius=WIRE_RADIUS,wireId,selected=false,emphasis=false,dim=false,onClick}:{points:Vec3[];role:Wire['role'];core?:CableCore;radius?:number;wireId?:string;selected?:boolean;emphasis?:boolean;dim?:boolean;onClick?:()=>void}) {
   const striped=core?core==='green-yellow':role==='PE';
   const colour=striped?'#ffffff':core?CORE_COLOUR[core]:colours[role];
   const geometry=useMemo(()=>{
-    const curve=createBoundedWireCurve(points),tube=new THREE.TubeGeometry(curve,curve.tubularSegments,core ? .012 : WIRE_RADIUS,8,false);
-    if(striped){
-      const uv=tube.getAttribute('uv'),values:number[]=[];
-      const yellow=new THREE.Color('#e9cd30'),green=new THREE.Color('#277540');
-      for(let i=0;i<uv.count;i++){const stripe=uv.getY(i)>.5?yellow:green;values.push(stripe.r,stripe.g,stripe.b);}
-      tube.setAttribute('color',new THREE.Float32BufferAttribute(values,3));
-    }return tube;
-  },[core,striped,points]);
+    const curve=createBoundedWireCurve(points);
+    return new THREE.TubeGeometry(curve,curve.tubularSegments,radius,12,false);
+  },[radius,points]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
   return <mesh geometry={geometry} userData={wireId?{wireId}:undefined} raycast={onClick?THREE.Mesh.prototype.raycast:ignoreRaycast}
     onClick={onClick?e=>{e.stopPropagation();onClick();}:undefined} castShadow={!dim}>
-    <meshStandardMaterial vertexColors={striped} color={colour} roughness={.52} metalness={.04} transparent={dim} opacity={dim?.3:1} depthWrite={!dim}
+    <meshStandardMaterial map={striped?earthStripe:null} color={colour} roughness={.52} metalness={.04} transparent={dim} opacity={dim?.3:1} depthWrite={!dim}
       emissive={selected?'#e0ae4b':emphasis?'#738879':'#000000'} emissiveIntensity={selected?.32:emphasis?.1:0}/>
   </mesh>;
 }
+function LooseCore({kind,core,points}:{kind:CableRun['kind'];core:CableCore;points:Vec3[]}) {
+  const tip=useMemo(()=>createBareTip(kind,core,points),[kind,core,points]);
+  useEffect(()=>()=>tip.dispose(),[tip]);
+  return <><Insulation core={core} role="output" radius={coreRadius(kind)} points={points}/>
+    <mesh geometry={tip} raycast={ignoreRaycast}><meshStandardMaterial vertexColors roughness={.34} metalness={.35}/></mesh></>;
+}
+
 function CableSheath({run,geometry,highlight,onClick}:{run:CableRun;geometry:CableGeometry;highlight:boolean;onClick?:()=>void}) {
-  const shell=useMemo(()=>{
-    if(geometry.sheath.length<2)return undefined;
-    const curve=createBoundedWireCurve(geometry.sheath),n=curve.tubularSegments,segments=12;
-    const tube=new THREE.TubeGeometry(curve,n,SHEATH_RADIUS*sheathStyle(run.kind).radius,segments,false);
-    if(sheathStyle(run.kind).flat){
-      const vertices=tube.getAttribute('position'),offset=new THREE.Vector3();
-      for(let i=0;i<=n;i++){
-        const center=curve.getPointAt(i/n),binormal=tube.binormals[i];
-        for(let j=0;j<=segments;j++){
-          const index=i*(segments+1)+j;
-          offset.fromBufferAttribute(vertices,index).sub(center);
-          offset.addScaledVector(binormal,-.48*offset.dot(binormal)).add(center);
-          vertices.setXYZ(index,offset.x,offset.y,offset.z);
-        }
-      }tube.computeVertexNormals();
-    }
-    return tube;
-  },[geometry.sheath,run.kind]);
+  const shell=useMemo(()=>geometry.sheath.length>=2?createCableMesh(run.kind,geometry.sheath,geometry.faces):undefined,[run.kind,geometry]);
   useEffect(()=>()=>shell?.dispose(),[shell]);
-  const ends=useMemo(()=>{
-    if(!shell)return [];
-    return [0,shell.tangents.length-1].map((i,side)=>{
-      const direction=shell.tangents[i].clone().multiplyScalar(side?1:-1);
-      const matrix=new THREE.Matrix4().makeBasis(shell.normals[i],shell.binormals[i].clone().multiplyScalar(side?1:-1),direction);
-      return {point:geometry.sheath[side?geometry.sheath.length-1:0],rotation:new THREE.Quaternion().setFromRotationMatrix(matrix)};
-    });
-  },[shell,geometry.sheath]);
   return <group>
     {shell&&<mesh geometry={shell} userData={{cableId:run.id}} castShadow raycast={onClick?THREE.Mesh.prototype.raycast:ignoreRaycast}
-      onClick={onClick?e=>{e.stopPropagation();onClick();}:undefined}><meshStandardMaterial color={sheathStyle(run.kind).colour} roughness={sheathStyle(run.kind).flat?.76:.49}
-        emissive={highlight?'#d9b96a':'#000000'} emissiveIntensity={highlight?.23:0} side={THREE.DoubleSide}/></mesh>}
-    {ends.map(({point,rotation},i)=><mesh key={i} position={point} quaternion={rotation} scale={[1,sheathStyle(run.kind).flat?.52:1,1]} raycast={ignoreRaycast}>
-      <circleGeometry args={[SHEATH_RADIUS*sheathStyle(run.kind).radius,16]}/><meshStandardMaterial color={sheathStyle(run.kind).flat?'#a3a9a3':'#d5d0c4'}/>
-    </mesh>)}
-    {geometry.open.map(({core,points},i)=>{
-      const axis=new THREE.Vector3(...points[1]).sub(new THREE.Vector3(...points[0])).normalize();
-      return <group key={i}><Insulation core={core} role="output" points={points}/>
-        <group position={points[1]} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),axis)}>
-          <mesh raycast={ignoreRaycast}><circleGeometry args={[.012,12]}/><meshStandardMaterial color={CORE_COLOUR[core]}/></mesh>
-          {(sheathStyle(run.kind).stranded?[-1,0,1]:[0]).map(index=><mesh key={index} position={[index*.0037,0,.0003]} raycast={ignoreRaycast}><circleGeometry args={[sheathStyle(run.kind).stranded?.0022:.005,8]}/><meshStandardMaterial color="#d69a64" roughness={.33} metalness={.55}/></mesh>)}
-        </group>
-      </group>;
-    })}
+      onClick={onClick?e=>{e.stopPropagation();onClick();}:undefined}><meshStandardMaterial vertexColors roughness={.55}
+        emissive={highlight?'#d9b96a':'#000000'} emissiveIntensity={highlight?.23:0}/></mesh>}
+    {geometry.open.map(({core,points,side})=><LooseCore key={side+'-'+core} kind={run.kind} core={core} points={points}/>)}
   </group>;
 }
 const EquipmentItem=memo(function EquipmentItem({component,ways,state,selected,view,labels,lowDetail,preferLowAsset,onModelAvailability,onSelect,onTerminal,register,onDown,onMove,onUp}:{component:ComponentInstance;ways?:string;state?:DeviceState;selected:boolean;view:InspectionView;labels:boolean;lowDetail:boolean;preferLowAsset?:boolean;onModelAvailability?:WorkbenchProps['onModelAvailability'];onSelect:(id:string,part?:string,detail?:string)=>void;onTerminal:(endpoint:Endpoint)=>void;register:(id:string,node:THREE.Group|null)=>void;onDown:(event:ThreeEvent<PointerEvent>,component:ComponentInstance)=>void;onMove:(event:ThreeEvent<PointerEvent>)=>void;onUp:(event:ThreeEvent<PointerEvent>)=>void}) {
@@ -137,24 +112,47 @@ function EndpointMarker({document,endpoint,color,onHover,onClick,label}:{documen
 function PreviewLine({points,color}:{points:Vec3[];color:string}) {
   const object=useMemo(()=>{const geometry=new THREE.BufferGeometry().setFromPoints(points.map(p=>new THREE.Vector3(...p))),material=new THREE.LineDashedMaterial({color,dashSize:.075,gapSize:.045,transparent:true,opacity:.85,depthTest:false}),line=new THREE.Line(geometry,material);line.computeLineDistances();line.renderOrder=14;return line;},[points,color]);useEffect(()=>()=>{object.geometry.dispose();object.material.dispose();},[object]);return <primitive object={object}/>;
 }
-function RenderController({props,dragging}:{props:WorkbenchProps;dragging:boolean}) {
-  const {invalidate,gl,setDpr,camera}=useThree(),stats=useRef({time:0,frames:0,renderMs:0,budget:0,dpr:1.5,reported:false,camera:new THREE.Vector3(),quaternion:new THREE.Quaternion()}),latest=useRef(props);useLayoutEffect(()=>{latest.current=props;},[props]);
+function RenderController({props,dragging,onDpr}:{props:WorkbenchProps;dragging:boolean;onDpr:(value:number)=>void}) {
+  const {invalidate,gl,camera}=useThree(),stats=useRef({time:0,frames:0,renderMs:0,activeFrames:0,fastSamples:0,budget:0,dpr:1.5,reported:false,camera:new THREE.Vector3(),quaternion:new THREE.Quaternion()}),latest=useRef(props);useLayoutEffect(()=>{latest.current=props;},[props]);
   const quality=props.quality??'auto',animated=hasOperatingAnimation(props.document,props.result?.deviceStates),stateKey=JSON.stringify(Object.entries(props.result?.deviceStates??{}).map(([id,state])=>[id,state.energized,state.closed,state.tripped,state.level,state.direction,state.moving,state.contactLevel,state.lightOutputPower]));
   const publish=useCallback((fps:number,idle:boolean)=>{const metrics:WorkbenchMetrics={fps,drawCalls:gl.info.render.calls,triangles:gl.info.render.triangles,dpr:gl.getPixelRatio(),quality:latest.current.quality??'auto',idle};latest.current.onMetrics?.(metrics);window.dispatchEvent(new CustomEvent('electrical-lab-metrics',{detail:metrics}));latest.current.onFps(idle?0:fps);},[gl]);
-  useEffect(()=>{stats.current.budget=performance.now()+450;invalidate();},[props.document,stateKey,props.view,props.selected,props.selectedPart,props.labels,props.tool,props.wireStart,props.pathFilter,props.guidanceEndpoints,props.meterReading,props.instrumentType,props.instrumentParams?.held,props.instrumentParams?.dialPosition,props.workshop,props.scenery,props.cameraMode,invalidate]);
+  useEffect(()=>{stats.current.budget=performance.now()+450;invalidate();},[props.document,stateKey,props.view,props.selected,props.selectedPart,props.labels,props.tool,props.wireStart,props.pathFilter,props.guidanceEndpoints,props.meterReading,props.instrumentType,props.instrumentParams?.held,props.instrumentParams?.dialPosition,props.instrumentParams?.backlight,props.instrumentParams?.validReference,props.instrumentParams?.hazard,props.workshop,props.scenery,props.cameraMode,invalidate]);
   const maxDpr=props.touchLayout?1.25:quality==='high'?2:1.5;
-  useEffect(()=>{const ratio=quality==='economy'?1:Math.min(maxDpr,window.devicePixelRatio||1);stats.current.dpr=ratio;setDpr(ratio);invalidate();},[quality,maxDpr,setDpr,invalidate]);
+  useEffect(()=>{const ratio=quality==='economy'?1:Math.min(maxDpr,window.devicePixelRatio||1);stats.current.dpr=ratio;stats.current.fastSamples=0;onDpr(ratio);invalidate();},[quality,maxDpr,onDpr,invalidate]);
   useEffect(()=>{if(animated||dragging)return;const timer=setTimeout(()=>publish(0,true),550);return()=>clearTimeout(timer);},[animated,dragging,stateKey,props.document,props.cameraCommand,publish]);
   useFrame(()=>{const capture=(window as Window&{__electricalGraphicsDiagnostics?:{frames:number[]}}).__electricalGraphicsDiagnostics;if(capture?.frames&&capture.frames.length<6000)capture.frames.push(performance.now());});
-  useFrame((_,dt)=>{const now=performance.now(),sample=stats.current,moved=sample.camera.distanceToSquared(camera.position)>1e-9||Math.abs(sample.quaternion.dot(camera.quaternion))<.999999;sample.camera.copy(camera.position);sample.quaternion.copy(camera.quaternion);if(moved)sample.budget=now+160;const busy=animated||dragging||now<sample.budget;sample.frames++;if(dt<.12)sample.renderMs+=dt*1000;if(!sample.time)sample.time=now;if(busy)invalidate();if(!sample.reported){sample.reported=true;publish(0,!busy);}if(now-sample.time>350&&sample.frames>3||!busy){const fps=Math.round(sample.frames*1000/Math.max(1,now-sample.time));publish(busy?fps:0,!busy);if(quality==='auto'&&busy&&sample.frames>20){const average=sample.renderMs/sample.frames,next=average>23?Math.max(.8,sample.dpr-.15):average<15?Math.min(maxDpr,window.devicePixelRatio||1,sample.dpr+.08):sample.dpr;if(Math.abs(next-sample.dpr)>.03){sample.dpr=next;setDpr(next);}}sample.time=now;sample.frames=0;sample.renderMs=0;}});return null;
+  useFrame((_,dt)=>{
+    const now=performance.now(),sample=stats.current;
+    const moved=sample.camera.distanceToSquared(camera.position)>1e-9||Math.abs(sample.quaternion.dot(camera.quaternion))<.999999;
+    sample.camera.copy(camera.position);sample.quaternion.copy(camera.quaternion);
+    if(moved)sample.budget=now+160;
+    const busy=animated||dragging||now<sample.budget;
+    // Skip the first interval after waking from on-demand sleep.
+    if(sample.frames>0){sample.renderMs+=Math.min(dt,.25)*1000;sample.activeFrames++;}
+    sample.frames++;
+    if(!sample.time)sample.time=now;
+    if(busy)invalidate();
+    if(!sample.reported){sample.reported=true;publish(0,!busy);}
+    if(busy&&(now-sample.time<=350||sample.frames<4))return;
+    const fps=Math.round(sample.frames*1000/Math.max(1,now-sample.time));
+    publish(busy?fps:0,!busy);
+    if(quality==='auto'&&busy&&sample.activeFrames>=3){
+      const next=adaptWorkbenchDpr(sample.dpr,Math.min(maxDpr,window.devicePixelRatio||1),sample.renderMs/sample.activeFrames,sample.fastSamples);
+      sample.fastSamples=next.fastSamples;
+      if(Math.abs(next.dpr-sample.dpr)>.025){sample.dpr=next.dpr;onDpr(next.dpr);}
+    }else if(!busy)sample.fastSamples=0;
+    sample.time=now;sample.frames=0;sample.renderMs=0;sample.activeFrames=0;
+  });return null;
 }
-function Scene(props:WorkbenchProps&{routing:CircuitRoutes;routingPending:boolean}) {
+function Scene(props:WorkbenchProps&{routing:CircuitRoutes;routingPending:boolean;onDpr:(value:number)=>void}) {
   const {camera,gl,scene,get,invalidate}=useThree();
   const [dragging,setDragging]=useState(false),[hover,setHover]=useState<Endpoint>(),hoverRef=useRef<Endpoint|undefined>(undefined),[placement,setPlacement]=useState<Vec3>(),[pointer,setPointer]=useState<Vec3>(),drag=useRef<{id:string;offset:THREE.Vector3;position:Vec3}|null>(null),[nodes]=useState(()=>new Map<string,THREE.Group>()),latest=useRef(props);useLayoutEffect(()=>{latest.current=props;},[props]);
   const [touchMovePreview, setTouchMovePreview] = useState<{id:string;position:Vec3}>();
   const plane=useMemo(()=>new THREE.Plane(new THREE.Vector3(0,1,0),0),[]),bounds=useMemo(()=>sceneBounds(props.document,props.routing.routes),[props.document,props.routing.routes]),paths=useMemo(()=>tracePresentationPaths(props.document),[props.document]),filter=props.paths===false?'none':props.pathFilter??'all',chosen=props.document.components.find(c=>c.id===props.selected);
   const testPose=useMemo(()=>testerPose(props.document,props.routing,props.tool==='meter'&&props.instrumentType==='forktester'&&props.instrumentParams?.fork?props.selectedWire:undefined),[props.document,props.routing,props.tool,props.instrumentType,props.instrumentParams?.fork,props.selectedWire]);
-  const components=useMemo(()=>props.document.components.map(c=>['multimeter','clamp','forktester'].includes(c.type)?{...c,params:{...c.params,...(c.type==='forktester'?props.instrumentParams:{}),reading:c.type==='forktester'&&props.instrumentType!=='forktester'?'—':props.meterReading}}:['source','source3'].includes(c.type)?{...c,params:{...c.params,studyVoltage:props.document.supply.voltage}}:c),[props.document.components,props.document.supply.voltage,props.meterReading,props.instrumentType,props.instrumentParams?.dialPosition,props.instrumentParams?.held,props.instrumentParams?.redOut,props.instrumentParams?.blackOut,props.instrumentParams?.validReference,props.instrumentParams?.signal]);
+  const cableTypes=useMemo(()=>new Map(props.document.cableRuns?.map(run=>[run.id,run.kind])),[props.document.cableRuns]);
+  const components=useMemo(()=>props.document.components.map(c=>['multimeter','clamp','forktester'].includes(c.type)?{...c,params:{...c.params,...(c.type==='forktester'?props.instrumentParams:{}),reading:c.type==='forktester'&&props.instrumentType!=='forktester'?'—':props.meterReading}}:['source','source3'].includes(c.type)?{...c,params:{...c.params,studyVoltage:props.document.supply.voltage}}:c),[props.document.components,props.document.supply.voltage,props.meterReading,props.instrumentType,props.instrumentParams?.dialPosition,props.instrumentParams?.held,props.instrumentParams?.redOut,props.instrumentParams?.blackOut,props.instrumentParams?.validReference,props.instrumentParams?.signal,props.instrumentParams?.backlight,props.instrumentParams?.hazard]);
+  const inspectingTester=props.tool==='meter'&&['focus-instrument','rear-instrument'].includes(props.cameraCommand.action);
   const register=useCallback((id:string,node:THREE.Group|null)=>{if(node)nodes.set(id,node);else nodes.delete(id);},[nodes]),registerInstrument=useCallback((node:THREE.Group|null)=>{if(node)nodes.set('@meter',node);else nodes.delete('@meter');},[nodes]),onSelect=useCallback((id:string,part?:string,detail?:string)=>latest.current.onSelect(id,part,detail),[]),onTerminal=useCallback((endpoint:Endpoint)=>latest.current.onTerminal(endpoint),[]);
   const terminalHover=useCallback((endpoint?:Endpoint)=>{if(endpointEquals(hoverRef.current,endpoint)||!hoverRef.current&&!endpoint)return;const next=endpoint?{...endpoint}:undefined;hoverRef.current=next;setHover(next);latest.current.onTerminalHover?.(next);},[]);
   useEffect(()=>{const endpoint=hoverRef.current,component=endpoint&&props.document.components.find(item=>item.id===endpoint.component);if(endpoint&&(!component||!COMPONENTS[component.type]?.terminals.some(terminal=>terminal.id===endpoint.terminal)))terminalHover(undefined);},[props.document.components,terminalHover]);
@@ -218,20 +216,21 @@ function Scene(props:WorkbenchProps&{routing:CircuitRoutes;routingPending:boolea
         onClick={props.onCable&&props.tool==='select'?()=>props.onCable?.(run.id):undefined}/>:null;})}
     {props.document.wires.map(wire=>{
       const single=props.routing.routes.get(wire.id),parts=wire.cable?props.routing.cables?.get(wire.cable.runId)?.tails.get(wire.id):single?[single]:undefined;
+      const cableKind=wire.cable&&cableTypes.get(wire.cable.runId);
       const emphasis=pathMatches(paths.get(wire.id),filter),pickable=props.tool!=='wire'&&(props.tool!=='meter'||props.meterMode==='current');
       const mark=parts?.[0]?.[1],showMark=mark&&props.labels&&props.selectedWire===wire.id&&props.tool!=='meter';
-      return <React.Fragment key={wire.id}>{parts?.map((points,i)=>points.length>=2?<Insulation key={i} role={wire.role} core={wire.cable?.core} points={testPose.sampled?.path===points?testPose.sampled.points:points} wireId={wire.id}
+      return <React.Fragment key={wire.id}>{parts?.map((points,i)=>points.length>=2?<Insulation key={i} role={wire.role} core={wire.cable?.core} radius={cableKind?coreRadius(cableKind):WIRE_RADIUS} points={testPose.sampled?.path===points?testPose.sampled.points:points} wireId={wire.id}
         selected={props.selectedWire===wire.id} emphasis={filter!=='none'&&emphasis} dim={filter!=='all'&&filter!=='none'&&!emphasis&&props.selectedWire!==wire.id}
         onClick={pickable?()=>props.onWire(wire.id):undefined}/>:null)}
         {showMark&&<Label selected position={[mark[0],mark[1]+.16,mark[2]]} width={1.1} label={wire.cable?CABLE_CORE_LABEL[wire.cable.core]+' · '+wire.role:wire.role+' conductor'}/>}
       </React.Fragment>;
     })}
-    {components.map(component=>{const selected=component.id===props.selected||!!(component.params.gangGroup&&component.params.gangGroup===chosen?.params.gangGroup);return <EquipmentItem key={component.id} component={component} ways={filledWays(component,components)} state={props.result?.deviceStates[component.id]} onModelAvailability={props.onModelAvailability} selected={selected} view={selected?props.view:'normal'} labels={props.labels} lowDetail={props.touchLayout?!selected||['wire','meter','place'].includes(props.tool):props.quality==='economy'&&!selected} preferLowAsset={props.touchLayout} onSelect={onSelect} onTerminal={onTerminal} register={register} onDown={down} onMove={move} onUp={up}/>;})}<SelectionOutline component={chosen} part={props.selectedPart} nodes={nodes} view={props.view}/>
-    {(props.tool==='wire'||(props.tool==='meter'&&props.meterMode!=='current'))&&endpoints.map(endpoint=><EndpointMarker key={`${endpoint.component}.${endpoint.terminal}`} document={props.document} endpoint={endpoint} color={endpointEquals(hover,endpoint)?'#ffd871':'#8dbeb7'} onHover={terminalHover} onClick={onTerminal} label={endpointEquals(hover,endpoint)?`${endpoint.component} · ${endpoint.terminal}`:undefined}/>)}{(props.tool==='wire'||props.tool==='meter'||props.view!=='normal'||props.selectedPart==='terminals')&&props.guidanceEndpoints?.map(endpoint=><EndpointMarker key={'guide'+endpoint.component+endpoint.terminal} document={props.document} endpoint={endpoint} color="#31c9a0" label={`Next: ${endpoint.terminal}`}/>)}{props.wireStart&&<EndpointMarker document={props.document} endpoint={props.wireStart} color="#ffca58" label={`From ${props.wireStart.terminal}`}/>} {preview&&<PreviewLine points={preview} color={hover?'#e9bc56':'#aaccc5'}/>}
+    {components.map(component=>{const selected=component.id===props.selected||!!(component.params.gangGroup&&component.params.gangGroup===chosen?.params.gangGroup);return <EquipmentItem key={component.id} component={component} ways={filledWays(component,components)} state={props.result?.deviceStates[component.id]} onModelAvailability={props.onModelAvailability} selected={selected} view={selected?props.view:'normal'} labels={props.labels&&!inspectingTester} lowDetail={props.touchLayout?!selected||['wire','meter','place'].includes(props.tool):props.quality==='economy'&&!selected} preferLowAsset={props.touchLayout} onSelect={onSelect} onTerminal={onTerminal} register={register} onDown={down} onMove={move} onUp={up}/>;})}<SelectionOutline component={chosen} part={props.selectedPart} nodes={nodes} view={props.view}/>
+    {(props.tool==='wire'||(props.tool==='meter'&&!inspectingTester&&props.meterMode!=='current'))&&endpoints.map(endpoint=><EndpointMarker key={`${endpoint.component}.${endpoint.terminal}`} document={props.document} endpoint={endpoint} color={endpointEquals(hover,endpoint)?'#ffd871':'#8dbeb7'} onHover={terminalHover} onClick={onTerminal} label={endpointEquals(hover,endpoint)?`${endpoint.component} · ${endpoint.terminal}`:undefined}/>)}{(props.tool==='wire'||props.tool==='meter'||props.view!=='normal'||props.selectedPart==='terminals')&&!inspectingTester&&props.guidanceEndpoints?.map(endpoint=><EndpointMarker key={'guide'+endpoint.component+endpoint.terminal} document={props.document} endpoint={endpoint} color="#31c9a0" label={`Next: ${endpoint.terminal}`}/>)}{props.wireStart&&<EndpointMarker document={props.document} endpoint={props.wireStart} color="#ffca58" label={`From ${props.wireStart.terminal}`}/>} {preview&&<PreviewLine points={preview} color={hover?'#e9bc56':'#aaccc5'}/>}
     {placement&&props.tool==='place'&&props.placeType&&COMPONENTS[props.placeType]&&(()=>{const definition=COMPONENTS[props.placeType!],clear=placementClear(props.document,props.placeType!,placement);return <PlacementGhost position={placement} size={definition.size} label={`${definition.name} · ${clear?'click to place':'equipment overlaps'}`} color={clear?'#5ad0aa':'#e5a05b'}/>;})()}
     {touchMovePreview&&chosen?.id===touchMovePreview.id&&props.touchMove&&<PlacementGhost position={touchMovePreview.position} size={COMPONENTS[chosen.type].size} label={`Move ${chosen.label}`} color="#5ad0aa" rotation={chosen.rotation}/>}
-    {props.tool==='meter'&&<group ref={registerInstrument} position={testPose.position} quaternion={testPose.rotation}>{props.workshop?<group onClick={e=>{e.stopPropagation();props.onSelect('@meter','actuator');}}><ToolGeometry type={props.workshop.type} jawClosed={props.workshop.applied}/><MaterialSample visual={props.workshop}/></group>:<Equipment component={{id:'@meter',type:props.instrumentType??(props.meterMode==='current'?'clamp':'multimeter'),label:'Virtual instrument',position:[0,0,0],rotation:0,params:{reading:props.meterReading,...props.instrumentParams}}} definition={COMPONENTS[props.instrumentType??(props.meterMode==='current'?'clamp':'multimeter')]} selected={false} view="normal" showLabels={false} onModelAvailability={props.onModelAvailability} lowDetail={props.touchLayout} preferLowAsset={props.touchLayout} onPart={part=>props.onSelect('@meter',part)} onTerminal={()=>{}}/>}</group>}{props.tool==='meter'&&props.instrumentType==='forktester'&&props.probes.map((endpoint,index)=>endpoint&&<TestLead key={'lead'+index} doc={props.document} endpoint={endpoint} origin={testPose.position} negative={index===1}/>)}{props.tool==='meter'&&!props.workshop&&props.probes.map((endpoint,index)=>endpoint&&<EndpointMarker key={'probe'+index} document={props.document} endpoint={endpoint} color={index===0?'#e64c52':'#172127'} label={`${index===0?'Red':'Black'} probe`}/>)}
-    <CameraNavigation document={props.document} routing={props.routing} routingPending={props.routingPending} selected={props.selected} selectedPart={props.selectedPart} selectedWire={props.selectedWire} cameraCommand={props.cameraCommand} dragging={dragging} nodes={nodes} mode={props.cameraMode} speed={props.cameraSpeed} tool={props.tool} touchMove={props.mode==='build'&&props.touchMove} onTouchMovePreview={previewMove} onTouchMoveCommit={commitTouchMove}/><RenderController props={props} dragging={dragging}/><GraphicEffects scenery={props.scenery} quality={props.quality}/></>;
+    {props.tool==='meter'&&<group ref={registerInstrument} position={testPose.position} quaternion={testPose.rotation}>{props.workshop?<group onClick={e=>{e.stopPropagation();props.onSelect('@meter','actuator');}}><ToolGeometry type={props.workshop.type} jawClosed={props.workshop.applied}/><MaterialSample visual={props.workshop}/></group>:<Equipment component={{id:'@meter',type:props.instrumentType??(props.meterMode==='current'?'clamp':'multimeter'),label:'Virtual instrument',position:[0,0,0],rotation:0,params:{reading:props.meterReading,...props.instrumentParams}}} definition={COMPONENTS[props.instrumentType??(props.meterMode==='current'?'clamp':'multimeter')]} selected={false} view="normal" showLabels={false} onModelAvailability={props.onModelAvailability} lowDetail={props.touchLayout&&!inspectingTester} preferLowAsset={props.touchLayout} onPart={part=>props.onSelect('@meter',part)} onTerminal={()=>{}}/>}</group>}{props.tool==='meter'&&props.instrumentType==='forktester'&&props.probes.map((endpoint,index)=>endpoint&&<TestLead key={'lead'+index} doc={props.document} endpoint={endpoint} origin={testPose.position} rotation={testPose.rotation} negative={index===1}/>)}{props.tool==='meter'&&!props.workshop&&props.probes.map((endpoint,index)=>endpoint&&<EndpointMarker key={'probe'+index} document={props.document} endpoint={endpoint} color={index===0?'#e64c52':'#172127'} label={`${index===0?'Red':'Black'} probe`}/>)}
+    <CameraNavigation document={props.document} routing={props.routing} routingPending={props.routingPending} selected={props.selected} selectedPart={props.selectedPart} selectedWire={props.selectedWire} cameraCommand={props.cameraCommand} dragging={dragging} nodes={nodes} mode={props.cameraMode} speed={props.cameraSpeed} tool={props.tool} touchMove={props.mode==='build'&&props.touchMove} onTouchMovePreview={previewMove} onTouchMoveCommit={commitTouchMove}/><RenderController props={props} dragging={dragging} onDpr={props.onDpr}/><GraphicEffects scenery={props.scenery} quality={props.quality}/></>;
 }
 function PlacementGhost({position,size,label,color,rotation=0}:{position:Vec3;size:Vec3;label:string;color:string;rotation?:number}) {
   return <group position={position} rotation={[0,rotation,0]}>
@@ -257,6 +256,8 @@ function CanvasRecovery({onContextLost}:{onContextLost:(lost:boolean)=>void}) {
 }
 class CanvasBoundary extends React.Component<{children:React.ReactNode;onRetry:()=>void;onListView?:()=>void},{error:boolean}> {state={error:false};static getDerivedStateFromError(){return {error:true};}render(){return this.state.error?<div className="canvas-error" role="alert"><h3>The 3D view could not start</h3><p>This view needs WebGL 2. Your saved circuit is preserved.</p>{this.props.onListView&&<button type="button" onClick={this.props.onListView}>Use equipment list</button>}<button type="button" onClick={this.props.onRetry}>Retry 3D view</button></div>:this.props.children;}}
 export default function Workbench(props:WorkbenchProps) {
+  // Canvas reapplies its DPR prop on a parent render, including a new FPS report.
+  const [pixelRatio,setPixelRatio]=useState(1);
   const {routing,pending,error}=useCircuitRouting(props.document,createRoutingWorker);
   const [contextLost,setContextLost]=useState(false),[canvasKey,setCanvasKey]=useState(0);
   const [missingModels,setMissingModels]=useState<Set<string>>(()=>new Set());
@@ -268,7 +269,7 @@ export default function Workbench(props:WorkbenchProps) {
   }),[]);
   const retry=()=>{setContextLost(false);setCanvasKey(key=>key+1);};
   const quality=props.touchLayout&&(!props.quality||props.quality==='auto')?'economy':props.quality;
-  return <><CanvasBoundary key={canvasKey} onRetry={retry} onListView={props.onListView}><Canvas events={workbenchEvents} shadows={quality!=='economy'} frameloop="demand" dpr={props.touchLayout?1:[1,1.5]} camera={{position:[6,8,12],fov:43,near:.025,far:140}} gl={{antialias:!props.touchLayout,powerPreference:props.touchLayout?'default':'high-performance'}} onCreated={({gl})=>{gl.shadowMap.type=THREE.PCFSoftShadowMap;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.05;}}><CanvasRecovery onContextLost={setContextLost}/><Suspense fallback={null}><Scene {...props} onModelAvailability={availability} quality={quality} routing={routing} routingPending={pending}/></Suspense></Canvas></CanvasBoundary>
+  return <><CanvasBoundary key={canvasKey} onRetry={retry} onListView={props.onListView}><Canvas events={workbenchEvents} shadows={quality!=='economy'} frameloop="demand" dpr={pixelRatio} camera={{position:[6,8,12],fov:43,near:.025,far:140}} gl={{antialias:!props.touchLayout,powerPreference:props.touchLayout?'default':'high-performance'}} onCreated={({gl})=>{gl.shadowMap.type=THREE.PCFSoftShadowMap;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.05;}}><CanvasRecovery onContextLost={setContextLost}/><Suspense fallback={null}><Scene {...props} onDpr={setPixelRatio} onModelAvailability={availability} quality={quality} routing={routing} routingPending={pending}/></Suspense></Canvas></CanvasBoundary>
     {!contextLost&&missingModels.size>0&&<div className="model-download-notice" role="status"><span>{missingModels.size===1?'A 3D model could not open.':missingModels.size+' models could not open.'}</span> <button type="button" onClick={retry}>Retry models</button> {props.onListView&&<button type="button" onClick={props.onListView}>Equipment list</button>}</div>}
     {contextLost&&<div className="canvas-error" role="status"><h3>Graphics paused</h3><p>Your circuit is still here. Wait for the 3D view to recover or restart it.</p>{props.onListView&&<button type="button" onClick={props.onListView}>Use equipment list</button>}<button type="button" onClick={retry}>Restart 3D view</button></div>}
     {(pending||error)&&<div className="routing-status" role="status" style={{position:'absolute',left:12,bottom:42,zIndex:8,maxWidth:'calc(100% - 24px)',padding:'6px 10px',borderRadius:6,background:'#293547f2',color:error?'#f6ddb1':'#dce7e7',fontSize:12,pointerEvents:'none'}}>{error??'Routing wires…'}</div>}

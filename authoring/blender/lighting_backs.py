@@ -49,6 +49,12 @@ def add_lighting_back(recipe, root, A, previous):
             bpy.data.objects.remove(obj, do_unlink=True)
     features = []
     def detail(id, purpose, owner):
+        # An earlier construction pass may have left an empty group with this
+        # name. A named inspection must lead to the replacement geometry.
+        for old in root.children_recursive:
+            if old.get('detailId')==id and not any(n.type=='MESH' for n in old.children_recursive):
+                del old['detailId']
+                if 'detailPurpose' in old:del old['detailPurpose']
         features.append(id)
         return A.empty('detail:'+id,owner,data={'detailId':id,'detailPurpose':purpose})
     body = A.semantic('body',root)
@@ -86,6 +92,7 @@ def add_lighting_back(recipe, root, A, previous):
 
     if key in WALL:
         gang=recipe['component']['params'].get('gangModule')
+        bg_single=key in {'switch:single-rocker','switch2:single-rocker'}
         plate_center=.23 if gang=='left' else 0
         if gang!='right':
             # The screw spacing is 60.3 mm on the 86 mm reference plate.
@@ -100,8 +107,13 @@ def add_lighting_back(recipe, root, A, previous):
                 if side==1:
                     for y in [cy-height*.5+.012,cy+height*.5-.012]:
                         A.box('Top and bottom return',(plate_center,y,.050),(width-.024,.019,.050),ribs,plastic,.006)
-                for delta in [-.145,.145]:
+                for delta in ([.194,.259] if bg_single else [-.145,.145]):
                     A.box('Faceplate seating lug',(plate_center+side*width*.415,cy+delta,.034),(.055,.018,.068),ribs,plastic,.006)
+                if bg_single:
+                    for delta in [-.175,-.263]:
+                        cx=plate_center+side*width*.373
+                        for dims in [(.057,.018,.049),(.018,.057,.049)]:
+                            A.box('Cruciform locating rib',(cx,cy+delta,.032),dims,ribs,plastic,.005)
                 A.box('Side return',(plate_center+side*(width*.5-.011),cy,.050),(.019,height-.04,.050),ribs,plastic,.005)
             for ratio in [-.29,-.10,.10,.29]:
                 A.box('Longitudinal stiffener',(plate_center+width*ratio,cy,.050),(.012,height-.027,.035),ribs,plastic,.003)
@@ -114,9 +126,25 @@ def add_lighting_back(recipe, root, A, previous):
         inter = key.startswith('intermediate:')
         cassette=detail('recessed-switch-cassette',
             'The closed grey cassette separates the switching contacts. Recessed mouths admit the conductors and captive fasteners stay in the moulding.',body)
+        if bg_single:cassette['preservePlanarLod']=True
+        fixings=detail('switch-case-fixings',
+            'These three screws hold the switch case together. The screws that grip the wires are reached from the ends.',cassette) if bg_single else cassette
         width=.295 if inter else .245; half=width/2
         core=A.box('Recessed cassette body',(0,.650,-.044),(width,.472,.188),cassette,grey,.019)
         top=.886; bottom=.414
+        if bg_single:
+            # The 811/812 photographs show three case fixings. The top two
+            # sit on steps beside the COM entry. The lower fixing is visible
+            # below the curved skirt between the two angled moulded feet.
+            for side in [-1,1]:
+                step=A.box('Tool for recessed upper ear',(side*.118,top,-.136),
+                           (.140,.113,.110),cassette,None,.014)
+                A.boolean_difference(core,step)
+            relief=A.cyl('Lower skirt clearance tool',(0,bottom-.003,-.135),.048,.134,cassette,None)
+            A.boolean_difference(core,relief)
+            lower=A.empty('Lower case fixing seat',fixings,(0,bottom+.031,-.071))
+            lower.rotation_euler.y=math.pi
+            screw(lower,(0,0),.003,.018,True,-.13)
         for t in recipe['terminals']:
             x,y,z=t['anchor']; angle=0 if inter or t['id']=='COM' else (.17 if x>0 else -.17)
             pocket(core,cassette,x,y,-.12,.053,.039,.09,angle)
@@ -148,8 +176,8 @@ def add_lighting_back(recipe, root, A, previous):
                 A.box('Recess below spring latch',(side*(half+.018),y,-.001),(.004,.035,.026),cassette,dark,.002)
             for y in ([top,bottom] if inter else [top]):
                 x=side*(half-.039)
-                lug=A.cyl('Rounded retaining ear',(x,y+.006,-.067),.047,.126,cassette,grey)
-                collar=A.empty('Case fixing',cassette,(x,y+.006,-.14))
+                lug=A.cyl('Rounded retaining ear',(x,y+.006,-.063 if bg_single else -.067),.047,.082 if bg_single else .126,cassette,grey)
+                collar=A.empty('Case fixing',fixings,(x,y+.006,-.105 if bg_single else -.14))
                 collar.rotation_euler.y=math.pi
                 screw(collar,(0,0),.004,.027,True,.14*side)
         name='INTERMEDIATE' if inter else '2 WAY' if key.startswith('switch2:') else '1 WAY'
@@ -159,6 +187,15 @@ def add_lighting_back(recipe, root, A, previous):
                 A.box('Narrow guide extension',(side*.104,.704,-.147),(.054,.064,.023),cassette,grey,.005)
             A.box('Crossing mechanism cover',(0,.615,-.154),(.232,.065,.026),cassette,grey,.011)
             A.label(name,(0,.615,-.169),cassette,edge,.021,rear=True)
+        elif bg_single:
+            # BG moulds the rating vertically along one side. Retain the
+            # terminal markings in Economy and load the fine print up close.
+            rating=A.material('Switch close-up rating',(.44,.465,.45),0,.47)
+            margin=A.empty('Vertical switch rating',cassette,(-.083,.662,-.141))
+            margin.rotation_euler.z=math.pi/2
+            A.box('Raised rating surround',(0,0,0),(.177,.034,.004),margin,grey,.004)
+            A.label('20 A 16AX 250 V~',(0,0,-.003),margin,rating,.017,rear=True)
+            A.label(name,(0,.646,-.141),cassette,edge,.019,rear=True)
         else:
             A.box('Raised specification surround',(0,.643,-.140),(.188,.064,.009),cassette,grey,.007)
             A.label('20A   16AX',(0,.650,-.146),cassette,edge,.020,rear=True)
@@ -171,17 +208,26 @@ def add_lighting_back(recipe, root, A, previous):
         # clear moulding; a central removable knockout and offsets take cable.
         cy=.449; rr=.439
         base=detail('cable-entry-knockouts','A central wiring aperture and removable knockout admit the fixed cables through the clear mounting base.',body)
+        base['preservePlanarLod']=True
         disc=A.cyl('Clear mounting base',(0,cy,-.025),rr,.045,base,clear)
-        pocket(disc,base,0,cy-.056,-.025,.274,.14,.13)
-        for x,y in [(-.285,.49),(.285,.49),(-.256,.352),(.256,.352)]:
+        # A6 shows an open rectangular entry above a second, still-attached
+        # knockout marked REMOVE. The two have different surfaces and edges.
+        pocket(disc,base,0,.326,-.025,.328,.213,.13)
+        A.box('Retained cable-entry knockout',(0,.266,-.021),(.316,.083,.029),base,clear,.004)
+        for x in [-.114,.114]:
+            A.box('Knockout moulding bridge',(x,.221,-.024),(.020,.018,.017),base,clear,.002)
+        A.label('REMOVE',(0,.265,-.005),base,edge,.028)
+        for x,y,slotted in [(-.270,.530,False),(.296,.559,False),(-.277,.343,True),(.261,.365,False)]:
             hole=A.cyl('Round mounting hole tool',(x,y,-.025),.026,.13,base,None)
-            if (x<0 and y<.4) or (x>0 and y>.4): hole.scale.x=1.7
+            if slotted:
+                hole.scale.x=1.7;hole.rotation_euler.z=.26
             A.boolean_difference(disc,hole)
             boss=ring(base,(x,y),.003,.045,.026,.041,clear,'Raised locating boss')
-            if (x<0 and y<.4) or (x>0 and y>.4): boss.scale.x=1.7
+            if slotted:
+                boss.scale.x=1.7;boss.rotation_euler.z=.26
         ring(base,(0,cy),.020,rr,.419,.072,clear,'Clear perimeter lip')
-        for offset in [-.104,.104]:A.box('Knockout frame',(0,cy-.056+offset,.006),(.313,.012,.019),base,clear,.003)
-        for x in [-.15,.15]:A.box('Knockout frame upright',(x,cy-.056,.006),(.011,.209,.019),base,clear,.003)
+        for y in [.214,.439]:A.box('Cable opening lip',(0,y,.006),(.353,.010,.019),base,clear,.003)
+        for x in [-.173,.173]:A.box('Cable opening side',(x,.326,.006),(.009,.226,.019),base,clear,.003)
         links=detail('three-insulated-terminal-groups','Three insulated groups hold the neutral link, permanent loop link and switched lamp-line link. Insulating fins separate their copper bars.',body)
         links['serviceChamber']=True
         for ids,mark in [(['N','NOUT','N3'],'N'),(['LOOP1','LOOP2','LOOP3'],'LOOP'),(['L','LOUT'],'L')]:

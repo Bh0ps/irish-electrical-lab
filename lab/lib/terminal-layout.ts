@@ -1,3 +1,4 @@
+import { dinPort } from './din-devices.ts';
 import type { ComponentDefinition, ComponentInstance, TerminalDefinition, Vec3 } from './types';
 
 /** Original workshop models use +Z for the operating face and +Y for up. */
@@ -128,6 +129,8 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
     const [w,h,d]=definition.size;
     const scaled=(px:number,py:number,pz:number,dir:Vec3,scale=.66)=>make(t,[px*w,py*h,pz*d],dir.map(a=>a/Math.hypot(...dir)) as Vec3,scale);
     const f=component.variant, k=component.type;
+    const port=dinPort(k,t.id);
+    if(port)return {...make(t,port.anchor,port.direction,.64),label:port.marking};
     // BG 824 and 851. Coordinates in millimetres from the plate centre, seen
     // from the front. The two earth entries are electrically common.
     if(k==='shaveroutlet')return make(t,[t.id==='L'?.14:-.14,1,-.135],[0,0,-1],.43);
@@ -157,7 +160,7 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
       upper?[0,.8,.6]:[0,-.35,Math.sqrt(1-.35**2)]);
     const front = (depth:number,scale=terminalScale) => make(t,[x,y,depth*sz],[0,0,1],scale);
     switch(component.type){
-      case 'mcb':case 'mcb3':case 'rcbo':case 'rcd':case 'rcd3':case 'fuse':
+      case 'fuse':
         return din(group==='Supply');
       case 'spd': return din(t.id!=='PE',t.id==='PE'?0:(t.id==='L'?-.13:.13)*sx);
       case 'plug':
@@ -241,7 +244,9 @@ export function terminalInspectionDirection(component: Pick<ComponentInstance, '
   for(const t of selected)for(let axis=0;axis<3;axis++)sum[axis]+=(t.entryDirection??[0,0,-1])[axis];
   if(Math.hypot(...sum)<.1)return [.3,.35,.89];
   // Look slightly down across front/rear inscriptions and across an upward-facing motor board.
-  const n=Math.hypot(...sum);const view:Vec3=[sum[0]/n+.13,Math.max(.23,sum[1]/n),sum[2]/n];
+  const n=Math.hypot(...sum);
+  const y=sum[1]/n;
+  const view:Vec3=[sum[0]/n+.13,y<-.8 && terminalId && dinPort(component.type,terminalId) ? y : Math.max(.23,y),sum[2]/n];
   if(Math.abs(view[2])<.18)view[2]=.25;
   const length=Math.hypot(...view);return view.map(v=>v/length) as Vec3;
 }

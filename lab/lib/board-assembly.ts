@@ -1,3 +1,4 @@
+import { dinForm, DIN_UNIT, DIN_BENCH_LIFT } from './din-devices.ts';
 import type { CircuitDocument, ComponentInstance, RailMount, Vec3 } from './types.ts';
 import { COMPONENTS } from './components.ts';
 
@@ -11,6 +12,7 @@ export function boardSidePanels(type:string,h:number,d:number):[number,number,nu
 }
 export function dinBodyWidth(c:ComponentInstance){
   if(!c.mount||COMPONENTS[c.type].model!=='protection')return undefined;
+  if(dinForm(c.type))return COMPONENTS[c.type].size[0];
   return COMPONENTS[c.type].size[0]*(['mcb','fuse'].includes(c.type)?.56:.8)/1.3;
 }
 export function filledWays(board:ComponentInstance,parts:ComponentInstance[]){
@@ -45,6 +47,7 @@ export const mountRoll = (c:ComponentInstance) => c.mount?.row===2?Math.PI/2:c.m
 export function mountScale(c:ComponentInstance):Vec3 {
   if(!c.mount)return [1,1,1];
   const [w,h,d]=COMPONENTS[c.type].size;
+  if(dinForm(c.type)){const scale=.02/DIN_UNIT;return [scale,scale,scale];}
   if(c.mount.row>=5)return [1.10/w,.46/h,.50/d];
   return [railWidth(c.type)*.35/(dinBodyWidth(c)??w),1.63/h,1.15/d];
 }
@@ -62,6 +65,13 @@ export function seatPosition(board:ComponentInstance,c:ComponentInstance,m:RailM
   if(m.row>=7)return boardPosition(board,commercial?[(m.row-8)*2.20,3.43,-.30]:[.20,5.58,-.27]);
   if(m.row>=5)return boardPosition(board,[(m.row===5?-1:1)*(commercial?2.82:1.25),commercial?8.95:6.72,-.12]);
   const center=(m.slot+railWidth(c.type)/2)*.36;
+  if(dinForm(c.type)){
+    const mid=(DIN_BENCH_LIFT+41.5*DIN_UNIT)*.02/DIN_UNIT;
+    const depth= commercial?.265:.135;
+    if(m.row===4)return boardPosition(board,[center-.72,1.48-mid,depth]);
+    if(m.row>=2)return boardPosition(board,[(m.row===2?-1:1)*(1.67-mid),7.4-center,depth]);
+    return boardPosition(board,[-2.34+center,(m.row===0?4.82:2.32)-mid,depth]);
+  }
   if(m.row===4)return boardPosition(board,[(center-.72),.67,.185]);
   if(m.row>=2)return boardPosition(board,[m.row===2?-.83:.83,7.4-center,.185]);
   return boardPosition(board,[-2.34+center,(m.row===0?4.82:2.32)-.815,.065]);

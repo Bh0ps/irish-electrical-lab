@@ -4,7 +4,7 @@ The installed app contains its own Electron runtime, the production 3D workbench
 
 ## Install and use
 
-Run `release/Irish-Electrical-Lab-1.6.0-Setup.exe` from the `lab` directory. Installation is for your Windows account and creates **Irish Electrical Lab** shortcuts on the Desktop and Start menu. Start with either shortcut. Close the app window to stop the application and its private local server. Use **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** to switch fullscreen.
+Run `release/Irish-Electrical-Lab-1.7.0-Setup.exe` from the `lab` directory. Installation is for your Windows account and creates **Irish Electrical Lab** shortcuts on the Desktop and Start menu. Start with either shortcut. Close the app window to stop the application and its private local server. Use **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** to switch fullscreen.
 
 This is a locally built, unsigned installer, so Windows may identify its publisher as unknown. The installer does not require administrator privileges.
 
@@ -46,7 +46,7 @@ npm run desktop:installer
 
 The explicit Electron install step is needed if npm's install-script approval policy has skipped its runtime download. `desktop:pack` produces `release/win-unpacked/Irish Electrical Lab.exe`; `desktop:installer` produces the per-user x64 NSIS setup executable. Runtime dependencies for the shell are only Electron and Node builtins; the React renderer and equipment assets are already bundled.
 
-Run `npm run desktop:test` for backup validation, atomic restore and shell security tests. Launch the packaged executable with `--verify-desktop` for the internal diagnostic run. It tests all 64 circuits through the actual packaged workers, checks renderer isolation and WebGL, captures the app, and exits. Reports are saved under `%APPDATA%\Irish Electrical Lab\verification`. It does not control the existing browser version.
+Run `npm run desktop:test` for backup validation, atomic restore and shell security tests. Launch the packaged executable with `--verify-desktop` for the internal diagnostic run. It tests the bundled circuit fixtures through the actual packaged workers, checks renderer isolation and WebGL, captures the app, and exits. Reports go to `%TEMP%\Irish-Electrical-Lab-Audits\run-default\verification`. To keep runs separate, add `--verify-run=<label>` to every phase. Use letters, digits, underscores and hyphens. Ordinary launches keep the established Windows profile and origin.
 
 Add `--verify-ui` to check the six stages, persistent instructions, evidence gates, the complete guided build and operating sequence, actual 3D placement and terminal clicks, incorrect connections, native wire selection/Backspace/Undo, diagnosis/repair/retest, persistence, native backup file IO, unsaved-work choices, 1000/1280/1440-pixel window widths and the 30-component workload. Idle and terminal-hover checks count real simulation-worker requests. The run saves a temporary diagnostic starting profile so previous achievements cannot bypass evidence gates, then restores all original records and window settings. Reports and screenshots include `desktop-1.1-ui-report.json` and `desktop-1.1-*.png`.
 
@@ -58,6 +58,15 @@ Add `--verify-guided-build` for the focused 1.2.1 native course check. It builds
 
 Add `--verify-graphics` to check native free-camera input, smooth presets, modal and typing guards, equipment/wire/probe interaction, loaded menu thumbnails, all four environments and window widths. A fixed-camera dimmer comparison records low, high and zero emitting power alongside separate lamp-surface and ray-confirmed work-mat pixel samples. The performance workload uses 30 objects in six complete training cells, checks all 42 routes, and records actual render intervals, idle frames, memory and matched solver/routing timings. Reports and captures go to `verification/graphics` under the app profile. The run restores every saved IndexedDB key and the original window state.
 
-The lifecycle diagnostic is a two-process check: run `--verify-lifecycle`, wait for exit, then `--verify-lifecycle-check`. It verifies one application instance, fullscreen and persisted window dimensions, then restores the previous bounds. Upgrade retention verification seeds temporary draft/build/progress records with `--verify-retention-seed`; after installing the replacement installer, `--verify-retention-check` compares the records and restores the originals. Use these flags only when intentionally running the app's verification workflow.
+From the `lab` directory, run the lifecycle check against the installed Windows executable. The wrapper reads the packaged metadata first and rejects older shells that use the learner profile. It runs the two phases in order, including the check that a second launch focuses the existing window. Close any current lab window first so the test can bind its normal port.
+
+```powershell
+$installedLab = Join-Path $env:LOCALAPPDATA 'Programs/Irish Electrical Lab/Irish Electrical Lab.exe'
+node scripts/desktop-lifecycle-audit.mjs "$installedLab" release-170
+```
+
+The report is `%TEMP%\Irish-Electrical-Lab-Audits\run-release-170\verification\desktop-lifecycle-report.json`. Omit the label for a new run with an automatically generated name. The first phase checks fullscreen and stores the test bounds. The second starts a fresh process, checks the restored bounds and writes the result. Electron uses the selected audit folder for both native settings and the renderer session before requesting its application lock.
+
+Upgrade retention verification seeds temporary draft/build/progress records with `--verify-retention-seed`; after installing the replacement installer, `--verify-retention-check` with the same run label compares the records and restores the originals. Both shells in this test must support isolated audit profiles.
 
 The shell enforces `contextIsolation`, sandboxing and disabled renderer Node integration. Its preload exposes only JSON import/export dialogs, approved HTTPS reference links and fullscreen. Renderer navigation, subframes, permissions and arbitrary external windows are blocked.

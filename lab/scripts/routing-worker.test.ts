@@ -65,6 +65,33 @@ test('obsolete and mismatched responses cannot complete a different request', ()
   assert.equal(published.length, 1);
 });
 
+test('only advancing checkpoints from the active worker request renew the watchdog', () => {
+  const sent: RoutingWorkerRequest[] = [], published: RoutingWorkerResponse[] = [];
+  let renewals = 0;
+  const queue = createRoutingQueue(request => sent.push(request), response => published.push(response), () => renewals++);
+  queue.request(document, 'first');
+  queue.request(document, 'next');
+  assert.equal(sent[0].reportProgress, true);
+  const signal = (id: number, checkpoint: number) => queue.receive({ kind: 'routing-progress', id, checkpoint });
+  signal(sent[0].id, 1);
+  for (const invalid of [1, 0, -1, NaN, 2.5, Infinity]) signal(sent[0].id, invalid);
+  signal(sent[0].id + 1, 2);
+  assert.equal(renewals, 1);
+  assert.equal(published.length, 0);
+  assert.equal(sent.length, 1);
+  queue.receive(result(sent[0]));
+  signal(sent[0].id, 99);
+  signal(sent[1].id, 1);
+  assert.equal(renewals, 2);
+  queue.receive(result(sent[1]));
+  signal(sent[1].id, 2);
+  assert.equal(renewals, 2);
+  assert.deepEqual(published.map(response => response.key), ['next']);
+  const legacy = fixture();
+  legacy.queue.request(document, 'legacy');
+  assert.equal(legacy.sent[0].reportProgress, undefined);
+});
+
 test('worker-reported failures release the queue and preserve latest-request ordering', () => {
   const { queue, sent, published } = fixture();
   queue.request(document, 'first');

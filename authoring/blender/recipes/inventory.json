@@ -1636,42 +1636,42 @@
       "name": "Miniature circuit breaker",
       "group": "Protection",
       "model": "protection",
-      "description": "Overcurrent protection with a thermal and magnetic conceptual mechanism.",
+      "description": "A circuit breaker trips if too much current flows. A heavy fault can trip it quickly. A smaller overload can take longer.",
       "terminals": [
         {
           "id": "IN",
-          "label": "IN",
+          "label": "1",
           "role": "L",
-          "purpose": "First end of the modelled series protected path, paired with OUT. Opening or tripping the device separates this pair.",
+          "purpose": "Paired with OUT. Opening this device breaks the connection between IN and OUT.",
           "anchor": [
             0,
-            1.1027586206896551,
-            0.21647058823529414
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "OUT",
-          "label": "OUT",
+          "label": "2",
           "role": "L",
-          "purpose": "Second end of the modelled series protected path, paired with IN. Opening or tripping the device separates this pair.",
+          "purpose": "Paired with IN. Opening this device breaks the connection between IN and OUT.",
           "anchor": [
             0,
-            0.21068965517241378,
-            0.21647058823529414
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         }
       ],
@@ -1684,90 +1684,90 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "actuator",
           "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "contacts",
-          "name": "Switching contacts",
-          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
         },
         {
           "id": "thermal",
           "name": "Thermal protection",
-          "purpose": "A thermal element responds to heating or sustained excess current. Timing is illustrative here; it is not a manufacturer trip curve."
+          "purpose": "A sustained overload heats this part until the protection trips. Trip times in the lab are approximate."
         },
         {
           "id": "magnetic",
           "name": "Magnetic release",
-          "purpose": "The magnetic mechanism illustrates rapid response to high current. The displayed fault current depends on the source and circuit resistance assumptions."
+          "purpose": "A large fault current makes this release open the breaker quickly."
         }
       ],
       "size": [
-        0.7,
-        1.3,
-        0.8
+        0.245,
+        1.682,
+        0.98
       ]
     },
     "terminals": [
       {
         "id": "IN",
-        "label": "IN",
+        "label": "1",
         "role": "L",
-        "purpose": "First end of the modelled series protected path, paired with OUT. Opening or tripping the device separates this pair.",
+        "purpose": "Paired with OUT. Opening this device breaks the connection between IN and OUT.",
         "anchor": [
           0,
-          1.1027586206896551,
-          0.21647058823529414
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "OUT",
-        "label": "OUT",
+        "label": "2",
         "role": "L",
-        "purpose": "Second end of the modelled series protected path, paired with IN. Opening or tripping the device separates this pair.",
+        "purpose": "Paired with IN. Opening this device breaks the connection between IN and OUT.",
         "anchor": [
           0,
-          0.21068965517241378,
-          0.21647058823529414
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "meshNodes": 51,
-    "vertices": 13909
+    "meshNodes": 52,
+    "vertices": 15673
   },
   {
     "key": "mcb3_default",
@@ -1795,114 +1795,114 @@
       "name": "Linked three-pole breaker",
       "group": "Protection",
       "model": "protection",
-      "description": "Linked three-phase overcurrent interruption. A trip on one monitored pole opens the linked device.",
+      "description": "One handle switches all three phases. If a fault trips one pole, all three open together.",
       "terminals": [
         {
           "id": "L1IN",
-          "label": "L1IN",
+          "label": "1",
           "role": "L1",
-          "purpose": "Incoming L1 terminal of its separately modelled linked contact path. Pair it with L1OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L1 terminal. Follow it to L1OUT on the other side of the same pole.",
           "anchor": [
-            -0.2369230769230769,
-            1.1027586206896551,
-            0.21647058823529414
+            -0.245,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "L2IN",
-          "label": "L2IN",
+          "label": "3",
           "role": "L2",
-          "purpose": "Incoming L2 terminal of its separately modelled linked contact path. Pair it with L2OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L2 terminal. Follow it to L2OUT on the other side of the same pole.",
           "anchor": [
             0,
-            1.1027586206896551,
-            0.21647058823529414
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "L3IN",
-          "label": "L3IN",
+          "label": "5",
           "role": "L3",
-          "purpose": "Incoming L3 terminal of its separately modelled linked contact path. Pair it with L3OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L3 terminal. Follow it to L3OUT on the other side of the same pole.",
           "anchor": [
-            0.2369230769230769,
-            1.1027586206896551,
-            0.21647058823529414
+            0.245,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "L1OUT",
-          "label": "L1OUT",
+          "label": "2",
           "role": "L1",
-          "purpose": "Outgoing L1 terminal of its separately modelled linked contact path. Pair it with L1IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L1 terminal. Follow it to L1IN on the other side of the same pole.",
           "anchor": [
-            -0.2369230769230769,
-            0.21068965517241378,
-            0.21647058823529414
+            -0.245,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         },
         {
           "id": "L2OUT",
-          "label": "L2OUT",
+          "label": "4",
           "role": "L2",
-          "purpose": "Outgoing L2 terminal of its separately modelled linked contact path. Pair it with L2IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L2 terminal. Follow it to L2IN on the other side of the same pole.",
           "anchor": [
             0,
-            0.21068965517241378,
-            0.21647058823529414
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         },
         {
           "id": "L3OUT",
-          "label": "L3OUT",
+          "label": "6",
           "role": "L3",
-          "purpose": "Outgoing L3 terminal of its separately modelled linked contact path. Pair it with L3IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L3 terminal. Follow it to L3IN on the other side of the same pole.",
           "anchor": [
-            0.2369230769230769,
-            0.21068965517241378,
-            0.21647058823529414
+            0.245,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         }
       ],
@@ -1915,162 +1915,162 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "actuator",
           "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "contacts",
-          "name": "Switching contacts",
-          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
         },
         {
           "id": "thermal",
           "name": "Thermal protection",
-          "purpose": "A thermal element responds to heating or sustained excess current. Timing is illustrative here; it is not a manufacturer trip curve."
+          "purpose": "A sustained overload heats this part until the protection trips. Trip times in the lab are approximate."
         },
         {
           "id": "magnetic",
           "name": "Magnetic release",
-          "purpose": "The magnetic mechanism illustrates rapid response to high current. The displayed fault current depends on the source and circuit resistance assumptions."
+          "purpose": "A large fault current makes this release open the breaker quickly."
         }
       ],
       "size": [
-        1.4,
-        1.3,
-        0.8
+        0.735,
+        1.682,
+        0.98
       ]
     },
     "terminals": [
       {
         "id": "L1IN",
-        "label": "L1IN",
+        "label": "1",
         "role": "L1",
-        "purpose": "Incoming L1 terminal of its separately modelled linked contact path. Pair it with L1OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L1 terminal. Follow it to L1OUT on the other side of the same pole.",
         "anchor": [
-          -0.2369230769230769,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.245,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L2IN",
-        "label": "L2IN",
+        "label": "3",
         "role": "L2",
-        "purpose": "Incoming L2 terminal of its separately modelled linked contact path. Pair it with L2OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L2 terminal. Follow it to L2OUT on the other side of the same pole.",
         "anchor": [
           0,
-          1.1027586206896551,
-          0.21647058823529414
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L3IN",
-        "label": "L3IN",
+        "label": "5",
         "role": "L3",
-        "purpose": "Incoming L3 terminal of its separately modelled linked contact path. Pair it with L3OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L3 terminal. Follow it to L3OUT on the other side of the same pole.",
         "anchor": [
-          0.2369230769230769,
-          1.1027586206896551,
-          0.21647058823529414
+          0.245,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L1OUT",
-        "label": "L1OUT",
+        "label": "2",
         "role": "L1",
-        "purpose": "Outgoing L1 terminal of its separately modelled linked contact path. Pair it with L1IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L1 terminal. Follow it to L1IN on the other side of the same pole.",
         "anchor": [
-          -0.2369230769230769,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.245,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L2OUT",
-        "label": "L2OUT",
+        "label": "4",
         "role": "L2",
-        "purpose": "Outgoing L2 terminal of its separately modelled linked contact path. Pair it with L2IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L2 terminal. Follow it to L2IN on the other side of the same pole.",
         "anchor": [
           0,
-          0.21068965517241378,
-          0.21647058823529414
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L3OUT",
-        "label": "L3OUT",
+        "label": "6",
         "role": "L3",
-        "purpose": "Outgoing L3 terminal of its separately modelled linked contact path. Pair it with L3IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L3 terminal. Follow it to L3IN on the other side of the same pole.",
         "anchor": [
-          0.2369230769230769,
-          0.21068965517241378,
-          0.21647058823529414
+          0.245,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "meshNodes": 102,
-    "vertices": 14029
+    "meshNodes": 103,
+    "vertices": 15793
   },
   {
     "key": "fuse_default",
@@ -2242,78 +2242,78 @@
       "name": "Residual-current circuit breaker",
       "group": "Protection",
       "model": "protection",
-      "description": "Monitors current imbalance through live and neutral; it does not provide overload protection.",
+      "description": "This device compares the current in line and neutral. If some returns another way, it can trip. A separate breaker or fuse protects against overload.",
       "terminals": [
         {
           "id": "LIN",
-          "label": "LIN",
+          "label": "1",
           "role": "L",
-          "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L terminal. Follow it to LOUT on the other side of the same pole.",
           "anchor": [
-            -0.12461538461538461,
-            1.1027586206896551,
-            0.21647058823529414
+            -0.1225,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "NIN",
-          "label": "NIN",
+          "label": "3",
           "role": "N",
-          "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
           "anchor": [
-            0.12461538461538461,
-            1.1027586206896551,
-            0.21647058823529414
+            0.1225,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "LOUT",
-          "label": "LOUT",
+          "label": "2",
           "role": "L",
-          "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L terminal. Follow it to LIN on the other side of the same pole.",
           "anchor": [
-            -0.12461538461538461,
-            0.21068965517241378,
-            0.21647058823529414
+            -0.1225,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         },
         {
           "id": "NOUT",
-          "label": "NOUT",
+          "label": "4",
           "role": "N",
-          "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
           "anchor": [
-            0.12461538461538461,
-            0.21068965517241378,
-            0.21647058823529414
+            0.1225,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         }
       ],
@@ -2326,126 +2326,126 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "actuator",
           "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "contacts",
-          "name": "Switching contacts",
-          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
         },
         {
           "id": "toroid",
-          "name": "Residual-current sensing core",
-          "purpose": "All monitored active conductors pass through the sensing core. An imbalance indicates current returning outside those conductors. The protective conductor is not a monitored active conductor."
+          "name": "Current-sensing ring",
+          "purpose": "Line and neutral pass through this ring. If some current returns by another route, the device senses the difference and can trip."
         },
         {
           "id": "test",
           "name": "Test button · T",
-          "purpose": "The spring-return T button connects an internal test resistor across opposite sides of the sensing poles. With the device closed and a suitable supply connected, that imbalance trips the mechanism."
+          "purpose": "With the device on and supplied, press T. A small test current trips it."
         }
       ],
       "size": [
-        1.2,
-        1.3,
-        0.8
+        0.49,
+        1.682,
+        0.98
       ]
     },
     "terminals": [
       {
         "id": "LIN",
-        "label": "LIN",
+        "label": "1",
         "role": "L",
-        "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L terminal. Follow it to LOUT on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "3",
         "role": "N",
-        "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "LOUT",
-        "label": "LOUT",
+        "label": "2",
         "role": "L",
-        "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L terminal. Follow it to LIN on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "4",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "meshNodes": 74,
-    "vertices": 10484
+    "meshNodes": 75,
+    "vertices": 12248
   },
   {
     "key": "rcbo_default",
@@ -2474,78 +2474,78 @@
       "name": "Combined RCBO",
       "group": "Protection",
       "model": "protection",
-      "description": "Combines overcurrent interruption and residual-current monitoring for an individual circuit.",
+      "description": "This breaker protects one circuit. It can trip on too much current or when some current returns by another path.",
       "terminals": [
         {
           "id": "LIN",
-          "label": "LIN",
+          "label": "1",
           "role": "L",
-          "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L terminal. Follow it to LOUT on the other side of the same pole.",
           "anchor": [
-            -0.12461538461538461,
-            1.1027586206896551,
-            0.21647058823529414
+            -0.1225,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "NIN",
-          "label": "NIN",
+          "label": "N",
           "role": "N",
-          "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
           "anchor": [
-            0.12461538461538461,
-            1.1027586206896551,
-            0.21647058823529414
+            0.1225,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "LOUT",
-          "label": "LOUT",
+          "label": "2",
           "role": "L",
-          "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L terminal. Follow it to LIN on the other side of the same pole.",
           "anchor": [
-            -0.12461538461538461,
-            0.21068965517241378,
-            0.21647058823529414
+            -0.1225,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         },
         {
           "id": "NOUT",
-          "label": "NOUT",
+          "label": "N",
           "role": "N",
-          "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
           "anchor": [
-            0.12461538461538461,
-            0.21068965517241378,
-            0.21647058823529414
+            0.1225,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         }
       ],
@@ -2559,131 +2559,136 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "actuator",
           "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "contacts",
-          "name": "Switching contacts",
-          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
         },
         {
           "id": "toroid",
-          "name": "Residual-current sensing core",
-          "purpose": "All monitored active conductors pass through the sensing core. An imbalance indicates current returning outside those conductors. The protective conductor is not a monitored active conductor."
+          "name": "Current-sensing ring",
+          "purpose": "Line and neutral pass through this ring. If some current returns by another route, the device senses the difference and can trip."
         },
         {
           "id": "thermal",
           "name": "Thermal protection",
-          "purpose": "A thermal element responds to heating or sustained excess current. Timing is illustrative here; it is not a manufacturer trip curve."
+          "purpose": "A sustained overload heats this part until the protection trips. Trip times in the lab are approximate."
+        },
+        {
+          "id": "magnetic",
+          "name": "Magnetic release",
+          "purpose": "A large fault current makes this release open the breaker quickly."
         },
         {
           "id": "test",
           "name": "Test button · T",
-          "purpose": "The spring-return T button connects an internal test resistor across opposite sides of the sensing poles. With the device closed and a suitable supply connected, that imbalance trips the mechanism."
+          "purpose": "With the device on and supplied, press T. A small test current trips it."
         }
       ],
       "size": [
-        1.2,
-        1.3,
-        0.8
+        0.49,
+        1.682,
+        0.9520000000000001
       ]
     },
     "terminals": [
       {
         "id": "LIN",
-        "label": "LIN",
+        "label": "1",
         "role": "L",
-        "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L terminal. Follow it to LOUT on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "N",
         "role": "N",
-        "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "LOUT",
-        "label": "LOUT",
+        "label": "2",
         "role": "L",
-        "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L terminal. Follow it to LIN on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "N",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "meshNodes": 74,
-    "vertices": 10484
+    "meshNodes": 75,
+    "vertices": 12248
   },
   {
     "key": "rcd3_default",
@@ -2711,150 +2716,150 @@
       "name": "Four-pole RCD",
       "group": "Protection",
       "model": "protection",
-      "description": "Monitors the vector sum through three phases and neutral.",
+      "description": "All three phases and neutral pass through this device. It can trip if some current returns outside those wires.",
       "terminals": [
         {
           "id": "L1IN",
-          "label": "L1IN",
+          "label": "1",
           "role": "L1",
-          "purpose": "Incoming L1 terminal of its separately modelled linked contact path. Pair it with L1OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L1 terminal. Follow it to L1OUT on the other side of the same pole.",
           "anchor": [
-            -0.35538461538461535,
-            1.1027586206896551,
-            0.21647058823529414
+            -0.3675,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "L2IN",
-          "label": "L2IN",
+          "label": "3",
           "role": "L2",
-          "purpose": "Incoming L2 terminal of its separately modelled linked contact path. Pair it with L2OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L2 terminal. Follow it to L2OUT on the other side of the same pole.",
           "anchor": [
-            -0.11846153846153845,
-            1.1027586206896551,
-            0.21647058823529414
+            -0.1225,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "L3IN",
-          "label": "L3IN",
+          "label": "5",
           "role": "L3",
-          "purpose": "Incoming L3 terminal of its separately modelled linked contact path. Pair it with L3OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming L3 terminal. Follow it to L3OUT on the other side of the same pole.",
           "anchor": [
-            0.11846153846153845,
-            1.1027586206896551,
-            0.21647058823529414
+            0.1225,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "NIN",
-          "label": "NIN",
+          "label": "N",
           "role": "N",
-          "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
           "anchor": [
-            0.35538461538461535,
-            1.1027586206896551,
-            0.21647058823529414
+            0.3675,
+            1.682,
+            -0.056
           ],
           "group": "Supply",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            0.8,
-            0.6
+            1,
+            0
           ]
         },
         {
           "id": "L1OUT",
-          "label": "L1OUT",
+          "label": "2",
           "role": "L1",
-          "purpose": "Outgoing L1 terminal of its separately modelled linked contact path. Pair it with L1IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L1 terminal. Follow it to L1IN on the other side of the same pole.",
           "anchor": [
-            -0.35538461538461535,
-            0.21068965517241378,
-            0.21647058823529414
+            -0.3675,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         },
         {
           "id": "L2OUT",
-          "label": "L2OUT",
+          "label": "4",
           "role": "L2",
-          "purpose": "Outgoing L2 terminal of its separately modelled linked contact path. Pair it with L2IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L2 terminal. Follow it to L2IN on the other side of the same pole.",
           "anchor": [
-            -0.11846153846153845,
-            0.21068965517241378,
-            0.21647058823529414
+            -0.1225,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         },
         {
           "id": "L3OUT",
-          "label": "L3OUT",
+          "label": "6",
           "role": "L3",
-          "purpose": "Outgoing L3 terminal of its separately modelled linked contact path. Pair it with L3IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing L3 terminal. Follow it to L3IN on the other side of the same pole.",
           "anchor": [
-            0.11846153846153845,
-            0.21068965517241378,
-            0.21647058823529414
+            0.1225,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         },
         {
           "id": "NOUT",
-          "label": "NOUT",
+          "label": "N",
           "role": "N",
-          "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+          "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
           "anchor": [
-            0.35538461538461535,
-            0.21068965517241378,
-            0.21647058823529414
+            0.3675,
+            0.52,
+            -0.056
           ],
           "group": "Load",
-          "scale": 1,
+          "scale": 0.64,
           "entryDirection": [
             0,
-            -0.35,
-            0.9367496997597597
+            -1,
+            0
           ]
         }
       ],
@@ -2867,193 +2872,198 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "contacts",
-          "name": "Switching contacts",
-          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
         },
         {
           "id": "toroid",
-          "name": "Residual-current sensing core",
-          "purpose": "All monitored active conductors pass through the sensing core. An imbalance indicates current returning outside those conductors. The protective conductor is not a monitored active conductor."
+          "name": "Current-sensing ring",
+          "purpose": "Line and neutral pass through this ring. If some current returns by another route, the device senses the difference and can trip."
         },
         {
           "id": "test",
           "name": "Test button · T",
-          "purpose": "The spring-return T button connects an internal test resistor across opposite sides of the sensing poles. With the device closed and a suitable supply connected, that imbalance trips the mechanism."
+          "purpose": "With the device on and supplied, press T. A small test current trips it."
         }
       ],
       "size": [
-        1.4,
-        1.3,
-        0.8
+        0.98,
+        1.682,
+        0.98
       ]
     },
     "terminals": [
       {
         "id": "L1IN",
-        "label": "L1IN",
+        "label": "1",
         "role": "L1",
-        "purpose": "Incoming L1 terminal of its separately modelled linked contact path. Pair it with L1OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L1 terminal. Follow it to L1OUT on the other side of the same pole.",
         "anchor": [
-          -0.35538461538461535,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.3675,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L2IN",
-        "label": "L2IN",
+        "label": "3",
         "role": "L2",
-        "purpose": "Incoming L2 terminal of its separately modelled linked contact path. Pair it with L2OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L2 terminal. Follow it to L2OUT on the other side of the same pole.",
         "anchor": [
-          -0.11846153846153845,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L3IN",
-        "label": "L3IN",
+        "label": "5",
         "role": "L3",
-        "purpose": "Incoming L3 terminal of its separately modelled linked contact path. Pair it with L3OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L3 terminal. Follow it to L3OUT on the other side of the same pole.",
         "anchor": [
-          0.11846153846153845,
-          1.1027586206896551,
-          0.21647058823529414
+          0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "N",
         "role": "N",
-        "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
         "anchor": [
-          0.35538461538461535,
-          1.1027586206896551,
-          0.21647058823529414
+          0.3675,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L1OUT",
-        "label": "L1OUT",
+        "label": "2",
         "role": "L1",
-        "purpose": "Outgoing L1 terminal of its separately modelled linked contact path. Pair it with L1IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L1 terminal. Follow it to L1IN on the other side of the same pole.",
         "anchor": [
-          -0.35538461538461535,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.3675,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L2OUT",
-        "label": "L2OUT",
+        "label": "4",
         "role": "L2",
-        "purpose": "Outgoing L2 terminal of its separately modelled linked contact path. Pair it with L2IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L2 terminal. Follow it to L2IN on the other side of the same pole.",
         "anchor": [
-          -0.11846153846153845,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L3OUT",
-        "label": "L3OUT",
+        "label": "6",
         "role": "L3",
-        "purpose": "Outgoing L3 terminal of its separately modelled linked contact path. Pair it with L3IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L3 terminal. Follow it to L3IN on the other side of the same pole.",
         "anchor": [
-          0.11846153846153845,
-          0.21068965517241378,
-          0.21647058823529414
+          0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "N",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
         "anchor": [
-          0.35538461538461535,
-          0.21068965517241378,
-          0.21647058823529414
+          0.3675,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "meshNodes": 125,
-    "vertices": 10604
+    "meshNodes": 126,
+    "vertices": 12368
   },
   {
     "key": "spd_default",
@@ -19689,37 +19699,37 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "rail",
           "name": "Device rail",
-          "purpose": "A steel top-hat rail holds the devices in position. Their electrical connections follow the conductors and bars shown."
+          "purpose": "Breakers clip onto this metal rail. The wires and bars carry the current."
         },
         {
           "id": "door",
-          "name": "Hinged outer door",
-          "purpose": "Open the door to reach the breaker handles with the dead front still installed."
+          "name": "Outer door",
+          "purpose": "Open the door to reach the breaker handles. The front panel still covers the wiring."
         },
         {
           "id": "shield",
-          "name": "Removable front",
-          "purpose": "The front shields the terminal wiring. Its windows leave the installed breakers accessible."
+          "name": "Removable front panel",
+          "purpose": "The openings leave the breaker handles within reach while the panel covers the wires."
         }
       ],
       "size": [
@@ -19729,7 +19739,7 @@
       ]
     },
     "terminals": [],
-    "meshNodes": 172,
+    "meshNodes": 176,
     "vertices": 10988
   },
   {
@@ -19757,13 +19767,13 @@
       "name": "Three-phase distribution board",
       "group": "Distribution",
       "model": "modular-board",
-      "description": "A steel four-way TP&N enclosure with a separate incomer position and two facing banks of outgoing protection. Its removable front shields the wiring. The PE stud is the enclosure bond.",
+      "description": "This steel board has a main supply position and two facing rows of breakers. The earth wire connects to the stud marked PE on the case.",
       "terminals": [
         {
           "id": "PE",
           "label": "PE",
           "role": "PE",
-          "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+          "purpose": "Earth connection for the fitting. The earth path stays connected when the switch opens.",
           "anchor": [
             3.7200000000000006,
             8.5,
@@ -19786,37 +19796,37 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "rail",
           "name": "Device rail",
-          "purpose": "A steel top-hat rail holds the devices in position. Their electrical connections follow the conductors and bars shown."
+          "purpose": "Breakers clip onto this metal rail. The wires and bars carry the current."
         },
         {
           "id": "door",
-          "name": "Hinged outer door",
-          "purpose": "Open the door to reach the breaker handles with the dead front still installed."
+          "name": "Outer door",
+          "purpose": "Open the door to reach the breaker handles. The front panel still covers the wiring."
         },
         {
           "id": "shield",
-          "name": "Removable front",
-          "purpose": "The front shields the terminal wiring. Its windows leave the installed breakers accessible."
+          "name": "Removable front panel",
+          "purpose": "The openings leave the breaker handles within reach while the panel covers the wires."
         }
       ],
       "size": [
@@ -19830,7 +19840,7 @@
         "id": "PE",
         "label": "PE",
         "role": "PE",
-        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "purpose": "Earth connection for the fitting. The earth path stays connected when the switch opens.",
         "anchor": [
           3.7200000000000006,
           8.5,
@@ -19845,7 +19855,7 @@
         ]
       }
     ],
-    "meshNodes": 185,
+    "meshNodes": 190,
     "vertices": 16880
   },
   {
@@ -19876,43 +19886,48 @@
       "parts": [
         {
           "id": "body",
-          "name": "Insulated grip and finger guard",
-          "purpose": "The raised guard separates the hand grip from the open fork."
+          "name": "Grip and finger guard",
+          "purpose": "The raised rim below the fork marks the top of the hand grip."
         },
         {
           "id": "sensing",
           "name": "Open fork",
-          "purpose": "Seat one insulated core at the bottom of the fork to measure its AC current or its earth-referenced AC voltage."
+          "purpose": "Rest one insulated wire at the bottom of the fork. The fork reads AC."
         },
         {
           "id": "display",
-          "name": "Single reading display",
-          "purpose": "The display shows the chosen reading and its unit. HOLD freezes the displayed reading."
+          "name": "Display",
+          "purpose": "The screen shows one reading at a time. V means volts, A means amps and Ω means ohms."
         },
         {
           "id": "actuator",
-          "name": "Function dial",
-          "purpose": "Turn between Off, FieldSense, two-probe voltage, and resistance with continuity."
+          "name": "Rotary dial",
+          "purpose": "Turn the dial to V for the probes, the fork symbol for one AC wire, or Ω for resistance."
         },
         {
           "id": "mode",
-          "name": "Yellow function button",
-          "purpose": "In FieldSense, press to switch the display between amps and volts."
+          "name": "Yellow button",
+          "purpose": "With the dial on the fork symbol, press here to switch between amps and volts."
         },
         {
           "id": "hold",
-          "name": "HOLD button",
-          "purpose": "Freeze the current reading on screen. Release HOLD to record a new observation."
+          "name": "HOLD",
+          "purpose": "Press once to keep the number on screen. Press again to see the live reading."
+        },
+        {
+          "id": "backlight",
+          "name": "Display light",
+          "purpose": "Press to light the screen. Press again to turn the light off."
         },
         {
           "id": "ground",
-          "name": "Rear reference contact",
-          "purpose": "With the black probe docked, the bench can model an earth reference through this contact. A black lead on a bonded earth point is the other reference."
+          "name": "Rear contact pad",
+          "purpose": "In the lab, touching this pad gives the fork an earth reference with the black probe in its holder."
         },
         {
           "id": "probes",
-          "name": "Attached probes and storage dock",
-          "purpose": "The red and black probes compare two electrical points. The black lead also supplies an explicit earth reference in fork-voltage mode."
+          "name": "Test probes",
+          "purpose": "The tips point up in their holders. Put one probe on each point to read the voltage between them."
         }
       ],
       "size": [
@@ -19922,8 +19937,8 @@
       ]
     },
     "terminals": [],
-    "meshNodes": 69,
-    "vertices": 20310
+    "meshNodes": 96,
+    "vertices": 35599
   },
   {
     "key": "stripper_default",

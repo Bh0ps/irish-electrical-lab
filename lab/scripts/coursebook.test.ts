@@ -89,6 +89,10 @@ test('common course searches find the named equipment and ordinary plurals',()=>
   assert.ok(courseMatchesQuery(lesson(1),'fuseboard'));
   assert.ok(courseMatchesQuery(lesson(9),'lights on stairs'));
   assert.ok(courseMatchesQuery(lesson(53),'3-phase'));
+  assert.ok(courseMatchesQuery(lesson(17),'socket at the end is dead'));
+  assert.ok(courseMatchesQuery(lesson(36),'the fan stays on after I turn the light off'));
+  assert.ok(courseMatchesQuery(lesson(13),'under cupboard light'));
+  assert.ok(!courseMatchesQuery(lesson(52),'socket at the end is dead'));
   assert.ok(!courseMatchesQuery(lesson(52),'LEDs'));
   assert.ok(!courseMatchesQuery(lesson(43),'???'));
 });

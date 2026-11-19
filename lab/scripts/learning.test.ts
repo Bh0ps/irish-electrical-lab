@@ -32,18 +32,18 @@ test('all 80 intact configurations pass the combined connection and operating as
   const failures:unknown[]=[];for(const l of LESSONS){const d=copy(l.id),report=assessBuild(d,simulate(d),l.circuit);if(!report.passed)failures.push({id:l.id,checks:failed(report.checks)});}assert.deepEqual(failures,[]);
 });
 test('bypass and missing hold path fail real functional checks separately from matching connections',()=>{
-  const bypass=copy();bypass.wires.push({id:'bypass',from:{component:'protect',terminal:'LOUT'},to:{component:'light',terminal:'L'},role:'L',resistance:.01,bends:[]});const checks=runLessonScenarios(bypass);assert.ok(checks.some(c=>c.title==='light operating load power stops'&&c.status==='fail'));assert.ok(assessConnections(bypass,lesson(7).circuit).some(c=>c.id==='extra:bypass'&&c.status==='fail'));
-  const held=copy(55);held.wires=held.wires.filter(w=>w.id!==lesson(55).challenge.wire);assert.ok(runLessonScenarios(held).some(c=>c.status==='fail'&&c.title.includes('motor')));
+  const bypass=copy();bypass.wires.push({id:'bypass',from:{component:'protect',terminal:'LOUT'},to:{component:'light',terminal:'L'},role:'L',resistance:.01,bends:[]});const checks=runLessonScenarios(bypass);assert.ok(checks.some(c=>c.id==='scenario:7:0:0'&&c.status==='fail'));assert.ok(assessConnections(bypass,lesson(7).circuit).some(c=>c.id==='extra:bypass'&&c.status==='fail'));
+  const held=copy(55);held.wires=held.wires.filter(w=>w.id!==lesson(55).challenge.wire);assert.ok(runLessonScenarios(held).some(c=>c.status==='fail'&&c.component==='motor'));
 });
 test('mechanical pairing and selected machine parameters are not silently repaired by operating scenarios',()=>{
-  const d=copy(56);d.components.find(c=>c.id==='reverse')!.params.mechanicallyInterlockedWith='';assert.ok(runLessonScenarios(d).some(c=>c.title==='Reverse has the actual mechanical pairing'&&c.status==='fail'));
-  const windings=copy(57);windings.components.find(c=>c.id==='motor')!.params.windingVoltage=230;assert.ok(runLessonScenarios(windings).some(c=>c.title.includes('winding eligibility')&&c.status==='fail'));
+  const d=copy(56);d.components.find(c=>c.id==='reverse')!.params.mechanicallyInterlockedWith='';assert.ok(runLessonScenarios(d).some(c=>c.id==='scenario:56:9:3'&&c.status==='fail'));
+  const windings=copy(57);windings.components.find(c=>c.id==='motor')!.params.windingVoltage=230;assert.ok(runLessonScenarios(windings).some(c=>c.id==='scenario:57:1:3'&&c.status==='fail'));
 });
 test('unknown lesson and disabled supply cannot claim completed operating objectives',()=>{
   const d=copy();delete d.lessonId;assert.equal(runLessonScenarios(d)[0].status,'not-run');const off=copy();off.supply.enabled=false;assert.equal(runLessonScenarios(off)[0].status,'not-run');assert.equal(assessBuild(off,simulate(off),lesson(7).circuit).passed,false);
 });
 test('latched protective interruption remains a failed experiment until the actual circuit is reset',()=>{
-  const d=copy();d.faults=[{type:'earth-fault',component:'light',enabled:true}];const tripped=simulate(d);assert.equal(tripped.deviceStates.protect.tripped,true);d.faults=[];assert.ok(runLessonScenarios(d,tripped.deviceStates).some(c=>c.status==='fail'&&c.title.includes('protection remains')));
+  const d=copy();d.faults=[{type:'earth-fault',component:'light',enabled:true}];const tripped=simulate(d);assert.equal(tripped.deviceStates.protect.tripped,true);d.faults=[];assert.ok(runLessonScenarios(d,tripped.deviceStates).some(c=>c.status==='fail'&&c.id.endsWith(':protection')));
 });
 test('current activity matches a rebuilt wire by endpoints rather than canonical wire ID',()=>{
   const d=copy(),a=getLessonActivities(lesson(7)).find(a=>a.measurement?.mode==='current')!;const original=d.wires.find(w=>w.id===a.measurement!.wire)!;original.id='learner-wire';const r=simulate(d),e=captureMeasurement(d,r,{mode:'current',wire:original.id});assert.equal(evaluateActivity(a,d,r,[e]).status,'pass');

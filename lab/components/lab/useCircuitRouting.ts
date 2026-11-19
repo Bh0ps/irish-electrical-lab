@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { circuitRoutingKey, routeCircuit, type CircuitRoutes } from '../../lib/routing';
-import type { RoutingWorkerRequest, RoutingWorkerResponse } from '../../lib/routing.worker';
+import type { RoutingWorkerMessage, RoutingWorkerRequest, RoutingWorkerResponse } from '../../lib/routing.worker';
 import type { CircuitDocument } from '../../lib/types';
 
 const EMPTY_ROUTING: CircuitRoutes = { routes: new Map(), issues: [] };
@@ -16,13 +16,16 @@ export function recoverCircuitRouting(document: CircuitDocument, key: string, re
 export function createRoutingQueue(
   send: (request: RoutingWorkerRequest) => void,
   publish: (response: RoutingWorkerResponse) => void,
+  onProgress?: () => void,
 ) {
   let nextId = 0;
   let latestKey: string | undefined;
   let active: RoutingWorkerRequest | undefined;
+  let lastCheckpoint = 0;
   let pending: { document: CircuitDocument; key: string } | undefined;
   const dispatch = (document: CircuitDocument, key: string) => {
-    active = { id: ++nextId, key, document };
+    lastCheckpoint = 0;
+    active = { id: ++nextId, key, document, ...(onProgress && { reportProgress: true }) };
     send(active);
   };
   return {
@@ -33,8 +36,16 @@ export function createRoutingQueue(
       if (active) pending = { document, key };
       else dispatch(document, key);
     },
-    receive(response: RoutingWorkerResponse) {
-      if (!active || response.id !== active.id || response.key !== active.key) return;
+    receive(response: RoutingWorkerMessage) {
+      if (!active || response.id !== active.id) return;
+      if ('kind' in response) {
+        if (response.kind === 'routing-progress' && Number.isSafeInteger(response.checkpoint) && response.checkpoint > lastCheckpoint) {
+          lastCheckpoint = response.checkpoint;
+          onProgress?.();
+        }
+        return;
+      }
+      if (response.key !== active.key) return;
       active = undefined;
       if (response.key === latestKey) publish(response);
       if (pending) {
@@ -77,20 +88,23 @@ export function useCircuitRouting(document: CircuitDocument, createWorker: () =>
     try {
       if (!worker.current) {
         const nextWorker = createWorker();
-        const nextQueue = createRoutingQueue(request => {
+        const armWatchdog = () => {
           clearWatchdog();
+          watchdog.current = setTimeout(() => { if (worker.current === nextWorker) recover('Routing worker stopped responding'); }, 8000);
+        };
+        const nextQueue = createRoutingQueue(request => {
           try {
+            armWatchdog();
             nextWorker.postMessage(request);
-            watchdog.current = setTimeout(() => { if (worker.current === nextWorker) recover('Routing worker timed out'); }, 8000);
           } catch (error) { recover(error instanceof Error ? error.message : String(error)); }
         }, response => {
           clearWatchdog();
           if ('error' in response) recover(response.error);
           else setCompleted(response);
-        });
+        }, armWatchdog);
         worker.current = nextWorker;
         queue.current = nextQueue;
-        nextWorker.onmessage = (event: MessageEvent<RoutingWorkerResponse>) => { if (worker.current === nextWorker) nextQueue.receive(event.data); };
+        nextWorker.onmessage = (event: MessageEvent<RoutingWorkerMessage>) => { if (worker.current === nextWorker) nextQueue.receive(event.data); };
         nextWorker.onerror = () => {
           if (worker.current === nextWorker) recover('Routing worker failed');
         };

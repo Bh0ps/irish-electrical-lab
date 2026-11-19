@@ -8,6 +8,29 @@ const require=createRequire(import.meta.url);
 const { allowedReference, safeFileName, ORIGIN }=require('../desktop/app/security.cjs');
 const { resolveFile, createAppServer, CSP }=require('../desktop/app/server.cjs');
 const { runRetentionDiagnostics }=require('../desktop/app/retention-diagnostics.cjs');
+const {verificationProfile,isolateVerification,secondaryArguments}=require('../desktop/app/verification-profile.cjs');
+test('diagnostics, restart and the forwarded child share a disposable run before locking the desktop profile',()=>{
+  const temp=mkdtempSync(path.join(tmpdir(),'electrical-audit-'));
+  try{
+    assert.equal(verificationProfile(['app.exe'],temp),undefined);
+    for(const args of [['--verify-run=only'],['--verify-dimmer'],['--verify-lifecyle'],['--verify-lifecycle','--verify-run'],['--verify-lifecycle','--verify-run=../study'],['--verify-lifecycle','--verify-run=a/b'],['--verify-lifecycle','--verify-run=x','--verify-run=y']])
+      assert.throws(()=>verificationProfile(args,temp));
+    const expected=path.join(temp,'Irish-Electrical-Lab-Audits','run-desk-1');
+    const primary=verificationProfile(['--verify-lifecycle','--verify-run=Desk-1'],temp);
+    assert.equal(primary.path,expected);
+    const settings=new Map();
+    isolateVerification({setPath:(k,v)=>settings.set(k,v),setAppLogsPath:v=>settings.set('logs',v)},primary);
+    assert.deepEqual([...settings.entries()],[['userData',expected],['sessionData',expected],['crashDumps',path.join(expected,'Crashpad')],['logs',path.join(expected,'logs')]]);
+    for(const mode of ['--verify-lifecycle-check','--verify-desktop','--verify-guided-build','--verify-retention-seed','--verify-retention-check','--verify-port-conflict','--verify-window']){
+      assert.deepEqual(verificationProfile([mode,'--verify-run=Desk-1'],temp),primary);
+      assert.equal(verificationProfile([mode],temp).run,'default');
+    }
+    for(const isPackaged of [true,false])assert.deepEqual(verificationProfile(secondaryArguments({isPackaged},primary.run,'test-shell'),temp),primary);
+    const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');
+    assert.ok(main.indexOf('isolateVerification(app, auditProfile)')<main.indexOf('app.requestSingleInstanceLock()'));
+    assert.ok(main.indexOf('app.requestSingleInstanceLock()')<main.indexOf('app.whenReady()'));
+  }finally{rmSync(temp,{recursive:true,force:true});}
+});
 test('desktop reference bridge accepts official HTTPS sources and rejects unsafe schemes and deceptive hosts',()=>{
   for(const url of ['https://www.nsai.ie/standards/','https://media.esbnetworks.ie/file.pdf','https://safeelectric.ie/contractors/faqs/','https://www.varilight.co.uk/','https://www.danlers.co.uk/','https://kb.shelly.cloud/','https://www.aico.co.uk/','https://support.myenergi.com/','https://library.e.abb.com/','https://docs.tia.siemens.cloud/','https://www.pilz.com/'])assert.equal(allowedReference(url),true);
   for(const url of ['file:///C:/secret','javascript:alert(1)','http://nsai.ie','https://nsai.ie.evil.com','https://evil.com@nsai.ie','https://nsai.ie:4187','https://www.aico.co.uk.evil.com/','https://kb.shelly.cloud.attacker.com/'])assert.equal(allowedReference(url),false);
@@ -31,12 +54,12 @@ test('a port conflict rejects startup with an explicit explanation instead of lo
 });
 test('packaging includes local workers and a standalone runtime with no renderer Node access',()=>{
   const config=JSON.parse(readFileSync(new URL('../desktop/electron-builder.json',import.meta.url),'utf8'));assert.equal(config.nsis.perMachine,false);assert.equal(config.nsis.allowElevation,false);assert.equal(config.nsis.createDesktopShortcut,true);assert.equal(config.nsis.deleteAppDataOnUninstall,false);assert.equal(config.extraResources[0].from,'dist/client');
-  const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');assert.match(main,/sandbox: true/);assert.match(main,/contextIsolation: true/);assert.match(main,/nodeIntegration: false/);assert.match(main,/requestSingleInstanceLock/);assert.match(main,/closeAllConnections/);assert.match(CSP,/worker-src 'self' blob:/);
+  const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');assert.match(main,/sandbox: true/);assert.match(main,/contextIsolation: true/);assert.match(main,/nodeIntegration: false/);assert.match(main,/requestSingleInstanceLock/);assert.match(main,/closeAllConnections/);assert.match(CSP,/worker-src 'self' blob:/);assert.match(CSP,/(?:^|; )connect-src 'self' blob:;/, 'GLTFLoader fetches textures embedded in local models from blob URLs');
 });
-test('version 1.6.0 keeps the existing per-user identity and shortcuts for upgrades',()=>{
+test('version 1.7.0 keeps the existing per-user identity and shortcuts for upgrades',()=>{
   const metadata=JSON.parse(readFileSync(new URL('../desktop/app/package.json',import.meta.url),'utf8'));
   const config=JSON.parse(readFileSync(new URL('../desktop/electron-builder.json',import.meta.url),'utf8'));
-  assert.equal(metadata.version,'1.6.0');assert.equal(config.appId,'ie.irish-electrical-lab.desktop');assert.equal(config.productName,'Irish Electrical Lab');assert.equal(config.nsis.createStartMenuShortcut,true);assert.equal(config.nsis.shortcutName,'Irish Electrical Lab');
+  assert.equal(metadata.version,'1.7.0');assert.equal(config.appId,'ie.irish-electrical-lab.desktop');assert.equal(config.productName,'Irish Electrical Lab');assert.equal(config.nsis.createStartMenuShortcut,true);assert.equal(config.nsis.shortcutName,'Irish Electrical Lab');
   const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');assert.match(main,/PROFILE_NAME = 'Irish Electrical Lab'/);assert.match(main,/app\.setPath\('userData', path\.join\(app\.getPath\('appData'\), PROFILE_NAME\)\)/);
 });
 

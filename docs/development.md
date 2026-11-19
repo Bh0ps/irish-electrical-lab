@@ -158,8 +158,10 @@ Do not commit learner backups, browser profiles, profile recovery files, install
 
 ## Installed views and extra-low-voltage circuits
 
-The job assignments and metre-scale equipment positions live in `lab/lib/job-site.ts`. The installation renderer and the workbench share equipment definitions and stable terminal IDs. The drawing builds its pins, conductors and control paths from the chosen circuit. Reference and as-wired views can therefore differ after a learner edits a circuit. Site navigation and drawing selections are presentation state.
+Job assignments live in `lab/lib/job-site.ts`. Oakfield’s room boundaries, openings, furniture footprints and standing positions are in `lab/lib/home-floorplan.ts`. The 3D site, walking checks and location plan share these dimensions. The original house uses Irish residential plans as a reference for room proportions, window placement and furniture clearance. [Roscommon County Council, Slí an Choiste house type C](https://www.roscommoncoco.ie/en/about_us/part-8-local-authority-own-developments/housing/part-8-sli-an-choiste-monksland/22571-pla-6.pdf)
+
+The installation renderer and the workbench use the same equipment and terminal IDs. The drawing takes its pins, wires and control paths from the selected circuit. Choosing another room leaves the learner’s wiring and activity in place.
 
 The extra-low-voltage coursebook and circuits live in `lab/lib/elv-coursebook.ts` and `lab/lib/elv-circuits.ts`. The simulator resolves isolated supply domains, switched operating points and average power for the supported PWM exercises. For a new circuit, add a measured operating objective and a fault that can be diagnosed on the actual topology. Add a geometry entry and a product reference when the learner must recognise a different physical device.
 
-From `lab`, run `node --import tsx --test scripts/job-site-drawing.test.ts scripts/elv.test.ts` for the drawing, location and extra-low-voltage checks. The full catalogue, operating-sequence, routing and lesson audits remain part of release verification.
+From `lab`, run `node --import tsx --test scripts/job-site-drawing.test.ts scripts/home-floorplan.test.ts scripts/elv.test.ts` for the drawing, walking and extra-low-voltage checks. The full catalogue, operating-sequence, routing and lesson audits remain part of release verification.

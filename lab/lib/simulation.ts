@@ -91,7 +91,7 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
     node(a); node(b); net.voltages.push({ key, a, b, v: voltage, component, frequency, kind });
   };
   for (const item of document.components) {
-    if (ids.has(item.id)) net.diagnostics.push(diag(`duplicate:${item.id}`, 'Duplicate component ID', 'Every component must have its own stable identity.', item.id, 'error', 'model'));
+    if (ids.has(item.id)) net.diagnostics.push(diag(`duplicate:${item.id}`, 'Duplicate component ID', 'Two fittings have the same ID. Give each one its own ID in the circuit file.', item.id, 'error', 'model'));
     ids.add(item.id);
     if (!definition(item)) { net.diagnostics.push(diag(`unknown:${item.id}`, 'Unknown component model', `There is no electrical model for ${item.type}.`, item.id, 'error', 'model')); continue; }
     for (const t of definition(item).terminals) node(terminal(item, t.id));
@@ -122,7 +122,7 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
       resistor(`${item.id}.testResistor`,T(item.type==='rcd3'?'L1IN':'LIN'),T('NOUT'),230/(2*threshold),item.id,false);
     }
     const partner = String(p.mechanicallyInterlockedWith || '');
-    if (item.type === 'contactor' && partner && (partner === item.id || !items.has(partner) || items.get(partner)?.type !== 'contactor')) net.diagnostics.push(diag(`interlockTarget:${item.id}`, 'Mechanical interlock target is invalid', 'Choose another existing contactor as the mechanically linked partner. Assessment is withheld until the partner is valid.', item.id, 'error', 'model'));
+    if (item.type === 'contactor' && partner && (partner === item.id || !items.has(partner) || items.get(partner)?.type !== 'contactor')) net.diagnostics.push(diag(`interlockTarget:${item.id}`, 'Mechanical interlock target is invalid', 'Select the other contactor in the mechanical interlock setting and test again.', item.id, 'error', 'model'));
     if (isType(item, 'source', 'source3')) {
       resistor(`${item.id}.neutralBond`, T('N'), GROUND, 0.00001, item.id, false);
       resistor(`${item.id}.earthBond`, T('PE'), GROUND, 0.001, item.id, false);
@@ -285,7 +285,7 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
       if (has('SL')) resistor(`${item.id}.switchedInput`, T('SL'), T('N'), 100000, item.id, false);
       // Alarm LINK is a conceptual wired signal bus. Its proprietary voltage/waveform is not modelled.
     } else {
-      net.diagnostics.push(diag(`unsupported:${item.id}`, 'Unmodelled component', 'This component has no active electrical model. Measurements and assessment are withheld.', item.id, 'error', 'model'));
+      net.diagnostics.push(diag(`unsupported:${item.id}`, 'Unmodelled component', 'The bench cannot calculate a reading for this fitting. Check which type of fitting you added.', item.id, 'error', 'model'));
     }
   }
   for (const f of faults) {
@@ -364,16 +364,16 @@ function installationDiagnostics(document: CircuitDocument, net: Network, solved
     if (loadTypes.has(item.type) && ts.some(t => t.id === 'L' && t.role === 'L') && ts.some(t => t.id === 'N' && t.role === 'N')) {
       const l = paths.find(terminal(item,'L')), n = paths.find(terminal(item,'N'));
       if (neutral.has(l) && active.has(n) && !active.has(l)) findings.push(diag(`polarity:${item.id}`, 'Line and neutral are reversed at the load', 'The feed reaches N and the neutral reaches L. A lamp can still light with these wires swapped.', item.id, 'warning', 'protection'));
-      if (protective.has(l) || protective.has(n)) findings.push(diag(`earthReturn:${item.id}`, 'Protective terminal is used in the load circuit', 'A normal L/N load terminal shares an actual conductor path with a protective terminal. Protective earth is not a normal load return. Whether the load operates or protection trips follows the real modelled paths and currents.', item.id, 'warning', 'protection'));
+      if (protective.has(l) || protective.has(n)) findings.push(diag(`earthReturn:${item.id}`, 'The load is connected to earth', 'Follow L and N at this fitting. One is connected to an earth terminal. The load’s normal return current belongs in neutral.', item.id, 'warning', 'protection'));
     }
     if (['switch','switch2','intermediate','dimmer','thermostat','cutout','pushbutton','selector'].includes(item.type)) {
       const without = installationPaths(document,net,item.id);
       const ns = new Set(sources.map(s => without.find(terminal(s,'N')))), ls = new Set(sources.flatMap(s => (s.type==='source3'?['L1','L2','L3']:['L']).map(t => without.find(terminal(s,t)))));
-      if (ts.some(t => ns.has(without.find(terminal(item,t.id))) && !ls.has(without.find(terminal(item,t.id))))) findings.push(diag(`switchedNeutral:${item.id}`, 'Single-pole control is in the neutral path', 'A contact terminal is connected to the actual supply-neutral path. Opening this control can stop the load while leaving its line terminal live. The model does not suppress physically valid operation when the contact closes.', item.id, 'warning', 'protection'));
+      if (ts.some(t => ns.has(without.find(terminal(item,t.id))) && !ls.has(without.find(terminal(item,t.id))))) findings.push(diag(`switchedNeutral:${item.id}`, 'Single-pole control is in the neutral path', 'This switch breaks the neutral. The load can stop when you switch off, yet its L terminal can still be live.', item.id, 'warning', 'protection'));
     }
     for (const t of ts.filter(t=>t.role==='PE')) {
       const v = solved.voltages[terminal(item,t.id)];
-      if (v?.reference==='mains' && abs(v)>50) findings.push(diag(`livePE:${item.id}:${t.id}`, 'Protective terminal is at live potential', `${abs(v).toFixed(1)} V exists between this protective terminal and the supply reference. Inspect the actual conductor endpoints; colour alone does not establish a protective connection.`, item.id, 'warning', 'protection'));
+      if (v?.reference==='mains' && abs(v)>50) findings.push(diag(`livePE:${item.id}:${t.id}`, 'Voltage on the earth terminal', `${abs(v).toFixed(1)} V between this earth terminal and the supply earth. Follow the wire back to see where it is connected.`, item.id, 'warning', 'protection'));
     }
   }
   for (const wire of document.wires) {
@@ -381,10 +381,10 @@ function installationDiagnostics(document: CircuitDocument, net: Network, solved
     const root=paths.find(endpointKey(wire.from));
     const construction=wire.cable&&document.cableRuns?.find(run=>run.id===wire.cable!.runId)?.kind;
     if(construction&&['led-pair','bell-pair','multi-strip'].includes(construction)&&(active.has(root)||neutral.has(root)||wire.role==='PE')){
-      findings.push({...diag('elvCable:'+wire.id,'Extra-low-voltage cable on a mains or protective path','The selected bell or strip cable is the dedicated signalling sample. Inspect its endpoints and use the specified mains or protective material for this exercise.',undefined,'warning','protection'),wire:wire.id});
+      findings.push({...diag('elvCable:'+wire.id,'Extra-low-voltage cable on a mains or protective path','This bell or LED cable is for the low-voltage side of the exercise. Check where both ends are connected.',undefined,'warning','protection'),wire:wire.id});
     }
     const mismatch=wire.role==='N'&&active.has(root)&&!neutral.has(root)||['L','L1','L2','L3'].includes(wire.role)&&neutral.has(root)&&!active.has(root)||wire.role==='PE'&&!protective.has(root);
-    if(mismatch) findings.push({...diag(`identification:${wire.id}`, 'Conductor identification conflicts with its connections', 'The selected conductor identification disagrees with its actual active, neutral or protective path. Identification does not alter current flow or make an incorrect connection electrically correct.', undefined, 'warning', 'protection'),wire:wire.id});
+    if(mismatch) findings.push({...diag(`identification:${wire.id}`, 'Check the wire marking', 'The marking on this wire does not match where it goes. Follow it to both terminals before changing the marking or moving the wire.', undefined, 'warning', 'protection'),wire:wire.id});
   }
   return findings;
 }
@@ -795,7 +795,7 @@ function simulateSteady(document: CircuitDocument, previousDeviceStates: Record<
     }
     if (isType(item, 'driver', 'dcsupply', 'vfd') && state.energized) {
       const input = componentPower[item.id] || 0, expected = Number(state.outputPower) / clamp(number(p, 'efficiency', 0.9), 0.1, 1);
-      if (expected > 2 && Math.abs(input - expected) / expected > 0.01) diagnostics.push(diag(`balance:${item.id}`, 'Converter power transfer did not converge', 'Input and output powers do not balance within the model tolerance. Assessment is withheld.', item.id, 'error', 'model'));
+      if (expected > 2 && Math.abs(input - expected) / expected > 0.01) diagnostics.push(diag(`balance:${item.id}`, 'The input and output readings do not agree', 'The bench could not get consistent power readings on both sides of this unit. Check the supply and load, then test again.', item.id, 'error', 'model'));
     }
   }
   const terminalVoltages = Object.fromEntries(Object.entries(solved.voltages).filter(([name]) => !name.startsWith('@')).map(([name, value]) => [name, {...value, frequency: solved.frequencies?.[name]}]));

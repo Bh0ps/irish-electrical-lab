@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { COMPONENTS } from '../../lib/components';
+import { CABLE_CORE_LABEL } from '../../lib/cables';
 import { describeEndpoint } from '../../lib/build-hints';
 import { getComponentTerminals } from '../../lib/terminal-layout';
 import type { CircuitDocument, Endpoint } from '../../lib/types';
 import { Input } from '../ui/input';
-import type { ComponentInstance, TerminalDefinition, Vec3 } from '../../lib/types';
+import type { ComponentInstance, TerminalDefinition, TerminalRole, Vec3 } from '../../lib/types';
 
 const terminalNames: Record<string,string> = {
   L:'Line', N:'Neutral', PE:'Protective earth', PE2:'Second earth terminal', LIN:'Incoming line', NIN:'Incoming neutral',
@@ -14,33 +15,52 @@ const terminalNames: Record<string,string> = {
   NO:'Normally open contact', NC:'Normally closed contact', A1:'Coil terminal', A2:'Coil return',
   T1:'First strapper', T2:'Second strapper', SL:'Switched line', '+':'Positive', '-':'Negative',
 };
-function shortRole(t:TerminalDefinition) {
-  if(t.role==='output'&&(t.id==='+'||t.id==='-'))return 'Isolated AC winding';
+const wireNames:Record<TerminalRole,string>={
+  L:'Line',N:'Neutral',PE:'Protective earth',L1:'Phase 1',L2:'Phase 2',L3:'Phase 3',
+  'DC+':'DC positive','DC-':'DC negative',control:'Control',output:'Output',
+};
+function shortRole(type:string,t:TerminalDefinition) {
+  if(type==='shaveroutlet'||type==='transformer'&&t.role==='output')return 'Isolated AC output';
+  if(type==='chime')return 'Bell connection';
+  if(type==='vfd'&&t.id==='COM')return 'Control return';
+  if(type==='floatvalve'&&t.id==='COM')return 'Common return';
+  if(type==='rose')return t.group;
   if(t.role==='DC+')return 'DC positive';if(t.role==='DC-')return 'DC return';
-  if(t.role==='output'&&(t.label==='1'||t.label==='2'))return 'Sounder connection';
-  return terminalNames[t.id] ?? t.group ?? t.role;
+  if(/^L[123](IN|OUT)$/.test(t.id))return (t.id.endsWith('IN')?'Incoming':'Outgoing')+' phase '+t.id[1];
+  return terminalNames[t.id] ?? (t.group==='Connections'?undefined:t.group) ?? wireNames[t.role];
 }
 
 function matches(query: string, ...text: string[]) {
   return query.trim().toLowerCase().split(/\s+/).every(word => text.join(' ').toLowerCase().includes(word));
 }
 
-export function TerminalPicker({ circuit, label, onPick }: {
+export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false }: {
   circuit: CircuitDocument;
   label: string;
+  from?: Endpoint;
+  nextFitting?: boolean;
   onPick: (endpoint: Endpoint) => void;
 }) {
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string>();
+  const list=useRef<HTMLElement>(null);
+  function select(endpoint:Endpoint) {
+    onPick(endpoint);
+    if(!nextFitting)return;
+    setQuery('');
+    setOpenId('');
+    // Keep keyboard users in this picker without bringing up a phone keyboard.
+    list.current?.focus({preventScroll:true});
+  }
   const groups = circuit.components.map(component => ({
     component,
     terminals: getComponentTerminals(component, COMPONENTS[component.type])
-      .filter(terminal => matches(query, component.label, component.id, terminal.label, terminal.id, shortRole(terminal), terminal.purpose)),
+    .filter(terminal => matches(query, component.label, COMPONENTS[component.type].name, component.id, terminal.label, terminal.id, shortRole(component.type,terminal)??'', terminal.purpose)),
   })).filter(group => group.terminals.length > 0);
 
-  return <section className="point-picker" aria-label={label}>
+  return <section ref={list} tabIndex={-1} className="point-picker" aria-label={label}>
     <Input type="search" aria-label="Search equipment and terminals" placeholder="Search equipment or terminal" value={query} onChange={event => setQuery(event.target.value)} />
-    {groups.length === 0 && <p>No matching terminals.</p>}
+    {groups.length === 0 && <p role="status">{circuit.components.length?'No terminals match. Try the fitting name or a marking such as COM.':'Add a fitting to the bench to see its terminals.'}</p>}
     <div className="point-list">
       {groups.map(({ component, terminals }) => {
         const open = openId === component.id || (openId === undefined && groups.length === 1);
@@ -49,8 +69,8 @@ export function TerminalPicker({ circuit, label, onPick }: {
             {component.label}<span>{terminals.length} {terminals.length === 1 ? 'terminal' : 'terminals'}</span>
           </button>
           {open && <div className="point-list-terminals">{terminals.map(terminal =>
-            <button type="button" key={terminal.id} onClick={() => onPick({ component: component.id, terminal: terminal.id })}>
-              <b>{terminal.label}</b><span>{shortRole(terminal)}{!['+','-','L','N'].includes(terminal.id)&&terminal.label!==terminal.id && <small> · {terminal.id}</small>}</span>
+            <button type="button" key={terminal.id} aria-pressed={from ? from.component===component.id && from.terminal===terminal.id : undefined} onClick={() => select({ component: component.id, terminal: terminal.id })}>
+              <b>{terminal.label}</b><span>{shortRole(component.type,terminal)}{from?.component===component.id&&from.terminal===terminal.id&&<small> · first end</small>}{component.type==='switch2'&&terminal.id.startsWith('T') && <small> · {terminal.id} on drawing</small>}</span>
             </button>)}</div>}
         </div>;
       })}
@@ -96,18 +116,20 @@ export function ConductorPicker({ circuit, selected, onPick }: {
   onPick: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
-  const choices = circuit.wires.map(wire => ({
+  const conductors = useMemo(()=>circuit.wires.map(wire => ({
     wire,
     from: describeEndpoint(circuit, wire.from)?.label ?? wire.from.terminal,
     to: describeEndpoint(circuit, wire.to)?.label ?? wire.to.terminal,
-  })).filter(({ wire, from, to }) => matches(query, wire.role, from, to));
+    core: wire.cable ? CABLE_CORE_LABEL[wire.cable.core] : '',
+  })),[circuit]);
+  const choices=conductors.filter(({wire,from,to,core})=>matches(query,wire.role,wireNames[wire.role],from,to,core));
 
   return <section className="point-picker" aria-label="Choose a conductor">
     <Input type="search" aria-label="Search conductors" placeholder="Search conductors" value={query} onChange={event => setQuery(event.target.value)} />
-    {choices.length === 0 && <p>No matching conductors.</p>}
-    <div className="point-list">{choices.map(({ wire, from, to }) =>
+    {choices.length === 0 && <p role="status">{circuit.wires.length?'No wires match. Try a fitting name or a wire marking.':'There are no connected wires yet. Choose Connect to add one.'}</p>}
+    <div className="point-list">{choices.map(({ wire, from, to,core }) =>
       <button type="button" key={wire.id} aria-pressed={wire.id === selected} onClick={() => onPick(wire.id)}>
-        <b>{wire.role}</b><span>{from} → {to}</span>
+        <b>{['control','output'].includes(wire.role)?wireNames[wire.role]:wire.role+' · '+wireNames[wire.role]}</b><span>{core&&<small>{core} core · </small>}{from} → {to}</span>
       </button>)}</div>
   </section>;
 }

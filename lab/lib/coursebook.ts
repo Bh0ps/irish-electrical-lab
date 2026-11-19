@@ -25,6 +25,7 @@ const searchTerms: Record<string, string> = {
   lamp: 'light', lamps: 'light', lights: 'light', lighting: 'light', bulb: 'light', bulbs: 'light',
   leds: 'led', strips: 'strip', switches: 'switch', sockets: 'socket', landings: 'landing',
   doorbells: 'doorbell', breakers: 'breaker', circuits: 'circuit', motors: 'motor', pumps: 'pump',
+  outlets: 'socket', outlet: 'socket', runs:'run', running:'run', keeps:'stay', stays:'stay',
   fuseboard: 'board', fuseboards: 'board', rcds: 'rcd', rcbos: 'rcbo', mcbs: 'mcb',
 };
 function searchWords(text: string) {
@@ -35,9 +36,9 @@ function searchWords(text: string) {
 export function courseMatchesQuery(lesson: ConfigurationLesson, query: string): boolean {
   if (!query.trim()) return true;
   const page = COURSE_PAGES[lesson.id];
-  const text = searchWords([lesson.id, lesson.title, lesson.category, lesson.summary, page?.title, page?.aliases, page?.situation, page?.idea].join(' '));
+  const text = searchWords([lesson.id, lesson.title, lesson.category, lesson.summary, page?.title, page?.aliases, page?.situation, page?.idea, lesson.challenge.briefing].join(' '));
   const phrase = query.replace(/^\s*how\s+(?:(?:do|can)\s+(?:i|we)|to)\s+(?:wire|connect|build|find)\s+/i, '');
-  const words = searchWords(phrase).filter(word => !['a', 'an', 'the', 'of'].includes(word));
+  const words = searchWords(phrase).filter(word => !['a','an','the','of','at','is','i','my','when','after','to','in','turn'].includes(word));
   return words.length > 0 && words.every(word => text.some(term => term.startsWith(word)));
 }
 
@@ -81,7 +82,7 @@ export function getCoursebookActivities(lesson: ConfigurationLesson): LessonActi
     {...key('operate:sequence:1'),title:page.title,instruction:'Turn the light back on.',bookStep:'switch-on'},
     book('contact', 'Inside the wall switch', page.idea, { bookStep:'contact',component:'switch',part:'contacts' }),
     key('predict'),
-    book('meter-demo', 'Read the voltage across the lamp', 'The lamp has two connection points, or terminals. The meter compares the voltage at one probe with the voltage at the other.', {bookStep:'meter-demo',component:'light'}),
+    book('meter-demo', 'Read the lamp voltage', 'The probe tips are on the lamp’s two terminals, L and N. The meter shows the voltage between them.', {bookStep:'meter-demo',component:'light'}),
     {...key('measure:voltage'), instruction:'Put one probe on L and the other on N at the lamp. Record your reading.', independentMeasurement:true},
     key('explain'), finish,
   ];
@@ -100,4 +101,12 @@ export function getCoursebookActivities(lesson: ConfigurationLesson): LessonActi
     ...(chapterFor(lesson.id).practical === lesson.id ? [{...key('retest'),title:'Test the complete build',instruction:'Test your connections and the full operating sequence on this circuit.'}] : []),
     key('explain'), finish,
   ];
+}
+
+/** Navigation, reading the notes and guessing a prediction do not complete a lesson. */
+export function completedCoursebookLesson(lesson:ConfigurationLesson,achievements:readonly string[]){
+  if(!achievements.length)return false;
+  const required=getCoursebookActivities(lesson).filter(a=>['connect','operate','measure','explain','retest'].includes(a.kind));
+  const earned=new Set(achievements);
+  return required.length>0 && required.every(a=>earned.has(a.id));
 }

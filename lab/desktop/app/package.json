@@ -1,9 +1,10 @@
 {
   "name": "irish-electrical-lab-desktop",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Offline 3D electrical training workbench",
   "license": "MIT",
   "author": "Irish Electrical Lab",
   "main": "main.cjs",
+  "verificationProfileVersion": 1,
   "private": true
 }

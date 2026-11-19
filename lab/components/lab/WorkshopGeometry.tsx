@@ -1,4 +1,5 @@
 import React from 'react';
+import { dinForm } from '../../lib/din-devices';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { EquipmentProps } from '../../lib/Equipment';
@@ -36,7 +37,7 @@ function CircuitSchedule({entries,industrial,z}:{entries:ScheduleEntry[];industr
 export function InstalledHardware(props:EquipmentProps){
  const {component,definition,view}=props;
  const entries=React.useMemo<ScheduleEntry[]>(()=>props.filledWays?JSON.parse(props.filledWays):[],[props.filledWays]);
- if(component.mount&&definition.model==='protection'&&view==='normal'){
+ if(component.mount&&definition.model==='protection'&&!dinForm(component.type)&&view==='normal'){
    const [w,h,d]=definition.size;
    return <group userData={{partId:'cover'}} onClick={e=>{e.stopPropagation();props.onPart('cover');}}>
     <Box p={[0,h*.495,d*.43]} s={[w*(['mcb','fuse'].includes(component.type)?.405:.585),h*.43,d*.34]} c="#e0e1da" rad={.025}/>
@@ -49,22 +50,22 @@ export function InstalledHardware(props:EquipmentProps){
     if(taken.has(s.row+'/'+i))return null;
     const offset=(i+.5)*.36;
     return <group key={s.row+'/'+i} position={[s.x+(s.r?0:offset),s.y-(s.r?offset:0),s.z+.022]} rotation={[0,0,s.r]}>
-      <Box p={[0,0,0]} s={[.354,.80,.112]} c="#dadcd4" rad={.013}/>
+      <Box p={[0,0,0]} s={[.354,.884,.112]} c="#dadcd4" rad={.013}/>
       <Box p={[0,-.30,.061]} s={[.19,.014,.008]} c="#a2aaa1"/>
     </group>;
  }))}</group>;
 }
 function Body({children,id='body',detail,purpose}:{children:React.ReactNode;id?:string;detail:string;purpose:string}){return <group userData={{partId:id,detailId:detail,detailPurpose:purpose,detailRevision:3}}>{children}</group>;}
-function Rail({length}:{length:number}){
- return <><Box p={[0,0,-.045]} s={[length,.28,.045]} c={steel}/>{[-1,1].map(sign=><group key={sign}><Box p={[0,sign*.14,.015]} s={[length,.035,.14]} c={steel}/><Box p={[0,sign*.17,.079]} s={[length,.09,.033]} c={steel}/></group>)}{Array.from({length:Math.floor(length/.46)},(_,i)=><Box key={i} p={[-length/2+.26+i*.46,0,-.020]} s={[.20,.062,.01]} c={dark}/>)}</>;
+function Rail({length,device=false}:{length:number;device?:boolean}){
+ return <group scale={[1,device?35/21.5:1,1]}><Box p={[0,0,-.045]} s={[length,.28,.045]} c={steel}/>{[-1,1].map(sign=><group key={sign}><Box p={[0,sign*.14,.015]} s={[length,.035,.14]} c={steel}/><Box p={[0,sign*.17,.079]} s={[length,.09,.033]} c={steel}/></group>)}{Array.from({length:Math.floor(length/.46)},(_,i)=><Box key={i} p={[-length/2+.26+i*.46,0,-.020]} s={[.20,.062,.01]} c={dark}/>)}</group>;
 }
 function Board(props:EquipmentProps){
  const industrial=props.component.type==='invictaboard',[w,h,d]=props.definition.size,z=d/2,sz=.082,back=-z+.13,skin=industrial?'#e1e3db':'#ecebe4',door=props.component.params.doorOpen!==false||props.view!=='normal',front=props.component.params.frontOff||props.view!=='normal';
  const shieldZ=industrial?.77:.64;
  const rails=industrial?[{x:-1.67,y:6.32,a:Math.PI/2,l:2.36},{x:1.67,y:6.32,a:-Math.PI/2,l:2.36},{x:0,y:1.48,a:0,l:1.86}]:[{x:0,y:4.82,a:0,l:4.82},{x:0,y:2.32,a:0,l:4.82}];
  // The dead front is built around openings. The strips leave the breaker toggles accessible.
- const xs=industrial?[-w/2,-2.07,-1.27,-.72,.72,1.27,2.07,w/2]:[-w/2,-2.34,2.34,w/2];
- const ys=industrial?[.03,1.13,1.89,5.24,7.40,h-.03]:[.03,1.94,2.70,4.44,5.20,h-.03];
+ const xs=industrial?[-w/2,-2.12,-1.22,-.72,.72,1.22,2.12,w/2]:[-w/2,-2.34,2.34,w/2];
+ const ys=industrial?[.03,1.03,1.93,5.24,7.40,h-.03]:[.03,1.87,2.77,4.37,5.27,h-.03];
  return <>
  <Body detail="enclosure-with-cable-entry" purpose="The back pan supports the rails and contains the wiring. Removable cable-entry plates sit at the top and bottom.">
  <Box p={[0,h/2,back]} s={[w-.16,h-.16,.13]} c={skin}/>
@@ -74,12 +75,12 @@ function Board(props:EquipmentProps){
  {[-1,0,1].map(i=><Box key={i} p={[i*(w/2-.24),y,0]} s={[.34,.10,.75*z]} c={skin}/>)}{[-1,1].flatMap(i=>[-1,1].map(j=><Box key={i+'-'+j} p={[i*w*.25,y,j*z*.30]} s={[w*.41,.055,.07]} c={industrial?'#b4bcba':'#cdcec6'}/>))}</group>)}
  </Body>
  <Body id="rail" detail="top-hat-device-rails" purpose="Devices clip onto the steel top-hat section. Each numbered position occupies one 18 mm module.">
- {rails.map((a,i)=><group key={i} position={[a.x,a.y,-.44]} rotation={[0,0,a.a]}><Rail length={a.l}/></group>)}
+ {rails.map((a,i)=><group key={i} position={[a.x,a.y,industrial?-.31:-.44]} rotation={[0,0,a.a]}><Rail length={a.l} device/></group>)}
  {[-1,1].map(s=><group key={s} position={[s*(industrial?2.82:1.25),industrial?9.08:6.85,-.46]}><Rail length={1.48}/></group>)}
  </Body>
  <group userData={{partId:'shield',boardShield:true,detailId:'slotted-dead-front',detailPurpose:'The removable insulating front leaves access to the device operating handles.'}} visible={props.authoring||!front}>
  {xs.slice(0,-1).flatMap((x,i)=>ys.slice(0,-1).map((y,j)=>{const cx=(x+xs[i+1])/2,cy=(y+ys[j+1])/2;
- const hole=industrial?(Math.abs(cx)>1.27&&Math.abs(cx)<2.07&&cy>5.24&&cy<7.40||Math.abs(cx)<.72&&cy>1.13&&cy<1.89):(Math.abs(cx)<2.34&&(cy>1.94&&cy<2.70||cy>4.44&&cy<5.20));
+ const hole=industrial?(Math.abs(cx)>1.22&&Math.abs(cx)<2.12&&cy>5.24&&cy<7.40||Math.abs(cx)<.72&&cy>1.03&&cy<1.93):(Math.abs(cx)<2.34&&(cy>1.87&&cy<2.77||cy>4.37&&cy<5.27));
  return hole?null:<Box key={i+'-'+j} p={[cx,cy,shieldZ]} s={[xs[i+1]-x,ys[j+1]-y,.072]} c={skin} rad={.003}/>;}))}
  {[-1,1].flatMap(x=>[.46,h-.46].map(y=><Screw key={x+'-'+y} p={[x*(w/2-.25),y,shieldZ+.048]}/>))}
  {rails.map((a,i)=><group key={i} position={[a.x,a.y,shieldZ+.048]} rotation={[0,0,a.a]}><Box p={[0,-.52,0]} s={[a.l*.95,.19,.018]} c="#c2c8c3"/>{Array.from({length:Math.floor(a.l/.36)},(_,j)=><Box key={j} p={[-a.l/2+.23+.36*j,-.52,.018]} s={[.24,.085,.009]} c="#f5f5ed"/>)}</group>)}

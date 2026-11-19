@@ -25,10 +25,10 @@
       "cover-fixing",
       "three-insulated-terminal-groups"
     ],
-    "sourceMeshCount": 63,
-    "meshCount": 37,
-    "triangles": 37302,
-    "lowTriangles": 7381,
+    "sourceMeshCount": 67,
+    "meshCount": 38,
+    "triangles": 43520,
+    "lowTriangles": 21575,
     "terminals": [
       {
         "id": "L",
@@ -211,8 +211,8 @@
         ]
       }
     ],
-    "bytes": 983984,
-    "lowBytes": 289908,
+    "bytes": 1142428,
+    "lowBytes": 654584,
     "bespokeBlender": true
   },
   {
@@ -232,12 +232,13 @@
       "switch-contact-mechanism",
       "faceplate-fixing",
       "ribbed-switch-plate",
-      "recessed-switch-cassette"
+      "recessed-switch-cassette",
+      "switch-case-fixings"
     ],
-    "sourceMeshCount": 75,
-    "meshCount": 22,
-    "triangles": 53236,
-    "lowTriangles": 28736,
+    "sourceMeshCount": 83,
+    "meshCount": 24,
+    "triangles": 56692,
+    "lowTriangles": 18478,
     "terminals": [
       {
         "id": "COM",
@@ -276,8 +277,8 @@
         ]
       }
     ],
-    "bytes": 1398888,
-    "lowBytes": 791568,
+    "bytes": 1495952,
+    "lowBytes": 551156,
     "bespokeBlender": true
   },
   {
@@ -1170,58 +1171,56 @@
     "detailRevision": 3,
     "detailFamily": "protection",
     "detailFeatures": [
-      "terminal-clamp:IN",
-      "terminal-clamp:OUT",
       "individual-electrical-terminations",
       "protection-mechanism",
       "din-latch",
-      "enclosure-gasket-and-fixings",
-      "installation-details"
+      "installation-details",
+      "bench-rail-support"
     ],
-    "sourceMeshCount": 87,
-    "meshCount": 33,
-    "triangles": 41920,
-    "lowTriangles": 13982,
+    "sourceMeshCount": 91,
+    "meshCount": 30,
+    "triangles": 29573,
+    "lowTriangles": 5773,
     "terminals": [
       {
         "id": "IN",
-        "label": "IN",
+        "label": "1",
         "role": "L",
-        "purpose": "First end of the modelled series protected path, paired with OUT. Opening or tripping the device separates this pair.",
+        "purpose": "Paired with OUT. Opening this device breaks the connection between IN and OUT.",
         "anchor": [
           0,
-          1.1027586206896551,
-          0.21647058823529414
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "OUT",
-        "label": "OUT",
+        "label": "2",
         "role": "L",
-        "purpose": "Second end of the modelled series protected path, paired with IN. Opening or tripping the device separates this pair.",
+        "purpose": "Paired with IN. Opening this device breaks the connection between IN and OUT.",
         "anchor": [
           0,
-          0.21068965517241378,
-          0.21647058823529414
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "bytes": 1071148,
-    "lowBytes": 413308,
+    "bytes": 907680,
+    "lowBytes": 233864,
     "bespokeBlender": true
   },
   {
@@ -1235,134 +1234,128 @@
     "detailRevision": 3,
     "detailFamily": "protection",
     "detailFeatures": [
-      "terminal-clamp:L1IN",
-      "terminal-clamp:L2IN",
-      "terminal-clamp:L3IN",
-      "terminal-clamp:L1OUT",
-      "terminal-clamp:L2OUT",
-      "terminal-clamp:L3OUT",
       "individual-electrical-terminations",
       "protection-mechanism",
       "din-latch",
-      "enclosure-gasket-and-fixings",
-      "installation-details"
+      "installation-details",
+      "bench-rail-support"
     ],
-    "sourceMeshCount": 165,
-    "meshCount": 66,
-    "triangles": 89036,
-    "lowTriangles": 24322,
+    "sourceMeshCount": 200,
+    "meshCount": 46,
+    "triangles": 73580,
+    "lowTriangles": 14074,
     "terminals": [
       {
         "id": "L1IN",
-        "label": "L1IN",
+        "label": "1",
         "role": "L1",
-        "purpose": "Incoming L1 terminal of its separately modelled linked contact path. Pair it with L1OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L1 terminal. Follow it to L1OUT on the other side of the same pole.",
         "anchor": [
-          -0.2369230769230769,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.245,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L2IN",
-        "label": "L2IN",
+        "label": "3",
         "role": "L2",
-        "purpose": "Incoming L2 terminal of its separately modelled linked contact path. Pair it with L2OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L2 terminal. Follow it to L2OUT on the other side of the same pole.",
         "anchor": [
           0,
-          1.1027586206896551,
-          0.21647058823529414
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L3IN",
-        "label": "L3IN",
+        "label": "5",
         "role": "L3",
-        "purpose": "Incoming L3 terminal of its separately modelled linked contact path. Pair it with L3OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L3 terminal. Follow it to L3OUT on the other side of the same pole.",
         "anchor": [
-          0.2369230769230769,
-          1.1027586206896551,
-          0.21647058823529414
+          0.245,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L1OUT",
-        "label": "L1OUT",
+        "label": "2",
         "role": "L1",
-        "purpose": "Outgoing L1 terminal of its separately modelled linked contact path. Pair it with L1IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L1 terminal. Follow it to L1IN on the other side of the same pole.",
         "anchor": [
-          -0.2369230769230769,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.245,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L2OUT",
-        "label": "L2OUT",
+        "label": "4",
         "role": "L2",
-        "purpose": "Outgoing L2 terminal of its separately modelled linked contact path. Pair it with L2IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L2 terminal. Follow it to L2IN on the other side of the same pole.",
         "anchor": [
           0,
-          0.21068965517241378,
-          0.21647058823529414
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L3OUT",
-        "label": "L3OUT",
+        "label": "6",
         "role": "L3",
-        "purpose": "Outgoing L3 terminal of its separately modelled linked contact path. Pair it with L3IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L3 terminal. Follow it to L3IN on the other side of the same pole.",
         "anchor": [
-          0.2369230769230769,
-          0.21068965517241378,
-          0.21647058823529414
+          0.245,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "bytes": 2183036,
-    "lowBytes": 698688,
+    "bytes": 2199484,
+    "lowBytes": 505912,
     "bespokeBlender": true
   },
   {
@@ -1441,96 +1434,93 @@
     "detailRevision": 3,
     "detailFamily": "protection",
     "detailFeatures": [
-      "terminal-clamp:LIN",
-      "terminal-clamp:NIN",
-      "terminal-clamp:LOUT",
-      "terminal-clamp:NOUT",
       "individual-electrical-terminations",
       "protection-mechanism",
       "din-latch",
-      "enclosure-gasket-and-fixings",
-      "installation-details"
+      "installation-details",
+      "bench-rail-support",
+      "contact-indicator"
     ],
-    "sourceMeshCount": 141,
-    "meshCount": 53,
-    "triangles": 64256,
-    "lowTriangles": 21348,
+    "sourceMeshCount": 130,
+    "meshCount": 44,
+    "triangles": 37367,
+    "lowTriangles": 7145,
     "terminals": [
       {
         "id": "LIN",
-        "label": "LIN",
+        "label": "1",
         "role": "L",
-        "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L terminal. Follow it to LOUT on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "3",
         "role": "N",
-        "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "LOUT",
-        "label": "LOUT",
+        "label": "2",
         "role": "L",
-        "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L terminal. Follow it to LIN on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "4",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "bytes": 1591144,
-    "lowBytes": 619164,
+    "bytes": 1199040,
+    "lowBytes": 296964,
     "bespokeBlender": true
   },
   {
@@ -1544,96 +1534,93 @@
     "detailRevision": 3,
     "detailFamily": "protection",
     "detailFeatures": [
-      "terminal-clamp:LIN",
-      "terminal-clamp:NIN",
-      "terminal-clamp:LOUT",
-      "terminal-clamp:NOUT",
       "individual-electrical-terminations",
       "protection-mechanism",
       "din-latch",
-      "enclosure-gasket-and-fixings",
-      "installation-details"
+      "installation-details",
+      "bench-rail-support",
+      "contact-indicator"
     ],
-    "sourceMeshCount": 151,
-    "meshCount": 53,
-    "triangles": 68208,
-    "lowTriangles": 22020,
+    "sourceMeshCount": 146,
+    "meshCount": 46,
+    "triangles": 45471,
+    "lowTriangles": 8527,
     "terminals": [
       {
         "id": "LIN",
-        "label": "LIN",
+        "label": "1",
         "role": "L",
-        "purpose": "Incoming L terminal of its separately modelled linked contact path. Pair it with LOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L terminal. Follow it to LOUT on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "N",
         "role": "N",
-        "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          1.1027586206896551,
-          0.21647058823529414
+          0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "LOUT",
-        "label": "LOUT",
+        "label": "2",
         "role": "L",
-        "purpose": "Outgoing L terminal of its separately modelled linked contact path. Pair it with LIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L terminal. Follow it to LIN on the other side of the same pole.",
         "anchor": [
-          -0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "N",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
         "anchor": [
-          0.12461538461538461,
-          0.21068965517241378,
-          0.21647058823529414
+          0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "bytes": 1694276,
-    "lowBytes": 639600,
+    "bytes": 1386180,
+    "lowBytes": 335596,
     "bespokeBlender": true
   },
   {
@@ -1647,172 +1634,165 @@
     "detailRevision": 3,
     "detailFamily": "protection",
     "detailFeatures": [
-      "terminal-clamp:L1IN",
-      "terminal-clamp:L2IN",
-      "terminal-clamp:L3IN",
-      "terminal-clamp:NIN",
-      "terminal-clamp:L1OUT",
-      "terminal-clamp:L2OUT",
-      "terminal-clamp:L3OUT",
-      "terminal-clamp:NOUT",
       "individual-electrical-terminations",
       "protection-mechanism",
       "din-latch",
-      "enclosure-gasket-and-fixings",
-      "installation-details"
+      "installation-details",
+      "bench-rail-support",
+      "contact-indicator"
     ],
-    "sourceMeshCount": 220,
-    "meshCount": 86,
-    "triangles": 109956,
-    "lowTriangles": 29676,
+    "sourceMeshCount": 210,
+    "meshCount": 60,
+    "triangles": 62763,
+    "lowTriangles": 11730,
     "terminals": [
       {
         "id": "L1IN",
-        "label": "L1IN",
+        "label": "1",
         "role": "L1",
-        "purpose": "Incoming L1 terminal of its separately modelled linked contact path. Pair it with L1OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L1 terminal. Follow it to L1OUT on the other side of the same pole.",
         "anchor": [
-          -0.35538461538461535,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.3675,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L2IN",
-        "label": "L2IN",
+        "label": "3",
         "role": "L2",
-        "purpose": "Incoming L2 terminal of its separately modelled linked contact path. Pair it with L2OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L2 terminal. Follow it to L2OUT on the other side of the same pole.",
         "anchor": [
-          -0.11846153846153845,
-          1.1027586206896551,
-          0.21647058823529414
+          -0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L3IN",
-        "label": "L3IN",
+        "label": "5",
         "role": "L3",
-        "purpose": "Incoming L3 terminal of its separately modelled linked contact path. Pair it with L3OUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming L3 terminal. Follow it to L3OUT on the other side of the same pole.",
         "anchor": [
-          0.11846153846153845,
-          1.1027586206896551,
-          0.21647058823529414
+          0.1225,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "N",
         "role": "N",
-        "purpose": "Incoming N terminal of its separately modelled linked contact path. Pair it with NOUT. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
         "anchor": [
-          0.35538461538461535,
-          1.1027586206896551,
-          0.21647058823529414
+          0.3675,
+          1.682,
+          -0.056
         ],
         "group": "Supply",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          0.8,
-          0.6
+          1,
+          0
         ]
       },
       {
         "id": "L1OUT",
-        "label": "L1OUT",
+        "label": "2",
         "role": "L1",
-        "purpose": "Outgoing L1 terminal of its separately modelled linked contact path. Pair it with L1IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L1 terminal. Follow it to L1IN on the other side of the same pole.",
         "anchor": [
-          -0.35538461538461535,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.3675,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L2OUT",
-        "label": "L2OUT",
+        "label": "4",
         "role": "L2",
-        "purpose": "Outgoing L2 terminal of its separately modelled linked contact path. Pair it with L2IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L2 terminal. Follow it to L2IN on the other side of the same pole.",
         "anchor": [
-          -0.11846153846153845,
-          0.21068965517241378,
-          0.21647058823529414
+          -0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "L3OUT",
-        "label": "L3OUT",
+        "label": "6",
         "role": "L3",
-        "purpose": "Outgoing L3 terminal of its separately modelled linked contact path. Pair it with L3IN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing L3 terminal. Follow it to L3IN on the other side of the same pole.",
         "anchor": [
-          0.11846153846153845,
-          0.21068965517241378,
-          0.21647058823529414
+          0.1225,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "N",
         "role": "N",
-        "purpose": "Outgoing N terminal of its separately modelled linked contact path. Pair it with NIN. Matching phase/neutral identities matter; mechanical linkage does not join the poles electrically.",
+        "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
         "anchor": [
-          0.35538461538461535,
-          0.21068965517241378,
-          0.21647058823529414
+          0.3675,
+          0.52,
+          -0.056
         ],
         "group": "Load",
-        "scale": 1,
+        "scale": 0.64,
         "entryDirection": [
           0,
-          -0.35,
-          0.9367496997597597
+          -1,
+          0
         ]
       }
     ],
-    "bytes": 2646308,
-    "lowBytes": 846668,
+    "bytes": 1907440,
+    "lowBytes": 460856,
     "bespokeBlender": true
   },
   {
@@ -3147,12 +3127,13 @@
       "switch-contact-mechanism",
       "faceplate-fixing",
       "ribbed-switch-plate",
-      "recessed-switch-cassette"
+      "recessed-switch-cassette",
+      "switch-case-fixings"
     ],
-    "sourceMeshCount": 80,
-    "meshCount": 24,
-    "triangles": 59712,
-    "lowTriangles": 33504,
+    "sourceMeshCount": 88,
+    "meshCount": 26,
+    "triangles": 63222,
+    "lowTriangles": 24550,
     "terminals": [
       {
         "id": "COM",
@@ -3209,8 +3190,8 @@
         ]
       }
     ],
-    "bytes": 1544320,
-    "lowBytes": 910324,
+    "bytes": 1642920,
+    "lowBytes": 705796,
     "bespokeBlender": true
   },
   {
@@ -9104,8 +9085,8 @@
     "triangles": 15264,
     "lowTriangles": 2732,
     "terminals": [],
-    "bytes": 273644,
-    "lowBytes": 72484,
+    "bytes": 273920,
+    "lowBytes": 72760,
     "bespokeBlender": true
   },
   {
@@ -9135,7 +9116,7 @@
         "id": "PE",
         "label": "PE",
         "role": "PE",
-        "purpose": "Protective connection to the represented exposed conductive parts or protective network. It carries no intended normal load return and remains independent of switching the active conductors.",
+        "purpose": "Earth connection for the fitting. The earth path stays connected when the switch opens.",
         "anchor": [
           3.7200000000000006,
           8.5,
@@ -9150,8 +9131,8 @@
         ]
       }
     ],
-    "bytes": 452828,
-    "lowBytes": 114872,
+    "bytes": 453060,
+    "lowBytes": 115116,
     "bespokeBlender": true
   },
   {
@@ -9168,19 +9149,20 @@
       "forktester-body",
       "forktester-sensing",
       "forktester-display",
+      "forktester-backlight",
       "forktester-mode",
       "forktester-hold",
       "forktester-actuator",
       "forktester-ground",
       "forktester-probes"
     ],
-    "sourceMeshCount": 49,
-    "meshCount": 23,
-    "triangles": 13568,
-    "lowTriangles": 2433,
+    "sourceMeshCount": 76,
+    "meshCount": 38,
+    "triangles": 17184,
+    "lowTriangles": 3215,
     "terminals": [],
-    "bytes": 241624,
-    "lowBytes": 70160,
+    "bytes": 328844,
+    "lowBytes": 101008,
     "bespokeBlender": true
   },
   {

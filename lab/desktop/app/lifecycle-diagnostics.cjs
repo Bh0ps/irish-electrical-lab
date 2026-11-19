@@ -3,8 +3,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { secondaryArguments } = require('./verification-profile.cjs');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function runLifecycleDiagnostics({ app, window, settings, startedAt }) {
+async function runLifecycleDiagnostics({ app, window, settings, startedAt, run }) {
   const output = path.join(app.getPath('userData'), 'verification');
   fs.mkdirSync(output, { recursive: true });
   const file = path.join(output, 'desktop-lifecycle-report.json');
@@ -27,7 +28,7 @@ async function runLifecycleDiagnostics({ app, window, settings, startedAt }) {
       report.passed = report.prepareChecks.every(check => check.passed) && checks.every(check => check.passed);
     } else {
       const secondInstance = new Promise(resolve => app.once('second-instance', () => resolve(true)));
-      const child = spawn(process.execPath, app.isPackaged ? ['--verify-secondary-instance'] : [path.dirname(__filename), '--verify-secondary-instance'], { windowsHide: true, stdio: 'ignore' });
+      const child = spawn(process.execPath, secondaryArguments(app, run, __dirname), { windowsHide: true, stdio: 'ignore' });
       const childExit = new Promise(resolve => { child.once('exit', code => resolve(code)); child.once('error', error => resolve(error.message)); });
       const notified = await Promise.race([secondInstance, delay(10000).then(() => false)]);
       const exit = await Promise.race([childExit, delay(10000).then(() => 'timeout')]);
