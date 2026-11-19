@@ -10,10 +10,40 @@ import {PerspectiveCamera,Vector3} from 'three';
 import {installedWireRoute} from '../lib/house-installation';
 import {fixturePoint,installedTerminalPoint} from '../lib/site-fixtures';
 import {getComponentTerminals} from '../lib/terminal-layout';
+import {installedTestFittings,siteContacts,padCamera,fusedProbePose} from '../lib/site-meter';
+import {fcuProbeContact} from '../lib/bg851';
 import type {Vec3} from '../lib/types';
 
 const length=(a:Vec3,b:Vec3)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 const same=(a:Vec3,b:Vec3)=>assert.ok(length(a,b)<.000001,JSON.stringify([a,b]));
+test('the fitted heater switch can be tested only at its six exposed screw heads',()=>{
+  const doc=getLesson(20)!.circuit,site=jobSite(doc),original=electricalKey(doc);
+  const fittings=installedTestFittings(doc,site);
+  assert.deepEqual(fittings.map(f=>[f.kind,f.item.id]),[['fcu','fcu-switch']]);
+  const [fcu]=fittings,pose=fusedPlatePose(fcu.item,true);
+  assert.deepEqual(siteContacts(fcu,false),[]);
+  const points=siteContacts(fcu,true);
+  assert.deepEqual(points.map(p=>p.label).sort(),['L · IN','N · IN','L · LOAD','N · LOAD','E','E2'].sort());
+  for(const {endpoint,position} of points){
+    const screw=fcuProbeContact(endpoint.terminal)!,second=fusedProbePose(fcu.item,fcu.component,endpoint.terminal,true)!;
+    same(position,fixturePoint(pose.position,fcu.item.scale,fcu.item.fixture,fcu.component,screw.position,pose.rotation));
+    assert.ok(length(position,second.position)>.0008,'a second tip has its own seat on the same screw');
+    const port=getComponentTerminals(fcu.component,COMPONENTS.fcu).find(t=>t.id===endpoint.terminal)!;
+    const mouth=fixturePoint(pose.position,fcu.item.scale,fcu.item.fixture,fcu.component,port.anchor,pose.rotation);
+    assert.ok(length(position,mouth)>.003,'wire mouth and metal testing surface are distinct');
+    for(const id of [undefined,endpoint.terminal])for(const aspect of [320/690,390/794,844/335]){
+      const view=padCamera(fcu,true,true,id,aspect);
+      const camera=new PerspectiveCamera(49,aspect,.012,55);
+      camera.position.set(...view.position);camera.rotation.set(view.pitch,view.yaw,0,'YXZ');camera.updateMatrixWorld();
+      const projected=new Vector3(...position).project(camera);
+      assert.ok(Math.abs(projected.x)<.96&&Math.abs(projected.y)<.95&&projected.z> -1&&projected.z<1,'screw within installed camera at '+aspect);
+      if(id)assert.ok(Math.abs(projected.x)<.001&&Math.abs(projected.y)<.001,'chosen screw centred');
+    }
+  }
+  const legacy=getLesson(20,{...doc,components:doc.components.map(c=>c.id==='fcu-switch'?{...c,type:'switch'}:c)})!.circuit;
+  assert.deepEqual(installedTestFittings(legacy,jobSite(legacy)),[]);
+  assert.equal(electricalKey(doc),original);
+});
 test('the kitchen fused unit sits on its own 50 mm box beside the heater, clear of the counter and doorway',()=>{
   const doc=getLesson(20)!.circuit,site=jobSite(doc);
   const fcu=site.items.find(i=>i.id==='fcu-switch')!,heater=site.items.find(i=>i.id==='fixed')!;

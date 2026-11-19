@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.21.0 — Take the meter to the fitting
+
+- On a small phone the job title has its own line. Use **View** to change between the room, drawing, workbench and equipment list. **Full screen** stays within reach when the job instructions are open.
+- In full screen, the reading and both probes stay beside the fitting. Tap **Red** or **Black** to move that probe, choose **Points** for the terminal names and use **Record** when you have the reading.
+- Try **Tools → Check wall switch** in the kitchen heater job. Turn off the simulated supply to see the six rear screws on the switched fused connection unit. Touch the actual screw heads or choose them by name. Compare the contacts with the rocker off and on.
+- **The heater stays cold** keeps your two voltage readings on the training bench. The job explains what you checked if you choose earth or the incoming line. After repair, work the wall switch and watch the heater draw power again.
+
 ## 1.20.0 — Find the lighting breaker
 
 - Follow both circuits at Oakfield. Try the numbered breakers separately, read what happens at the lamp and socket, then use the shared RCCB lever to switch both circuits off and back on. An earlier finished job still opens at its original ending, with an option to try the new checks.

@@ -1,16 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {Box3,Mesh,Raycaster,Vector3} from 'three';
+import {Box3,Line3,Mesh,Raycaster,Vector3} from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {animateBlenderModel,prepareBlenderModel,presentBlenderModel,semanticOwner} from '../lib/blender-model';
-import {fcuProbeContact} from '../lib/bg851';
+import {fcuProbeContact,fcuProbeScrew} from '../lib/bg851';
 import {describeEndpoint} from '../lib/endpoint-description';
 import {getLesson} from '../lib/lessons';
 import {probeContact,routeCircuit,terminalPosition} from '../lib/routing';
 import {simulate} from '../lib/simulation';
 import {connectedRockerTerminals} from '../lib/wall-rocker';
-import type {Vec3} from '../lib/types';
+import {siteProbeSegments} from '../lib/site-probe-shape';
+import {fusedIncomingLead,fusedPlatePose,gripEnd,heaterFlexPath,heaterFlexRoute} from '../lib/fused-heater-site';
+import {jobSite} from '../lib/job-site';
+import type {CircuitDocument,Vec3} from '../lib/types';
 
 const doc=getLesson(20)!.circuit,item=doc.components.find(c=>c.type==='fcu')!;
 const vec=(p:Vec3)=>new Vector3(...p),rear=new Vector3(0,0,-1),up=new Vector3(0,1,0);
@@ -22,29 +25,48 @@ test('both original BG 851 meshes expose the marked mouths, metal screw heads an
     const {scene}=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
     const m=prepareBlenderModel(scene,suffix!==''),standalone={...item,position:[0,0,0] as Vec3,rotation:0};
     const local={...doc,components:doc.components.map(c=>c.id===item.id?standalone:c)};
-    const cast=(from:Vector3,dir:Vector3)=>{
-      const visible:Mesh[]=[];m.scene.traverseVisible(n=>{if(n instanceof Mesh)visible.push(n);});
-      return new Raycaster(from,dir).intersectObjects(visible,false)[0];
-    };
+    const visible:Mesh[]=[];
+    const cast=(from:Vector3,dir:Vector3,far=Infinity)=>new Raycaster(from,dir,0,far).intersectObjects(visible,false)[0];
     for(const wired of ['', Object.keys(marks).join(' ')]){
       presentBlenderModel(m,'normal',standalone,undefined,undefined,wired);m.scene.updateMatrixWorld(true);
+      visible.length=0;m.scene.traverseVisible(n=>{if(n instanceof Mesh)visible.push(n);});
       assert.deepEqual(m.receptacles.filter(p=>p.node.visible).map(p=>p.terminal).sort(),wired.split(' ').filter(Boolean).sort());
       for(const [terminal,label] of Object.entries(marks)){
         const end={component:item.id,terminal};
         assert.equal(describeEndpoint(doc,end)?.pointLabel,label);
-        const contact=fcuProbeContact(terminal)!;
-        const axis=vec(contact.normal),tip=vec(contact.position);
-        const from=tip.clone().addScaledVector(axis,terminal==='LOUT'?.039:.12);
-        const screw=cast(from,axis.clone().negate());
-        assert.ok(screw,'contact '+terminal);assert.equal(semanticOwner(screw.object).terminal,terminal,terminal+' screw hit '+screw.object.name);
-        assert.ok(screw.point.distanceTo(tip)<.0018,terminal+' probe seats in the screw, actual '+screw.point.toArray()+' expected '+tip.toArray());
+        for(const second of [false,true]){
+          const contact=fcuProbeContact(terminal,second)!;
+          const axis=vec(contact.approach),tip=vec(contact.position);
+          const screw=cast(tip.clone().addScaledVector(axis,1.1),axis.clone().negate());
+          assert.ok(screw,'unobstructed rear contact '+terminal);
+          const steel=(screw.object as Mesh).material;
+          assert.ok(!Array.isArray(steel));
+          assert.equal(fcuProbeScrew(screw.object,steel.name),terminal,terminal+' screw hit '+screw.object.name);
+          assert.ok(screw.point.distanceTo(tip)<.0012,terminal+' metal lands within 0.12 mm of the tip');
+          if(wired){
+            // Trace the actual guard and shaft envelope, not just the centre ray.
+            const side=new Vector3().crossVectors(axis,up).normalize(),side2=new Vector3().crossVectors(axis,side);
+            for(const section of siteProbeSegments)for(let i=0;i<16;i++){
+              const radial=side.clone().multiplyScalar(Math.cos(i*Math.PI/8)).addScaledVector(side2,Math.sin(i*Math.PI/8));
+              const edge=(distance:number,radius:number)=>tip.clone().addScaledVector(axis,distance*.01).addScaledVector(radial,radius*.01);
+              const a=edge(section.end,section.top),b=edge(Math.max(.08,section.start),section.base).sub(a);
+              const part=cast(a,b.clone().normalize(),b.length());
+              if(part){
+                const material=(part.object as Mesh).material;assert.ok(!Array.isArray(material));
+                assert.equal(fcuProbeScrew(part.object,material.name),terminal,'obstruction at '+terminal+' '+part.object.name);
+              }
+            }
+          }
+        }
         const entry=vec(terminalPosition(local,end));const mouth=cast(entry.clone().addScaledVector(rear,.25),rear.clone().negate());
         assert.equal(semanticOwner(mouth.object).terminal,terminal,terminal+' wire entry hit '+mouth.object.name);
         const mat=(mouth.object as Mesh).material;assert.ok(!Array.isArray(mat));
+        assert.equal(fcuProbeScrew(mouth.object,mat.name),undefined,'conductor entry is distinct from the test screw');
         if(wired)assert.equal(mat.name,'851 seated wire copper');
         else {assert.notEqual(mat.name,'851 seated wire copper');assert.ok(mouth.point.z>entry.z+.025,'empty cable throat '+terminal);}
         const front=cast(new Vector3(entry.x,entry.y,.75),rear);
         assert.notEqual(semanticOwner(front.object).part,'terminals','no rear hardware on front plate');
+        assert.equal(fcuProbeScrew(front.object,'Zinc plated steel'),undefined,'visible fixing hardware cannot be selected as a test screw');
       }
     }
     // Sample a 6.4 mm diameter round flex through the knockout and cord grip.
@@ -57,6 +79,45 @@ test('both original BG 851 meshes expose the marked mouths, metal screw heads an
     assert.equal(semanticOwner(flange.object).part,'cover','intact lower edge beside the knockout');
     for(const mat of m.owned)mat.dispose();
   }
+});
+
+test('both probe bodies clear the withdrawn fitting’s wires and one another, including on the same screw',()=>{
+  const {challenge}=getLesson(20)!;
+  const faulty:CircuitDocument={...doc,faults:[{wire:challenge.wire,type:challenge.fault,enabled:true}]};
+  const site=jobSite(doc),fcu=site.items.find(i=>i.id===item.id)!,heater=site.items.find(i=>i.id==='fixed')!;
+  const pose=fusedPlatePose(fcu,true);
+  const localMM=(p:Vec3)=>vec(p).sub(vec(pose.position)).applyAxisAngle(up,-pose.rotation).multiplyScalar(1000);
+  const segmentsFor=(d:CircuitDocument)=>{
+    const paths=[{points:[gripEnd(fcu,true),...heaterFlexPath(fcu,heater,true)],radius:3.2}];
+    for(const wire of d.wires){
+      const path=heaterFlexRoute(d,site,wire,true);
+      if(path)paths.push({points:(wire.from.component===fcu.id?path:[...path].reverse()).slice(0,6),radius:1.05});
+      else{
+        const supply=fusedIncomingLead(d,fcu,wire,true);
+        if(supply)paths.push({points:supply,radius:1.1});
+      }
+    }
+    return paths.flatMap(({points,radius})=>points.slice(1).map((p,i)=>({line:new Line3(localMM(points[i]),localMM(p)),radius})));
+  };
+  const wires=[...segmentsFor(doc),...segmentsFor(faulty)],nearest=new Vector3();
+  const tools=Object.keys(marks).flatMap(id=>[false,true].map(second=>{
+    const contact=fcuProbeContact(id,second)!,tip=vec(contact.position).multiplyScalar(100),axis=vec(contact.approach);
+    const samples=siteProbeSegments.flatMap(({start,end,base,top})=>{
+      const count=Math.ceil((end-start)/.5);
+      return Array.from({length:count+1},(_,i)=>({p:tip.clone().addScaledVector(axis,start+(end-start)*i/count),r:base+(top-base)*i/count}));
+    });
+    for(const {p,r} of samples)for(const {line,radius} of wires){
+      assert.ok(line.closestPointToPoint(p,true,nearest).distanceTo(p)>r+radius+.3,'metal and insulation clear the fitted wiring at '+id);
+    }
+    return {samples,id,second};
+  }));
+  for(const [i,a] of tools.entries())for(const b of tools.slice(i+1)){
+    if(a.id!==b.id&&(a.second||b.second))continue;
+    for(const s of a.samples)for(const t of b.samples){
+      assert.ok(s.p.distanceToSquared(t.p)>(s.r+t.r+.5)**2,'both grips clear at '+[a.id,b.id]);
+    }
+  }
+  assert.equal(fcuProbeContact('__proto__'),undefined);
 });
 
 test('the fuse stays with its captive drawer, while the flag follows the physical rocker even after a trip',async()=>{
@@ -89,9 +150,11 @@ test('the fuse stays with its captive drawer, while the flag follows the physica
   }
   for(const rotation of [0,.59,Math.PI/2,Math.PI]){
     const d={...doc,components:doc.components.map(c=>c.id===item.id?{...item,rotation}:c)};
-    for(const pin of Object.keys(marks)){
-      const end={component:item.id,terminal:pin},contact=fcuProbeContact(pin)!,probe=probeContact(d,end);
+    for(const pin of Object.keys(marks))for(const second of [false,true]){
+      const end={component:item.id,terminal:pin},contact=fcuProbeContact(pin,second)!,probe=probeContact(d,end,second);
       assert.ok(vec(probe.position).distanceTo(vec(contact.position).applyAxisAngle(up,rotation).add(vec(item.position)))<1e-8);
+      assert.ok(probe.approach&&vec(probe.approach).distanceTo(vec(contact.approach).applyAxisAngle(up,rotation))<1e-8);
+      assert.ok(vec(probe.normal).distanceTo(vec(contact.normal).applyAxisAngle(up,rotation))<1e-8);
       assert.ok(vec(probe.position).distanceTo(vec(terminalPosition(d,end)))>.035);
     }
   }

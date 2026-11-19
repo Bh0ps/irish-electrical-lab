@@ -70,15 +70,15 @@ export function heaterHandoverStep(doc:CircuitDocument,result:SimulationResult|u
       instruction:failed?'Check the heater supply and connections.':'Wait for the heater reading.',reading:'No power reading yet.'} as const;
   }
   const closed=doc.components.find(c=>c.id==='fcu-switch')?.params.closed===true;
-  const reading='Heater element · '+Math.round(watts)+' W',thermostat=panelThermostat(panel.params);
+  const reading='Heater power · '+Math.round(watts)+' W',thermostat=panelThermostat(panel.params);
   if(closed&&!thermostat.calling)return {action:'raise',label:'Raise heater setting 1 °C',disabled:false,
-    instruction:'The room is '+thermostat.temperature+' °C. Raise the heater setting above that to call for heat.',
+    instruction:'The room is '+thermostat.temperature+' °C. Set the heater a little higher so it starts heating.',
     reading:reading+' · Set to '+thermostat.setpoint+' °C'} as const;
   if(closed&&watts<=1)return {action:'test',label:'Check the circuit',disabled:false,
     instruction:'The wall switch is on but the element has no power. Check the feed to the heater.',reading} as const;
   return {action:'operate',label:closed?'Switch heater off at the wall':'Switch heater on at the wall',disabled:false,reading,
-    instruction:closed?'Switch the heater off. Watch its power reading.':run?.offRevision===doc.revision?
-      'Switch it back on. Does the element draw power again?':'Switch the heater on for a starting reading.'} as const;
+    instruction:closed?'Switch it off at the wall. Watch the heater power in watts (W).':run?.offRevision===doc.revision?
+      'Switch it back on. Does the heater draw power again?':'Turn the wall switch on and check the heater power.'} as const;
 }
 
 /** The older bench has a separate fuse between the switch and the heater. */
@@ -94,6 +94,32 @@ export function heaterFeed(doc:CircuitDocument):Endpoint|undefined {
 }
 
 export interface HeaterReadings { heater?:MeasurementEvidence; output?:MeasurementEvidence }
+
+export function heaterFeedMark(doc:CircuitDocument){
+  return heaterFeed(doc)?.component==='fuse'?'OUT on the separate fuse':'LOAD L on the wall switch';
+}
+
+/** Explain what this probe pair checked. The diagnosis still needs both measured voltages. */
+export function heaterProbeTip(doc:CircuitDocument,sample:MeasurementEvidence,readings:HeaterReadings){
+  if(sample.mode!=='voltage'||sample.instrument&&sample.instrument.method!=='probe-voltage')
+    return 'Use the two probes on the bench voltmeter for this check.';
+  if(sample.instrument?.held)return 'Turn Hold off to record what the probes are touching now.';
+  if(sample.assisted)return 'Place both probes yourself, then record the reading.';
+  const points=[sample.a,sample.b];
+  const common=points.findIndex(p=>p?.component===heaterNeutral.component&&p.terminal===heaterNeutral.terminal);
+  if(!readings.heater){
+    if(points.some(p=>p?.component==='fixed'&&p.terminal==='PE'))
+      return 'That is the earth connection. To check the heater feed, use L and N at the heater.';
+    return 'Start at the heater. Put one probe on L and one on N.';
+  }
+  const redOnNeutral=readings.heater.a?.component==='fixed'&&readings.heater.a.terminal==='N';
+  if(common<0)return 'Put '+(redOnNeutral?'red':'black')+' back on N at the heater so both readings use the same point.';
+  const point=points[1-common],lead=common===0?'black':'red';
+  if(point?.component==='fcu-switch'&&point.terminal==='LIN')
+    return 'IN is where power comes into the wall switch. Move '+lead+' to LOAD L, the line going to the heater.';
+  return 'Keep the probe on heater N. Move '+lead+' to '+heaterFeedMark(doc)+'.';
+}
+
 export function heaterFaultReadings(doc:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[]):HeaterReadings {
   const readings:HeaterReadings={},feed=heaterFeed(doc);
   if(!feed)return readings;

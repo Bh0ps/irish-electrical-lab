@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { assessFaultDiagnosis } from '../lib/fault-diagnosis';
-import { elementWatts,finishHeaterPress,hasPanelHeater,heaterComparisonReady,heaterFaultReadings,heaterFeed,heaterHandoverStep,heaterLine,heaterNeutral,heaterRunReady,isHeaterRun,startHeaterPress } from '../lib/heater-fault';
+import { elementWatts,finishHeaterPress,hasPanelHeater,heaterComparisonReady,heaterFaultReadings,heaterFeed,heaterHandoverStep,heaterLine,heaterNeutral,heaterProbeTip,heaterRunReady,isHeaterRun,startHeaterPress } from '../lib/heater-fault';
 import { captureMeasurement, validateDiagnosisEvidence } from '../lib/learning';
 import { getLesson } from '../lib/lessons';
 import { faultMeterCheck } from '../lib/fault-checks';
@@ -57,6 +57,24 @@ test('wrong reference, held or assisted reading, stale results, switch off and i
     const trial=setup(false,closed,broken);
     const captured=[trial.read(heaterLine,heaterNeutral),trial.read(trial.feed,heaterNeutral)];
     assert.equal(heaterComparisonReady(trial.doc,heaterFaultReadings(trial.doc,trial.result,captured)),false);
+  }
+});
+
+test('heater feedback follows the learner’s own leads, including a reversed pair and a saved separate fuse',()=>{
+  for(const legacy of [false,true])for(const reversed of [false,true]){
+    const {doc,result,read,feed}=setup(legacy);
+    const pair=(point:Endpoint,common:Endpoint=heaterNeutral)=>reversed?read(common,point):read(point,common);
+    const first=pair(heaterLine),rows=heaterFaultReadings(doc,result,[first]);
+    const earth=pair(heaterLine,{component:'fixed',terminal:'PE'});
+    assert.match(heaterProbeTip(doc,earth,{}),/earth.*L and N at the heater/);
+    const wrongN=pair(feed,{component:'supply',terminal:'N'});
+    assert.match(heaterProbeTip(doc,wrongN,rows),new RegExp('Put '+(reversed?'red':'black')+' back on N at the heater'));
+    const wrongOutput=pair(legacy?{component:'fuse',terminal:'IN'}:{component:'fcu-switch',terminal:'LIN'});
+    assert.ok(Math.abs(wrongOutput.value!-240)<.2);
+    assert.match(heaterProbeTip(doc,wrongOutput,rows),legacy?/OUT on the separate fuse/:/IN is where power comes into the wall switch.*LOAD L/);
+    assert.ok(!heaterComparisonReady(doc,heaterFaultReadings(doc,result,[first,wrongN,wrongOutput])));
+    assert.ok(heaterComparisonReady(doc,heaterFaultReadings(doc,result,[first,wrongN,wrongOutput,pair(feed)])));
+    assert.match(heaterProbeTip(doc,{...first,mode:'resistance'},rows),/bench voltmeter/);
   }
 });
 

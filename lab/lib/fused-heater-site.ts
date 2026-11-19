@@ -136,8 +136,11 @@ export function fusedIncomingLead(doc:CircuitDocument,item:SiteItem,wire:Wire,op
   const entry=placed(item,[n,.062,-FCU_BOX.depth+.0009]);
   // Behind the plate the incoming cores loop out of the rear knockout to the same terminals.
   const side=wire.role==='PE'?-.032:wire.role==='N'?.026:.010;
-  const controlA=placed(core.pose,[side,wire.role==='N'?.019:.070,-(open?.043:.023)]);
-  const controlB=placed(item,[n,.073,open?.070:-.025]);
+  // When withdrawn, carry the incoming earth loop above the row of clamp
+  // screws. The same core stays seated and returns to its normal box route.
+  const aboveScrews=open&&wire.role==='PE';
+  const controlA=placed(core.pose,[side,aboveScrews?.108:wire.role==='N'?.019:.070,-(open?.043:.023)]);
+  const controlB=placed(item,[n,aboveScrews?.097:.073,open?.070:-.025]);
   const arc=Array.from({length:12},(_,i)=>cubic(core.clearance,controlA,controlB,entry,i/11));
   return [core.pin,...arc];
 }

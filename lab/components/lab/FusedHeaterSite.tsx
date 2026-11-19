@@ -43,7 +43,7 @@ function colour(wire:Wire){
   const core=wire.cable?.core??(wire.role==='N'?'blue':wire.role==='PE'?'green-yellow':'brown');
   return {colour:CORE_COLOUR[core],stripe:core==='green-yellow'?'#e0bb49':undefined};
 }
-export function FittedHeaterFlex({site,doc,open}:{site:JobSite;doc:CircuitDocument;open:boolean}){
+export function FittedHeaterFlex({site,doc,open,blockProbes=false}:{site:JobSite;doc:CircuitDocument;open:boolean;blockProbes?:boolean}){
   const run=heaterFlexRun(doc),fcu=site.items.find(i=>i.fixture?.fusedHeater),heater=site.items.find(i=>i.id==='fixed');
   if(!fcu||!heater)return null;
   const tails:{points:Vec3[];colour:string;id:string;radius:number;stripe?:string;flexible?:boolean}[]=[];
@@ -66,5 +66,5 @@ export function FittedHeaterFlex({site,doc,open}:{site:JobSite;doc:CircuitDocume
       }
     }
   }
-  return <group userData={{heaterFlex:true}}><FittedWireTails tails={tails}/></group>;
+  return <group userData={{heaterFlex:true}}><FittedWireTails tails={tails} blockProbes={blockProbes}/></group>;
 }
