@@ -101,11 +101,14 @@ export function StripChannel({x,open,level,tint,select}:{x:number;open:boolean;l
   </group>;
 }
 
-export function StripTails({tails}:{tails:{points:Vec3[];colour:string;id:string}[]}){
+export function FittedWireTails({tails}:{tails:{points:Vec3[];colour:string;id:string;radius?:number;stripe?:string}[]}){
   return <group>{tails.map(tail=><group key={tail.id}>{tail.points.slice(1).map((p,i)=>{
     const a=new THREE.Vector3(...tail.points[i]),v=new THREE.Vector3(...p).sub(a),mid=a.addScaledVector(v,.5);
-    return <mesh key={i} position={mid} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),v.clone().normalize())} raycast={()=>{}}>
-      <cylinderGeometry args={[.0008,.0008,v.length(),7]}/><meshStandardMaterial color={tail.colour}/>
-    </mesh>;
+    const radius=tail.radius??.0008,length=v.length();
+    if(length<.000001)return null;
+    return <group key={i} position={mid} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize())}>
+      <mesh raycast={()=>{}}><cylinderGeometry args={[radius,radius,length,10]}/><meshStandardMaterial color={tail.colour}/></mesh>
+      {tail.stripe&&<mesh raycast={()=>{}}><cylinderGeometry args={[radius+.00002,radius+.00002,length,5,1,true,.5,2.8]}/><meshStandardMaterial color={tail.stripe}/></mesh>}
+    </group>;
   })}</group>)}</group>;
 }

@@ -14,6 +14,8 @@ import { GARDEN_DOOR,HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,REAR_GARDEN
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {serviceRoom} from './ServiceRooms';
 import {stairHall} from './StairHall';
+import {BathroomFabric,bathFurniture} from './BathroomExtract';
+import {BATH_KITCHEN_COUNTER,BATH_RACK} from '../../lib/bathroom-extract';
 
 type Shape='box'|'cylinder'|'ball'|'cushion';
 interface Piece {shape:Shape; surface:string; p:Vec3; s:Vec3; rotation:Vec3}
@@ -67,6 +69,7 @@ function installation(site:JobSite){
   box(0,-.16,4.65,19,.22,3.8,'paving');
   const industrial=site.kind==='works'||site.kind==='workshop',home=site.kind==='home';
   const bathroom=site.building.rooms[1]==='Bathroom';
+  const vent=bathroom&&site.name==='Timed extract';
   const stair=home&&site.building.rooms[1]==='Stair hall';
   function wallPart(wall:FloorWall,along:number,y:number,recess:number,length:number,height:number,thickness:number,material:string){
     const b=alignWall(wall,along,recess,length,thickness);box(b.x,y,b.z,b.w,height,b.d,material);
@@ -94,14 +97,21 @@ function installation(site:JobSite){
     const wood=home&&i!==2&&site.building.rooms[i]!=='Bathroom';
     if(wood){for(let k=0;k<19;k++)box(x-2.09+k*.232,-.018,0,.229,.034,5.58,k%4===0?'walnut':'oak');}
     else box(x,-.015,0,4.39,.035,5.59,(home||site.kind==='shop')?'tile':'concrete');
-    if(!stair||i!==1)box(x,2.91,0,4.39,.06,5.59,home?'cream':'concrete');
+    if(i!==1||(!stair&&!vent))box(x,2.91,0,4.39,.06,5.59,home?'cream':'concrete');
     if(!home)box(x,.07,BACK+.013,4.39,.13,.035,'iron');
     for(const edge of [BACK+.2,FRONT-.42]){
       if(stair&&i===1&&edge<0)continue;
       box(x,2.86,edge,4.38,.10,.11,home?'white':'steel');
     }
     // Entrance windows and their two solid wall sections keep the glazing at a real opening.
-    if(i!==1){
+    if(bathroom&&i===1){
+      // BathroomFabric has real openings for the privacy window and wall sleeve.
+    }else if(bathroom&&i===2){
+      const front={...HOME_WALLS.find(w=>w.id==='front')!,start:2.2,end:6.6};
+      partition(front,'wall2');
+      const centre=doorsOn(front,true)[0].centre;
+      box(centre,.015,FRONT+.36,.96,.025,.56,'rubber');
+    }else if(i!==1){
       box(x,.42,FRONT,4.38,.84,.13,'wall'+i);box(x,2.58,FRONT,4.38,.56,.13,'wall'+i);
       for(const s of [-1,1])box(x+s*1.6,1.58,FRONT,1.18,1.53,.13,'wall'+i);
       box(x,1.58,FRONT,2.02,1.42,.015,'glass');frame(x,1.58,FRONT-.07,2.03,1.43);box(x,1.58,FRONT-.085,.035,1.43,.07,'white');
@@ -260,7 +270,9 @@ function installation(site:JobSite){
     box(shoe.x,.15,shoe.z,.93,.033,.29,'sage');box(shoe.x,1.64,-4.918,1.12,.11,.032,'oak');
     for(const offset of [-.38,0,.38]){box(shoe.x+offset,1.64,-4.873,.028,.023,.073,'brass');box(shoe.x+offset,1.67,-4.84,.028,.071,.023,'brass');}
     for(const x of [-.26,-.12,.14,.28])pad(shoe.x+x,.21,shoe.z+.02,.105,.10,.22,x<0?'iron':'fabric');
-    furniture(-4.4,-2.49,3.65);sink(-5.62,-2.46);
+    if(bathroom)furniture(BATH_KITCHEN_COUNTER.x,BATH_KITCHEN_COUNTER.z,BATH_KITCHEN_COUNTER.w);
+    else furniture(-4.4,-2.49,3.65);
+    sink(-5.62,-2.46);
     shelf(-5.8,1.43,-2.63,.87);
     if(/abinet|upboard|orktop|unable-white/.test(site.name)){
       if(site.name==='Worktop lighting'){
@@ -289,8 +301,8 @@ function installation(site:JobSite){
       }
     }
     for(const x of [-6.05,-5.8,-5.55]){pipe(x,1.57,-2.58,.06,.22,'cream');pipe(x,1.69,-2.58,.062,.022,'oak');}
-    furniture(5.6,-2.49,1.39,'white');rack(3.13,-.65);
-    if(site.building.rooms[1]==='Bathroom'){furniture(1.32,-2.47,1.30,'white');sink(1.32,-2.46);frame(1.34,1.63,-2.69,.89,.70,'metal');box(1.34,1.63,-2.735,.87,.68,.02,'glass');}
+    furniture(5.6,-2.49,1.39,'white');rack(bathroom?BATH_RACK.x:3.13,-.65);
+    if(bathroom){bathFurniture(add);furniture(1.32,-2.47,1.30,'white');sink(1.32,-2.46);frame(1.34,1.63,-2.69,.89,.70,'metal');box(1.34,1.63,-2.735,.87,.68,.02,'glass');}
     else if(stair)stairHall(add,frame);
     else{
       // Shallow hall cupboard, moulded panels and latch. Its leaf is on the back wall.
@@ -373,6 +385,7 @@ export default function InstallationRoom({site,economy,cupboardOpen,operateCupbo
   return <group name={'Installation · '+building.name}>
     <SceneryBoundary><Suspense fallback={null}><Environment files={publicAssetUrl('/site-assets/daylight.hdr')} environmentIntensity={.65}/></Suspense></SceneryBoundary>
     <SceneryBoundary><Suspense fallback={null}><SiteFinishes materials={res.materials}/></Suspense></SceneryBoundary>
+    {kind==='home'&&building.rooms[1]==='Bathroom'&&<BathroomFabric vent={name==='Timed extract'} plaster={res.materials.wall0} masonry={res.materials.brick}/>}
     {site.name==='Cupboard lighting'&&<group position={CUPBOARD_HINGE} rotation={[0,cupboardOpen?CUPBOARD_SWING:0,0]} onClick={e=>{e.stopPropagation();operateCupboard();}}>
       <mesh position={[.38,0,0]} material={res.materials.sage} geometry={res.geo.box} scale={[.76,.75,.032]} castShadow receiveShadow/>
       <mesh position={[.66,-.16,.036]} material={res.materials.metal} geometry={res.geo.box} scale={[.024,.12,.04]}/>

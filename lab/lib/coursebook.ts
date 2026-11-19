@@ -1,5 +1,5 @@
 import { ELV_PAGES } from './elv-coursebook.ts';
-import { COURSE_PAGES } from './coursebook-content.ts';
+import { coursePage } from './coursebook-content.ts';
 import { createIsolatedGuidedBuild } from './guided-build.ts';
 import { getLessonActivities, type LessonActivity } from './learning.ts';
 import { measureVoltage } from './simulation.ts';
@@ -19,7 +19,7 @@ export const CHAPTERS = [
 const order = CHAPTERS.flatMap(chapter => chapter.lessons);
 export const chapterFor = (id: number) => CHAPTERS.find(chapter => chapter.lessons.includes(id))!;
 export const nextCourseId = (id: number) => order[order.indexOf(id) + 1];
-export const courseTitle = (lesson: ConfigurationLesson) => COURSE_PAGES[lesson.id]?.title ?? lesson.title;
+export const courseTitle = (lesson: ConfigurationLesson) => coursePage(lesson.id,lesson.circuit)?.title ?? lesson.title;
 
 const searchTerms: Record<string, string> = {
   lamp: 'light', lamps: 'light', lights: 'light', lighting: 'light', bulb: 'light', bulbs: 'light',
@@ -34,7 +34,7 @@ function searchWords(text: string) {
     .filter(Boolean).map(word => searchTerms[word] ?? word);
 }
 export function courseMatchesQuery(lesson: ConfigurationLesson, query: string): boolean {
-  const page = COURSE_PAGES[lesson.id];
+  const page = coursePage(lesson.id,lesson.circuit);
   return matchesStudyQuery([lesson.id, lesson.title, lesson.category, lesson.summary, page?.title, page?.aliases, page?.situation, page?.idea, lesson.challenge.briefing].join(' '),query);
 }
 export function matchesStudyQuery(description:string,query:string):boolean{
@@ -72,7 +72,7 @@ export function bookLampVoltage(doc: CircuitDocument, result?: SimulationResult)
 }
 
 export function getCoursebookActivities(lesson: ConfigurationLesson): LessonActivity[] {
-  const page = COURSE_PAGES[lesson.id];
+  const page = coursePage(lesson.id,lesson.circuit);
   const full = getLessonActivities(lesson);
   const key = (suffix: string) => full.find(a => a.id === `lesson:${lesson.id}:${suffix}`)!;
   const book = (id: string, title: string, instruction: string, extra: Partial<LessonActivity> = {}): LessonActivity => ({

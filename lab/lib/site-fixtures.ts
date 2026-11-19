@@ -17,6 +17,9 @@ export interface FixturePose {
   bellService?:BellServicePart;
   hallChime?:boolean;
   kitchenDriver?:boolean;
+  extractor?:boolean;
+  serviceBox?:'timer'|'cpc';
+  ceilingLight?:boolean;
   tapeProfile?:boolean;
   tilt?: number;
   roll?: number;
@@ -36,6 +39,8 @@ export function isStrip(c: ComponentInstance) {
  * No dimensions or rotations here affect the bench's electrical endpoints. */
 export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboard: boolean, doorbellHall=false): FixturePose | undefined {
   if (c.mount) return;
+  if(backWall&&c.type==='fan'&&c.variant==='xf100s')return {scale:[.1,.1,.1],extractor:true};
+  if(backWall&&c.type==='isolator3'&&c.variant==='fan-isolator')return {scale:[.1,.1,.1],flushPlate:true};
   if(doorbellHall&&(c.type==='chime'||c.type==='callchime')){
     const {size,model}=chimeEnvelope(c.type);
     return {scale:size.map((dimension,i)=>dimension/model[i]) as Vec3,hallChime:true};

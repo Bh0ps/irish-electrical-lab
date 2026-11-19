@@ -1,0 +1,275 @@
+{
+  "version": 1,
+  "id": "lesson-36",
+  "name": "Timer extractor with maintained supply",
+  "revision": 0,
+  "supply": {
+    "enabled": true,
+    "phase": "single",
+    "voltage": 240,
+    "frequency": 50,
+    "sourceResistance": 0.12
+  },
+  "components": [
+    {
+      "id": "supply",
+      "type": "source",
+      "label": "240 V study supply · Ireland nominal 230 V",
+      "position": [
+        -5,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {}
+    },
+    {
+      "id": "protect",
+      "type": "rcbo",
+      "label": "Circuit breaker (RCBO) · 16 A / 30 mA",
+      "position": [
+        -2,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "rating": 16,
+        "residualRating": 0.03,
+        "closed": true
+      }
+    },
+    {
+      "id": "fan-isolation",
+      "type": "isolator3",
+      "label": "Three-pole fan isolation · fourth pole unused",
+      "position": [
+        -0.25,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      }
+    },
+    {
+      "id": "light-switch",
+      "type": "switch",
+      "label": "Bathroom light switch",
+      "position": [
+        1.5,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      }
+    },
+    {
+      "id": "runon",
+      "type": "timer",
+      "label": "Fan timer with permanent supply",
+      "position": [
+        3.25,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "on": true,
+        "demand": true,
+        "mode": "off-delay",
+        "delay": 5
+      }
+    },
+    {
+      "id": "fan",
+      "type": "fan",
+      "label": "Run-on extractor",
+      "position": [
+        5,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 35,
+        "power": 35
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "component": "supply",
+        "terminal": "L"
+      },
+      "to": {
+        "component": "protect",
+        "terminal": "LIN"
+      },
+      "role": "L",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w2",
+      "from": {
+        "component": "supply",
+        "terminal": "N"
+      },
+      "to": {
+        "component": "protect",
+        "terminal": "NIN"
+      },
+      "role": "N",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w3",
+      "from": {
+        "component": "protect",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "fan-isolation",
+        "terminal": "L1IN"
+      },
+      "role": "L",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w4",
+      "from": {
+        "component": "protect",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "fan-isolation",
+        "terminal": "NIN"
+      },
+      "role": "N",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w5",
+      "from": {
+        "component": "protect",
+        "terminal": "LOUT"
+      },
+      "to": {
+        "component": "light-switch",
+        "terminal": "COM"
+      },
+      "role": "L",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w6",
+      "from": {
+        "component": "light-switch",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "fan-isolation",
+        "terminal": "L2IN"
+      },
+      "role": "control",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w7",
+      "from": {
+        "component": "fan-isolation",
+        "terminal": "L1OUT"
+      },
+      "to": {
+        "component": "runon",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w8",
+      "from": {
+        "component": "fan-isolation",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "runon",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w9",
+      "from": {
+        "component": "fan-isolation",
+        "terminal": "L2OUT"
+      },
+      "to": {
+        "component": "runon",
+        "terminal": "IN"
+      },
+      "role": "control",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w10",
+      "from": {
+        "component": "runon",
+        "terminal": "OUT"
+      },
+      "to": {
+        "component": "fan",
+        "terminal": "L"
+      },
+      "role": "L",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w11",
+      "from": {
+        "component": "fan-isolation",
+        "terminal": "NOUT"
+      },
+      "to": {
+        "component": "fan",
+        "terminal": "N"
+      },
+      "role": "N",
+      "resistance": 0.01,
+      "bends": []
+    },
+    {
+      "id": "w12",
+      "from": {
+        "component": "supply",
+        "terminal": "PE"
+      },
+      "to": {
+        "component": "fan",
+        "terminal": "PE"
+      },
+      "role": "PE",
+      "resistance": 0.01,
+      "bends": []
+    }
+  ],
+  "faults": [],
+  "lessonId": 36
+}

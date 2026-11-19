@@ -7,10 +7,10 @@ export const BELL_CUPBOARD={x:4.12,y:1.45,z:-2.81,transformerOffset:.255,
   conduitY:-.020, conduitZ:.041, secondaryX:.062, feedX:-.029};
 export type BellServicePart='supply'|'protect'|'tx';
 export function bellServicePart(lesson:number,c:ComponentInstance):BellServicePart|undefined{
-  if((lesson!==71&&lesson!==72)||c.mount)return;
+  if(![36,71,72].includes(lesson)||c.mount)return;
   if(c.id==='supply'&&c.type==='source')return 'supply';
   if(c.id==='protect'&&c.type==='rcbo')return 'protect';
-  if(c.id==='tx'&&c.type==='transformer')return 'tx';
+  if(lesson!==36&&c.id==='tx'&&c.type==='transformer')return 'tx';
 }
 export function bellServicePose(part:BellServicePart){
   const b=BELL_CUPBOARD,scale=part==='protect'?.001/DIN_UNIT:part==='tx'?.093:.025;

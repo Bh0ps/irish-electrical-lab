@@ -1,5 +1,17 @@
 # Verification summary
 
+## 1.12.0 — After the light goes out
+
+**At Oakfield house.** The bathroom job starts with the fan and light on. Switching off the light kept the fan running on its separate timer. The job accepted confirmation after the five-second run-on ended. Opening the three-pole fan isolator stopped the fan while the light stayed on. Returning to a saved job, undoing a wrong control and repeating the timed step were checked. The course also loads a saved 1.11.0 bathroom example and checks it against its original circuit.
+
+**Equipment and wiring.** The standard Manrose XF100S has two supply clamps under its front grille. The impeller turns while the grille stays still. Both model detail levels were checked against the maker’s external dimensions, photographs and wiring drawing. The internal motor and blade shape are illustrative. The BG 815 has six rear terminals and three linked poles. At eight bench rotations the two fan wires cleared the actual model surfaces, left their clamp mouths and passed through the rear slot. The 80 course examples routed all 1,116 wires. [Manrose fan and fitting instructions](https://www.manrose.co.uk/product/xf100s-bathroom-fan-standard-100mm/) · [BG fan isolator](https://www.bgelectrical.uk/uk/wiring-devices/800-series/10a-3-pole-fan-isolators/815-01)
+
+**Lesson feedback.** In the phone layout, putting the probes across the lit right worktop gave 24 V. The job named the dark left strip and kept the same step open. Putting the probes there gave 0 V and advanced the job. In the bathroom, turning off the wrong switch showed a lit lamp and a stopped fan. Undo restored the running fan. A separate check disconnected the fan wires and confirmed that a genuinely missing reading still gets wiring advice. Other checks cover recording the actual lamp reading, rejecting an old reading after an edit and naming the correct Start button on a two-station starter or a pair of conveyors.
+
+**Desktop graphics.** Chrome at 1440 × 900 on a Windows PC with an RTX 5070 Ti averaged 94.7 fps during a 6.55-second camera pan on the 30-fitting, 42-wire bench. Median frame time was 8.5 ms and the 95th percentile was 23.6 ms. Some frames exceeded the 16.7 ms budget for 60 fps. The bench rendered zero extra frames and sent no worker requests during three seconds at rest. Eight supply edits took a median 5.5 ms to solve and 19.7 ms for the worker round trip.
+
+**Coverage.** The 387 automated tests and TypeScript passed. All 80 circuits and their 80 study faults passed. The teaching audit exercised 243 operating steps and 1,414 checks, and mapped all 2,483 activities to their six stages. The gallery has 112 model variants. A first-time learner, an apprentice and a qualified electrician have yet to try this version under observation. Phone results use Windows browsers with touch and small-screen layouts. Performance on a physical iPhone remains unmeasured.
+
 ## 1.11.0 — At the worktop
 
 **One dark strip, one lit strip.** In the kitchen, switching off the left rocker left the right worktop lit. Chromium sessions at 390 × 844 and 1280 × 800 put probes on the actual copper pads, recorded 0 V on the dark strip and about −24 V across the lit strip with the leads reversed. Returning from the meter restored the job. A drag, cancelled touch or two-finger gesture on the probe target earned no reading. A check with reversed strip wiring verified that the job reports the simulated lamp state even when voltage is present at a dark LED.

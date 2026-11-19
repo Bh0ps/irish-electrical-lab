@@ -38,7 +38,7 @@ const lessons = LESSONS.map(lesson => {
     missingIds, unknownIds, duplicateIds, stages: stageDetails };
 });
 const activityCount = lessons.reduce((count, lesson) => count + lesson.originalActivityCount, 0);
-if (lessons.length !== 80 || activityCount !== 2471) errors.push(`Expected 80 lessons and 2471 activities; received ${lessons.length} and ${activityCount}.`);
+if (lessons.length !== 80 || activityCount !== 2483) errors.push(`Expected 80 lessons and 2483 activities; received ${lessons.length} and ${activityCount}.`);
 const report = { schemaVersion: 1, generatedAt: new Date().toISOString(), status: errors.length ? 'FAIL' : 'PASS',
   coverage: { lessons: lessons.length, stagesPerLesson: approvedStages.length, stageGroups: lessons.reduce((count, lesson) => count + lesson.stages.length, 0),
     originalActivities: activityCount, mappedActivities: lessons.reduce((count, lesson) => count + lesson.mappedActivityCount, 0),

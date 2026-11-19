@@ -35,6 +35,12 @@ const byModel:Record<string,Feature[]>={
     ['surface-mount-bodies','body','Packages and resistors','The white cases hold the LEDs. The small dark parts between them are resistors.','front'],
     ['smd-led-packages','emitter','Seven LED windows','Current through the LEDs lights these yellow windows. This 100 mm section has seven.','front'],
   ],
+  'fan:xf100s':[
+    ['xf-intake','cover','Front grille','Air enters around the round centre. The two white screw caps cover the screws that hold the grille on.','front'],
+    ['xf-spigot','body','Duct spigot','This round outlet slips into a 100 mm duct. The air leaves the bathroom here.'],
+    ['xf-impeller','rotor','Impeller','The motor turns these curved blades behind the grille. The centre and four spokes on the cover stay still.','front'],
+    ['xf-base','mounting','Fixing base','Four slotted holes hold the base to the wall. The cable enters behind the cover beside the two terminals.','front'],
+  ],
   'pushbutton:sesame':[
     ['sesame-cover','cover','Clip-on cover','The cover clips off to reveal the two wall fixing screws. The round button stays on the base.','front'],
     ['sesame-base','body','Fixing base','The holes at the top and bottom take the wall screws. The two smaller screws closer to the button hold the wires.'],

@@ -23347,5 +23347,517 @@
     ],
     "meshNodes": 26,
     "vertices": 3124
+  },
+  {
+    "key": "isolator3_fan-isolator",
+    "file": "isolator3_fan-isolator.json",
+    "galleryKey": "isolator3:fan-isolator",
+    "name": "Three-pole fan isolator",
+    "component": {
+      "id": "gallery-86",
+      "type": "isolator3",
+      "label": "Three-pole fan isolator",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      },
+      "variant": "fan-isolator"
+    },
+    "definition": {
+      "type": "isolator3",
+      "name": "Four-pole isolator",
+      "group": "Protection",
+      "model": "switch",
+      "description": "One handle disconnects all three phases and neutral.",
+      "terminals": [
+        {
+          "id": "L1IN",
+          "label": "L1IN",
+          "role": "L1",
+          "purpose": "Incoming L1 terminal. Follow it to L1OUT on the other side of the same pole.",
+          "anchor": [
+            -0.38076923076923075,
+            0.8547931034482759,
+            -0.353529411764706
+          ],
+          "group": "Supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "L2IN",
+          "label": "L2IN",
+          "role": "L2",
+          "purpose": "Incoming L2 terminal. Follow it to L2OUT on the other side of the same pole.",
+          "anchor": [
+            -0.12692307692307692,
+            0.8547931034482759,
+            -0.353529411764706
+          ],
+          "group": "Supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "L3IN",
+          "label": "L3IN",
+          "role": "L3",
+          "purpose": "Incoming L3 terminal. Follow it to L3OUT on the other side of the same pole.",
+          "anchor": [
+            0.12692307692307692,
+            0.8547931034482759,
+            -0.353529411764706
+          ],
+          "group": "Supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "NIN",
+          "label": "NIN",
+          "role": "N",
+          "purpose": "Incoming neutral terminal. Follow it to NOUT on the other side of the same pole.",
+          "anchor": [
+            0.38076923076923075,
+            0.8547931034482759,
+            -0.353529411764706
+          ],
+          "group": "Supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "L1OUT",
+          "label": "L1OUT",
+          "role": "L1",
+          "purpose": "Outgoing L1 terminal. Follow it to L1IN on the other side of the same pole.",
+          "anchor": [
+            -0.38076923076923075,
+            0.2589310344827586,
+            -0.353529411764706
+          ],
+          "group": "Load",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "L2OUT",
+          "label": "L2OUT",
+          "role": "L2",
+          "purpose": "Outgoing L2 terminal. Follow it to L2IN on the other side of the same pole.",
+          "anchor": [
+            -0.12692307692307692,
+            0.2589310344827586,
+            -0.353529411764706
+          ],
+          "group": "Load",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "L3OUT",
+          "label": "L3OUT",
+          "role": "L3",
+          "purpose": "Outgoing L3 terminal. Follow it to L3IN on the other side of the same pole.",
+          "anchor": [
+            0.12692307692307692,
+            0.2589310344827586,
+            -0.353529411764706
+          ],
+          "group": "Load",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "NOUT",
+          "label": "NOUT",
+          "role": "N",
+          "purpose": "Outgoing neutral terminal. Follow it to NIN on the other side of the same pole.",
+          "anchor": [
+            0.38076923076923075,
+            0.2589310344827586,
+            -0.353529411764706
+          ],
+          "group": "Load",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "closed": true
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The case holds the working parts in place and keeps them apart."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "Lift the cover on the bench to see the connections underneath."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "This part moves the contacts when you use the control."
+        },
+        {
+          "id": "contacts",
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
+        }
+      ],
+      "size": [
+        1.5,
+        1.2,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "fan-isolator",
+          "name": "Three-pole fan isolator"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "L1IN",
+        "label": "L2",
+        "role": "L",
+        "purpose": "Permanent line from the supply. The rocker joins it to the matching L2 terminal in the other row when on.",
+        "anchor": [
+          -0.052000000000000005,
+          0.595,
+          -0.122
+        ],
+        "group": "Upper row · supply",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "L2IN",
+        "label": "L1",
+        "role": "control",
+        "purpose": "Switched line from the light switch. The rocker joins it to the matching L1 terminal in the other row when on.",
+        "anchor": [
+          0.17600000000000002,
+          0.5880000000000001,
+          -0.122
+        ],
+        "group": "Upper row · supply",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NIN",
+        "label": "N",
+        "role": "N",
+        "purpose": "Neutral from the supply. The rocker joins it to the matching N terminal in the other row when on.",
+        "anchor": [
+          -0.163,
+          0.5740000000000001,
+          -0.122
+        ],
+        "group": "Upper row · supply",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "L1OUT",
+        "label": "L2",
+        "role": "L",
+        "purpose": "Permanent line to the fan timer. The rocker joins it to the matching L2 terminal in the other row when on.",
+        "anchor": [
+          0.004,
+          0.338,
+          -0.122
+        ],
+        "group": "Lower row · fan",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "L2OUT",
+        "label": "L1",
+        "role": "control",
+        "purpose": "Switched line to the fan trigger. The rocker joins it to the matching L1 terminal in the other row when on.",
+        "anchor": [
+          0.12,
+          0.29900000000000004,
+          -0.122
+        ],
+        "group": "Lower row · fan",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NOUT",
+        "label": "N",
+        "role": "N",
+        "purpose": "Neutral to the fan. The rocker joins it to the matching N terminal in the other row when on.",
+        "anchor": [
+          -0.21,
+          0.324,
+          -0.122
+        ],
+        "group": "Lower row · fan",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 98,
+    "vertices": 17585
+  },
+  {
+    "key": "fan_xf100s",
+    "file": "fan_xf100s.json",
+    "galleryKey": "fan:xf100s",
+    "name": "Bathroom extractor · 15 W study load",
+    "component": {
+      "id": "gallery-87",
+      "type": "fan",
+      "label": "Bathroom extractor · 15 W study load",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 15,
+        "nominalVoltage": 240,
+        "power": 15,
+        "ratedVoltage": 230,
+        "doubleInsulated": true
+      },
+      "variant": "xf100s"
+    },
+    "definition": {
+      "type": "fan",
+      "name": "Fan",
+      "group": "Machinery",
+      "model": "fan",
+      "description": "The motor turns the blades to move air. The controls decide when it runs.",
+      "terminals": [
+        {
+          "id": "L",
+          "label": "L",
+          "role": "L",
+          "purpose": "Line brings power to the fitting. Its usual marking is L.",
+          "anchor": [
+            -0.20307692307692307,
+            0.767896551724138,
+            -0.2664705882352941
+          ],
+          "group": "Fan connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "N",
+          "label": "N",
+          "role": "N",
+          "purpose": "Neutral carries current back to the supply while the load is on.",
+          "anchor": [
+            0,
+            0.767896551724138,
+            -0.2664705882352941
+          ],
+          "group": "Fan connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "PE",
+          "label": "PE",
+          "role": "PE",
+          "purpose": "Earth connection for the fitting. The earth path stays connected when the switch opens.",
+          "anchor": [
+            0.20307692307692307,
+            0.767896551724138,
+            -0.2664705882352941
+          ],
+          "group": "Fan connections",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "watts": 30,
+        "nominalVoltage": 240
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The case holds the working parts in place and keeps them apart."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "Lift the cover on the bench to see the connections underneath."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "rotor",
+          "name": "Rotor and shaft",
+          "purpose": "The rotor is the part that turns. The shaft carries that movement to the machine."
+        },
+        {
+          "id": "winding",
+          "name": "Windings",
+          "purpose": "These coils of wire create a magnetic field when current flows."
+        },
+        {
+          "id": "electronics",
+          "name": "Control board",
+          "purpose": "The board takes signals in and controls the outputs. The bench shows what the board does at its terminals."
+        }
+      ],
+      "size": [
+        1.2,
+        1.3,
+        1
+      ],
+      "variants": [
+        {
+          "id": "xf100s",
+          "name": "100 mm bathroom extractor"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "L",
+        "label": "L",
+        "role": "L",
+        "purpose": "The timer feeds the fan motor here.",
+        "anchor": [
+          -0.64,
+          1.106,
+          0.122
+        ],
+        "group": "Under the front cover",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          -1,
+          0
+        ]
+      },
+      {
+        "id": "N",
+        "label": "N",
+        "role": "N",
+        "purpose": "The motor current returns to the supply through N.",
+        "anchor": [
+          -0.548,
+          1.106,
+          0.122
+        ],
+        "group": "Under the front cover",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          -1,
+          0
+        ]
+      }
+    ],
+    "meshNodes": 56,
+    "vertices": 8731
   }
 ]

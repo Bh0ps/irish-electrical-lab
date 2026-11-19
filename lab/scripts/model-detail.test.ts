@@ -17,6 +17,27 @@ function meshes(parent:THREE.Object3D){const result:THREE.Mesh[]=[];parent.trave
 function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)=>total+(m.geometry.index?.count??m.geometry.getAttribute('position').count)/3,0);}
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
+test('the standard extractor keeps its guard still while the impeller turns behind it',async()=>{
+  const asset=manifest.find(a=>a.key==='fan_xf100s')!;
+  const fitting:ComponentInstance={type:'fan',variant:'xf100s',id:'fan',label:'Bathroom fan',position:[0,0,0],rotation:0,params:{}};
+  const state={energized:true,closed:true,tripped:false,level:1,direction:1,elapsed:0,resetToken:0,details:''};
+  for(const url of [asset.url,asset.lowUrl]){
+    const model=prepareBlenderModel(await load(url));
+    presentBlenderModel(model,'normal',fitting,state);
+    const parts=details(model.scene);
+    const guard=meshes(parts.get('xf-intake')![0])[0],blades=meshes(parts.get('xf-impeller')![0])[0];
+    const fixed=guard.matrixWorld.clone(),before=blades.matrixWorld.clone();
+    animateBlenderModel(model,fitting,state,.05);model.scene.updateMatrixWorld(true);
+    assert.ok(!blades.matrixWorld.equals(before)&&guard.matrixWorld.equals(fixed));
+    const turning=blades.matrixWorld.clone();
+    animateBlenderModel(model,fitting,{...state,energized:false},.05);model.scene.updateMatrixWorld(true);
+    assert.ok(blades.matrixWorld.equals(turning));
+    const spigot=new THREE.Box3().setFromObject(parts.get('xf-spigot')![0],true);
+    assert.ok(Math.abs(spigot.max.x-spigot.min.x-.98)<.01&&Math.abs(spigot.min.z+.45)<.006,url);
+    model.owned.forEach(m=>m.dispose());
+  }
+});
+
 test('a cut section of white tape has seven LED windows at the documented pitch and two bare probe pads',async()=>{
   const asset=manifest.find(model=>model.key==='led_strip')!;
   for(const url of [asset.url,asset.lowUrl]){
@@ -145,7 +166,7 @@ test('the wall switch case screws and the retained rose knockout can be identifi
 });
 
 test('all catalogue variants have actual family construction, original sources and local rendered icons',async()=>{
-  assert.equal(manifest.length,110);const families=new Set<string>(),report:unknown[]=[];
+  assert.equal(manifest.length,112);const families=new Set<string>(),report:unknown[]=[];
   for(const asset of manifest){
     assert.equal(asset.detailRevision,3,asset.key);families.add(asset.detailFamily);
     assert.ok(asset.sourceMeshCount>asset.meshCount,asset.key+' original source keeps separately editable details');

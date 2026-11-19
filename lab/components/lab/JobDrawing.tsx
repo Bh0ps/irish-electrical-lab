@@ -11,6 +11,7 @@ import {ServicePlan,serviceSpaces} from './ServicePlan';
 import BellCupboardDrawing,{insideBellCupboard} from './BellCupboardDrawing';
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {installedWireRoute} from '../../lib/house-installation';
+import {BATH_EXTRACT,BATH_SHOWER} from '../../lib/bathroom-extract';
 import {DRAWING_INK,terminalSheet,shortPoint,matchConnection,ladderPaths} from '../../lib/installation-drawing';
 
 function Symbol({type}:{type:string}){
@@ -97,7 +98,7 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
     </div>
     <div ref={diagram} className="drawing-paper" tabIndex={0} aria-label="Scrollable drawing">
       <div className="drawing-title"><div className="drawing-legendhead"><b>{site.name}</b><span>{page==='plan'?'Location plan':page==='wiring'?'Terminal connections':page==='ladder'?'Control ladder':'Board schedule'} · {lesson?'EL-'+String(lesson.id).padStart(3,'0'):'CUSTOM'} · {version==='job'?'Design':'As wired'}</span></div>
-      {page==='plan'&&<label className="house-plan-area"><span className="sr-only">Area on plan</span><select aria-label="Area on plan" value={areaId} onChange={e=>{setPlanArea(e.target.value==='whole'||e.target.value==='bell'?e.target.value:Number(e.target.value));reset();}}><option value="whole">{house?'Whole house':'Whole site'}</option>{cupboardWire&&<option value="bell">Cupboard detail</option>}{rooms.map(r=><option key={r.id} value={r.id}>{site.location(r.id)}</option>)}</select></label>}</div>
+      {page==='plan'&&<label className="house-plan-area"><span className="sr-only">Area on plan</span><select aria-label="Area on plan" value={areaId} onChange={e=>{setPlanArea(e.target.value==='whole'||e.target.value==='bell'?e.target.value:Number(e.target.value));reset();}}><option value="whole">{house?'Whole house':'Whole site'}</option>{cupboardWire&&<option value="bell">{docForSheet.lessonId===36?'Enclosure detail':'Cupboard detail'}</option>}{rooms.map(r=><option key={r.id} value={r.id}>{site.location(r.id)}</option>)}</select></label>}</div>
       {page==='plan'&&areaId==='bell'&&curWire&&floorRoute?<BellCupboardDrawing doc={docForSheet} site={site} wire={curWire} route={floorRoute} zoom={zoom} find={goto}/>:page==='plan'?<svg className="electrical-sheet floor-sheet" role="group" aria-label="Installation floor plan" viewBox={planBox} style={{width:Math.max(100,zoom*100)+'%',minWidth:340*zoom}}>
         <defs><pattern id="site-hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 6L6 0" stroke="#b6c3b9" fill="none" strokeWidth=".5"/></pattern></defs>
         {house?<g data-oakfield-plan>
@@ -111,6 +112,12 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
               return <g key={d.centre}><rect x={x(leaf.x-leaf.w/2)} y={y(leaf.z-leaf.d/2)} width={leaf.w*41} height={leaf.d*41} fill="#889d91"/>
                 <path d={`M${x(latch.x)} ${y(latch.z)} Q${x(end.x+latch.x-hinge.x)} ${y(end.z+latch.z-hinge.z)} ${x(end.x)} ${y(end.z)}`} fill="none" stroke="#9eab9c" strokeDasharray="3 2"/></g>;})}
           </g>)}
+          {bathroom&&<g aria-label="Bathroom fittings" fill="#dce5df" stroke="#83978c" strokeWidth="1">
+            <rect x={x(BATH_SHOWER.x-BATH_SHOWER.w/2)} y={y(BATH_SHOWER.z-BATH_SHOWER.d/2)} width={BATH_SHOWER.w*41} height={BATH_SHOWER.d*41} rx="3"><title>Shower tray</title></rect>
+            <rect x={x(.67)} y={y(-2.765)} width={1.3*41} height={.59*41} rx="2"><title>Washbasin</title></rect>
+            <line x1={x(BATH_EXTRACT.window.x-BATH_EXTRACT.window.width/2)} x2={x(BATH_EXTRACT.window.x+BATH_EXTRACT.window.width/2)} y1={y(2.8)} y2={y(2.8)} stroke="#a2bec9" strokeWidth="3"/>
+            {docForSheet.lessonId===36&&<path d={`M${x(BATH_EXTRACT.fanX)} ${y(BATH_EXTRACT.wallInside)} V${y(BATH_EXTRACT.wallOutside+.016)} m-3 0 h6`} stroke="#55757b" strokeWidth="2"><title>Extractor sleeve and outside grille</title></path>}
+          </g>}
           {stair&&<g fill="none" stroke="#83978c" strokeWidth="1" aria-label="Stair flights and first-floor landing">
             <rect x={x(stair.west)} y={y(stair.back)} width={(stair.east-stair.west)*41} height={(STAIR_FOOT-stair.back)*41}/>
             <rect x={x(stair.divider)} y={y(STAIR_FOOT)} width={(stair.east-stair.divider)*41} height={(stair.landingEnd-STAIR_FOOT)*41} strokeDasharray="3 2"/>

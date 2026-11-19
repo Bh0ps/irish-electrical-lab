@@ -61,6 +61,12 @@ python -m unittest discover -s authoring/blender -p test_png_metadata.py
 To sanitize previously exported PNGs, omit `--check`; optional `--audit <file.json>` records before/after IDAT, critical-chunk and retained-chunk hashes without copying removed metadata values into the report.
 
 
+### Three-pole fan isolator
+
+The course 36 wall isolator follows the BG 815-01. Its 86 × 86 mm plate has two capped fixings at 60.3 mm centres, a broad tilting rocker and the printed ON and OFF positions. The rear cassette has six staggered wire openings and separate screwdriver access. Three contact arms illustrate the shared action. The manufacturer's drawing gives an overall depth of 22.2 mm. Minor moulding sizes and internal contact arms are reconstructed for study. [BG product photographs, drawing and instructions](https://www.bgelectrical.uk/uk/wiring-devices/800-series/10a-3-pole-fan-isolators/815-01)
+
+The upper row takes the supply in the maker's timer fan example. Its markings, read from left to right behind the plate, are **L1** for the light switch's signal, **L2** for permanent line and **N** for neutral. Each lower terminal feeds the fan through its own contact. Both rows use the same moulded markings. Stored documents keep the original terminal identities. Sandbox search accepts “fan isolator” to place this fitting directly.
+
 ## Cable samples
 
 Run `blender --background --python authoring/blender/cable_samples.py` from the project root to rebuild the six original material-picker images. The cross-sections live in `lab/lib/cable-profiles.json`. They show what to recognise at a cut end. The bench enlarges the thin wires so a learner can select them.

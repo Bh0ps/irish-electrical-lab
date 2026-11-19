@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import MeterHistory from './MeterHistory';
 import type { LessonActivity, MeasurementEvidence } from '../../lib/learning';
 import type { CircuitDocument, SimulationResult } from '../../lib/types';
-import { callActivityId, callReadings, checkCallSample, savedCallStep, verifiedCallStep, type CallOperation, type CallSample, type HouseCall } from '../../lib/house-calls';
+import { callActivityId, callReadings, checkCallSample, fanRunPhase, savedCallStep, verifiedCallStep, type CallOperation, type CallSample, type HouseCall } from '../../lib/house-calls';
 
 interface Props {
   context?:ReactNode; closeTools:()=>void;
@@ -16,6 +16,8 @@ export function HouseCallPanel(props:Props){
   const {call,document:doc,result,operation,onActivity,onCredit}=props;
   const index=savedCallStep(call,props.start)??0;
   const [observation,setObservation]=useState('');
+  const [seenRun,setSeenRun]=useState<number>();
+  const [confirmedStop,setConfirmedStop]=useState<number>();
   const credited=useRef('');
   const heading=useRef<HTMLHeadingElement>(null);
   const keyboardControl=useRef<HTMLButtonElement|null>(null);
@@ -41,7 +43,17 @@ export function HouseCallPanel(props:Props){
   }),[call,index,step]);
   useEffect(()=>onActivity(activity),[onActivity,activity]);
   const sample=checkCallSample(call,index,doc,result,props.sample);
-  const verified=step?.measure?sample?.pass:verifiedCallStep(call,index,doc,result,operation);
+  const bathroom=call.lesson===36;
+  const runPhase=bathroom&&index<=1?fanRunPhase(call,doc,result,operation):undefined;
+  useEffect(()=>{
+    if(runPhase!=='running'||globalThis.document.hidden||toolsOpen)return;
+    const frame=requestAnimationFrame(()=>setSeenRun(doc.revision));
+    return ()=>cancelAnimationFrame(frame);
+  },[runPhase,doc.revision,toolsOpen]);
+  const witnessed=seenRun===doc.revision;
+  const confirmable=runPhase==='stopped'&&witnessed;
+  const verified=step?.measure?sample?.pass:step?.waitForFan?confirmable&&confirmedStop===doc.revision:
+    (!bathroom||index!==0||runPhase==='running'&&witnessed)&&verifiedCallStep(call,index,doc,result,operation);
   const observed=sample?.pass?sample.message:step?.changed??'';
   useEffect(()=>{
     if(!step || !verified || credited.current===activity.id)return;
@@ -82,13 +94,24 @@ export function HouseCallPanel(props:Props){
     const previous=callReadings(step.before,recentAction.before,recentAction.reading);
     if(previous?.[1]?.powered===false)boardFeedback='Both have power again. Try the other breaker.';
   }
-  const unresolved=step && result?.revision===doc.revision && (!readings || readings.some(r=>r.value===null));
+  const unresolved=step && result?.revision===doc.revision && (!readings || readings.some(r=>r.value===null&&!r.isolated));
+  const restoreFan=bathroom&&doc.supply.enabled&&step?.target==='light-switch'&&!step.waitForFan&&!unresolved&&socket?.isolated;
+  const undoIsolator=restoreFan&&recentAction?.component==='fan-isolation';
   const feedbackBreaker=usedCandidate?recentAction?.component:
     call.breakers?.find(b=>doc.components.find(c=>c.id===b.id)?.params.closed===false)?.id??call.breakers?.[0]?.id;
   function operateFromButton(event:MouseEvent<HTMLButtonElement>,component:string){
     if(!readings)return;
     keyboardControl.current=event.detail===0?event.currentTarget:null;
     props.operate(component);
+  }
+  const fanTimer=result?.revision===doc.revision?result.deviceStates.runon:undefined;
+  const delay=Number(doc.components.find(c=>c.id==='runon')?.params.delay);
+  const remaining=fanTimer&&Number.isFinite(delay)?Math.max(0,Math.ceil(delay-fanTimer.elapsed)):undefined;
+  const isolatorOpen=bathroom&&doc.components.find(c=>c.id==='fan-isolation')?.params.closed===false;
+  const lampSwitchOn=bathroom&&doc.components.find(c=>c.id==='light-switch')?.params.closed===true;
+  function confirmOrRepeat(event:MouseEvent<HTMLButtonElement>){
+    if(confirmable){keyboardControl.current=event.currentTarget;setConfirmedStop(doc.revision);return;}
+    operateFromButton(event,isolatorOpen?'fan-isolation':'light-switch');
   }
   useLayoutEffect(()=>{
     const changed=previousStep.current!==index;
@@ -127,15 +150,16 @@ export function HouseCallPanel(props:Props){
     {props.context}
     {!toolsOpen&&<>
     {!index&&<p>{call.request}</p>}
-    {observation&&step&&!bellFeedback&&<p className="task-feedback success" role="status">{observation}</p>}
+    {observation&&step&&!bellFeedback&&!restoreFan&&<p className="task-feedback success" role="status">{observation}</p>}
     {!step&&<p className="task-instruction">{call.done}</p>}
     {!step&&worktops&&props.meterHistory&&<MeterHistory circuit={doc} readings={props.meterHistory.filter(r=>r.circuitId===doc.id)}/>}
     {call.bellPushes && <p className="call-chime" role="status">Chime <strong>{readings?chimeStatus:result?.revision===doc.revision?'No reading':'Waiting…'}</strong></p>}
-    {worktops?<dl className="call-readings" aria-label="Worktop lights">{readings?.map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.lit===undefined?'No reading':r.lit?'Lit':'Dark'}</dd></div>)}</dl>:call.bellPushes?<details className="call-bell-readings"><summary>See the voltages</summary>{voltageReadings()}</details>:voltageReadings()}
-    {otherControl&&<div className="task-feedback attention" role="status"><p>You used {otherControl}. Try the fitting named in the job.</p><Button variant="outline" size="sm" onClick={props.undo}>Undo that change</Button></div>}
+    {bathroom?<><dl className="call-readings" aria-label="Bathroom light and fan">{readings?.map((r,i)=><div key={r.label}><dt>{r.label}</dt><dd>{r.lit===undefined?'No reading':i===1?(r.lit?'Running':'Stopped'):(r.lit?'Lit':'Dark')}</dd></div>)}</dl>
+      {step?.waitForFan&&<p role="status">{runPhase==='running'?'Timer running · '+remaining+' s left':confirmable?'The timer finished. Check the fan indicator.':isolatorOpen?'Switch the fan isolator back on to try the timer.':lampSwitchOn?'Switch the light off to start the timer.':'Try the timing check again. Switch the light on first.'}</p>}</>:worktops?<dl className="call-readings" aria-label="Worktop lights">{readings?.map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.lit===undefined?'No reading':r.lit?'Lit':'Dark'}</dd></div>)}</dl>:call.bellPushes?<details className="call-bell-readings"><summary>See the voltages</summary>{voltageReadings()}</details>:voltageReadings()}
+    {restoreFan?<p className="task-feedback attention" role="status">{undoIsolator?'You used '+otherControl+'. ':''}The fan isolator is off. The fan has stopped{lamp?.lit?' and the light is still on':''}. Switch the isolator back on to try the light switch.</p>:otherControl&&<div className="task-feedback attention" role="status"><p>You used {otherControl}. Try the fitting named in the job.</p><Button variant="outline" size="sm" onClick={props.undo}>Undo that change</Button></div>}
     {unresolved&&<p className="task-feedback attention" role="status">The lab couldn’t get a reading. Check the wiring at the fitting, or open Help to start this job again.</p>}
-    {(bellFeedback||wrongState)&&!otherControl&&!boardFeedback&&!unresolved&&<p className="task-feedback attention" role="status">{bellFeedback||(!doc.supply.enabled?'The supply is off. Switch it on to try the job.':wasTried?'The readings didn’t change as expected. Try the control again to return to the starting position.':'Return the controls to their starting positions, or start this job again.')}</p>}
-    {step?<>{step.measure?<Button className="primary-button full" onClick={props.openMeter}>{step.label}</Button>:call.bellPushes?<div className="call-breakers call-bell-buttons" role="group" aria-label="Doorbell buttons">{call.bellPushes.map(push=>{
+    {(bellFeedback||wrongState)&&!step?.waitForFan&&!otherControl&&!boardFeedback&&!unresolved&&!restoreFan&&<p className="task-feedback attention" role="status">{bellFeedback||(!doc.supply.enabled?'The supply is off. Switch it on to try the job.':wasTried?'The readings didn’t change as expected. Try the control again to return to the starting position.':'Return the controls to their starting positions, or start this job again.')}</p>}
+    {step?<>{restoreFan?<Button className="primary-button full" onClick={e=>undoIsolator?props.undo():operateFromButton(e,'fan-isolation')}>{undoIsolator?'Undo that change':'Switch fan isolator on'}</Button>:step.waitForFan?<Button className="primary-button full" disabled={!readings||runPhase==='running'} onClick={confirmOrRepeat}>{runPhase==='running'?'Waiting for fan':confirmable?step.label:isolatorOpen?'Switch fan isolator on':lampSwitchOn?'Switch the light off again':'Switch the light back on to repeat'}</Button>:step.measure?<Button className="primary-button full" onClick={props.openMeter}>{step.label}</Button>:call.bellPushes?<div className="call-breakers call-bell-buttons" role="group" aria-label="Doorbell buttons">{call.bellPushes.map(push=>{
       const fitting=doc.components.find(c=>c.id===push.id),held=Boolean(fitting?.params.pressed);
       return <div className="call-breaker-choice" key={push.id}><Button variant="outline" disabled={!fitting} aria-pressed={held} aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,push.id)}>{held?'Let go of ':'Hold '}{push.door} button</Button></div>;
     })}</div>:call.breakers?<div className="call-breakers" role="group" aria-label="Breakers on the board">{call.breakers.map(b=>{
@@ -145,8 +169,8 @@ export function HouseCallPanel(props:Props){
         return <div className="call-breaker-choice" key={b.id}><Button variant="outline" aria-label={b.label+', '+position} aria-describedby={hint?'call-board-feedback':undefined} disabled={!fitting} aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,b.id)}>{b.label}<span>{position}</span></Button>
           {hint&&<p id="call-board-feedback" className="task-feedback attention" role="status">{hint}</p>}</div>;
       })}</div>:<Button className="primary-button full" aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,step.target)}>{step.label}</Button>}
-      <div className="task-support-actions"><Button variant="ghost" onClick={()=>props.locate(call.breakers?'course-enclosure':step.target)}>{call.breakers?'Show the board':'Show me where'}</Button></div>
-      <details className="lesson-more-detail"><summary>Help</summary><p>{step.measure?'Find the two copper pads at the end of the strip. Put a probe on each one, or choose the strip and its + and − pads by name. Then choose Record reading.':worktops?'Use the switch named above, or find it in the equipment list. Look at which strip goes dark.':call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button></details>
+      <div className="task-support-actions">{step.waitForFan&&confirmable&&<Button variant="ghost" onClick={e=>operateFromButton(e,'light-switch')}>Watch it again</Button>}<Button variant="ghost" onClick={()=>props.locate(call.breakers?'course-enclosure':step.target)}>{call.breakers?'Show the board':'Show me where'}</Button></div>
+      <details className="lesson-more-detail"><summary>Help</summary><p>{bathroom?'The wall switch controls the light and starts the timer. The fan isolator switches off the timer and the fan, so you can still use the light.':step.measure?'Find the two copper pads at the end of the strip. Put a probe on each one, or choose the strip and its + and − pads by name. Then choose Record reading.':worktops?'Use the switch named above, or find it in the equipment list. Look at which strip goes dark.':call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button></details>
     </>:<><Button className="primary-button full" onClick={props.nextJob?.open??props.startFault}>{props.nextJob?'Next job · '+props.nextJob.title:'Try a fault on this circuit'}</Button><Button variant="ghost" onClick={props.choose}>Choose another job</Button></>}
     </>}
   </section>;

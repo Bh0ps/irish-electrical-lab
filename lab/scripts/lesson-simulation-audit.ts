@@ -142,7 +142,13 @@ function verifyOperation(x: Exercise, id: number): void {
     case 33: x.set('offpeak', 'on', false); x.run('Remove charge-window permission'); x.off('store'); x.on('day'); x.set('release', 'closed', false); x.run('Remove separate daytime release'); x.off('day'); break;
     case 34: toggle('local', 'unit'); break;
     case 35: toggle('switch', 'fan'); break;
-    case 36: x.on('fan'); x.set('light-switch', 'closed', false); x.run('Remove trigger within fan run-on', 2); x.on('fan', 'Fan retains supply during five-second run-on'); x.run('Allow fan run-on to expire'); x.off('fan'); break;
+    case 36:
+      x.on('fan'); x.on('light'); x.set('light-switch','closed',false); x.run('Switch the bathroom light off',2);
+      x.off('light'); x.on('fan','Fan keeps running after the lamp goes dark'); x.run('Wait for the five-second run-on'); x.off('fan');
+      x.set('light-switch','closed',true); x.run('Switch the bathroom light back on'); x.on('light'); x.on('fan');
+      x.set('fan-isolation','closed',false); x.run('Isolate only the fan'); x.on('light','The lamp stays lit with the fan isolated'); x.off('fan');
+      x.set('fan-isolation','closed',true); x.run('Restore the fan'); x.on('fan');
+      x.set('fan-fcu','closed',false); x.run('Open the shared fused switch'); x.off('light'); x.off('fan'); break;
     case 37: x.set('humidity', 'active', false); x.set('override', 'closed', false); x.run('Remove humidity and manual requests'); x.off('fan'); x.set('override', 'closed', true); x.run('Manual override only'); x.on('fan'); break;
     case 38: case 39: x.on('pump'); x.set('request', 'active', false); x.run('Remove level/pressure demand'); x.off('pump'); break;
     case 40: starter('start', 'stop', 'starter', 'motor'); break;
@@ -246,6 +252,7 @@ function verifyChallenge(x: Exercise, lesson: ConfigurationLesson): void {
     case 30: x.check('Missing CH leaves hot-water-only valve position', x.result.deviceStates['mid-valve'].level === 0); x.on('boiler', 'Remaining HW request still permits the abstract heat source'); break;
     case 32: x.check('Missing I1 closes only actuator A', !closed(x.result, 'actuator-a') && closed(x.result, 'actuator-b')); x.on('pump', 'Other opened actuator can maintain pump demand'); break;
     case 33: x.on('day'); break;
+    case 36: x.on('light','The fan has lost its switched trigger but the lamp still lights'); break;
     case 39: x.check('Pressure contactor still receives demand but downstream permission is absent', closed(x.result, 'pump-contactor') && !closed(x.result, 'dry-run')); break;
     case 40: case 55: x.check('Broken hold route drops starter after released Start', !closed(x.result, 'starter')); break;
     case 42: x.check('Selected smoke alarm changes to conceptual backup', x.result.deviceStates.smoke.details.includes('battery')); x.check('Other alarm retains mains state', x.result.deviceStates.heat.details.includes('Mains')); break;

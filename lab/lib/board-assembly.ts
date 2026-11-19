@@ -29,7 +29,7 @@ export function boardRails(type:string): Rail[] {
 }
 
 export function fitsRail(c:ComponentInstance,board:ComponentInstance,row:Rail) {
-  if (!isBoard(board.type)||!railWidth(c.type)) return false;
+  if (!isBoard(board.type)||!railWidth(c.type)||c.variant==='fan-isolator') return false;
   if(row.index===5 || row.index===6) return c.type===(row.index===5?'neutralbar':'earthbar');
   if(row.index>=7)return c.type==='terminal'&&c.variant==='comb-busbar';
   if(c.type==='terminal')return false;

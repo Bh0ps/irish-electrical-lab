@@ -4,7 +4,7 @@ import { Canvas, events as pointerEvents, useFrame, useThree, type ThreeEvent } 
 import * as THREE from 'three';
 import { mountScale, mountRoll, filledWays } from '../../lib/board-assembly';
 import { createBoundedWireCurve, Equipment } from '../../lib/Equipment';
-import { COMPONENTS } from '../../lib/components';
+import { COMPONENTS,definitionFor } from '../../lib/components';
 import { prioritizeTerminalHit } from '../../lib/terminal-picking';
 import { CABLE_CORE_LABEL, CORE_COLOUR } from '../../lib/cables';
 import { coreRadius } from '../../lib/cable-form';
@@ -40,7 +40,7 @@ export interface WorkbenchProps {
   onWire:(id:string)=>void; onCable?:(id:string)=>void; onPlace:(position:Vec3)=>void; onMove:(id:string,position:Vec3,stage:'start'|'move'|'end')=>void;
   onFps:(fps:number)=>void; meterReading:string; meterMode:string; instrumentType?:string; workshop?:WorkshopVisual; instrumentParams?:ComponentInstance['params'];
   cameraMode?:CameraMode;cameraSpeed?:number;scenery?:SceneryId;
-  pathFilter?:PathFilter;guidanceEndpoints?:Endpoint[];placeType?:string;quality?:RenderQuality;onMetrics?:(metrics:WorkbenchMetrics)=>void;
+  pathFilter?:PathFilter;guidanceEndpoints?:Endpoint[];placeType?:string;placeVariant?:string;quality?:RenderQuality;onMetrics?:(metrics:WorkbenchMetrics)=>void;
   touchLayout?:boolean;
   touchMove?:boolean;
 }
@@ -236,7 +236,7 @@ function Scene(props:WorkbenchProps&{routing:CircuitRoutes;routingPending:boolea
         color="#31c9a0" label={adjacent||endpointEquals(hover,endpoint)?undefined:`Next: ${endpoint.terminal}`}/>;
     })}
     {props.wireStart&&<EndpointMarker document={props.document} endpoint={props.wireStart} color="#ffca58" label={`From ${props.wireStart.terminal}`}/>} {preview&&<PreviewLine points={preview} color={hover?'#e9bc56':'#aaccc5'}/>}
-    {placement&&props.tool==='place'&&props.placeType&&COMPONENTS[props.placeType]&&(()=>{const definition=COMPONENTS[props.placeType!],clear=placementClear(props.document,props.placeType!,placement);return <PlacementGhost position={placement} size={definition.size} label={`${definition.name} · ${clear?'click to place':'equipment overlaps'}`} color={clear?'#5ad0aa':'#e5a05b'}/>;})()}
+    {placement&&props.tool==='place'&&props.placeType&&COMPONENTS[props.placeType]&&(()=>{const definition=definitionFor({type:props.placeType!,variant:props.placeVariant}),clear=placementClear(props.document,props.placeType!,placement,props.placeVariant);return <PlacementGhost position={placement} size={definition.size} label={`${definition.name} · ${clear?'click to place':'equipment overlaps'}`} color={clear?'#5ad0aa':'#e5a05b'}/>;})()}
     {touchMovePreview&&chosen?.id===touchMovePreview.id&&props.touchMove&&<PlacementGhost position={touchMovePreview.position} size={COMPONENTS[chosen.type].size} label={`Move ${chosen.label}`} color="#5ad0aa" rotation={chosen.rotation}/>}
     {props.tool==='meter'&&<group ref={registerInstrument} position={testPose.position} quaternion={testPose.rotation}>{props.workshop?<group onClick={e=>{e.stopPropagation();props.onSelect('@meter','actuator');}}><ToolGeometry type={props.workshop.type} jawClosed={props.workshop.applied}/><MaterialSample visual={props.workshop}/></group>:<Equipment component={{id:'@meter',type:props.instrumentType??(props.meterMode==='current'?'clamp':'multimeter'),label:'Virtual instrument',position:[0,0,0],rotation:0,params:{reading:props.meterReading,...props.instrumentParams}}} definition={COMPONENTS[props.instrumentType??(props.meterMode==='current'?'clamp':'multimeter')]} selected={false} view="normal" showLabels={false} onModelAvailability={props.onModelAvailability} lowDetail={props.touchLayout&&!inspectingTester} preferLowAsset={props.touchLayout} onPart={part=>props.onSelect('@meter',part)} onTerminal={()=>{}}/>}</group>}{props.tool==='meter'&&props.instrumentType==='forktester'&&props.probes.map((endpoint,index)=>endpoint&&<TestLead key={'lead'+index} doc={props.document} endpoint={endpoint} origin={testPose.position} rotation={testPose.rotation} negative={index===1}/>)}{props.tool==='meter'&&!props.workshop&&props.probes.map((endpoint,index)=>endpoint&&<EndpointMarker key={'probe'+index} document={props.document} endpoint={endpoint} color={index===0?'#e64c52':'#172127'} label={probesShareFitting||endpointEquals(hover,endpoint)?undefined:`${index===0?'Red':'Black'} probe`}/>)}
     <CameraNavigation document={props.document} routing={props.routing} routingPending={props.routingPending} selected={props.selected} selectedPart={props.selectedPart} selectedWire={props.selectedWire} cameraCommand={props.cameraCommand} dragging={dragging} nodes={nodes} mode={props.cameraMode} speed={props.cameraSpeed} tool={props.tool} touchMove={props.mode==='build'&&props.touchMove} onTouchMovePreview={previewMove} onTouchMoveCommit={commitTouchMove}/><RenderController props={props} dragging={dragging} onDpr={props.onDpr}/><GraphicEffects scenery={props.scenery} quality={props.quality}/></>;

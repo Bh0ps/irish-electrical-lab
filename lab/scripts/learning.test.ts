@@ -11,6 +11,34 @@ import type { CircuitDocument } from '../lib/types.ts';
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!;
 const copy=(id=7)=>structuredClone(lesson(id).circuit);
 const failed=(checks:ReturnType<typeof runLessonScenarios>)=>checks.filter(c=>c.status!=='pass');
+test('operating and measuring report the fresh lamp reading in everyday feedback',()=>{
+  const doc=copy(7);
+  doc.supply.voltage=230;
+  const result=simulate(doc),activities=getLessonActivities(lesson(7));
+  const on=activities.find(a=>a.id==='lesson:7:operate:sequence:1')!;
+  const feedback=evaluateActivity(on,doc,result);
+  assert.equal(feedback.status,'pass');
+  assert.match(feedback.explanation,/Hall light.* W/);
+  const measure=activities.find(a=>a.id==='lesson:7:measure:voltage')!;
+  const sample=captureMeasurement(doc,result,measure.measurement!);
+  const answer=evaluateActivity(measure,doc,result,[sample]);
+  assert.equal(answer.status,'pass');
+  assert.match(answer.explanation,/recorded 2[23]\d(?:\.\d+)? V from L to N on Hall light/);
+  assert.equal(evaluateActivity(measure,{...doc,revision:doc.revision+1},result,[sample]).status,'not-run');
+});
+test('motor directions name the right belt or station and meter steps name a fitting once',()=>{
+  for(const [id,placeA,placeB] of [[60,'station A','station B'],[61,'receiving belt','feed belt']] as const){
+    const course=lesson(id),steps=getLessonActivities(course);
+    for(const [button,place] of [['start-a',placeA],['start-b',placeB]]){
+      const step=steps.find(s=>s.kind==='operate'&&s.component===button)!;
+      assert.ok(step.instruction.includes(place),step.instruction);
+      assert.doesNotMatch(step.instruction,/momentary|normally open|· NO/);
+    }
+  }
+  const step=getLessonActivities(lesson(7)).find(a=>a.id==='lesson:7:measure:voltage')!;
+  assert.equal(step.instruction.match(/Hall light/g)?.length,1);
+  assert.match(step.instruction,/red on L and black on N/);
+});
 test('every operating step gives feedback, including steps that set up the next reading',()=>{
   for(const course of LESSONS)for(const step of getLessonActivities(course).filter(a=>a.kind==='operate')){
     assert.match(step.explanation,/\p{L}/u,step.id);

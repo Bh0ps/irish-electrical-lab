@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.10.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.12.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -30,9 +30,11 @@ In **Drawing**, choose **Job drawing** for the intended connections and **My wir
 
 Open **Chapters → Jobs at Oakfield house**, or search for a job by name. In the cupboard job, shut the door, watch the strip go dark, then open the door again. Use the fitting in the room or its named control. Both operate the same circuit.
 
-In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. Once you have done all five, you can try an unscored fault on the same circuit.
+In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. Once you have done all six, you can try an unscored fault on the same circuit.
 
 In **Meter the worktop lights**, turn off the left light and leave the right one lit. Open **Measure**, choose a strip and touch its two copper pads with the red and black probes. You can also pick the same points by name. Record each reading, then put the lights the other way round. If you move a probe to the wrong strip, you can move it again without starting over.
+
+In **Check the bathroom fan timer**, switch the bathroom light off. Watch the fan keep running, then stop five seconds later. Try the fan isolator with the light on. The light has a separate feed and stays lit. Choose **Go to → Outside fan grille** to see where the air leaves the house.
 
 In **Check both doorbell buttons**, hold the front button and read the name on the chime. Let go, then try the back door. You can use the buttons in the house or the named controls in the job sheet. **Measure** and **Find conductor** keep your place. Choose **Back to job** when you’re done.
 

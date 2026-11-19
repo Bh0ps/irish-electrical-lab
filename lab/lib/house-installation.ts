@@ -1,10 +1,11 @@
 import { COMPONENTS } from './components';
-import {bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
+import {BELL_CUPBOARD as serviceBoard,bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
 import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
-import { installedTerminalPoint, type FixturePose } from './site-fixtures';
+import { fixturePoint,installedTerminalPoint, type FixturePose } from './site-fixtures';
 import {KITCHEN_LIGHTS as kitchen,stripLead} from './kitchen-lighting';
+import {BATH_EXTRACT as bath} from './bathroom-extract';
 import { getComponentTerminals } from './terminal-layout';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types';
 
@@ -39,7 +40,10 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
   22:{local:back(0,-3.43,1.16)},
   23:{local:outsideBath},
   35:{switch:outsideBath},
-  36:{'light-switch':outsideBath,'fan-isolation':side(2,2.2,1.72,-.05,1)},
+  36:{'light-switch':side(2,2.2,1.15,bath.switchZ,1),'fan-isolation':side(2,2.2,1.72,bath.switchZ,1),
+    'fan-fcu':side(2,2.2,1.32,-.82,1),runon:side(2,2.2,1.63,-.82,1),
+    fan:{room:1,face:[bath.fanX,bath.fanY-.088,bath.wallInside],yaw:Math.PI},
+    'fan-cpc':{room:1,face:[bath.fanX-.21,bath.fanY-.005,bath.wallInside],yaw:Math.PI}},
   37:{override:outsideBath},
   66:{'left-switch':back(0,kitchen.left,kitchen.switchHeight,kitchen.tileFace+.01),'right-switch':back(0,kitchen.right,kitchen.switchHeight,kitchen.tileFace+.01)},
   71:{front:frontPush,rear:gardenPush,bell:back(1,.59,1.82)},
@@ -51,6 +55,8 @@ export function houseFixing(id:number,c:ComponentInstance){return c.mount?undefi
 export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixture?:FixturePose):Vec3{
   let depth=COMPONENTS[c.type].size[2]*scale/2;
   if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
+  else if(fixture?.extractor)depth=0;
+  else if(fixture?.serviceBox)depth=fixture.serviceBox==='timer'?bath.timerOffset:bath.cpcOffset;
   else if(fixture?.flushPlate)depth=.0001;
   else if(fixture?.bellPush)depth=c.variant==='sesame'?0:.220*fixture.scale[2];
   else if(fixture?.batten)depth=.161*fixture.scale[2];
@@ -60,12 +66,15 @@ export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixtur
 }
 
 interface InstalledEnd {pin:Vec3; chase:Vec3; riser:number; item:SiteItem; component:ComponentInstance;lead?:Vec3[]}
-function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEnd|undefined{
+export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEnd|undefined{
   const component=doc.components.find(c=>c.id===end.component),item=site.items.find(c=>c.id===end.component);
   if(!component||!item)return;
   const terminal=getComponentTerminals(component,COMPONENTS[component.type]).find(t=>t.id===end.terminal);
   if(!terminal)return;
   const pin=installedTerminalPoint(item,component,terminal);
+  if(doc.lessonId===36&&item.fixture?.ceilingLight){
+    return {pin,chase:[pin[0],bath.circuitHeight,pin[2]],riser:pin[2],item,component};
+  }
   const fixing=site.kind==='home'?houseFixing(doc.lessonId??0,component):undefined;
   const service=site.kind!=='home'&&item.room===4?SERVICE_AREAS[site.kind]:undefined;
   const chase:Vec3=[...pin];
@@ -75,6 +84,26 @@ function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEn
   // The rear wing and front rooms have separate routes in the ceiling void.
   const rearWing=item.room===REAR_GARDEN.id||(item.room>=4&&item.room<=7);
   const riser=site.kind==='home'&&rearWing?HOME_BACK-.04:service?service.back-.02:-2.87;
+  if(doc.lessonId===36&&item.fixture?.bellService){
+    const x=serviceBoard.x+bath.outgoingOffset,top=serviceBoard.y+serviceBoard.breakerSize[1]/2,z=serviceBoard.z+serviceBoard.conduitZ;
+    const lead:Vec3[]=[pin,[pin[0],pin[1],z],[x,pin[1],z],[x,top,z]];
+    return {pin,chase:lead[3],riser,item,component,lead};
+  }
+  if(item.fixture?.extractor){
+    // Both insulated cores enter through the oval hole below the terminal block.
+    // The wider spacing at the terminals narrows slightly inside the shared grommet.
+    const x=terminal.id==='L'?-.615:-.575;
+    const entry=fixturePoint(item.position,item.scale,item.fixture,component,[x,.950,.011],item.rotation);
+    const lead:Vec3[]=[pin,[pin[0],entry[1],pin[2]],[entry[0],entry[1],pin[2]],entry,[entry[0],entry[1],bath.wallInside+.065]];
+    return {pin,chase:lead[lead.length-1],riser,item,component,lead};
+  }
+  if(doc.lessonId===36&&item.fixture?.serviceBox){
+    // Rear entry on each surface box. The concealed core turns behind the plaster.
+    const lead:Vec3[]=item.fixture.serviceBox==='timer'
+      ? [pin,[pin[0],item.position[1]+.069,pin[2]],[2.202,item.position[1]+.069,pin[2]]]
+      : [pin,[pin[0],pin[1]+.020,pin[2]],[pin[0],pin[1]+.020,bath.wallInside+.059]];
+    return {pin,chase:lead[2],riser,item,component,lead};
+  }
   if(item.fixture?.tapeProfile){
     const lead=stripLead(pin,item.position[0],terminal.id);
     return {pin,chase:lead[lead.length-1],riser,item,component,lead};
@@ -113,6 +142,14 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):V
     return points;
   }
   const shortWallDrop=a.item.room===b.item.room&&Math.hypot(a.chase[0]-b.chase[0],a.chase[2]-b.chase[2])<.13;
+  if(doc.lessonId===36&&!shortWallDrop&&assembly(a)!==assembly(b)){
+    // Each wall drop rises to the ceiling void at its own fixing. The short
+    // crossing runs straight from the dry-side partition to the bathroom.
+    const y=bath.circuitHeight;
+    through(...(a.lead??[a.pin,a.chase]),[a.chase[0],y,a.chase[2]],
+      [b.chase[0],y,a.chase[2]],[b.chase[0],y,b.chase[2]],...(b.lead?[...b.lead].reverse():[b.chase,b.pin]));
+    return points;
+  }
   const cupboard=site.kind==='home'&&[13,65,66,68,69].includes(doc.lessonId??0)&&a.item.room===0&&b.item.room===0;
   if(cupboard&&doc.lessonId!==65&&assembly(a)!==assembly(b)&&(a.item.fixture?.tapeProfile||b.item.fixture?.tapeProfile||a.item.fixture?.kitchenDriver||b.item.fixture?.kitchenDriver)){
     // Follow the cabinet underside. At a wall switch the cable first drops in

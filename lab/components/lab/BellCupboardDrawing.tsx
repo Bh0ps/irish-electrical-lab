@@ -13,21 +13,23 @@ export function insideBellCupboard(site:JobSite,wire?:Wire){
 
 export default function BellCupboardDrawing({doc,site,wire,route,zoom,find}:{doc:CircuitDocument;site:JobSite;wire:Wire;route:Vec3[];zoom:number;find:(id:string,terminal:string)=>void}){
   const tags=site.items.filter(i=>i.fixture?.bellService);
+  const bathroom=doc.lessonId===36;
+  const room=bathroom?'Service hall':'Utility cupboard';
   const ends=[wire.from,wire.to];
   const labels=ends.map(e=>{
     const c=doc.components.find(d=>d.id===e.component)!;
     const t=getComponentTerminals(c,definitionFor(c)).find(t=>t.id===e.terminal)!;
     return tags.find(item=>item.id===e.component)!.ref+' · '+t.label;
   });
-  return <svg className="electrical-sheet floor-sheet" role="group" aria-label="Utility cupboard enclosure detail" viewBox="0 0 440 275" style={{width:Math.max(100,zoom*100)+'%',minWidth:340*zoom}}>
-    <text x="22" y="24" fill="#384d42" fontSize="13">Utility cupboard · Covers removed</text>
-    <line x1={x(b.x+b.breakerSize[0]/2)} x2={x(b.x+b.transformerOffset-b.transformerSize[0]/2)} y1={y(b.y+b.conduitY)} y2={y(b.y+b.conduitY)} stroke="#bbc5bb" strokeWidth="14"/>
+  return <svg className="electrical-sheet floor-sheet" role="group" aria-label={room+' enclosure detail'} viewBox={bathroom?'0 0 250 275':'0 0 440 275'} style={{width:Math.max(100,zoom*100)+'%',minWidth:340*zoom}}>
+    <text x="22" y="24" fill="#384d42" fontSize="13">{room} · {bathroom?'Cover removed':'Covers removed'}</text>
+    {!bathroom&&<line x1={x(b.x+b.breakerSize[0]/2)} x2={x(b.x+b.transformerOffset-b.transformerSize[0]/2)} y1={y(b.y+b.conduitY)} y2={y(b.y+b.conduitY)} stroke="#bbc5bb" strokeWidth="14"/>}
     {[false,true].map(tx=>{
       const cx=b.x+(tx?b.transformerOffset:0),[w,h]=tx?b.transformerSize:b.breakerSize;
       const id=tx?'tx':'protect',item=tags.find(i=>i.id===id);
       if(!item||!doc.components.some(c=>c.id===id))return null;
       return <g key={id}><rect x={x(cx-w/2)} y={y(b.y+h/2)} width={w*scale} height={h*scale} fill="#f5f3e7" stroke="#68806e" strokeWidth="2" rx="3"/>
-        <text x={x(cx)} y="47" textAnchor="middle" fill="#2d493a" fontSize="13">{item.ref+' · '+(tx?'Bell transformer':'Bell supply')}</text>
+        <text x={x(cx)} y="47" textAnchor="middle" fill="#2d493a" fontSize="13">{item.ref+' · '+(bathroom?'Bathroom circuit':tx?'Bell transformer':'Bell supply')}</text>
       </g>;
     })}
     {tags.map(item=>{

@@ -15,9 +15,11 @@ from service_details import add_service_details
 from lighting_backs import add_lighting_back
 from din_protection import build_din_protection
 from power_accessories import build_power_accessory
+from fan_isolator import build_fan_isolator
 from rotary_dimmer import build_rotary_dimmer
 from sesame_push import build_sesame_push
 from white_tape import build_white_tape
+from bathroom_fan import build_bathroom_fan
 from shaver_face import build_shaver_face
 from png_metadata import strip_text_metadata
 from portable_source import clear_browser_locations
@@ -604,10 +606,14 @@ def main():
         recipe=json.loads((HERE/'recipes'/entry['file']).read_text());root=reconstruct(recipe);authored_first_fixture(recipe,root);authored_library_variants(recipe,root)
         api=SimpleNamespace(**{name:globals()[name] for name in ('empty','material','box','cyl','torus','semantic','ancestors','setmesh','boolean_difference','label')})
         workshop=any(o.get('detailId') for o in root.children_recursive) or recipe['component']['type'] in ('forktester','stripper','crimper','torquedriver')
-        if recipe['component']['type'] == 'shaveroutlet':
+        if recipe['galleryKey']=='isolator3:fan-isolator':
+            features=build_fan_isolator(recipe,root,api)
+        elif recipe['component']['type'] == 'shaveroutlet':
             features=build_shaver_face(recipe,root,api)
         elif recipe['component']['type'] in ('mcb','mcb3','rcd','rcd3','rcbo'):
             features=build_din_protection(recipe,root,api)
+        elif recipe['galleryKey'] == 'fan:xf100s':
+            features=build_bathroom_fan(recipe,root,api)
         elif recipe['galleryKey'] == 'led:strip':
             features=build_white_tape(recipe,root,api)
         elif recipe['galleryKey'] == 'pushbutton:sesame':
@@ -638,6 +644,11 @@ def main():
         for obj in root.children_recursive:obj.select_set(True)
         export_glb(ASSETS/f"{entry['key']}.glb")
         meshes=[obj for obj in root.children_recursive if obj.type=='MESH'];triangles=sum(sum(len(p.vertices)-2 for p in obj.data.polygons) for obj in meshes)
+        if recipe['galleryKey'] == 'fan:xf100s':
+            build_bathroom_fan(recipe,root,api,distance=True)
+            merge_static(root);tag_inspection_shells(root)
+            bpy.ops.object.select_all(action='DESELECT');root.select_set(True)
+            for obj in root.children_recursive:obj.select_set(True)
         low_path=ASSETS/(entry['key']+'.low.glb');low_triangles=export_lod(root,low_path)
         reports.append({'key':entry['key'],'galleryKey':entry['galleryKey'],'type':entry['component']['type'],'name':entry['name'],'url':'/models/'+entry['key']+'.glb','lowUrl':'/models/'+entry['key']+'.low.glb','thumbnailUrl':'/models/thumbnails/'+entry['key']+'.png','detailRevision':REVISION,'detailFamily':recipe['definition']['model'],'detailFeatures':features,'sourceMeshCount':source_meshes,'meshCount':len(meshes),'triangles':triangles,'lowTriangles':low_triangles,'terminals':recipe['terminals'],'bytes':(ASSETS/(entry['key']+'.glb')).stat().st_size,'lowBytes':low_path.stat().st_size,'bespokeBlender':True})
         print('MODEL_READY',entry['key'],len(meshes),triangles,flush=True)

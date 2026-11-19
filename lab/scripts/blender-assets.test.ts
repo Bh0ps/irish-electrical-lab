@@ -28,7 +28,7 @@ function terminals(scene:THREE.Object3D){scene.updateMatrixWorld(true);const fou
 function geometryDigest(scene:THREE.Group,materials=false){const hash=createHash('sha256');scene.updateMatrixWorld(true);scene.traverse(node=>{if(node instanceof THREE.Mesh){hash.update(Buffer.from(node.geometry.getAttribute('position').array.buffer));hash.update(JSON.stringify(node.matrixWorld.toArray().map(n=>Math.round(n*1e6)/1e6)));if(materials)for(const material of Array.isArray(node.material)?node.material:[node.material])if(material instanceof THREE.MeshStandardMaterial)hash.update(JSON.stringify([material.color.toArray(),material.metalness,material.roughness]));}});return hash.digest('hex');}
 
 test('all authored variants have original Blender sources and full/distance offline GLBs',async()=>{
-  assert.equal(inventory.length,110);const keys=new Set<string>();let total=0,lowTotal=0;
+  assert.equal(inventory.length,112);const keys=new Set<string>();let total=0,lowTotal=0;
   for(const entry of inventory){
     const definition=COMPONENTS[entry.component.type],asset=equipmentAsset(entry.component,definition);assert.ok(asset,entry.key);assert.ok(!keys.has(asset.key));keys.add(asset.key);
     const source=root+'authoring/blender/models/'+asset.key+'.blend';assert.ok(existsSync(source),source);const header=readFileSync(source).subarray(0,4);assert.ok(header.subarray(0,2).toString()==='BL'||header[0]===0x1f&&header[1]===0x8b||header.equals(Buffer.from([0x28,0xb5,0x2f,0xfd])),'Blender, gzip or zstd-compressed Blender source');
@@ -179,7 +179,7 @@ test('renaming a custom one-way switch to Start preserves its compatible rocker 
 
 test('each named fitting detail maps to a real selectable assembly and its original parent at either detail level',async()=>{
   const identified=inventory.filter(e=>fittingDetails(e.component,COMPONENTS[e.component.type]).length);
-  assert.equal(identified.length,20);
+  assert.equal(identified.length,21);
   for(const entry of identified){
     const c=entry.component,def=COMPONENTS[c.type],asset=equipmentAsset(c,def)!;
     for(const url of [asset.url,asset.lowUrl]){

@@ -1,6 +1,6 @@
 import { COURSE_BOARD_ID,COURSE_BOND_ID } from './board-examples.ts';
 import { lessonProbePoints } from './lesson-probe-points.ts';
-import { COURSE_PAGES } from './coursebook-content.ts';
+import { coursePage } from './coursebook-content.ts';
 import { describeEndpoint } from './build-hints.ts';
 import { definitionFor, COMPONENTS, equipmentPurpose } from './components.ts';
 import { forkMode, forkRead, instrumentData, type InstrumentEvidence } from './fork-tester.ts';
@@ -154,8 +154,8 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
     return text;
   }
   const activities:LessonActivity[]=lesson.circuit.components.filter(c=>c.id!==COURSE_BOARD_ID).map(c=>({...base(`inspect:${c.id}`,'inspect',`Inspect ${c.label}`,`Choose ${c.label}, then Show terminals. Pick a terminal to see what connects there.`,equipmentPurpose(c)),component:c.id,part:'terminals',endpoints:definitionFor(c).terminals.map(t=>({component:c.id,terminal:t.id}))}));
-  const scenario=getScenario(lesson.id);
-  const page=COURSE_PAGES[lesson.id];
+  const scenario=getScenario(lesson.id,lesson.circuit);
+  const page=coursePage(lesson.id,lesson.circuit);
   function questionActivity(kind:'predict'|'explain'):LessonActivity {
     const content=kind==='predict'?page.prediction:page.explanation;
     const options=[{id:'expected',label:content.right},{id:'alternative',label:content.alternative}];
@@ -185,7 +185,8 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
     const observed=scenario!.steps[outcomeIndex],controls=pulse?next.patches:step.patches;
     const target=step.patches[0]?.component??('component'in(observed.expectations[0]??{})?(observed.expectations[0] as {component:string}).component:source?.id);
     const comparison=observed.expectations.some(e=>e.kind==='total-power'||e.kind==='power'&&e.relative);
-    let instruction=pulse?`Press and release ${lesson.circuit.components.find(c=>c.id===target)?.label??target}. Watch what stays on${lesson.id===57?' after the star–delta delay':''}.`:step.patches.map(p=>p.params.pressed===true?`Hold ${lesson.circuit.components.find(c=>c.id===p.component)?.label??p.component} down.`:operateLanguage(lesson,p.component,p.params)).join(' ');
+    const buttonName=(id:string)=>lesson.circuit.components.find(c=>c.id===id)?.label.split(' · ')[0]??id;
+    let instruction=pulse&&target?`Press ${buttonName(target)}, then let go.${lesson.id===57?' Watch for the change from star to delta.':''}`:step.patches.map(p=>p.params.pressed===true?`Hold ${buttonName(p.component)} down.`:operateLanguage(lesson,p.component,p.params)).join(' ');
     if(step.supplyEnabled!==undefined)instruction+=` ${step.supplyEnabled?'Turn on':'Turn off'} the mains supply in the lab.`;
     if(step.openSignal)instruction+=` Turn off all sources and open the signal wire from ${displayPoint(step.openSignal.a)} to ${displayPoint(step.openSignal.b)}, then turn the supply back on.`;
     if(!instruction.trim())instruction=step.title+'.';
@@ -193,7 +194,16 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
     activities.push({...base(`operate:sequence:${index}`,'operate',step.title,instruction.trim(),observed.expectations.length ? observed.expectations.map(e=>e.title).join('. ')+'.' : 'Now try the next setting.'),component:target,expectedControls:structuredClone(controls),expectedParams:controls.find(p=>p.component===target)?.params,expectedSupplyEnabled:step.supplyEnabled,expectedSignalOpen:step.openSignal&&structuredClone(step.openSignal),expectedObservations:structuredClone(observed.expectations),scenarioStep:outcomeIndex});
     if(pulse)index++;
   }
-  const pair=lessonProbePoints(lesson.id,lesson.circuit);if(pair)activities.push({...base('measure:voltage','measure','Check the voltage',`Put the red probe on ${displayPoint(pair.a)} and the black probe on ${displayPoint(pair.b)}. Record the volts.`,`${lesson.sections.find(s=>s.title==='Where to put the probes')?.beginner??'Put one probe on each terminal.'} If you see zero, check the switch position.`),component:pair.a.component,endpoints:[pair.a,pair.b],measurement:{mode:'voltage',...pair}});
+  const pair=lessonProbePoints(lesson.id,lesson.circuit);
+  if(pair){
+    const red=describeEndpoint(lesson.circuit,pair.a)!,black=describeEndpoint(lesson.circuit,pair.b)!;
+    const place=red.endpoint.component===black.endpoint.component
+      ? `On ${red.equipmentName}, put red on ${red.pointLabel} and black on ${black.pointLabel}.`
+      : `Put red on ${displayPoint(pair.a)}. Put black on ${displayPoint(pair.b)}.`;
+    activities.push({...base('measure:voltage','measure','Check the voltage',place+' Record the reading.',
+      lesson.sections.find(s=>s.title==='Where to put the probes')?.beginner??'Read the volts between the two probes.'),
+      component:pair.a.component,endpoints:[pair.a,pair.b],measurement:{mode:'voltage',...pair}});
+  }
   const live=lesson.circuit.wires.find(w=>['L','L1','L2','L3','DC+'].includes(w.role));if(live)activities.push({...base('measure:current','measure','Read the current in one wire',`Choose the wire from ${displayPoint(live.from)} to ${displayPoint(live.to)}. Record the amps.`,`The meter shows the current in this wire. Where the circuit splits, the branches can carry different currents.`),component:live.to.component,endpoints:[live.from,live.to],wire:live.id,measurement:{mode:'current',wire:live.id}});
   const target=lesson.circuit.wires.find(w=>w.id===lesson.challenge.wire);if(target)activities.push({...base('measure:target','measure','Check the wire for a break',`Turn off all sources, then measure resistance between ${displayPoint(target.from)} and ${displayPoint(target.to)}. Take the meter out of resistance mode before switching the power back on.`, 'A low resistance shows a path between the probes. If two wires reach the same point, the meter can still find a path around a break.'),component:target.to.component,endpoints:[target.from,target.to],measurement:{mode:'resistance',a:target.from,b:target.to}});
   activities.push(questionActivity('explain'));
@@ -229,34 +239,44 @@ export function evaluateActivity(activity:LessonActivity,document:CircuitDocumen
     if(!params||!signalOpen)return outcome('not-run',activity.instruction);
     if(!result||result.revision!==document.revision)return outcome('not-run','Give the meter a moment to catch up, then check again.');
     if(!result.converged)return outcome('unresolved','The bench can’t get a reading. Choose Test circuit to check the wiring.');
+    const observedReadings:string[]=[];
     for(const [index,expected] of observations.entries()){
       if(expected.kind==='total-power'||expected.kind==='power'&&expected.relative){
         const check=currentReport&&report.checks.find(c=>c.id===`scenario:${document.lessonId}:${activity.scenarioStep}:${index}`);
         if(!check||check.status==='unresolved')return outcome('unresolved','Choose Test circuit to compare the two settings.');
         if(check.status!=='pass')return outcome('not-run',check.explanation);
+        observedReadings.push(check.explanation);
       }else{
         const reading=evaluateScenarioExpectation(expected,document,result);
         if(reading.pass===null)return outcome('unresolved',reading.detail);
-        if(!reading.pass){
-          const fitting='component' in expected ? document.components.find(part=>part.id===expected.component) : undefined;
-          const at=fitting ? fitting.label+' · ' : '';
-          return outcome('not-run',at+reading.detail+' Choose Test circuit to see which check needs attention.');
-        }
+        const fitting='component' in expected ? document.components.find(part=>part.id===expected.component) : undefined;
+        const detail=fitting&&!reading.detail.includes(fitting.label)?fitting.label+' · '+reading.detail:reading.detail;
+        if(!reading.pass)return outcome('not-run',detail+' Choose Test circuit to check the wiring.');
+        observedReadings.push(detail);
       }
     }
-    return outcome('pass',activity.explanation);
+    return outcome('pass',observedReadings.length?observedReadings.slice(0,2).join(' '):activity.explanation);
   }
   if(activity.kind==='measure'){
     const target=activity.measurement;
     if(!target)return outcome('unresolved','The bench has no meter setup for this step.');
     const readings=currentEvidence(document,result,evidence).filter(e=>e.mode===target.mode&&(!activity.independentMeasurement||e.assisted===false));
+    const saved=(reading:MeasurementEvidence)=>{
+      if(reading.status==='open')return outcome('pass','You recorded OL. There was no path between the probes.');
+      const shown=reading.instrument?.displayed??reading.value?.toLocaleString('en-IE',{maximumSignificantDigits:4});
+      const amount=[shown,reading.unit,reading.instrument?.signal].filter(Boolean).join(' ');
+      const at=readingPoints(document,reading.a,reading.b);
+      return outcome('pass',at?`You recorded ${amount} from ${at}.`:`You recorded ${amount} in this wire.`);
+    };
     if(target.mode==='current'){
       const [a,b]=activity.endpoints??[];
       const wire=document.wires.find(w=>eq(w.from,a)&&eq(w.to,b)||eq(w.from,b)&&eq(w.to,a));
-      if(readings.some(e=>e.wire===(wire?.id??target.wire)))return outcome('pass',activity.explanation);
+      const match=readings.find(e=>e.wire===(wire?.id??target.wire));
+      if(match)return saved(match);
     }else{
       const probes=readings.filter(e=>e.instrument?.method!=='fork-voltage');
-      if(probes.some(e=>eq(e.a,target.a)&&eq(e.b,target.b)||eq(e.a,target.b)&&eq(e.b,target.a)))return outcome('pass',activity.explanation);
+      const match=probes.find(e=>eq(e.a,target.a)&&eq(e.b,target.b)||eq(e.a,target.b)&&eq(e.b,target.a));
+      if(match)return saved(match);
       const taken=readingPoints(document,probes[0]?.a,probes[0]?.b);
       const wanted=readingPoints(document,target.a,target.b);
       if(taken&&wanted)return outcome('not-run',`You measured ${taken}. For this step, measure ${wanted}.`);

@@ -1,7 +1,8 @@
 import { lessonProbePoints } from './lesson-probe-points.ts';
 import { describeEndpoint } from './endpoint-description.ts';
 import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Endpoint, Parameters, TerminalRole, Wire } from './types';
-import { COURSE_PAGES } from './coursebook-content.ts';
+import { coursePage, olderTimerFan } from './coursebook-content.ts';
+export { olderTimerFan } from './coursebook-content.ts';
 import * as Registry from './components.ts';
 import { furnishCourseBoard } from './board-examples.ts';
 import { furnishCableExamples } from './cables.ts';
@@ -87,9 +88,9 @@ class Bench {
   powerThrough(k: string, inputs = this.phases): Node[] {
     return inputs.map((n, i) => { this.wire(n, [k, String(1 + i * 2)], `L${i + 1}` as TerminalRole); return [k, String(2 + i * 2)] as Node; });
   }
-  startStop(k: string, feed = this.live, stop = 'stop', start = 'start', overload?: string): void {
-    this.add('pushbutton', stop, 'Stop · normally closed', { pressed: false });
-    this.add('pushbutton', start, 'Start · momentary normally open', { pressed: false });
+  startStop(k: string, feed = this.live, stop = 'stop', start = 'start', overload?: string, station = ''): void {
+    this.add('pushbutton', stop, `Stop${station} · NC`, { pressed: false });
+    this.add('pushbutton', start, `Start${station} · NO`, { pressed: false });
     this.wire(feed, [stop, 'COM'], 'control');
     let n: Node = [stop, 'NC'];
     if (overload) { this.wire(n, [overload, '95'], 'control'); n = [overload, '96']; }
@@ -107,7 +108,7 @@ class Bench {
   }
 }
 
-function buildCircuit(id: number, title: string): CircuitDocument {
+function buildCircuit(id: number, title: string, legacyFan=false): CircuitDocument {
   const b = new Bench(id, title, id >= 53 && id <= 64);
   if(id>=65){b.protectedSingle();wireElvLesson(b,id);return b.document();}
   if (id >= 7 && id <= 52) b.protectedSingle();
@@ -222,8 +223,22 @@ function buildCircuit(id: number, title: string): CircuitDocument {
     case 34: { b.add('isolator', 'local', 'Heat pump isolator', { closed: true }); b.wire(b.live, ['local', 'LIN']); b.wire(b.neutral, ['local', 'NIN'], 'N'); b.neutral = ['local', 'NOUT']; b.add('relay', 'demand', 'Heat pump control relay'); b.coil('demand', stat('room', 'Heat request')); b.wire(['local', 'LOUT'], ['demand', 'COM']); b.load('heatpump', 'unit', 'Heat pump', ['demand', 'NO'], 1000); break; }
     case 35: b.load('fan', 'fan', 'Simple switched extractor', sw('switch', 'Fan supply switch'), 35); break;
     case 36: {
-      b.add('isolator3', 'fan-isolation', 'Three-pole fan isolation · fourth pole unused', { closed: true }); b.wire(b.live, ['fan-isolation', 'L1IN']); b.wire(b.neutral, ['fan-isolation', 'NIN'], 'N'); b.wire(sw('light-switch', 'Bathroom light switch'), ['fan-isolation', 'L2IN'], 'control');
-      b.add('timer', 'runon', 'Fan timer with permanent supply', { on: true, demand: true, mode: 'off-delay', delay: 5 }); b.wire(['fan-isolation', 'L1OUT'], ['runon', 'L']); b.wire(['fan-isolation', 'NOUT'], ['runon', 'N'], 'N'); b.wire(['fan-isolation', 'L2OUT'], ['runon', 'IN'], 'control'); b.neutral = ['fan-isolation', 'NOUT']; b.load('fan', 'fan', 'Run-on extractor', ['runon', 'OUT'], 35); break;
+      const feed:Node=legacyFan?b.live:['fan-fcu','LOUT'], neutral:Node=legacyFan?b.neutral:['fan-fcu','NOUT'];
+      b.add('isolator3','fan-isolation',legacyFan?'Three-pole fan isolation · fourth pole unused':'Three-pole fan isolator',{closed:true},undefined,legacyFan?undefined:'fan-isolator');
+      b.wire(feed,['fan-isolation','L1IN']); b.wire(neutral,['fan-isolation','NIN'],'N');
+      const switched=sw('light-switch','Bathroom light switch',feed);
+      b.wire(switched,['fan-isolation','L2IN'],'control');
+      b.add('timer','runon',legacyFan?'Fan timer with permanent supply':'Separate fan timer · 5 s on the bench',{on:true,demand:true,mode:'off-delay',delay:5});
+      b.wire(['fan-isolation','L1OUT'],['runon','L']); b.wire(['fan-isolation','NOUT'],['runon','N'],'N'); b.wire(['fan-isolation','L2OUT'],['runon','IN'],'control');
+      if(legacyFan){b.neutral=['fan-isolation','NOUT'];b.load('fan','fan','Run-on extractor',['runon','OUT'],35);break;}
+      b.add('fan','fan','Bathroom extractor · 15 W study load',{watts:15,power:15,ratedVoltage:230,doubleInsulated:true},undefined,'xf100s');
+      b.wire(['runon','OUT'],['fan','L']); b.wire(['fan-isolation','NOUT'],['fan','N'],'N');
+      b.add('terminal','fan-cpc','Earth wire connector beside fan',{},undefined,'lever-connector');
+      b.wire(['fan-fcu','PE2'],['fan-cpc','1'],'PE');
+      b.add('fcu','fan-fcu','3 A fused supply for light and fan',{closed:true,currentRating:3}); b.mains('fan-fcu','LIN','NIN');
+      b.neutral=neutral; b.earth=['fan-fcu','PE2']; b.load('lamp','light','Bathroom downlight',switched,10);
+      b.components[b.components.length-1].variant='downlight';
+      break;
     }
     case 37: {
       const x = b.powered('sensor', 'humidity', 'Humidity sensor', { active: true, demand: true, mode: 'humidity' }); b.wire(b.live, ['humidity', 'IN'], 'control'); b.add('junction', 'or', 'Fan control junction'); b.wire(x, ['or', '1'], 'control'); b.wire(sw('override', 'Manual ventilation override'), ['or', '2'], 'control'); b.load('fan', 'fan', 'Humidity extractor', ['or', '3'], 35); break;
@@ -259,8 +274,8 @@ function buildCircuit(id: number, title: string): CircuitDocument {
     }
     case 58: { b.add('vfd', 'drive', 'Variable-frequency drive (VFD)', { frequency: 35, speed: 0.7, run: true }); ['L1', 'L2', 'L3'].forEach((t, i) => b.wire(b.phases[i], ['drive', t], t as TerminalRole)); b.wire(b.earth, ['drive', 'PE'], 'PE'); const x = b.control('switch', 'run', 'Drive run permission · dry contact', ['drive', 'COM']); b.wire(x, ['drive', 'RUN'], 'control'); b.motor3('motor', 'Motor fed by the drive', [['drive', 'U'], ['drive', 'V'], ['drive', 'W']]); break; }
     case 59: { b.live = b.phases[0]; b.contactor('stage-a', 'Heater stage A'); b.contactor('stage-b', 'Heater stage B'); const cut = b.control('cutout', 'safety', 'Independent high-temperature safety limit'); b.coil('stage-a', stat('demand-a', 'Stage A temperature demand', cut)); b.coil('stage-b', stat('demand-b', 'Stage B temperature demand', cut)); for (const [k, n] of [['stage-a', 1], ['stage-b', 2]] as const) b.powerThrough(k).forEach((p, i) => b.load('heater', `h${n}-${i}`, `Stage ${n} phase ${i + 1} element`, p, 250)); break; }
-    case 60: { const o = threeStarter('starter', 'Two-station motor contactor'); b.live = b.phases[0]; b.startStop('starter', b.live, 'stop-a', 'start-a', o); b.add('pushbutton', 'stop-b', 'Remote stop · NC', { pressed: false }); b.add('pushbutton', 'start-b', 'Remote start · NO', { pressed: false }); const w = b.wires.find(w => w.from.component === 'stop-a' && w.from.terminal === 'NC'); if (w) w.from = endpoint(['stop-b', 'NC']); b.wire(['stop-a', 'NC'], ['stop-b', 'COM'], 'control'); b.wire(['start-a', 'COM'], ['start-b', 'COM'], 'control'); b.wire(['start-b', 'NO'], ['starter', 'A1'], 'control'); break; }
-    case 61: { b.live = b.phases[0]; const a = threeStarter('downstream', 'Downstream conveyor starter', 'motor-a'); const c = threeStarter('upstream', 'Upstream conveyor starter', 'motor-b'); b.startStop('downstream', b.live, 'stop-a', 'start-a', a); b.startStop('upstream', ['downstream', '14'], 'stop-b', 'start-b', c); break; }
+    case 60: { const o = threeStarter('starter', 'Two-station motor contactor'); b.live = b.phases[0]; b.startStop('starter', b.live, 'stop-a', 'start-a', o, ' at station A'); b.add('pushbutton', 'stop-b', 'Stop at station B · NC', { pressed: false }); b.add('pushbutton', 'start-b', 'Start at station B · NO', { pressed: false }); const w = b.wires.find(w => w.from.component === 'stop-a' && w.from.terminal === 'NC'); if (w) w.from = endpoint(['stop-b', 'NC']); b.wire(['stop-a', 'NC'], ['stop-b', 'COM'], 'control'); b.wire(['start-a', 'COM'], ['start-b', 'COM'], 'control'); b.wire(['start-b', 'NO'], ['starter', 'A1'], 'control'); break; }
+    case 61: { b.live = b.phases[0]; const a = threeStarter('downstream', 'Receiving belt starter', 'motor-a'); const c = threeStarter('upstream', 'Feed belt starter', 'motor-b'); b.startStop('downstream', b.live, 'stop-a', 'start-a', a, ' on the receiving belt'); b.startStop('upstream', ['downstream', '14'], 'stop-b', 'start-b', c, ' on the feed belt'); break; }
     case 62: { b.live = b.phases[0]; const x = b.powered('sensor', 'float-low', 'Normal pumping level', { active: true, demand: true, mode: 'float' }); const y = b.powered('sensor', 'float-high', 'High-level assist', { active: false, demand: true, mode: 'float' }); b.wire(b.live, ['float-low', 'IN'], 'control'); b.wire(b.live, ['float-high', 'IN'], 'control'); b.add('selector', 'duty', 'Duty selection A / B', { position: 0 }); b.wire(x, ['duty', 'COM'], 'control'); const a = threeStarter('pump-a-k', 'Pump A starter', 'pump-a'); const c = threeStarter('pump-b-k', 'Pump B starter', 'pump-b'); b.contactor('assist', 'High-level pump relay'); b.coil('assist', y); b.wire(b.live, ['assist', '1'], 'control'); b.wire(b.live, ['assist', '3'], 'control'); b.add('junction', 'a-or', 'Pump A control junction'); b.add('junction', 'b-or', 'Pump B control junction'); b.wire(['duty', 'A'], ['a-or', '1'], 'control'); b.wire(['duty', 'B'], ['b-or', '1'], 'control'); b.wire(['assist', '2'], ['a-or', '2'], 'control'); b.wire(['assist', '4'], ['b-or', '2'], 'control'); b.wire(['a-or', '3'], [a, '95'], 'control'); b.wire(['b-or', '3'], [c, '95'], 'control'); b.coil('pump-a-k', [a, '96']); b.coil('pump-b-k', [c, '96']); break; }
     case 63: { b.live = b.phases[0]; const o = threeStarter('starter', 'PLC-commanded starter'); dcControls(); const k = b.components.find(c => c.id === 'starter'); if (k) k.params.nominalVoltage = 24; b.add('plc', 'plc', 'PLC · 24 V controller', { mode: 'and', on: true, nominalVoltage: 24 }); b.mains('plc', 'L', 'N', false); b.wire(b.live, ['plc', 'COM'], 'control'); const a = b.powered('sensor', 'present', 'Workpiece-present sensor', { active: true, demand: true, nominalVoltage: 24 }); const c = b.powered('sensor', 'ready', 'Machine-ready permission', { active: true, demand: true, nominalVoltage: 24 }); b.wire(b.live, ['present', 'IN'], 'control'); b.wire(b.live, ['ready', 'IN'], 'control'); b.wire(a, ['plc', 'I1'], 'control'); b.wire(c, ['plc', 'I2'], 'control'); b.wire(['plc', 'Q1'], [o, '95'], 'control'); b.coil('starter', [o, '96']); b.add('indicator', 'ol-status', 'Controller status light · Q2', { watts: 2, nominalVoltage: 24 }); b.wire(['plc', 'Q2'], ['ol-status', 'L'], 'control'); b.wire(b.neutral, ['ol-status', 'N'], 'DC-'); b.wire(b.earth, ['ol-status', 'PE'], 'PE'); break; }
     case 64: {
@@ -520,12 +535,12 @@ const SPECS: Spec[] = [
     'open-neutral', 'The fan switch is on but the fan does not run.', 'Trace the fan’s neutral back to the outgoing neutral terminal.', 'The wire from the outgoing neutral to fan N is open. The fan switch still controls line, but current can’t return through the fan.',
     ['With the switch on, the fan takes power.', 'Opening the switch removes fan power.']],
   ['Timer extractor with maintained supply', 'Ventilation & motors', 'Routine',
-    'A run-on timer needs a supply after the light switch opens. The fan isolator switches the permanent line, trigger and neutral together.',
-    'Trace the permanent line and neutral through the isolator to the timer. The switched trigger follows a different pole to timer IN. Timer OUT feeds the fan.',
-    'Start the fan with the light switch. Turn the switch off and watch it through the five-second delay.',
-    'Check permanent L–N and the trigger separately. The trigger can be off while the timer still supplies the fan.',
-    'wrong-control', 'The timer has its permanent supply, but the light switch never starts the fan.', 'Follow the light-switch output to L2IN at the fan isolator, then towards timer IN.', 'The wire into L2IN from the light switch is open. The timer has mains power, but no new trigger reaches it.',
-    ['The fan runs briefly after its trigger switches off.', 'The fan stops when the run-on period finishes.']],
+    'Switch off the bathroom light. The separate timer keeps the fan running for five seconds on this bench. A real fan timer usually runs for minutes.',
+    'One 3 A fused switch feeds the light and fan. The wall switch feeds the lamp and timer IN. The fan isolator breaks the permanent line, switched line and neutral together. The lamp is fed before that isolator.',
+    'Switch the light off and watch the fan stop after the delay. Turn the light back on, then switch off the fan isolator. The lamp should stay lit.',
+    'With the lamp off and the timer running, the fan still has mains voltage between L and N. When the timer ends, the voltage across the fan drops.',
+    'wrong-control', 'The bathroom light works, but the fan won’t start with it.', 'With the light on, check the switched line from the wall switch to the fan isolator and on to timer IN.', 'The switched wire from the light switch to the fan isolator is open. The lamp still gets its feed. The timer has mains power but never gets the start signal.',
+    ['The light goes out while the fan keeps running.', 'The fan stops after five seconds.', 'The fan can be isolated while the bathroom light stays on.']],
   ['Humidity-controlled fan with manual override', 'Ventilation & motors', 'Equipment dependent',
     'A humidistat senses damp air. A manual override gives the fan a second way to run.',
     'The humidity output and override feed the same fan connection through parallel paths. The fan returns to neutral.',
@@ -699,7 +714,7 @@ const SPECS: Spec[] = [
     'Follow the receiving starter’s auxiliary contact to the control feed for the other starter. Each motor still has its own power and holding circuit.',
     'Try the feed belt first. Start the receiving belt, then the feed belt. Finally stop the receiving belt and watch both starters.',
     'With the receiving belt running, check terminal 14 on its starter. Does that feed reach the Stop button on the other belt?',
-    'wrong-control', 'The receiving belt runs. The feed belt still refuses to start.', 'Follow auxiliary terminal 14 on the receiving starter towards the upstream station’s Stop contact.', 'The wire from the receiving starter’s 14 to the feed conveyor’s Stop COM is open. The first motor runs, but its run signal cannot reach the second starter.',
+    'wrong-control', 'The receiving belt runs. The feed belt still refuses to start.', 'Follow the wire from 14 on the receiving belt starter to Stop on the feed belt.', 'The wire from the receiving starter’s 14 to the feed conveyor’s Stop COM is open. The first motor runs, but its run signal cannot reach the second starter.',
     ['The feed belt cannot start before the receiving belt.', 'Stopping the receiving belt stops the feed belt too.']],
   ['Duty/standby pumps and high-level assist', 'Industrial', 'Equipment dependent',
     'Either pump can be the duty pump. The normal level signal calls that pump. A separate high-level float calls for help from the other pump too.',
@@ -816,6 +831,10 @@ function roleExplanation(circuit: CircuitDocument): string {
 }
 
 function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string;apprentice:string} {
+  if(circuit.lessonId===36&&circuit.components.some(c=>c.id==='fan-fcu'))return {
+    beginner:'Leave the probes on L and N at the fan. At the 240 V setting, you should still see about 240 V after the light goes out. Watch the volts fall when the fan stops.',
+    apprentice:'The fan is set to 15 W at 230 V on this bench. The separate timer keeps its feed after the light goes off. For the voltage lost in a wire, use ΔV = I × Z. Multiply the current in that wire by its impedance. Use the real fan’s rating plate for its own figures.',
+  };
   const representative=circuit.components.find(c=>['lamp','led','heater','cooker','shower','socket','motor','motor3','pump','fan','boiler','heatpump','chime','emergency','alarm','indicator','ev'].includes(c.type));
   const format=(n:number)=>Number(n.toFixed(3));
   let beginner=circuit.supply.phase==='three'
@@ -865,10 +884,10 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
 
 }
 
-function createLesson(spec: Spec, index: number): ConfigurationLesson {
+function createLesson(spec: Spec, index: number, legacyFan=false): ConfigurationLesson {
   const id = index + 1;
   const [title, category, tag, purpose, connections, sequence, measurement, fault, briefing, hint, answer, checks] = spec;
-  const circuit = furnishCourseBoard(buildCircuit(id, title));
+  const circuit = furnishCourseBoard(buildCircuit(id, title,legacyFan));
   const extra=elvPage(id);
   const target:ChallengeTarget = extra ? {path:extra.target} : CHALLENGE_TARGETS[id];
   if (!target) throw new Error(`Lesson ${id} has no exact challenge target`);
@@ -905,13 +924,20 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
   if(id===13||id===24||id===43)references.push(MANUFACTURERS.driver);
   if(id===14||id===15)references.push(MANUFACTURERS.sensor);
   if(id===16)references.push(MANUFACTURERS.smart);
+  if(id===36&&!legacyFan)references.push(
+    {title:'Manrose XF100S standard bathroom fan and fitting instructions',url:'https://www.manrose.co.uk/product/xf100s-bathroom-fan-standard-100mm/'},
+    {title:'Manrose fan fitting sheet (PDF)',url:'https://asset.eezybridge.com/nc/ba7b9546-29dd-40c4-87a7-885627281b87/077600.pdf'},
+    {title:'BG 815 fan isolator and rear terminals',url:'https://www.bgelectrical.uk/uk/wiring-devices/800-series/10a-3-pole-fan-isolators/815-01'},
+    {title:'BG fan isolator wiring diagram (PDF, page 2)',url:'https://res.cloudinary.com/lu1/fl_attachment:BG_IM_NXPSWIL_K/600854/Original.pdf'}
+  );
   if(id===42)references.push(MANUFACTURERS.alarm);
   if(id===44||id===45)references.push(MANUFACTURERS.emergency);
   if(id===46)references.push(MANUFACTURERS.ev);
   if(id===58)references.push(MANUFACTURERS.drive);
   if(id===63)references.push(MANUFACTURERS.plc);
   if(id===64)references.push(MANUFACTURERS.safety);
-  const comparison:Record<number,string>={
+  const comparison:Partial<Record<number,string>>={
+    ...(id===36&&!legacyFan?{36:'This standard XF100S has two supply terminals. The timer is a separate part on the bench. The spare earth wire is parked in a connector beside the fan.'}:{}),
     12:'This 60 W filament lamp suits the HQ1A dimmer. The real dimmer switches during each AC cycle. The bench uses a resistor to show how the lamp power changes.',
     13:'A transformer changes AC voltage through its windings. The driver here gives the LEDs a steady DC output. Check the output marked on the unit.',
     14:'On a real PIR, the motion detector and timer can be in one fitting. Here you can try them separately. Stop the movement and watch how long the timer keeps the light on.',
@@ -927,10 +953,10 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
   };
   return {
     id, title, category, tag, level: extra ? id<=66||id===71 ? 'Foundation' : id===80?'Advanced':'Intermediate' : id <= 24 ? 'Foundation' : id < 53 ? 'Intermediate' : 'Advanced', context,
-    summary: COURSE_PAGES[id].situation,
+    summary: coursePage(id,circuit).situation,
     sections: [
       ...(id === 7 ? [{title:'Why the lamp can light with a wiring fault',beginner:'The lamp can still light with its earth disconnected. That is why testing the switch alone will miss a fault.',apprentice:'An extra link from outgoing neutral to earth can send some return current around the RCBO. With the lamp on, that can trip it. With the switch off, the wiring test still finds the link. Test circuit tries both switch positions and leaves your switch where you put it.'}] : []),
-      { title: 'What the parts do', beginner: COURSE_PAGES[id].idea, apprentice: purpose },
+      { title: 'What the parts do', beginner: coursePage(id,circuit).idea, apprentice: purpose },
       { title: 'Follow the wires', beginner: connections, apprentice: roleExplanation(circuit)+' Open Drawing and choose My wiring. Select any wire to read the two terminal markings.' },
       { title: 'Try the controls', beginner: sequence, apprentice: checks.join(' ') },
       { title: 'Where to put the probes', beginner: measurement, apprentice: probeNote },
@@ -953,8 +979,9 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
   };
 }
 
-export const LESSONS: ConfigurationLesson[] = [...SPECS,...ELV_PAGES.map((p):Spec=>[p.title,'Extra-low voltage','Equipment dependent',p.situation,p.connection,p.procedure,p.reading,'open-wire',p.symptom,p.hint,p.answer,[p.idea,p.reading]])].map(createLesson);
-export const getLesson = (id: number): ConfigurationLesson | undefined => LESSONS.find(lesson => lesson.id === id);
+export const LESSONS: ConfigurationLesson[] = [...SPECS,...ELV_PAGES.map((p):Spec=>[p.title,'Extra-low voltage','Equipment dependent',p.situation,p.connection,p.procedure,p.reading,'open-wire',p.symptom,p.hint,p.answer,[p.idea,p.reading]])].map((spec,index)=>createLesson(spec,index));
+const earlierFan=createLesson([SPECS[35][0],'Ventilation & motors','Routine','In this earlier example, the wall switch triggers the fan timer.','Follow the permanent feed and the separate switched wire to timer IN.','Turn the switch off and wait for the fan to stop.','Measure the fan between L and N.','wrong-control','The timer has mains power, but the wall switch won’t start the fan.','Follow the switched wire to the isolator, then to timer IN.','The switched wire into the fan isolator is open.',['The fan runs on after switch-off.','The fan stops after five seconds.']],35,true);
+export const getLesson = (id: number,doc?:CircuitDocument): ConfigurationLesson | undefined => id===36&&olderTimerFan(doc)?earlierFan:LESSONS.find(lesson => lesson.id === id);
 
 /** Structural validation is callable by integration checks; it has no runtime side effects. */
 export function validateLessons(): string[] {

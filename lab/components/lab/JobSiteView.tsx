@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { ArrowUp,ArrowLeft,ArrowRight,ArrowDown,Footprints,LocateFixed,PanelTopOpen } from 'lucide-react';
 import { mountScale,mountRoll,filledWays } from '../../lib/board-assembly';
 import { DRAWING_INK } from '../../lib/installation-drawing';
-import { installedWireRoute } from '../../lib/house-installation';
+import { installedEnd,installedWireRoute } from '../../lib/house-installation';
 import { Line } from '@react-three/drei';
 import { COMPONENTS } from '../../lib/components';
 import { Equipment, type EquipmentProps } from '../../lib/Equipment';
@@ -17,8 +17,10 @@ import { serviceRoomAt,serviceVisit } from '../../lib/service-floorplan';
 import type { CircuitDocument,ComponentInstance,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
 import InstallationRoom from './InstallationRoom';
 import BellCupboard from './BellCupboard';
-import {KitchenDriver,StripChannel,StripTails} from './KitchenLighting';
-import {KITCHEN_LIGHTS as kitchen,stripLead} from '../../lib/kitchen-lighting';
+import {FittedWireTails,KitchenDriver,StripChannel} from './KitchenLighting';
+import {KITCHEN_LIGHTS as kitchen} from '../../lib/kitchen-lighting';
+import {BathServiceBox} from './BathroomExtract';
+import {BATH_EXTRACT as bath,outsideGrillePose} from '../../lib/bathroom-extract';
 import {CORE_COLOUR} from '../../lib/cables';
 import {BELL_CUPBOARD} from '../../lib/bell-cupboard';
 import SiteCablePeek from './SiteCablePeek';
@@ -35,8 +37,8 @@ interface Props {
   onPeek:(id?:string)=>void;onPlan:(wire:string)=>void;onExplore:()=>void;
   onPart:(id:string,part:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
 }
-function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,probeMode}:{
-  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;probeMode:boolean;
+function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,probeMode,wideRocker,bathroom}:{
+  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;probeMode:boolean;wideRocker:boolean;bathroom:boolean;
 }){
   const {component:c,definition:def,state}=equipment;
   const {fixture,position}=item;
@@ -51,7 +53,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
   </group>;
   const hasLight=['lamp','led','emergency','cctstrip'].includes(c.type);
   const illuminated=optical>0&&state?.energized&&hasLight;
-  const emitter:Vec3=fixture?.tape?[0,fixture.tapeProfile?kitchen.profileZ-position[2]:0,.027]:fixture?.batten
+  const emitter:Vec3=fixture?.ceilingLight?[0,.628*scale[1],.04]:fixture?.tape?[0,fixture.tapeProfile?kitchen.profileZ-position[2]:0,.027]:fixture?.batten
     ? BATTEN_FILAMENT.map((axis,i)=>axis*scale[i]) as Vec3
     : [0,def.size[1]*scale[1]*.65,.055];
   const warm=Number(state?.warmWatts??0),cool=Number(state?.coolWatts??0);
@@ -75,12 +77,16 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       }else equipment.onPart(owner.part??'body',owner.detail);
     }}>
     {magnet}
-    {fixture?.bellService&&<BellCupboard part={fixture.bellService} trace={trace} select={()=>equipment.onPart('body')}/>}
+    {fixture?.bellService&&<BellCupboard part={fixture.bellService} trace={trace} bathroom={bathroom} select={()=>equipment.onPart('body')}/>}
     {fixture?.tapeProfile&&<StripChannel x={position[0]} open={trace||equipment.selected} level={illuminated?optical:0} tint={c.type==='cctstrip'?tint:new THREE.Color('#ffead0')} select={()=>equipment.onPart('cover')}/>}
     <group position={position} rotation={rotation}>
+      {wideRocker&&<mesh position={[0,.046,.014]} userData={{partId:'actuator'}} onClick={e=>{e.stopPropagation();if((e.nativeEvent as PointerEvent).pointerType!=='touch')equipment.onPart('actuator');}}>
+        <planeGeometry args={[.17,.128]}/><meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false}/>
+      </mesh>}
+      {fixture?.serviceBox&&<BathServiceBox part={fixture.serviceBox} open={trace||fixture.serviceBox==='cpc'&&equipment.selected} choose={()=>equipment.onPart('cover')}/>}
       {fixture?.kitchenDriver?<KitchenDriver volts={Number(c.params.outputVoltage??24)} open={trace||equipment.selected} choose={()=>equipment.onPart('body')} pick={equipment.onTerminal}/>:Array.from({length:count},(_,i)=><group key={i} position={[(i-(count-1)/2)*TAPE_SECTION_LENGTH,0,0]} scale={scale}>
         <group rotation={[0,0,mountRoll(c)]} scale={mountScale(c)}>
-          <Equipment {...equipment} onTerminal={probeMode&&i>0?()=>{}:equipment.onTerminal} animate={!cupboardDoor} contactPiece={cupboardDoor?'reed':undefined} />
+          <Equipment {...equipment} view={fixture?.extractor&&trace?'open':equipment.view} onTerminal={probeMode&&i>0?()=>{}:equipment.onTerminal} animate={!cupboardDoor} contactPiece={cupboardDoor?'reed':undefined} />
         </group>
       </group>)}
       {illuminated&&<pointLight position={emitter} color={c.type==='cctstrip'?tint:'#fff0d0'} intensity={.34*optical} distance={2.9}/>}
@@ -103,6 +109,10 @@ function WireTrace({doc,site,id}:{doc:CircuitDocument;site:JobSite;id?:string}){
   </group>;
 }
 function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15,touch=false):SitePose{
+  if(id===36&&!close){
+    // Look past the switch through the open bathroom door toward its fan and light.
+    return {position:[3.28,1.29,-.78],yaw:touch?2.48:2.51,pitch:.13};
+  }
   if(id===9&&!close&&item?.id==='near')return {position:[-1.86,STAIR_EYE,2.40],yaw:-.31,pitch:touch?-.12:.01};
   const pose=frontView(item,id,close,height,touch);
   if(!item?.rotation)return pose;
@@ -111,6 +121,9 @@ function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15,
 }
 function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,height:number,touch:boolean):SitePose{
   const p=item?.position??[0,1.3,-2.5];
+  if(item?.fixture?.extractor)return {position:[p[0]-.034,p[1]+.118,p[2]+.31],yaw:-.11,pitch:-.09};
+  if(item?.fixture?.serviceBox)return {position:[p[0]-.034,p[1]+.055,p[2]+.225],yaw:-.15,pitch:-.082};
+  if(item?.fixture?.ceilingLight)return {position:[bath.lightX+.028,bath.ceiling-.32,bath.lightZ+.158],yaw:.18,pitch:1.10};
   if(close&&item?.fixture?.kitchenDriver){
     return touch?{position:[p[0],p[1]+.49,p[2]+1.20],yaw:0,pitch:-.38}
       :{position:[p[0],p[1]+.34,p[2]+.48],yaw:0,pitch:-.59};
@@ -120,6 +133,7 @@ function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,hei
   }
   if(item?.fixture?.bellService){
     const b=BELL_CUPBOARD,d=touch?.99:.64;
+    if(id===36)return {position:[b.x+.038,b.y+.056,b.z+.36],yaw:.12,pitch:-.12};
     if(close&&item.fixture.bellService==='protect')return {position:[b.x-.008,b.y+.032,b.z+.32],yaw:.07,pitch:-.12};
     return {position:[b.x+.15+d*.13,b.y+.14,b.z+d],yaw:.13,pitch:-.14};
   }
@@ -220,11 +234,12 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const selectedId=selected??site.first;
   const jobKey=site.kind+':'+(doc.lessonId??doc.id);
   const stair=doc.lessonId===9;
-  const [visit,setVisit]=useState<{room:number;job:string;jump:number}>();
+  const [visit,setVisit]=useState<{room:number;job:string;jump:number;grille?:boolean}>();
   const meterStrip=meter?testStrips.find(strip=>strip.component.id===jump.component):undefined;
   const meterTarget=meterStrip?.component.id;
   const roomVisit=visit?.job===jobKey&&visit.jump===jump.id?visit:undefined;
   const roomTarget=useMemo(()=>{
+    if(roomVisit?.grille)return outsideGrillePose(touch);
     if(roomVisit){const view=site.kind==='home'?homeVisit(roomVisit.room,stair):serviceVisit(site,roomVisit.room);if(view)return view;}
     const id=jump.component??site.first,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
     return pose.current??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined,touch);
@@ -239,21 +254,28 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   function toggleWalk(){stop();if(!walking&&touch)onExplore();setWalking(!walking);rig.wake();input.current?.focus({preventScroll:true});}
   function jumpTo(id:string){stop();if(touch)onExplore();setWalking(false);onFocus(id);}
   function visitRoom(value:string){
+    if(value==='grille'){
+      stop();if(touch)onExplore();setWalking(false);setWalkRoom(3);
+      setVisit({room:3,job:jobKey,jump:jump.id,grille:true});input.current?.focus({preventScroll:true});return;
+    }
     const room=Number(value.slice(5));
     if(site.kind==='home'?!homeVisit(room,stair):!serviceVisit(site,room))return;
     stop();if(touch)onExplore();setWalkRoom(room);setVisit({room,job:jobKey,jump:jump.id});setWalking(true);
     input.current?.focus({preventScroll:true});
   }
   const fixtureMap=new Map(doc.components.map(c=>[c.id,c]));
-  const tails=useMemo(()=>site.items.filter(i=>i.fixture?.tapeProfile).flatMap(item=>{
-    const c=doc.components.find(part=>part.id===item.id);if(!c)return [];
-    const pads=getComponentTerminals(c,COMPONENTS[c.type]);
-    return doc.wires.flatMap(w=>[w.from,w.to].filter(e=>e.component===c.id).flatMap(e=>{
-      const pad=pads.find(t=>t.id===e.terminal);if(!pad)return [];
-      const points=stripLead(installedTerminalPoint(item,c,pad),item.position[0],pad.id);
-      return [{points,id:w.id+'-'+c.id+'-'+pad.id,colour:w.cable?CORE_COLOUR[w.cable.core]:DRAWING_INK[w.role]}];
+  const tails=useMemo(()=>{
+    const fitted=new Map(site.items.filter(i=>i.fixture?.tapeProfile||i.fixture?.extractor||i.fixture?.serviceBox).map(i=>[i.id,i.fixture!]));
+    if(!fitted.size)return [];
+    return doc.wires.flatMap(w=>[w.from,w.to].flatMap(end=>{
+      const fixture=fitted.get(end.component);if(!fixture)return [];
+      const points=installedEnd(doc,site,end)?.lead;if(!points)return [];
+      const core=w.cable?.core??(w.role==='PE'?'green-yellow':w.role==='N'?'blue':'brown');
+      return [{points,id:w.id+'-'+end.component+'-'+end.terminal,
+        colour:fixture.tapeProfile&&!w.cable?DRAWING_INK[w.role]:core==='green-yellow'?'#308643':CORE_COLOUR[core],
+        stripe:core==='green-yellow'?'#e8c63a':undefined,radius:fixture.tapeProfile?.0008:.0014}];
     }));
-  }),[doc,site]);
+  },[doc,site]);
   const selectedItem=site.items.find(s=>s.id===selectedId);
   const traced=doc.wires.find(w=>w.id===wire);
   const tracedIds=traced?[traced.from.component,traced.to.component]:[];
@@ -284,13 +306,14 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
         <directionalLight castShadow={!touch} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-.0006} shadow-normalBias={.0015} position={[-2.6,2.7,1.3]} intensity={1.12} color="#fff6e7"/>
         <directionalLight position={[-4,2,1]} intensity={.27} color="#c2ddf4"/>
         <InstallationRoom site={site} economy={touch} cupboardOpen={!!fixtureMap.get('door')?.params.closed} operateCupboard={()=>{if(!blockTap.current&&!walking&&fixtureMap.has('door'))onPart('door','actuator');}}/>
-        <StripTails tails={tails}/>
+        <FittedWireTails tails={tails}/>
         {visible.map(item=>{const c=fixtureMap.get(item.id)!,def=COMPONENTS[c.type];if(!def)return null;
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
           const focus=item.id===selectedId;const t=focus?getComponentTerminals(c,def).find(t=>t.id===terminalId):undefined;
           const cupboardDoor=doc.lessonId===65&&c.id==='door';
           const reveal=tracedIds.includes(item.id)||(item.fixture?.bellService==='protect'&&tracedIds.includes('supply'));
-          return <InstalledFixture key={item.id} item={item} optical={optical} pin={t} probeMode={!!meter} cupboardDoor={cupboardDoor} trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
+          return <InstalledFixture key={item.id} item={item} optical={optical} pin={t} probeMode={!!meter} cupboardDoor={cupboardDoor} bathroom={doc.lessonId===36} wideRocker={doc.lessonId===36&&!jump.component&&!roomVisit&&!walking&&!meter&&!reveal&&['light-switch','fan-isolation'].includes(item.id)}
+            trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
             onTouchPick={e=>{lastTouchPick.current={x:e.clientX,y:e.clientY,at:performance.now()};}} equipment={{
             filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
             lowDetail:!focus,preferLowAsset:touch,view:'normal',showLabels:false,onModelAvailability:modelAvailability,
@@ -318,7 +341,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
       <SiteCablePeek doc={doc} site={site} selected={selectedId} wireId={wire} onChange={onPeek} visit={jumpTo} plan={onPlan}/>}
     {!meter&&<div className="site-actions">
       <button className={walking?'chosen':''} aria-pressed={walking} onClick={toggleWalk}><Footprints size={17}/>{walking?'Finish walk':'Walk'}</button>
-      <label className="site-jump"><LocateFixed size={17}/><span>Go to</span><select aria-label="Go to equipment" value="" onChange={e=>e.target.value.startsWith('room:')?visitRoom(e.target.value):jumpTo(e.target.value)}><option value="" disabled>Choose a destination</option><optgroup label="Equipment">{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</optgroup><optgroup label="Rooms">{(site.kind==='home'?HOME_ROOMS.map(r=>r.id).concat(stair?[STAIR_LANDING.id]:[]):[0,1,2,3,4]).map(id=><option key={id} value={'room:'+id}>{site.location(id)}</option>)}</optgroup></select></label>
+      <label className="site-jump"><LocateFixed size={17}/><span>Go to</span><select aria-label="Go to equipment" value="" onChange={e=>e.target.value.startsWith('room:')||e.target.value==='grille'?visitRoom(e.target.value):jumpTo(e.target.value)}><option value="" disabled>Choose a destination</option><optgroup label="Equipment">{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</optgroup><optgroup label="Rooms">{(site.kind==='home'?HOME_ROOMS.map(r=>r.id).concat(stair?[STAIR_LANDING.id]:[]):[0,1,2,3,4]).map(id=><option key={id} value={'room:'+id}>{site.location(id)}</option>)}{doc.lessonId===36&&<option value="grille">Outside fan grille</option>}</optgroup></select></label>
       {selectedId&&!walking&&testStrips.some(s=>s.component.id===selectedId)&&<button onClick={()=>openMeter(selectedId)}>Measure</button>}
       {selectedId&&!walking&&<button aria-label="Inspect equipment on the workbench" onClick={()=>onService(selectedId)}><PanelTopOpen size={17}/><span>Inspect</span></button>}
     </div>}

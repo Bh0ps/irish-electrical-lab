@@ -1,3 +1,4 @@
+import type { CircuitDocument } from './types.ts';
 import { ELV_PAGES } from './elv-coursebook.ts';
 export interface CourseQuestion {
   prompt: string;
@@ -38,7 +39,7 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     question('Which breaker does the socket’s neutral wire go back through?', 'Through the second RCBO’s neutral', 'Through the first RCBO’s neutral'),
     'Each RCBO monitors the outgoing and returning current for the same circuit. Trace both wires through one device.',
     'You followed each circuit’s line and neutral through its own RCBO.'),
-  4: page('Switch off a remote board', 'outbuilding shed submain garage board',
+  4: page('Switch off the board in an outbuilding', 'outbuilding shed submain garage board',
     'A small board supplies a socket in another part of the building. Find its main switch.',
     question('The main switch on the small board is off. Will an appliance plugged in there still work?', 'No', 'Yes, it still has the main building supply'),
     question('Which part can still be live?', 'The incoming side of the small board’s switch', 'The switched feed to the socket'),
@@ -72,7 +73,7 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
   9: page('Switch a stairs light from either end', 'stairs light staircase landing two way travellers',
     'The stairs light is on. There’s a switch at the foot of the stairs and another on the landing.',
     question('Flick just the downstairs switch. What happens to the light?', 'It goes out', 'It stays on until someone moves the upstairs switch'),
-    question('The two wires between the switches are called strappers. Which switch moved to the other strapper when you flicked it downstairs?', 'The downstairs switch only', 'Both switches'),
+    question('You flicked the downstairs switch. Which switch changed the path to the lamp?', 'The downstairs switch only', 'Both switches'),
     'The two wires between the switches are called strappers or travellers. The light comes on when both switches select the same wire in this circuit.',
     'You wired the stairs light and tested it from both switches.'),
   10: page('Control a corridor light from three doors', 'intermediate crossing landing three switches',
@@ -152,7 +153,7 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     question('Turn off the cooker switch. What should the power reading do?', 'It drops to zero', 'It falls to a lower cooking setting'),
     question('This is a double-pole cooker switch. What moves when you use the handle?', 'Both the line and neutral contacts move together', 'Only the line contact moves'),
     'In this cooker circuit the handle opens both line and neutral. The protective earth stays connected.',
-    'You checked how the cooker isolator opens both switched conductors.'),
+    'You switched off both line and neutral at the cooker.'),
   23: page('See why a shower heater needs water flow', 'shower water flow heater stops',
     'The shower has power, but its heater also needs water flowing. Try the flow control.',
     question('The isolator is on and water flow stops. What happens to the heater?', 'It stops heating', 'It keeps heating until someone opens the isolator'),
@@ -164,7 +165,7 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     question('Where can you measure the outlet’s supply voltage?', 'Between the two outlet terminals', 'From either outlet terminal to mains neutral'),
     question('Why use both ends of the same winding?', 'That coil supplies both pins of the outlet', 'The transformer connects its output directly to mains neutral'),
     'The transformer has two separate coils, called windings. The second coil supplies the outlet. Put one probe at each end of that coil to read its voltage.',
-    'You measured a shaver outlet across its isolated output winding.'),
+    'You measured the voltage between the two shaver outlet terminals.'),
   25: page('Separate the thermostat and cut-out', 'immersion cylinder hot water overheat',
     'An immersion heater has an ordinary thermostat and a second control for overheating. Find the thermal cut-out.',
     question('The thermostat is calling for heat. What happens if the cut-out opens?', 'The element stops heating', 'The thermostat keeps the element on'),
@@ -182,14 +183,14 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     question('The timer is off and the thermostat is calling for heat. What will Boost do?', 'Let the element heat', 'Make it wait until the timer comes on again'),
     question('Why can Boost work with the time switch off?', 'There’s another path to the thermostat', 'Boost bypasses the thermostat as well'),
     'The time switch and Boost can each call for heat. Both requests still go through the thermostat.',
-    'You called for hot water outside the programme using Boost.'),
+    'You used Boost to heat the water while the timer was off.'),
   28: page('Call for heat at the boiler', 'central heating timer thermostat room cold',
     'Heating is on at the programmer. Turn the room thermostat down. Does the boiler still get a call for heat?',
     question('The room is warm enough, but the programme is still on. Does the thermostat still call for heat?', 'No, the room is warm enough', 'Yes, until the programme ends'),
     question('When will the boiler get a call for heat from this room?', 'When the timer is on and the room is cold enough', 'Whenever the timer is on, even if the room is warm enough'),
     'The programmer sets the hours. Within those hours, the room thermostat decides whether heat is needed.',
     'You built the heating controls and tested when the boiler gets a call for heat.'),
-  29: page('Follow two heating zones', 'S plan zone valve cylinder radiators',
+  29: page('Switch the radiators and hot water separately', 'S plan zone valve cylinder radiators',
     'The radiators have a valve of their own, and so does the hot-water cylinder. See which valve opens when just the rooms need heat.',
     question('The cylinder is hot enough but the radiators still need heat. What happens?', 'The radiator valve stays open and keeps the boiler on', 'Both valves close and the boiler goes off'),
     question('What tells the boiler that a zone valve has opened?', 'A small switch inside the valve', 'The room thermostat alone'),
@@ -232,10 +233,10 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     'Follow the wire from the switch to the fan. Opening that one contact breaks the fan’s supply.',
     'You worked the extractor from its wall switch and checked the result.'),
   36: page('Time an extractor after switch-off', 'bathroom fan light stays on keeps running after I turn off the light timer isolation',
-    'Switch off the bathroom light and keep an eye on the extractor. Its timer has a five-second setting.',
+    'The bathroom light and fan are on. Switch off the light and watch the fan. The bench uses a five-second timer.',
     question('What will the fan do just after you switch the light off?', 'Carry on briefly', 'Lose its supply straight away'),
     question('The light is off. Which wire still supplies the fan while its timer runs?', 'The permanent feed through the timer', 'The switched wire from the light'),
-    'The lighting connection tells the timer when to start its countdown. A separate permanent supply keeps the timer and fan working until it finishes.',
+    'Switching off the light removes the signal at timer IN. The permanent feed still has power, so OUT can keep the fan running. The fan isolator switches off both feeds and the fan’s neutral.',
     'You switched off the light and saw how long the fan kept running.'),
   37: page('Override a humidity-controlled fan', 'damp bathroom humidistat fan override',
     'Someone wants to run the fan even when the room is dry. Find the manual override.',
@@ -253,8 +254,8 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     'A booster pump starts when the water pressure falls. Find the pressure switch and the dry-run contact, which can stop the pump if there is no water.',
     question('The water is back up to pressure. What happens to the pump when the pressure switch opens?', 'It stops', 'It keeps running while the dry-run contact is closed'),
     question('The pressure is low, but the dry-run contact is open. Can the pump start?', 'No, that open contact keeps the pump off', 'Yes, low pressure starts the pump anyway'),
-    'The pressure switch calls the pump when pressure is low. The dry-run contact also has to allow the pump to run.',
-    'You followed the pressure switch and the dry-run contact to the booster pump.'),
+    'The pressure switch calls the pump when pressure is low. If there’s no water, the dry-run contact opens and stops the pump.',
+    'You saw when low pressure starts the pump and when a lack of water keeps it off.'),
   40: page('Keep a single-phase motor running', 'motor stays on after Start holding contact stop single phase',
     'Press Start on the workshop motor, then lift your finger. Watch the starter as well as the motor.',
     question('You let go of Start. What should a working starter do?', 'Keep the motor running', 'Stop the motor immediately'),
@@ -297,7 +298,7 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     question('The contactor has opened. Which side still has mains power?', 'The incoming side from the board', 'The outgoing side feeding this charger'),
     'Here an electrically operated switch, the contactor, cuts the feed to the charger. The site supply and the load controller stay on.',
     'You paused charging and found which side of the contactor stayed live.'),
-  47: page('Compare solar generation and grid import', 'solar PV panels inverter export import sunlight',
+  47: page('See where the house gets power on a cloudy day', 'solar PV panels inverter export import sunlight',
     'The panels are powering the house and sending spare power to the grid. Leave the appliances on and shade the panels.',
     question('With the panels fully shaded and the same appliances on, which way does power flow at the meter?', 'From the grid into the house', 'From the house out to the grid'),
     question('Why did the grid reading change if the same appliances stayed on?', 'The house takes more from the grid when the panels give less', 'The appliances now need more power to do the same job'),
@@ -321,11 +322,11 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     question('With the defrost heater on, what holds the compressor off?', 'The interlock between cooling and defrost', 'The heater and compressor sharing the same supply'),
     'Select Defrost. The compressor stops and the heater comes on. The switch arrangement that keeps them from running together is called an interlock.',
     'You switched between cooling and defrost and checked which load had power.'),
-  51: page('See what happens when a compressor stops', 'air compressor pressure tank unloader valve',
-    'The compressor stops when the tank reaches its set pressure. Try the pressure switch. The light beside the motor shows when the unloader valve gets power.',
+  51: page('Watch the unloader when the compressor stops', 'air compressor pressure tank unloader valve',
+    'The compressor has filled its tank. Try the pressure switch and watch the little light beside the motor.',
     question('The tank is up to pressure and the motor stops. What does the unloader light do?', 'It comes on', 'It stays off until the motor restarts'),
     question('The motor has stopped. How is power getting to the unloader?', 'Through the relay’s NC contact, which closes when its coil switches off', 'The pressure switch starts supplying both loads together'),
-    'While the motor runs, the unloader contact is open. When the motor stops, the relay releases and its contact supplies the unloader.',
+    'The unloader lets pressure out of the pipe from the pump so the motor can start again. Here the little light shows when the valve gets power.',
     'You saw what happened to the unloader when the compressor motor stopped.'),
   52: page('Stop a gate drive with its safety beam', 'automatic gate beam obstacle stop safety',
     'The gate drive is running and the beam is clear. Try blocking the beam.',
@@ -367,7 +368,7 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     'The motor is running at the drive’s 35 Hz setting. Open the switch wired to RUN on the drive and watch the motor.',
     question('RUN opens but the drive stays powered. What happens to its motor output here?', 'It stops supplying the motor', 'It carries on at the selected frequency'),
     question('With RUN on, where do you set the frequency going to the motor?', 'On the drive, in hertz (Hz)', 'How long the RUN contact stays closed'),
-    'RUN tells the drive whether to supply the motor. Its frequency setting determines the output frequency. The lab shows the basic AC output.',
+    'RUN starts and stops the motor. The drive sets the number of AC cycles each second. At 35 hertz (Hz), there are 35 cycles a second.',
     'You stopped the motor from the RUN input while the drive still had power.'),
   59: page('Switch off one heater stage', 'heater bank three phase stages load safety thermostat',
     'The heater bank has two stages. Bring them on together, then turn the second stage off.',
@@ -404,5 +405,22 @@ export const COURSE_PAGES: Record<number, CoursePage> = {
     question('After Reset, what should the stopped motor do?', 'Wait for a separate press on Start', 'Restart as soon as Reset is released'),
     question('What did Reset do in this circuit?', 'It let the machine accept a fresh press on Start', 'It started the motor on its own'),
     'A small contact tells the safety relay when the motor contactor has let go. Once the safety circuit is ready, Reset allows a fresh start. The motor waits until you press Start.',
-    'You restored the safety circuit and checked why Reset and Start are separate actions.'),
+    'You reset the safety circuit. The motor waited until you pressed Start.'),
 };
+
+export function olderTimerFan(doc:CircuitDocument|undefined) {
+  return doc?.lessonId===36&&doc.components.some(c=>c.id==='fan'&&c.type==='fan'&&!c.variant)&&doc.components.some(c=>c.id==='fan-isolation'&&c.type==='isolator3'&&!c.variant)&&!doc.components.some(c=>['light','fan-fcu','fan-cpc'].includes(c.id));
+}
+
+// Earlier saved exercises have a switch and fan, but no lamp.
+const earlierFanPage:CoursePage={
+  ...COURSE_PAGES[36],
+  situation:'The wall switch starts the fan. Turn the switch off and watch the fan.',
+  prediction:question('What will the fan do just after you turn the wall switch off?', 'Carry on briefly', 'Stop straight away'),
+  explanation:question('Which wire supplies the fan after you turn the wall switch off?', 'The permanent feed through the timer', 'The wire from the wall switch'),
+  idea:'The switch starts the timer. Its permanent feed keeps the fan running for five seconds after switch-off.',
+  outcome:'You turned the wall switch off and watched the fan stop after its timer ran out.',
+};
+export function coursePage(id:number,circuit?:CircuitDocument):CoursePage{
+  return id===36&&olderTimerFan(circuit)?earlierFanPage:COURSE_PAGES[id];
+}

@@ -2,6 +2,7 @@
 import {useEffect,useMemo} from 'react';
 import * as THREE from 'three';
 import {BELL_CUPBOARD as b,type BellServicePart} from '../../lib/bell-cupboard';
+import {BATH_EXTRACT} from '../../lib/bathroom-extract';
 import type {Vec3} from '../../lib/types';
 
 const white='#e9e8df',edge='#a4aba8',metal='#a3aaa9',dark='#485456';
@@ -40,7 +41,7 @@ function SurfaceConduit({x,start,colour}:{x:number;start:number;colour:string}){
 }
 /** A wall fixing for the simulated supply, breaker or transformer. Following a wire
  * opens only its enclosures in the site view. The workbench retains the original models. */
-export default function BellCupboard({part,trace,select}:{part:BellServicePart;trace:boolean;select:()=>void}){
+export default function BellCupboard({part,trace,select,bathroom=false}:{part:BellServicePart;trace:boolean;select:()=>void;bathroom?:boolean}){
   const tx=part==='tx',w=tx?b.transformerSize[0]:b.breakerSize[0],h=tx?b.transformerSize[1]:b.breakerSize[1],d=tx?b.transformerSize[2]:b.breakerSize[2];
   const colour=tx?'#c5cbc8':white,clamp=b.conduitY,z=b.conduitZ;
   return <group position={[b.x+(tx?b.transformerOffset:0),b.y,b.z]} userData={{partId:'body'}}
@@ -48,6 +49,7 @@ export default function BellCupboard({part,trace,select}:{part:BellServicePart;t
     {part==='supply'?<>
       <SurfaceConduit x={b.feedX} start={b.breakerSize[1]/2} colour="#b5bbb7"/>
       <Label at={[b.feedX,.135,z+.009]} width={.030} height={.010} lines="SUPPLY"/>
+      {bathroom&&<SurfaceConduit x={BATH_EXTRACT.outgoingOffset} start={b.breakerSize[1]/2} colour={white}/>}
     </>:<>
       <Block at={[0,0,.003]} size={[w,h,.006]} colour={edge}/>
       {[-1,1].map(side=><group key={side}>
@@ -74,7 +76,7 @@ export default function BellCupboard({part,trace,select}:{part:BellServicePart;t
         <Block at={[-.0455,0,d-.006]} size={[.019,.046,.008]} colour={white}/>
         <Block at={[.029,0,d-.006]} size={[.052,.046,.008]} colour={white}/>
         {[.015,.032].map(x=><Block key={x} at={[x,0,d-.001]} size={[.0009,.041,.001]} colour={edge}/>)}
-        <Label at={[0,-.051,d+.0003]} width={.075} height={.020} lines="BELL SUPPLY   QF1"/>
+        <Label at={[0,-.051,d+.0003]} width={.075} height={.020} lines={bathroom?'BATHROOM   QF1':'BELL SUPPLY   QF1'}/>
         {[-1,1].map(s=><Pipe key={s} at={[s*.041,.068,d]} r={.0045} length={.002} axis="z" colour={edge}/>)}
       </>}
     </>}

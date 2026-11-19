@@ -1,4 +1,5 @@
 import type {Vec3} from './types';
+import {BATH_KITCHEN_COUNTER,BATH_RACK,BATH_SHOWER} from './bathroom-extract';
 
 // Original training house. Room proportions, furniture clearances and door swings
 // were reviewed against Roscommon County Council drawing 22571-PLA-6, House Type C.
@@ -101,8 +102,13 @@ export const HOUSE_FURNITURE={
 };
 // The stair hall's front door opens into the clear passage beside the upper flight.
 const stairEntrance:FloorDoor={wall:'front',centre:1.18,width:.98,hinge:1,side:-1};
+const serviceEntrance:FloorDoor={wall:'front',centre:3.40,width:1.02,hinge:-1,side:-1};
+const kitchenRearDoor:FloorDoor={wall:'kitchen-back',centre:-2.92,width:.88,hinge:1,side:-1};
 export function doorsOn(wall:FloorWall,bathroom:boolean,stair=false){
   if(stair&&wall.id==='front')return [stairEntrance];
+  if(bathroom&&wall.id==='front')return [serviceEntrance];
+  if(bathroom&&wall.id==='kitchen-back')return [kitchenRearDoor];
+  if(bathroom&&wall.id==='kitchen-hall')return [];
   return HOME_DOORS.filter(d=>d.wall===wall.id&&!(bathroom&&d.hallOnly));
 }
 export function wallSpans(wall:FloorWall,bathroom:boolean,stair=false):[number,number][]{
@@ -128,8 +134,8 @@ function collisionBoxes(bathroom:boolean,stair:boolean){
     for(const [a,b] of wallSpans(wall,bathroom,stair))boxes.push(alignWall(wall,(a+b)/2,0,b-a,.12));
     for(const door of doorsOn(wall,bathroom,stair))boxes.push(doorLeaf(wall,door));
   }
-  boxes.push({x:-4.4,z:-2.49,w:3.65,d:.59},{x:3.13,z:-.65,w:1.36,d:.54},{x:5.6,z:-2.49,w:1.4,d:.59});
-  if(bathroom)boxes.push({x:1.32,z:-2.47,w:1.3,d:.59});
+  boxes.push(bathroom?BATH_KITCHEN_COUNTER:{x:-4.4,z:-2.49,w:3.65,d:.59},bathroom?BATH_RACK:{x:3.13,z:-.65,w:1.36,d:.54},{x:5.6,z:-2.49,w:1.4,d:.59});
+  if(bathroom)boxes.push(BATH_SHOWER,{x:1.32,z:-2.47,w:1.3,d:.59});
   else if(stair)boxes.push(...stairBarriers());
   else boxes.push({x:.64,z:-2.48,w:.80,d:.74});
   return boxes;
