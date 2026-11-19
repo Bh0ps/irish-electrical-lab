@@ -1,6 +1,6 @@
 import { Html } from '@react-three/drei';
 import {useRef,type RefObject} from 'react';
-import {fusedProbePose,siteContacts,type SiteTestFitting} from '../../lib/site-meter';
+import {fusedProbePose,sesameSiteProbe,siteContacts,type SiteTestFitting} from '../../lib/site-meter';
 import {rockerProbeApproach} from '../../lib/dc-rocker';
 import {ROCKER_BOX} from '../../lib/kitchen-lighting';
 import {MeterProbe} from './MeterProbe';
@@ -21,10 +21,11 @@ export default function SiteMeterPads({fitting,open,showLabels,meter,pick,blocke
     const here=(point?:Endpoint)=>point?.component===endpoint.component&&point.terminal===endpoint.terminal;
     const leads=[here(meter.red)?'Red':'',here(meter.black)?'Black':''].filter(Boolean).join(' + ');
     const positive=endpoint.terminal==='L'||endpoint.terminal==='OUT';
-    if(fitting.kind==='fcu'){
+    if(fitting.kind==='fcu'||fitting.kind==='sesame'){
       return <group key={endpoint.terminal}>{(['red','black'] as const).map(lead=>{
         if(!here(meter[lead]))return null;
-        const seat=fusedProbePose(fitting.item,fitting.component,endpoint.terminal,lead==='black'&&here(meter.red));
+        const probe=fitting.kind==='sesame'?sesameSiteProbe:fusedProbePose;
+        const seat=probe(fitting.item,fitting.component,endpoint.terminal,lead==='black'&&here(meter.red));
         return seat&&<group key={lead} position={seat.position}><MeterProbe red={lead==='red'} direction={seat.approach}/></group>;
       })}</group>;
     }

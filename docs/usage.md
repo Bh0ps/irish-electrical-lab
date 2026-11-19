@@ -6,9 +6,11 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.23.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.24.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 On a phone, the worktop light, heater and back doorbell repairs start in the room. Follow the instruction above it or tap **Job** for more detail. In other lessons, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting, or tap **Find** and search for its name or room. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. **Put meter away** returns to the site. In the two-door bell job the hall chime gives a short caption and a sound for each new call. The two sounds are examples chosen for this lab. You can turn them off in Settings or Site tools. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
+
+For a short repair, choose **Chapters → The back doorbell is quiet**. With the back button held, compare the hall chime input with the screw on the back button that feeds it. Use **View back of button** for the screw heads. The lab supplies a simulated long lead between the two rooms. After the repair, ring each door separately. Check that the hall chime shows the right door and that the call clears when you let go. Then choose **Test the repair**.
 
 Open **Chapters → Quick practice** to try a working circuit. Make a prediction, or choose **I’m not sure — let me try**. Use the switch, dial or Start button on the lesson card or on the equipment itself. Compare the readings before and after. **Back to lesson** opens the full course.
 

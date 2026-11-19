@@ -15,7 +15,7 @@ export type CableCore = 'brown' | 'blue' | 'green-yellow' | 'red' | 'white' | 'y
 /** The two reference points locate a physical sheath; they never connect electrical nodes. */
 export interface CableRun { id: string; kind: Exclude<CableKind,'single'>; from: Endpoint; to: Endpoint }
 export interface Wire { id: string; from: Endpoint; to: Endpoint; role: TerminalRole; resistance: number; bends: Vec3[]; cable?: { runId: string; core: CableCore; reversed: boolean } }
-export interface FaultSetting { type: string; component?: string; wire?: string; enabled: boolean }
+export interface FaultSetting { type: string; component?: string; wire?: string; enabled: boolean; looseEnd?: Endpoint }
 export interface CircuitDocument {
   version: 1; id: string; name: string; revision: number;
   supply: { enabled: boolean; phase: 'single' | 'three'; voltage: number; frequency: number; sourceResistance: number };

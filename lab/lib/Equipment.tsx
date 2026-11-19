@@ -40,6 +40,8 @@ export interface EquipmentProps {
   looseRockerTerminal?:string;
   /** The installed scene supplies the continuous lead from the heater gland to the FCU. */
   installedHeaterFlex?:boolean;
+  /** The D814 carrier is off the wall; its clip-on cover and both fixings are set aside. */
+  installedPushWithdrawn?:boolean;
   onModelAvailability?: (id:string,unavailable:boolean) => void;
   animate?: boolean;
 }

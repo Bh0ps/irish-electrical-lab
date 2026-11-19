@@ -174,10 +174,10 @@ export function BlenderEquipment(props:EquipmentProps&{children?:React.ReactNode
     onModelAvailability(id,true);
     return ()=>onModelAvailability(id,false);
   },[missing,onModelAvailability,id]);
-  const batchDistantTerminals=lowOnly&&loaded?.url===lowUrl&&!props.selected&&props.view==='normal'&&!props.contactPiece&&!props.installedHeaterFlex;
+  const batchDistantTerminals=lowOnly&&loaded?.url===lowUrl&&!props.selected&&props.view==='normal'&&!props.contactPiece&&!props.installedHeaterFlex&&!props.installedPushWithdrawn;
   const presentation=useMemo(()=>source?prepareBlenderModel(source,batchDistantTerminals):undefined,[source,batchDistantTerminals]);
   useEffect(()=>()=>presentation?.owned.forEach(material=>material.dispose()),[presentation]);
-  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,props.looseRockerTerminal);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,props.looseRockerTerminal,invalidate]);
+  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,props.looseRockerTerminal,props.installedPushWithdrawn);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,props.looseRockerTerminal,props.installedPushWithdrawn,invalidate]);
   useFrame(({camera},dt)=>{if(presentation){
     if(!props.preferLowAsset&&!props.selected&&!props.lowDetail){const distance=camera.position.distanceTo(presentation.scene.getWorldPosition(new THREE.Vector3())),next=distance>(far?12:14);if(next!==far)setFar(next);}
     if(props.animate!==false&&animateBlenderModel(presentation,props.component,props.state,dt))invalidate();

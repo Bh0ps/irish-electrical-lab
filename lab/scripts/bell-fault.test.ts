@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {bellReadings,bellComparisonReady,bellInput,bellReturn,backPushOutput} from '../lib/bell-fault';
+import {bellReadings,bellComparisonReady,bellInput,bellReturn,backPushOutput,bellPushTerminal} from '../lib/bell-fault';
 import {assessFaultDiagnosis} from '../lib/fault-diagnosis';
 import {captureMeasurement,validateDiagnosisEvidence} from '../lib/learning';
 import {getLesson} from '../lib/lessons';
@@ -45,4 +45,16 @@ test('a fresh independent call and button reading are both needed',()=>{
     const t=bench(false,broken,back,front);
     assert.equal(bellComparisonReady(bellReadings(t.doc,t.result,[t.read(bellInput,bellReturn),t.read(backPushOutput,bellReturn)])),false);
   }
+});
+
+test('reversed interchangeable back-button screws move the evidence and diagnosis to the other screw',()=>{
+  const {doc,lesson}=bench();
+  for(const wire of doc.wires){for(const p of [wire.from,wire.to])if(p.component==='back')p.terminal=p.terminal==='NO'?'COM':'NO';}
+  const result=simulate(doc),read=(a:Endpoint)=>({...captureMeasurement(doc,result,{mode:'voltage',a,b:bellReturn}),assisted:false});
+  const outgoing=bellPushTerminal(doc)!;assert.deepEqual(outgoing,{component:'back',terminal:'COM'});
+  const call=read(bellInput),right=read(outgoing),wrong=read(backPushOutput);
+  assert.equal(Math.round(right.value!),12);assert.equal(Math.round(wrong.value!),12);
+  assert.equal(bellComparisonReady(bellReadings(doc,result,[call,wrong])),false);
+  assert.ok(bellComparisonReady(bellReadings(doc,result,[call,right])));
+  assert.ok(assessFaultDiagnosis(doc,result,'open-wire',0,lesson.challenge,[call,right]).accepted);
 });

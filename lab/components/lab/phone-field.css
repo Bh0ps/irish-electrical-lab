@@ -13,6 +13,7 @@
 .field-job-step button {min-height:44px;max-width:100%;border:1px solid #24543a;border-radius:6px;padding:.35rem .7rem;background:#27553e;color:white;font:inherit;font-size:.92rem;font-weight:650;line-height:1.25;white-space:normal;cursor:pointer}
 .field-job-step button:disabled {opacity:.65}
 .field-job-step:focus-visible,.field-job-step button:focus-visible {outline:3px solid #d59a27;outline-offset:-3px}
+.phone-field:has(.field-job-step [data-find-fitting]) .site-approach[data-lesson-fitting] {display:none}
 .phone-field:has(.site-actions .site-repair,.site-approach[data-job-action]) .field-job-step[data-site-action] button {display:none}
 .installation-lab.mobile-lab.phone-field .simple-workspace {position:relative;display:block;flex:1;min-height:0}
 .installation-lab.mobile-lab.phone-field .work-area,.installation-lab.mobile-lab.phone-field .canvas-wrap {height:100%;width:100%;min-height:0;margin:0;padding:0;gap:0;border:0;border-radius:0}

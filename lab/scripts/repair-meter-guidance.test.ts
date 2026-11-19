@@ -53,6 +53,7 @@ test('rear bell guidance follows the current held button, fitted chime markings 
   back.params.pressed=true;
   assert.match(repairMeterPrompt(doc,'chime',{}),/C2 to =\/~ with the back button held/);
   const call=read(doc,bellReturn,bellInput);
+  assert.match(repairMeterPrompt(doc,'chime',{},undefined,{call}),/simulated long lead/);
   assert.match(repairMeterPrompt(doc,'chime',{},undefined,{call}),/Leave red on =\/~.*move black to the lower screw/);
   doc.components.find(c=>c.id==='chime')!.variant=undefined;
   assert.match(repairMeterPrompt(doc,'chime',{}),/REAR to AC2/);

@@ -1,4 +1,4 @@
-import type {BellReadings} from './bell-fault';
+import {bellPushTerminal,type BellReadings} from './bell-fault';
 import {describeEndpoint} from './endpoint-description';
 import {shownVolts} from './fault-practice';
 import {heaterFeedMark, heaterProbeTip, type HeaterReadings} from './heater-fault';
@@ -22,6 +22,13 @@ export function faultReadingValue(sample:MeasurementEvidence) {
   return number===undefined?'No reading':number+' '+sample.unit+(sample.instrument?.signal?' '+sample.instrument.signal:'');
 }
 
+function backScrew(doc:CircuitDocument) {
+  const pin=bellPushTerminal(doc),label=describeEndpoint(doc,pin)?.terminalLabel;
+  if(label==='Top screw')return 'the upper screw';
+  if(label==='Bottom screw')return 'the lower screw';
+  return label??'the screw wired to the chime';
+}
+
 function bellProbeTip(doc:CircuitDocument,sample:MeasurementEvidence,rows:BellReadings){
   const points=[sample.a,sample.b];
   const value=faultReadingValue(sample)+'. ';
@@ -29,8 +36,7 @@ function bellProbeTip(doc:CircuitDocument,sample:MeasurementEvidence,rows:BellRe
   if(common<0)return value+'Put one probe on '+chimeMark(doc,'AC2')+' at the chime and leave it there.';
   const moving=common===0?'black':'red';
   if(rows.call){
-    const button=doc.components.find(c=>c.id==='back'),mark=button?.variant==='sesame'?'bottom screw':'NO';
-    return value+'Move '+moving+' to the '+mark+' on the back button. That’s the wire going back to the hall.';
+    return value+'Keep one probe at the hall. Take '+moving+' to '+backScrew(doc)+' on the back button using the simulated long lead.';
   }
   const pin=points[1-common];
   if(pin?.component==='chime'&&pin.terminal==='FRONT')return value+'That’s the front door. Move '+moving+' to '+chimeMark(doc,'REAR')+' for the back door.';
@@ -66,8 +72,8 @@ export function repairMeterPrompt(doc:CircuitDocument,job:RepairJob,worktop:Work
     if(!bell?.call)return 'At the hall chime, measure '+chimeMark(doc,'REAR')+' to '+common+' with the back button held.';
     if(bell.push)return 'Check that the bench supply is on and take both readings again.';
     const reverse=bell.call.a?.terminal==='AC2';
-    const pin=doc.components.find(c=>c.id==='back')?.variant==='sesame'?'the lower screw':'NO';
-    return 'Leave '+(reverse?'red':'black')+' on '+common+'. On the virtual bench, move '+(reverse?'black':'red')+' to '+pin+' on the back button.';
+    const pin=backScrew(doc);
+    return 'Leave '+(reverse?'red':'black')+' on '+common+' in the hall. Use the simulated long lead to move '+(reverse?'black':'red')+' to '+pin+' on the back button.';
   }
   if(job==='heater'){
     if(!doc.components.find(c=>c.id==='fcu-switch')?.params.closed)return 'Turn the heater on at the wall.';

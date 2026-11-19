@@ -1,3 +1,4 @@
+import {createPortal} from 'react-dom';
 import { worktopFaultTitle } from '../../lib/fault-practice';
 import { useEffect,useLayoutEffect,useMemo,useRef,useState, type MouseEvent, type ReactNode } from 'react';
 import { Button } from '../ui/button';
@@ -11,6 +12,7 @@ interface Props {
   call:HouseCall; document:CircuitDocument; result?:SimulationResult; operation?:CallOperation; sample?:CallSample; openMeter:()=>void; meterHistory?:MeasurementEvidence[];
   start?:string; onActivity:(activity:LessonActivity)=>void; onCredit:(id:string,next:string)=>Promise<void>;
   operate:(id:string)=>void; locate:(id:string)=>void; restart:()=>void; choose:()=>void; undo:()=>void;
+  field?:{host:HTMLElement;focused?:string;openJob:()=>void};
   earlierBoardDone?:boolean; continueBoard?:()=>void;
   bellFault?:()=>void; worktopFault?:()=>void; nextJob?:{ title:string; open:()=>void }; startFault:()=>void;
 }
@@ -171,7 +173,16 @@ export function HouseCallPanel(props:Props){
       else if(box.bottom>bottom)sheet.scrollTop+=box.bottom-bottom;
     }
   },[index,doc.revision,result?.revision,boardFeedback]);
+  const closeToTarget=step&&props.field?.focused===step.target;
+  const chooseOnJob=Boolean(!step||restoreFan||step.boardQuestion||step.stairCheck||step.waitForFan||call.breakers||chimeCorrection);
   return <section className="active-task house-call" data-house-tools={toolsOpen||undefined} data-house-call={call.lesson} data-call-step={index} aria-label="House call">
+    {props.field&&createPortal(<div className="field-job-step" aria-label="Current job">
+      <p aria-live="polite">{instruction}</p>
+      {chooseOnJob?<button type="button" onClick={props.field.openJob}>{step?.boardQuestion||step?.stairCheck?'Choose answer':step?'Open job':'Job summary'}</button>
+        :step.measure?<button type="button" onClick={props.openMeter}>Take reading</button>
+        :closeToTarget?<button type="button" onClick={()=>props.operate(step.target)}>{step.label}</button>
+        :<button type="button" data-find-fitting onClick={()=>props.locate(step.target)}>Find fitting</button>}
+    </div>,props.field.host)}
     <div className="task-topline"><span>Oakfield house</span><b>{step?'Check '+(index+1)+' of '+call.steps.length:'Job complete'}</b></div>
     <div className={'house-job-heading'+(sample&&!sample.pass||previousCallReading?' with-reading-feedback':'')}><h3 ref={heading} tabIndex={-1} aria-live="polite">{step?instruction:'What you checked'}</h3>
       {toolsOpen&&<Button variant="ghost" size="sm" onClick={props.closeTools}>Back to job</Button>}

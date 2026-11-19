@@ -8,11 +8,11 @@ type Lead = 'red' | 'black';
 interface Props {
   circuit: CircuitDocument; startAt?: string; active: Lead; red?: Endpoint; black?: Endpoint;
   display?: string; message: string; adjust?: {label:string; action:()=>void};
-  fixedFitting?: string; covered?:boolean; record?: ()=>void;
+  rearAccess?:{open:boolean;toggle:()=>void}; fixedFitting?: string; covered?:boolean; record?: ()=>void;
   chooseLead: (lead:Lead)=>void; place: (point:Endpoint)=>void; controls:ReactNode;
 }
 
-export function LessonVoltmeter({circuit,startAt,active,red,black,display,message,adjust,fixedFitting,covered,record,chooseLead,place,controls}:Props) {
+export function LessonVoltmeter({circuit,startAt,active,red,black,display,message,adjust,rearAccess,fixedFitting,covered,record,chooseLead,place,controls}:Props) {
   const [chosen,setChosen] = useState(startAt);
   const [more,setMore] = useState(false);
   const fittings = circuit.components.filter(part=>definitionFor(part).terminals.length);
@@ -34,7 +34,8 @@ export function LessonVoltmeter({circuit,startAt,active,red,black,display,messag
             </button>;
           })}
         </div>
-        {fitting && <fieldset><legend>Touch the {active} probe to</legend><div>
+        {rearAccess&&<button type="button" className="book-link" aria-expanded={rearAccess.open} onClick={rearAccess.toggle}>{rearAccess.open?'Lift probes and refit button':'View back of button'}</button>}
+        {fitting && (!rearAccess||rearAccess.open) && <fieldset><legend>Touch the {active} probe to</legend><div>
           {getComponentTerminals(fitting,definitionFor(fitting)).map(t=>{
             const point={component:fitting.id,terminal:t.id};
             const label=describeEndpoint(circuit,point)?.pointLabel??t.label;

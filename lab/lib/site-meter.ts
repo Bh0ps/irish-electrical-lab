@@ -3,6 +3,8 @@ import { fixturePoint,installedTerminalPoint } from './site-fixtures';
 import {rockerPanelCentre,rockerPose} from './kitchen-lighting';
 import {rockerProbeContact,rockerWireEntry} from './dc-rocker';
 import {cromaProbeContact} from './croma-chime';
+import {sesameProbeContact,sesameServicePose} from './sesame-push';
+import {sesameCallWiring} from './bell-meter-site';
 import {fcuProbeContact} from './bg851';
 import {fusedPlatePose,fusedPlateView} from './fused-heater-site';
 import { getComponentTerminals } from './terminal-layout';
@@ -10,7 +12,7 @@ import type { JobSite, SiteItem } from './job-site';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3 } from './types';
 
 export interface SiteTestFitting {
-  kind:'strip'|'rocker'|'chime'|'fcu'; item:SiteItem; component:ComponentInstance;
+  kind:'strip'|'rocker'|'chime'|'fcu'|'sesame'; item:SiteItem; component:ComponentInstance;
 }
 export interface SiteContact {endpoint:Endpoint;label:string;position:Vec3}
 export function installedTestFittings(doc:CircuitDocument,site:JobSite):SiteTestFitting[]{
@@ -21,6 +23,7 @@ export function installedTestFittings(doc:CircuitDocument,site:JobSite):SiteTest
     if(!item?.fixture)continue;
     if(doc.lessonId===20&&item.fixture.fusedHeater&&component.type==='fcu')fittings.push({kind:'fcu',item,component});
     else if(item.fixture.croma)fittings.push({kind:'chime',item,component});
+    else if(item.fixture.bellPush&&sesameCallWiring(doc,component.id))fittings.push({kind:'sesame',item,component});
     else if(component.type==='led'&&component.variant==='strip'&&item.fixture.tape)fittings.push({kind:'strip',item,component});
     else if(item.fixture.worktopRocker)fittings.push({kind:'rocker',item,component});
   }
@@ -28,6 +31,11 @@ export function installedTestFittings(doc:CircuitDocument,site:JobSite):SiteTest
 }
 
 export function siteContacts({kind,item,component}:SiteTestFitting,open:boolean):SiteContact[]{
+  if(kind==='sesame'){
+    if(!open)return [];
+    return ['COM','NO'].map(terminal=>({endpoint:{component:component.id,terminal},label:terminal==='COM'?'Upper screw':'Lower screw',
+      position:sesameSiteProbe(item,component,terminal)!.position}));
+  }
   if(kind==='fcu'){
     if(!open)return [];
     return getComponentTerminals(component,COMPONENTS.fcu).flatMap(t=>{
@@ -56,6 +64,15 @@ export function siteContacts({kind,item,component}:SiteTestFitting,open:boolean)
   }));
 }
 
+export function sesameSiteProbe(item:SiteItem,component:ComponentInstance,id:string,second=false){
+  const screw=sesameProbeContact(id,second);if(!screw)return;
+  const pose=sesameServicePose(item,true),world=(p:Vec3)=>fixturePoint(pose.position,item.scale,item.fixture,component,p,pose.rotation);
+  const position=world(screw.position);
+  const next=world(screw.position.map((v,i)=>v+screw.approach[i]) as Vec3);
+  const offset=next.map((v,i)=>v-position[i]);
+  return {position,approach:offset.map(v=>v/Math.hypot(...offset)) as Vec3};
+}
+
 /** The instrument rests on the clamp screw. The separate rear wire mouth still
  * belongs to the wire, including when a loose core is being repaired. */
 export function fusedProbePose(item:SiteItem,component:ComponentInstance,id:string,second=false){
@@ -77,6 +94,15 @@ const screwSight:Record<string,[number,number]>={
 };
 
 export function padCamera(fitting:SiteTestFitting,open:boolean,touch:boolean,screwId?:string,aspect=1){
+  if(fitting.kind==='sesame'){
+    const {item,component}=fitting,pose=sesameServicePose(item,open);
+    const world=(p:Vec3)=>fixturePoint(pose.position,item.scale,item.fixture,component,p,pose.rotation);
+    const centre=world(open?[0,.55,.04]:[0,.55,.24]);
+    const eye=world(open?[-.53,.73,-2.1]:[.55,.67,2.3]);
+    const ray=eye.map((v,i)=>v-centre[i]),d=Math.max(open?.081:.139,.046/(.912*Math.max(.31,aspect)));
+    const [x,y,z]=ray,position=centre.map((v,i)=>v+d*ray[i]/Math.hypot(...ray)) as Vec3;
+    return {position,yaw:Math.atan2(x,z),pitch:-Math.atan2(y,Math.hypot(x,z))};
+  }
   if(fitting.kind==='fcu'){
     if(!open)return fusedPlateView(fitting.item,false,touch);
     const pose=fusedPlatePose(fitting.item,true);
@@ -98,8 +124,9 @@ export function padCamera(fitting:SiteTestFitting,open:boolean,touch:boolean,scr
     const [x,y,z]=fitting.item.position;
     if(!open)return {position:[x-.008,y+.106,z+.34] as Vec3,yaw:-.02,pitch:-.03};
     const centre=siteContacts(fitting,true).find(p=>p.endpoint.terminal==='FRONT')!.position;
-    // Look down slightly so each marking is visible above the core in its cage.
-    const dz=touch?.065:.081,dy=dz*.49;
+    // The legend is printed behind the raised K1 strip. A low sightline
+    // keeps C1 and C2 level with their own screws instead of the row above.
+    const dz=touch?.065:.081,dy=-dz*.18;
     return {position:[centre[0],centre[1]+dy,centre[2]+dz] as Vec3,yaw:0,pitch:-Math.atan2(dy,dz)};
   }
   if(fitting.kind==='rocker'){
