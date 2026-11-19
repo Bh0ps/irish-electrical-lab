@@ -34,6 +34,22 @@ export const HOME_VISITS:Record<number,{position:Vec3;yaw:number;pitch:number}>=
 export interface FloorWall {id:string;axis:'x'|'z';fixed:number;start:number;end:number}
 export interface FloorDoor {wall:string;centre:number;width:number;side:1|-1;hinge:1|-1;hallOnly?:boolean}
 export const GARDEN_DOOR:FloorDoor={wall:'rear',centre:-1.98,width:.94,hinge:1,side:1};
+// Oakfield's two-entrance bell jobs have a single front leaf and a fixed glazed sidelight.
+export const BELL_FRONT_DOOR:FloorDoor={wall:'front',centre:-.25,width:.94,hinge:-1,side:-1};
+export const SIDE_PASSAGE:FloorRoom={id:10,name:'Side passage',left:-8.21,right:-6.66,back:HOME_BACK,front:2.8};
+export const BELL_FORECOURT=7.40;
+export function isDoorstep(room:number){return room===3||room===REAR_GARDEN.id;}
+export function doorstepView(room:number,aspect=1){
+  if(room===SIDE_PASSAGE.id)return {position:[-7.46,1.56,1.26] as Vec3,yaw:0,pitch:-.11};
+  const front=room===3;
+  const face=front?2.875:HOME_BACK-.15;
+  // The push and the latch edge of the open door share the view. Step back on narrow screens.
+  const distance=Math.min(front?4.29:3.48,Math.max(front?2.73:2.46,(front?1.85:1.42)/(.912*Math.max(.34,aspect))));
+  const target:Vec3=front?[.40,1.20,face]:[GARDEN_DOOR.centre-.14,1.18,face];
+  const position:Vec3=[target[0]+(front?.88:-.69),1.56,face+(front?distance:-distance)];
+  const dx=target[0]-position[0],dz=target[2]-position[2];
+  return {position,yaw:Math.atan2(-dx,-dz),pitch:Math.atan2(target[1]-position[1],Math.hypot(dx,dz)),fitOnResize:true};
+}
 export const HOME_WALLS:FloorWall[]=[
   {id:'west',axis:'z',fixed:-6.6,start:HOME_BACK,end:2.8},{id:'east',axis:'z',fixed:6.6,start:HOME_BACK,end:2.8},
   {id:'rear',axis:'x',fixed:HOME_BACK,start:-6.6,end:6.6},{id:'front',axis:'x',fixed:2.8,start:-6.6,end:6.6},
@@ -81,7 +97,8 @@ export const STAIR_LANDING:FloorRoom = {
   id:8,name:'First-floor landing',left:HOME_STAIR.divider,right:HOME_STAIR.east,back:STAIR_FOOT,front:HOME_STAIR.landingEnd,
 };
 const upperVisit = {position:[-.70, STAIR_EYE+STAIR_TOP, .45] as Vec3,yaw:-2.26,pitch:-.26};
-export function homeVisit(room:number,stair:boolean){
+export function homeVisit(room:number,stair:boolean,doorsteps=false,aspect=1){
+  if(doorsteps&&(isDoorstep(room)||room===SIDE_PASSAGE.id))return doorstepView(room,aspect);
   if(stair&&room===1)return stairVisit;
   if(stair&&room===STAIR_LANDING.id)return upperVisit;
   return HOME_VISITS[room];
@@ -116,16 +133,17 @@ export const HOUSE_FURNITURE={
 const stairEntrance:FloorDoor={wall:'front',centre:1.18,width:.98,hinge:1,side:-1};
 const serviceEntrance:FloorDoor={wall:'front',centre:3.40,width:1.02,hinge:-1,side:-1};
 const kitchenRearDoor:FloorDoor={wall:'kitchen-back',centre:-2.92,width:.88,hinge:1,side:-1};
-export function doorsOn(wall:FloorWall,bathroom:boolean,stair=false){
+export function doorsOn(wall:FloorWall,bathroom:boolean,stair=false,doorsteps=false){
+  if(doorsteps&&wall.id==='front')return [BELL_FRONT_DOOR];
   if(stair&&wall.id==='front')return [stairEntrance];
   if(bathroom&&wall.id==='front')return [serviceEntrance];
   if(bathroom&&wall.id==='kitchen-back')return [kitchenRearDoor];
   if(bathroom&&wall.id==='kitchen-hall')return [];
   return HOME_DOORS.filter(d=>d.wall===wall.id&&!(bathroom&&d.hallOnly));
 }
-export function wallSpans(wall:FloorWall,bathroom:boolean,stair=false):[number,number][]{
+export function wallSpans(wall:FloorWall,bathroom:boolean,stair=false,doorsteps=false):[number,number][]{
   const result:[number,number][]=[];let start=wall.start;
-  for(const door of doorsOn(wall,bathroom,stair)){
+  for(const door of doorsOn(wall,bathroom,stair,doorsteps)){
     result.push([start,door.centre-door.width/2]);start=door.centre+door.width/2;
   }
   result.push([start,wall.end]);return result;
@@ -136,15 +154,21 @@ export function alignWall(wall:FloorWall,along:number,depth:number,length:number
 export function doorLeaf(wall:FloorWall,door:FloorDoor){
   return alignWall(wall,door.centre+door.hinge*(door.width/2-.022),door.side*door.width/2,.044,door.width);
 }
-export function homeRoomAt(x:number,z:number,stair=false){
+export function homeRoomAt(x:number,z:number,stair=false,doorsteps=false){
+  if(doorsteps&&x< -6.6)return z>2.8?3:z<HOME_BACK?REAR_GARDEN.id:SIDE_PASSAGE.id;
   if(stair&&x>STAIR_LANDING.left&&x<STAIR_LANDING.right&&z>STAIR_FOOT&&z<STAIR_LANDING.front)return STAIR_LANDING.id;
   return HOME_ROOMS.find(r=>x>=r.left&&x<=r.right&&z>=r.back&&z<=r.front)?.id??3;
 }
-function collisionBoxes(bathroom:boolean,stair:boolean){
+function collisionBoxes(bathroom:boolean,stair:boolean,doorsteps:boolean){
   const boxes=Object.values(HOUSE_FURNITURE).slice() as FloorBox[];
   for(const wall of HOME_WALLS){
-    for(const [a,b] of wallSpans(wall,bathroom,stair))boxes.push(alignWall(wall,(a+b)/2,0,b-a,.12));
-    for(const door of doorsOn(wall,bathroom,stair))boxes.push(doorLeaf(wall,door));
+    for(const [a,b] of wallSpans(wall,bathroom,stair,doorsteps))boxes.push(alignWall(wall,(a+b)/2,0,b-a,.12));
+    for(const door of doorsOn(wall,bathroom,stair,doorsteps))boxes.push(doorLeaf(wall,door));
+  }
+  if(doorsteps){
+    // Planters flank the front path. The garden gate is hooked back along the fence.
+    for(const x of [-1.72,1.72])boxes.push({x,z:3.39,w:.38,d:.38});
+    boxes.push({x:SIDE_PASSAGE.left+.076,z:1.92,w:.07,d:1.12});
   }
   boxes.push(bathroom?BATH_KITCHEN_COUNTER:{x:-4.4,z:-2.49,w:3.65,d:.59},bathroom?BATH_RACK:{x:3.13,z:-.65,w:1.36,d:.54},{x:5.6,z:-2.49,w:1.4,d:.59});
   if(bathroom)boxes.push(BATH_SHOWER,{x:1.32,z:-2.47,w:1.3,d:.59});
@@ -153,10 +177,10 @@ function collisionBoxes(bathroom:boolean,stair:boolean){
   return boxes;
 }
 const collisions=new Map<string,FloorBox[]>();
-export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:boolean,appliance?:FloorBox):Vec3{
-  const key=[bathroom,stair,appliance?.x,appliance?.z,appliance?.w,appliance?.d].join('/');
+export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:boolean,appliance?:FloorBox,doorsteps=false):Vec3{
+  const key=[bathroom,stair,appliance?.x,appliance?.z,appliance?.w,appliance?.d,doorsteps].join('/');
   if(!collisions.has(key)){
-    const boxes=collisionBoxes(bathroom,stair);
+    const boxes=collisionBoxes(bathroom,stair,doorsteps);
     if(appliance)boxes.push(appliance);
     collisions.set(key,boxes);
   }
@@ -170,7 +194,8 @@ export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:bo
       if(delta>0&&fromAxis<=low+.00001)next=Math.min(next,low);
       if(delta<0&&fromAxis>=high-.00001)next=Math.max(next,high);
     }
-    return Math.max(axis==='x'?-6.6+radius:REAR_GARDEN.back+radius,Math.min(axis==='x'?6.6-radius:6,next));
+    const west=doorsteps?SIDE_PASSAGE.left:-6.6,front=doorsteps?BELL_FORECOURT-radius:6;
+    return Math.max(axis==='x'?west+radius:REAR_GARDEN.back+radius,Math.min(axis==='x'?6.6-radius:front,next));
   };
   const x=advance('x',from[0],from[2],dx);
   const z=advance('z',from[2],x,dz);

@@ -70,8 +70,9 @@ const byModel:Record<string,Feature[]>={
   ],
   'pushbutton:sesame':[
     ['sesame-cover','cover','Clip-on cover','The cover clips off to reveal the two wall fixing screws. The round button stays on the base.','front'],
-    ['sesame-base','body','Fixing base','The holes at the top and bottom take the wall screws. The two smaller screws closer to the button hold the wires.'],
-    ['sesame-plunger','actuator','Spring-return button','Hold the button in to join the two wires. Let go and the contact opens again.','front'],
+    ['sesame-base','body','Wall fixings','The two screws under the white cover fasten the push to the wall. Turn it over to see the screws that hold the wires.','front'],
+    ['sesame-cartridge','body','Back of the push','The two unmarked screws hold the bare copper ends. Either wire can go on either screw. Pressing the button joins the screws inside the case.'],
+    ['sesame-plunger','actuator','Spring-return button','The white cap moves in and joins the two contacts. It springs back when released. This button has no lamp.','front'],
   ],
   'dimmer:rotary':[
     ['dimmer-knob','actuator','Aluminium knob','Turn the knob to change how bright the lamp is. On the wall fitting it clicks off when you turn it fully down.','front'],

@@ -13,7 +13,7 @@ const original=getLesson(72)!.circuit;
 const held=(doc:CircuitDocument,front:boolean,back=false)=>({...doc,revision:doc.revision+1,components:doc.components.map(c=>c.id==='front'||c.id==='back'?{...c,params:{...c.params,pressed:c.id==='front'?front:back}}:c)});
 const pair=(pin:string,component='chime')=>({component,terminal:pin});
 const idle=held(original,false),front=held(original,true);
-const index=(name:'front-held'|'front-released'|'supply')=>call.steps.findIndex(s=>s.chimeReading===name);
+const index=(name:'front-held'|'front-released'|'supply'|'back-held')=>call.steps.findIndex(s=>s.chimeReading===name);
 function record(doc:CircuitDocument,i:number,a=pair('FRONT'),b=pair('AC2'),tester=true){
   const result=simulate(doc),setup={method:'probe-voltage' as const,reference:'none' as const,a,b};
   const instrument=tester?instrumentData(setup,forkRead(doc,result,setup)):undefined;
@@ -23,7 +23,7 @@ function record(doc:CircuitDocument,i:number,a=pair('FRONT'),b=pair('AC2'),teste
 
 test('measuring the chime requires the actual input or supply pair in the requested button state',()=>{
   for(const instrument of [true,false])for(const reverse of [true,false]){
-    for(const [name,doc,pin,expect] of [['front-held',front,'FRONT',12],['front-released',idle,'FRONT',0],['supply',idle,'AC1',12]] as const){
+    for(const [name,doc,pin,expect] of [['front-held',front,'FRONT',12],['front-released',idle,'FRONT',0],['supply',idle,'AC1',12],['back-held',held(original,false,true),'REAR',12]] as const){
       const i=index(name),r=simulate(doc),sample=record(doc,i,pair(reverse?'AC2':pin),pair(reverse?pin:'AC2'),instrument);
       assert.equal(Math.round(sample.evidence.value!),expect);
       if(instrument)assert.equal(sample.evidence.instrument?.signal,'AC');

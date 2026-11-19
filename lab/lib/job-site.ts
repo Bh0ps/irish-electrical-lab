@@ -8,7 +8,7 @@ import {bellServicePart,bellServicePose} from './bell-cupboard';
 import {fittedKitchenDriver,KITCHEN_LIGHTS as kitchen} from './kitchen-lighting';
 import {BATH_EXTRACT as bath} from './bathroom-extract';
 import { houseFixing, onWall } from './house-installation';
-import { HOME_ROOMS, REAR_GARDEN, STAIR_LANDING, walkHome,type FloorBox } from './home-floorplan';
+import { HOME_ROOMS, REAR_GARDEN, SIDE_PASSAGE, STAIR_LANDING, walkHome,type FloorBox } from './home-floorplan';
 import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
 
 export type SiteKind = 'home' | 'plant' | 'shop' | 'workshop' | 'works';
@@ -48,7 +48,7 @@ export const JOBS: Record<number,Job> = {
   78:work(0,'Proximity switch'),79:works(2,'DC distribution'),80:home(3,'Entrance installation'),
 };
 export interface SiteItem { id:string; ref:string; room:number; position:Vec3; rotation:number; scale:number; fixture?:FixturePose }
-export interface JobSite {kind:SiteKind; building:Building; name:string; room:number; items:SiteItem[]; first?:string; floorObstacle?:FloorBox; location:(room:number)=>string}
+export interface JobSite {kind:SiteKind; building:Building; name:string; room:number; items:SiteItem[]; first?:string; floorObstacle?:FloorBox; doorsteps?:boolean; location:(room:number)=>string}
 const letters:Record<string,string>={source:'U',source3:'U',meter:'P',panel:'DB',gammaboard:'DB',invictaboard:'DB',mcb:'QF',mcb3:'QF',rcbo:'QF',rcd:'FI',rcd3:'FI',isolator:'QS',isolator3:'QS',fuse:'F',transformer:'T',driver:'PS',dcsupply:'PS',relay:'K',contactor:'KM',motor:'M',motor3:'M',valve:'Y',valve3:'Y',fan:'M',pump:'M',lamp:'E',led:'E',indicator:'H',chime:'HA',heater:'R',socket:'X',shaveroutlet:'X',socket3:'X',terminal:'X',pushbutton:'S',switch:'S',switch2:'S',sensor:'B',plc:'A',thermostat:'B'};
 const isSupply=(c:ComponentInstance)=>/^(source3?|mcb3?|rcbo|rcd3?|meter|panel|earthbar|neutralbar|spd|board|enclosure|busbar|invictaboard|gammaboard)$/.test(c.type)||/^(supply|protect|board|group|branch\d+|main-isolator)$/.test(c.id);
 function roomFor(c:ComponentInstance,id:number,room:number) {
@@ -189,7 +189,8 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
   const kitchenPanel=panel?.room===0;
   const floorObstacle=panel?{x:panel.position[0]-(kitchenPanel?KITCHEN_PANEL.depth/2:0),z:panel.position[2]+(kitchenPanel?0:KITCHEN_PANEL.depth/2),
     w:kitchenPanel?KITCHEN_PANEL.depth:KITCHEN_PANEL.width,d:kitchenPanel?KITCHEN_PANEL.width:KITCHEN_PANEL.depth}:undefined;
-  return {kind,building,name,room,items,floorObstacle,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):id===9&&r===STAIR_LANDING.id?STAIR_LANDING.name:rooms[r]??(kind==='home'?HOME_ROOMS.find(space=>space.id===r)?.name:r===4?SERVICE_AREAS[kind].name:undefined)??name};
+  const doorsteps=id===71||id===72;
+  return {kind,building,name,room,items,floorObstacle,doorsteps,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>doorsteps&&r===SIDE_PASSAGE.id?SIDE_PASSAGE.name:r===3?(kind==='home'?'Front entrance':'Service yard'):id===9&&r===STAIR_LANDING.id?STAIR_LANDING.name:rooms[r]??(kind==='home'?HOME_ROOMS.find(space=>space.id===r)?.name:r===4?SERVICE_AREAS[kind].name:undefined)??name};
 }
 export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wiring'{
   if(!lesson)return 'wiring';
@@ -198,7 +199,7 @@ export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wi
 }
 /** Stop at the walls while allowing passage through the same openings shown on the floor plan. */
 export function walkStep(from:Vec3,dx:number,dz:number,site?:JobSite):Vec3{
-  if(site?.kind==='home')return walkHome(from,dx,dz,site.building.rooms[1]==='Bathroom',site.building.rooms[1]==='Stair hall',site.floorObstacle);
+  if(site?.kind==='home')return walkHome(from,dx,dz,site.building.rooms[1]==='Bathroom',site.building.rooms[1]==='Stair hall',site.floorObstacle,site.doorsteps);
   if(site)return walkService(from,dx,dz,site.kind);
   const radius=.16;let [x,y,z]=from;
   const clamp=(v:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,v));

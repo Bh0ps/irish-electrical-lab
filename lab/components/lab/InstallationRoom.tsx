@@ -14,10 +14,11 @@ import { GARDEN_DOOR,HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,REAR_GARDEN
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {serviceRoom} from './ServiceRooms';
 import {stairHall} from './StairHall';
+import {frontDoorway,doorbellGrounds} from './DoorstepExterior';
 import {BathroomFabric,bathFurniture} from './BathroomExtract';
 import {BATH_KITCHEN_COUNTER,BATH_RACK} from '../../lib/bathroom-extract';
 
-type Shape='box'|'cylinder'|'ball'|'cushion';
+type Shape='box'|'cylinder'|'ball'|'cushion'|'gable';
 interface Piece {shape:Shape; surface:string; p:Vec3; s:Vec3; rotation:Vec3}
 const spec:Record<string,[string,SurfacePattern?,number?]>={
   carton:['#bd9869'],packingTape:['#c4b28d'],
@@ -26,6 +27,8 @@ const spec:Record<string,[string,SurfacePattern?,number?]>={
   concrete:['#a3a7a4','concrete'],brick:['#ac8270','brick'],paving:['#a3a198','paving'],green:['#608365'],linen:['#b1b9ad'],
   brass:['#b1965e','brushed',.52],trim:['#91a39b'],paint:['#c2cbbd'],paper:['#eee7d7'],foliage:['#536955'],steel:['#737f82','brushed',.6],copper:['#b77e57','brushed',.6],rubber:['#4a5556','rubber'],red:['#af584c'],
   curtain:['#c2ac91'],pane:['#c1e3ea'],fabric:['#a57c64'],lawn:['#81916c'],
+  doorBlue:['#345c66'],doorRecess:['#2e515a'],slate:['#515c65'],gutter:['#465256'],opal:['#d3d9d1'],
+  stoneFlag:['#aba797'],stoneFlagLight:['#b5b2a3'],boundary:['#8a8771'],
 };
 function installation(site:JobSite){
   const parts:Piece[]=[];
@@ -66,7 +69,7 @@ function installation(site:JobSite){
     box(x,.28,z,w-.15,.03,.47,'steel');
   };
   box(0,-.15,-.1,13.45,.28,5.95,'concrete');
-  box(0,-.16,4.65,19,.22,3.8,'paving');
+  if(!site.doorsteps)box(0,-.16,4.65,19,.22,3.8,'paving');
   const industrial=site.kind==='works'||site.kind==='workshop',home=site.kind==='home';
   const bathroom=site.building.rooms[1]==='Bathroom';
   const vent=bathroom&&site.name==='Timed extract';
@@ -120,6 +123,8 @@ function installation(site:JobSite){
       const front={...HOME_WALLS.find(w=>w.id==='front')!,start:-2.2,end:2.2};
       partition(front,'brick');
       box(doorsOn(front,false,true)[0].centre,.015,FRONT+.36,.91,.025,.56,'rubber');
+    } else if(site.doorsteps){
+      frontDoorway(add);
     } else {
       for(const s of [-1,1])box(s*1.47,1.39,FRONT,1.46,2.78,.15,home?'brick':'metal');
       box(0,2.54,FRONT,1.54,.54,.16,home?'brick':'metal');
@@ -142,6 +147,7 @@ function installation(site:JobSite){
     for(const z of [start,end])box(x,1.12,z,.18,2.24,.055,'white');box(x,2.25,DOOR_Z,.18,.065,DOOR_WIDTH+.08,'white');
   }
   if(home){
+    if(site.doorsteps)doorbellGrounds(add);
     box(0,-.15,(HOME_BACK+BACK)/2,13.45,.28,BACK-HOME_BACK,'concrete');
     for(const room of HOME_ROOMS.filter(r=>r.id>=4&&r.id!==REAR_GARDEN.id)){
       const x=(room.left+room.right)/2,z=(room.front+room.back)/2;
@@ -379,7 +385,10 @@ export default function InstallationRoom({site,economy,cupboardOpen,operateCupbo
     const plaster=createSurfaceTextures('plaster',economy?128:256);maps.set('plaster',plaster);
     plaster.color.repeat.set(4,3);plaster.normal.repeat.set(4,3);
     building.walls.forEach((color,i)=>{materials['wall'+i]=new THREE.MeshStandardMaterial({color,roughness:.94,map:plaster.color,normalMap:plaster.normal,normalScale:new THREE.Vector2(.10,.10)});});
-    return {materials,maps,geo:{box:new THREE.BoxGeometry(1,1,1),cylinder:new THREE.CylinderGeometry(1,1,1,20),ball:new THREE.SphereGeometry(1,16,10),cushion:new RoundedBoxGeometry(1,1,1,economy?1:2,.12)}};
+    const triangle=new THREE.Shape();
+    triangle.moveTo(-.5,-.5);triangle.lineTo(.5,-.5);triangle.lineTo(0,.5);triangle.closePath();
+    const gable=new THREE.ExtrudeGeometry(triangle,{depth:1,bevelEnabled:false}).translate(0,0,-.5).rotateY(Math.PI/2);
+    return {materials,maps,geo:{gable,box:new THREE.BoxGeometry(1,1,1),cylinder:new THREE.CylinderGeometry(1,1,1,20),ball:new THREE.SphereGeometry(1,16,10),cushion:new RoundedBoxGeometry(1,1,1,economy?1:2,.12)}};
   },[kind,economy]);
   useEffect(()=>()=>{for(const m of Object.values(res.materials))m.dispose();for(const g of Object.values(res.geo))g.dispose();for(const t of res.maps.values())t.dispose();},[res]);
   return <group name={'Installation · '+building.name}>

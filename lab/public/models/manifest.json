@@ -10607,12 +10607,13 @@
       "individual-electrical-terminations",
       "sesame-cover",
       "sesame-base",
+      "sesame-cartridge",
       "sesame-plunger"
     ],
-    "sourceMeshCount": 38,
-    "meshCount": 12,
-    "triangles": 31124,
-    "lowTriangles": 18002,
+    "sourceMeshCount": 42,
+    "meshCount": 15,
+    "triangles": 37040,
+    "lowTriangles": 21344,
     "terminals": [
       {
         "id": "COM",
@@ -10651,8 +10652,8 @@
         ]
       }
     ],
-    "bytes": 841512,
-    "lowBytes": 503204,
+    "bytes": 1097316,
+    "lowBytes": 667200,
     "bespokeBlender": true
   },
   {

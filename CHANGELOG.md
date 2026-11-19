@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.0 — Find your way around Oakfield
+
+- In full screen, tap **Find** to search rooms and fittings by name or drawing reference. **Put meter away** brings back the site after a measurement.
+- Walk between the two doorsteps along the side passage. Each new call at the hall chime has a caption and a short sound you can mute. Open the bell push on the workbench to see its fixing holes and individual wire ends.
+- Measure both door buttons in **Check both doorbell buttons**, or trace the broken back call in **The back doorbell is quiet**. Fit the loose wire and retest the repair.
+
 ## 1.18.0 — Walk and repair on a phone
 
 - Tap **Walk** to use the whole phone screen. Tap an arrow to take a short step or hold it to keep walking. In **Tools**, turn on **One-thumb walking** to steer with the same pad.

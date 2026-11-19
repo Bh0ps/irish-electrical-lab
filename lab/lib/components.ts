@@ -332,6 +332,7 @@ const xf100sDefinition:ComponentDefinition={
 const sesameDefinition:ComponentDefinition={
   ...COMPONENTS.pushbutton,
   name:'Two-wire bell push',
+  description:'This unlit Friedland D814 button joins two wires while it is pressed. Top screw and Bottom screw describe their positions on the back. Either wire can use either screw.',
   terminals:getComponentTerminals({type:'pushbutton',variant:'sesame',label:'',params:{}},COMPONENTS.pushbutton),
 };
 const cromaDefinition:ComponentDefinition={
@@ -382,7 +383,7 @@ const variantPurpose: Record<string, string> = {
   'led:series-module': 'These LEDs are wired one after the other. The same current flows through every module in a complete string.',
   'terminal:comb-busbar': 'The metal teeth are joined inside the insulated strip. It carries the same feed to each breaker clipped onto it.',
   'terminal:lever-connector': 'Lift a lever to open that clamp. The wire entries share one metal link inside the connector.',
-  'pushbutton:sesame': 'Hold the button to ring the bell. Let go and the two contacts spring apart. The two screw terminals on the back are interchangeable.',
+  'pushbutton:sesame':sesameDefinition.description,
   'pushbutton:bell-push': 'Press the button to join COM to NO. Let go and the spring opens the contact again.',
 };
 

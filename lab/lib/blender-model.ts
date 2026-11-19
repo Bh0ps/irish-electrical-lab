@@ -146,6 +146,10 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
   for(const shield of presentation.shields)shield.visible=view==='normal'&&!component.params.frontOff;
   for(const cover of presentation.covers){
     cover.node.position.copy(cover.position);cover.node.quaternion.copy(cover.quaternion);
+    if(cover.node.userData.sesameClipOff){
+      if(view==='open'||view==='exploded')cover.node.position.add(sourceVector([view==='open'?.55:.68,0,.38]));
+      continue;
+    }
     if(cover.node.userData.plxeLiftOff){
       if(view==='open'||view==='exploded')cover.node.position.add(sourceVector([view==='open'?1.56:1.72,.12,.17]));
       continue;

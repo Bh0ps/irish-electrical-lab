@@ -1,5 +1,19 @@
 # Verification summary
 
+## 1.19.0 — Find your way around Oakfield
+
+**Phone controls.** In touch Chromium and Windows WebKit the full-screen site occupied 390 × 794 pixels on a 390 × 844 portrait viewport and 844 × 340 in landscape. We searched for a fitting, zoomed in, walked, steered with one thumb and returned to the same viewpoint after opening the drawing. At 150% text, the site meter controls remained visible and at least 44 pixels tall on 320 × 844 and 844 × 390 screens. Putting the meter away restored the camera position and angle. Reopening it preserved the two probe locations.
+
+**Walk and repair.** From the side passage we walked to the back door, rang it and went indoors. Both fitted push buttons operated from the 3D view. On the healthy job, the front call measured about 12 V while held and 0 V when released. The permanent feed and the separately held rear call each measured about 12 V. In the fault job the held back push still supplied 12 V, while C2 at the chime measured 0 V. The exercise rejected the wrong wire and screw, accepted the isolated repair at C2 and required a fresh test. The keyboard walkthrough, an earlier four-terminal bookmark and touch input all passed.
+
+**Chime and model.** Crossing the call wires triggered the input actually connected. Opening the call wire or losing the chime supply produced no tone. Chrome scheduled the two original study tones once per new call, with no extra notes while held, muted or reloading. The Windows WebKit build has no Web Audio output and showed the same captions. Both D814 detail levels preserved the two endpoints and the independent rear wire ends. Browser tests operated the push in Economy with the full model unavailable. The geometry is an original study model. [Friedland fitting sheet](https://www.tlc-direct.co.uk/Technical/DataSheets/Friedland/P814.pdf) · [Grothe chime instructions](https://www.grothe.de/media/a8/32/9a/1669388291/iba_croma100a_43170-mv003000_2021-08-10.pdf).
+
+**Offline and regressions.** A fresh WebKit profile verified 259 files (50,046,276 bytes). After its server shut down, the lab opened an unvisited bell fitting in Economy, completed eight job steps, recorded four measurements, handled two wrong readings and reopened the saved result. The run observed zero external HTTP requests and zero renderer errors. TypeScript and 469 automated checks passed. All 80 lesson scenarios, 80 fault targets, 2,485 mapped activities, 115 model variants and 1,119 routed wires passed their respective audits.
+
+**Windows replacement and performance.** The installed 1.18.0 → 1.19.0 upgrade preserved the digest of a disposable profile's saved builds, draft, preferences and progress. Both shortcuts, restart, 80 worker circuits and 120 guided checks passed without an external request. The native driver logged one graphics warning. In desktop Chromium on this PC's RTX 5070 Ti, a 30-component, 42-wire bench rendered a camera pan in 4.0 ms median and 4.5 ms at the 95th percentile. The median solve took 4.2 ms and the median round trip took 15.6 ms. Three idle seconds produced zero frames and zero worker requests.
+
+The mobile checks used Windows browser emulation. Physical iPhone and Home Screen testing, speaker output on a handset and feedback from learners or a qualified electrician remain outstanding.
+
 ## 1.18.0 — Walk and repair on a phone
 
 **Walking.** At 390 × 844 in touch Chromium and at 320 × 844 and 844 × 390 in Windows WebKit, tapping Walk opened the full viewport below a 50 px controls bar. A quick arrow tap moved the camera 0.25 m. With one-thumb walking enabled, a side tap turned it 15° in place. The drawing opened and returned to the same position and heading. We checked zoom, exit, reopening and the saved steering preference. In Chromium we also held the pad to walk and cancelled a touch. Lifting the thumb stopped movement.

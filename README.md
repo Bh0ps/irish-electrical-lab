@@ -11,7 +11,7 @@ open source under the [MIT license](LICENSE).
 ## What you can do
 
 - Start with **One switch, one light**. Follow nine chapters covering 80 configurations, or jump straight to a chapter practical. If you’re unsure of an answer, choose **Help** for something to check on that circuit. The full exercises are under lesson details.
-- Open **Chapters → Jobs at Oakfield house** for a short job. Try the stair switches, check a cupboard light, find the lighting breaker or ring the bell from both doors. Read the voltage at each fitting as you go.
+- Open **Chapters → Jobs at Oakfield house** for a short job. Try the stair switches, check a cupboard light, find the lighting breaker or ring the bell from both doors. Take the side passage to the back door, or use **Find** to reach a fitting by name on your phone. Try **The back doorbell is quiet** to trace and repair a call that doesn't reach the chime.
 - Try six **Quick practice** experiments with a prediction, a real control action,
   and a comparison of live simulated readings.
 - Walk through domestic, shop and industrial installations. Select a device by its drawing reference, follow a wire between terminals, or open it on the workbench.

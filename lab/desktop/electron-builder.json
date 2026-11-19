@@ -15,7 +15,7 @@
     { "from": "desktop/assets/THIRD_PARTY_DEPENDENCIES.txt", "to": "licenses/THIRD_PARTY_DEPENDENCIES.txt" },
     { "from": "../docs/usage.md", "to": "guides/usage.md" },
     { "from": "../docs/iphone.md", "to": "guides/iphone.md" },
-    { "from": "../docs/images", "to": "guides/images", "filter": ["iphone-one-thumb.png", "iphone-site-walk.png", "kitchen-heater-repair.png"] },
+    { "from": "../docs/images", "to": "guides/images", "filter": ["iphone-one-thumb.png", "iphone-site-walk.png", "kitchen-heater-repair.png", "oakfield-front-door.png"] },
     { "from": "examples/industrial-plant", "to": "examples/industrial-plant", "filter": ["*.json", "README.md"] }
   ],
   "asar": true,

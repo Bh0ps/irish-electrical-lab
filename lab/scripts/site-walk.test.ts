@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import {getLesson} from '../lib/lessons';
 import {jobSite} from '../lib/job-site';
 import {homeRoomAt,STAIR_EYE,STAIR_TOP} from '../lib/home-floorplan';
-import {fittingZoom,SiteWalkInput,standingView,walkStick} from '../lib/site-walk';
+import {fittingZoom,SiteWalkInput,standingView,walkStick,withinDoorbellReach} from '../lib/site-walk';
+
+test('a visitor can press a doorbell at the door, or approach it from across the path',()=>{
+  assert.equal(withinDoorbellReach([1,1.56,3.43],[1,1.17,2.893]),true);
+  assert.equal(withinDoorbellReach([1,1.56,4.6],[1,1.17,2.893]),false);
+  assert.equal(withinDoorbellReach(undefined,[1,1.17,2.893]),false);
+});
 
 test('a close-up can be enlarged and reset with one tap or pinched within its lens limits',()=>{
   const rig=new SiteWalkInput();rig.setZoom(2);

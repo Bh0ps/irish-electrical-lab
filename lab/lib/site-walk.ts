@@ -1,8 +1,14 @@
-import {homeVisit, isStairStation, STAIR_EYE, STAIR_LANDING} from './home-floorplan';
+import {homeVisit, isDoorstep,isStairStation, STAIR_EYE, STAIR_LANDING} from './home-floorplan';
 import {serviceVisit} from './service-floorplan';
 import type {JobSite, SiteItem} from './job-site';
 import type {SitePose} from './site-camera';
 import {fittedHeaterView} from './fused-heater-site';
+import type {Vec3} from './types';
+
+/** A tap on the cap from the doorstep rings it. Farther away, the first tap takes a closer look. */
+export function withinDoorbellReach(eye:Vec3|undefined,cap:Vec3){
+  return !!eye&&Math.hypot(eye[0]-cap[0],eye[1]-cap[1],eye[2]-cap[2])<=.85;
+}
 
 /** Enter from standing space in the same room. A fitting close-up can sit over a sink or behind a board. */
 export function standingView(site:JobSite,item?:SiteItem,aspect=1):SitePose {
@@ -10,7 +16,8 @@ export function standingView(site:JobSite,item?:SiteItem,aspect=1):SitePose {
   const room=item?.room??site.room;
   const heater=site.items.find(i=>i.fixture?.panelHeater);
   if(room===0&&heater?.room===room)return fittedHeaterView(heater,'walk',aspect);
-  const visit=(site.kind==='home'?homeVisit(room,stair):serviceVisit(site,room))??{position:[0,STAIR_EYE,1.6] as [number,number,number],yaw:0,pitch:0};
+  const visit=(site.kind==='home'?homeVisit(room,stair,site.doorsteps,aspect):serviceVisit(site,room))??{position:[0,STAIR_EYE,1.6] as [number,number,number],yaw:0,pitch:0};
+  if(site.doorsteps&&isDoorstep(room))return visit;
   if(!item)return visit;
   if(stair&&isStairStation(item.id)&&room===STAIR_LANDING.id)return visit;
   const [x,y,z]=visit.position,dx=item.position[0]-x,dz=item.position[2]-z;
