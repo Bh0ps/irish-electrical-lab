@@ -34,6 +34,8 @@ export interface EquipmentProps {
   authoring?: boolean;
   /** The reed and magnet are separate pieces of the installed door contact. */
   contactPiece?: 'reed' | 'magnet';
+  /** Space-separated IDs of the blades that have a push-on lead attached. */
+  connectedTerminals?:string;
   onModelAvailability?: (id:string,unavailable:boolean) => void;
   animate?: boolean;
 }

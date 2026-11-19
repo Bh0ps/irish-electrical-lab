@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.13.0 — One worktop stays dark
+
+- Find a broken wire at Oakfield house. Check the dark strip, leave one probe in place and check the switch. The job uses the readings you actually take and saves your place through the repair and retest.
+- The kitchen has two DC-rated RG1 rockers. Inspect the rear tabs, crimp connections and moulded terminal numbers. The room, wiring picker and meter use the same contacts. Earlier saved circuits keep the markings on their own switches.
+- Fault practice shows one task at a time. A new test checks the repair before the app records completion.
+- Operating steps use the names on the job. In the stairs lesson, “Flip the landing switch” replaces the extra instruction about moving a switch to its second position. Heating, motors and extra-low-voltage jobs keep the exact settings needed for their checks.
+
 ## 1.12.0 — After the light goes out
 
 - A sixth Oakfield house job lets you try a bathroom extractor, its light switch and its three-pole isolator. The light works with the fan isolator off. The external timer gives the fan five seconds of run-on for practice.

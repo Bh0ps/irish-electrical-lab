@@ -26,6 +26,17 @@ test('operating and measuring report the fresh lamp reading in everyday feedback
   assert.match(answer.explanation,/recorded 2[23]\d(?:\.\d+)? V from L to N on Hall light/);
   assert.equal(evaluateActivity(measure,{...doc,revision:doc.revision+1},result,[sample]).status,'not-run');
 });
+test('operating prompts use the action on the bench and retain the setting the learner needs',()=>{
+  const action=(id:number,index:number)=>getLessonActivities(lesson(id)).find(a=>a.id===`lesson:${id}:operate:sequence:${index}`)!;
+  const landing=action(9,2);
+  assert.equal(landing.instruction,landing.title+'.');
+  assert.match(landing.instruction,/landing switch/i);
+  assert.match(action(31,1).instruction,/40 °C/);
+  assert.match(action(66,1).instruction,/left switch back on and the right switch off/i);
+  assert.match(action(76,0).instruction,/control on.*selector to Open/);
+  assert.match(action(42,1).instruction,/Switch off all supplies.*LINK.*LINK.*back on/);
+  assert.match(action(48,0).instruction,/mains.*backup/i);
+});
 test('motor directions name the right belt or station and meter steps name a fitting once',()=>{
   for(const [id,placeA,placeB] of [[60,'station A','station B'],[61,'receiving belt','feed belt']] as const){
     const course=lesson(id),steps=getLessonActivities(course);

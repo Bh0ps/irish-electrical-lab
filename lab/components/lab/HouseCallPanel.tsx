@@ -1,3 +1,4 @@
+import { worktopFaultTitle } from '../../lib/fault-practice';
 import { useEffect,useLayoutEffect,useMemo,useRef,useState, type MouseEvent, type ReactNode } from 'react';
 import { Button } from '../ui/button';
 import MeterHistory from './MeterHistory';
@@ -10,7 +11,7 @@ interface Props {
   call:HouseCall; document:CircuitDocument; result?:SimulationResult; operation?:CallOperation; sample?:CallSample; openMeter:()=>void; meterHistory?:MeasurementEvidence[];
   start?:string; onActivity:(activity:LessonActivity)=>void; onCredit:(id:string,next:string)=>Promise<void>;
   operate:(id:string)=>void; locate:(id:string)=>void; restart:()=>void; choose:()=>void; undo:()=>void;
-  nextJob?:{ title:string; open:()=>void }; startFault:()=>void;
+  worktopFault?:()=>void; nextJob?:{ title:string; open:()=>void }; startFault:()=>void;
 }
 export function HouseCallPanel(props:Props){
   const {call,document:doc,result,operation,onActivity,onCredit}=props;
@@ -170,8 +171,8 @@ export function HouseCallPanel(props:Props){
           {hint&&<p id="call-board-feedback" className="task-feedback attention" role="status">{hint}</p>}</div>;
       })}</div>:<Button className="primary-button full" aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,step.target)}>{step.label}</Button>}
       <div className="task-support-actions">{step.waitForFan&&confirmable&&<Button variant="ghost" onClick={e=>operateFromButton(e,'light-switch')}>Watch it again</Button>}<Button variant="ghost" onClick={()=>props.locate(call.breakers?'course-enclosure':step.target)}>{call.breakers?'Show the board':'Show me where'}</Button></div>
-      <details className="lesson-more-detail"><summary>Help</summary><p>{bathroom?'The wall switch controls the light and starts the timer. The fan isolator switches off the timer and the fan, so you can still use the light.':step.measure?'Find the two copper pads at the end of the strip. Put a probe on each one, or choose the strip and its + and − pads by name. Then choose Record reading.':worktops?'Use the switch named above, or find it in the equipment list. Look at which strip goes dark.':call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button></details>
-    </>:<><Button className="primary-button full" onClick={props.nextJob?.open??props.startFault}>{props.nextJob?'Next job · '+props.nextJob.title:'Try a fault on this circuit'}</Button><Button variant="ghost" onClick={props.choose}>Choose another job</Button></>}
+      <details className="lesson-more-detail"><summary>Help</summary><p>{bathroom?'The wall switch controls the light and starts the timer. The fan isolator switches off the timer and the fan, so you can still use the light.':step.measure?'Find the two copper pads at the end of the strip. Put a probe on each one, or choose the strip and its + and − pads by name. Then choose Record reading.':worktops?'Use the switch named above, or find it in the equipment list. Look at which strip goes dark.':call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button>{props.worktopFault&&<Button variant="ghost" onClick={props.worktopFault}>{worktopFaultTitle}</Button>}</details>
+    </>:<><Button className="primary-button full" onClick={props.nextJob?.open??props.startFault}>{props.nextJob?'Next job · '+props.nextJob.title:'Try a fault on this circuit'}</Button>{props.worktopFault&&<Button variant="outline" onClick={props.worktopFault}>{worktopFaultTitle}</Button>}<Button variant="ghost" onClick={props.choose}>Choose another job</Button></>}
     </>}
   </section>;
   function voltageReadings(){

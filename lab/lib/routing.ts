@@ -5,6 +5,7 @@ import { isBoard, mountVector, dinBodyWidth, boardSidePanels } from './board-ass
 import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types.ts';
 import { cableCores } from './cables.ts';
 import { cableFace, cableProfile, coreSeat, type CableFace } from './cable-form.ts';
+import {rockerProbeApproach,rockerProbeContact,rockerSleeveEndZ} from './dc-rocker';
 
 // Shared with the renderer: selection changes colour, never the cable diameter.
 export const WIRE_RADIUS = .018;
@@ -57,11 +58,24 @@ export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
   return rotateDirection(c?.rotation??0,c?mountVector(c,axis):axis);
 }
 
+export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;normal:Vec3} {
+  const c=doc.components.find(item=>item.id===e.component);
+  if(c?.type==='switch'&&c.variant==='dc-rocker'&&['COM','OUT'].includes(e.terminal))
+    return {position:localToWorld(c,rockerProbeContact(e.terminal)),normal:rotateDirection(c.rotation,rockerProbeApproach)};
+  return {position:terminalPosition(doc,e),normal:terminalDirection(doc,e)};
+}
+
 /** Installed lead dress between an enclosed fan clamp and its rear cable inlet.
  * Local positions are in 100 mm units, measured against the XF100S study mesh.
  * Keep the shafts parallel as they share the 17 × 11 mm hole in the backplate.
  */
 function terminalPassage(c:ComponentInstance|undefined,anchor:Vec3):Vec3[] {
+  if(c?.type==='switch'&&c.variant==='dc-rocker'){
+    const local=worldToLocal(c,anchor);
+    // The crimp grips the wire along the blade; keep the insulation straight
+    // through its barrel and past the sleeve before allowing the first bend.
+    return [anchor,localToWorld(c,[local[0],local[1],rockerSleeveEndZ-.075])];
+  }
   if(c?.type!=='fan'||c.variant!=='xf100s')return [anchor];
   const [x,y,z]=worldToLocal(c,anchor);
   return [anchor,...([[x,y-.033,z],[x,.950,.057],[x,.950,-.56]] as Vec3[]).map(p=>localToWorld(c,p))];
@@ -99,6 +113,9 @@ function obstaclesFor(doc:CircuitDocument):Obstacle[] {
     let max:Vec3=[def.size[0]/2,def.size[1]*1.05,def.size[2]/2].map((v,i)=>Math.max(v,...terminals.map(t=>t.anchor[i]+.015))) as Vec3;
     if(component.type==='fan'&&component.variant==='xf100s'){
       min=[-.815,.065,-.45];max=[.815,1.695,.30];
+    }
+    if(component.type==='switch'&&component.variant==='dc-rocker'){
+      min=[-.232,.052,-1.05];max=[.232,.908,.165];
     }
     const din=dinForm(component.type);
     if(din){

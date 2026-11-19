@@ -55,6 +55,7 @@ export interface AssetPresentation {
   benchStands:THREE.Object3D[];
   meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];pickingMaterial?:THREE.Material;cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   terminalBatches:THREE.Mesh[];
+  receptacles:{node:THREE.Object3D;terminal:string}[];
   motions:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;angle:number;current:number}[];
   owned:THREE.Material[];
   initialized:boolean;
@@ -70,11 +71,12 @@ export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:strin
 }
 /** Clone transforms and selectable identity while sharing immutable mesh data. */
 export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=false):AssetPresentation{
-  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],terminalBatches:[],motions:[],doors:[],shields:[],benchStands:[],probeDocks:[],owned:[],initialized:false,chamber:false};
+  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],terminalBatches:[],receptacles:[],motions:[],doors:[],shields:[],benchStands:[],probeDocks:[],owned:[],initialized:false,chamber:false};
   scene.userData.equipmentSource='Blender';
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
     const part=semanticOwner(node).part??'';
+    if(node.userData.matingBlade)presentation.receptacles.push({node,terminal:String(node.userData.matingBlade)});
     if(node.userData.probeSide)presentation.probeDocks.push({node,red:node.userData.probeSide==='red'});
     if(node.userData.boardDoor)presentation.doors.push({node,rest:node.quaternion.clone()});
     if(node.userData.benchOnly)presentation.benchStands.push(node);
@@ -89,7 +91,7 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
     for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.serviceChamber){entry.serviceChamber=true;presentation.chamber=true;break;}
     for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.conceptualInternal){entry.conceptualInternal=true;break;}
     let constructionDetail=false;for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.detailId){constructionDetail=true;break;}
-    if(part==='body'&&!constructionDetail||node.userData.inspectionHousing){
+    if(part==='body'&&(!constructionDetail||componentVariant==='dc-rocker')||node.userData.inspectionHousing){
       const cutaway=new THREE.MeshStandardMaterial({color:'#97bcb1',transparent:true,opacity:.14,depthWrite:false,roughness:.5,metalness:.04});entry.cutaway=cutaway;presentation.owned.push(cutaway);
     }
     if(node.userData.lampEnvelope){
@@ -111,7 +113,7 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
     node.castShadow=castsEquipmentShadow(entry.material,!!entry.lampOutput,!!node.userData.lampEnvelope);
     presentation.meshes.push(entry);
   });
-  if(batchDistantTerminals)attachTerminalBatches(source,presentation);
+  if(batchDistantTerminals&&!presentation.receptacles.length)attachTerminalBatches(source,presentation);
   return presentation;
 }
 export function closedForPresentation(component:ComponentInstance,state?:DeviceState):boolean{
@@ -121,9 +123,10 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
   if(component.type==='dimmer')return component.params.closed!==false;
   return state?.closed??component.params.closed!==false;
 }
-export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet'):void{
+export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet',connectedTerminals=''):void{
   const batch=view==='normal'&&!contactPiece;
   for(const mesh of presentation.terminalBatches)mesh.visible=batch;
+  for(const clip of presentation.receptacles)clip.node.visible=connectedTerminals.split(' ').includes(clip.terminal);
   for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
   for(const door of presentation.doors)door.node.quaternion.copy(door.rest).multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),component.params.doorOpen!==false||view!=='normal'?-1.69:0));
   for(const stand of presentation.benchStands)stand.visible=!component.mount&&view==='normal';

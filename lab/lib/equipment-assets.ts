@@ -7,6 +7,7 @@ import { workshopKey } from './workshop-variants';
 
 /** One key is shared by the authoring inventory and the offline asset loader. */
 export function equipmentAssetKey(component: ComponentInstance, def: ComponentDefinition): string {
+  if(component.type==='switch'&&component.variant==='dc-rocker')return 'switch:dc-rocker';
   if(component.type==='isolator3'&&component.variant==='fan-isolator')return 'isolator3:fan-isolator';
   const specific=workshopKey(component);if(specific)return specific;
   const name=equipmentVariant(component,def), modes:string[]=[];

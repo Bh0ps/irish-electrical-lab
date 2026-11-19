@@ -294,7 +294,7 @@ const physicalForms:Record<string,{id:string;name:string}[]>={
   fan:[{id:'xf100s',name:'100 mm bathroom extractor'}],
   pwmcontrol:[{id:'single-channel',name:'Single-channel PWM'},{id:'tunable-white',name:'Warm / cool controller'}],
   led:[{id:'strip',name:'Constant-voltage strip'},{id:'series-module',name:'Series downlight module'}],
-  switch:[{id:'door-contact',name:'Door-operated contact'}],selector:[{id:'float-changeover',name:'Changeover float switch'}],
+  switch:[{id:'door-contact',name:'Door-operated contact'},{id:'dc-rocker',name:'DC panel rocker for cabinet lights'}],selector:[{id:'float-changeover',name:'Changeover float switch'}],
   isolator3:[{id:'fan-isolator',name:'Three-pole fan isolator'}],
   pushbutton:[{id:'sesame',name:'Two-wire bell push'},{id:'bell-push',name:'Three-contact push'}], driver:[{id:'constant-current',name:'350 mA driver'}],
   terminal:[{id:'lever-connector',name:'Lever connector'},{id:'comb-busbar',name:'Insulated single-phase comb'}], fuse:[{id:'dc-fuse',name:'DC branch carrier'}],
@@ -306,6 +306,14 @@ const physicalForms:Record<string,{id:string;name:string}[]>={
 };
 for(const def of defs)if(physicalForms[def.type])def.variants=physicalForms[def.type];
 export const COMPONENTS: Record<string,ComponentDefinition> = Object.fromEntries(defs.map(d=>[d.type,d]));
+const dcRockerDefinition:ComponentDefinition={
+  ...COMPONENTS.switch,name:'DC panel rocker for cabinet lights',size:[.463,.92,1.95],
+  description:'This small rocker clips into a panel. It joins the two metal blades behind it to switch the positive wire to one worktop strip.',
+  abstraction:'The fitting follows the RG1-1A-DC-1-B. Its contacts are rated 10 A at 28 V DC. The lab illustrates the hidden moving contact and the push-on wire ends.',
+  parts:COMPONENTS.switch.parts.map(part=>part.id==='terminals'?{...part,name:'Blades 2 and 1',purpose:'Each wire has a push-on end that grips one metal blade. The uninsulated metal at the base of the blade is a probe point.'}
+    :part.id==='cover'?{...part,name:'Bezel',purpose:'The rim around the small rocker rests against the front of the panel.'}:part),
+  terminals:getComponentTerminals({type:'switch',variant:'dc-rocker',label:'',params:{}},COMPONENTS.switch),
+};
 const xf100sDefinition:ComponentDefinition={
   ...COMPONENTS.fan,name:'100 mm bathroom extractor',size:[1.63,1.695,.75],
   defaults:{watts:15,nominalVoltage:230,classII:true},
@@ -324,6 +332,7 @@ const fanIsolatorDefinition:ComponentDefinition={
 };
 /** Named fittings can have their own terminal groups and mounting envelope. */
 export function definitionFor(item:Pick<ComponentInstance,'type'|'variant'>):ComponentDefinition {
+  if(item.type==='switch'&&item.variant==='dc-rocker')return dcRockerDefinition;
   if(item.type==='fan'&&item.variant==='xf100s')return xf100sDefinition;
   if(item.type==='isolator3'&&item.variant==='fan-isolator')return fanIsolatorDefinition;
   return item.type==='pushbutton'&&item.variant==='sesame'?sesameDefinition:COMPONENTS[item.type];
@@ -333,6 +342,7 @@ export const COMPONENT_LIST = defs;
 export const getComponent = (type:string) => COMPONENTS[type];
 
 const variantPurpose: Record<string, string> = {
+  'switch:dc-rocker':dcRockerDefinition.description,
   'fan:xf100s':'Air comes in through the front grille and leaves through the round duct at the back. Under the cover are two motor connections, L and N. This double-insulated fan has no earth terminal. In the bathroom job a separate timer keeps it running.',
   'isolator3:fan-isolator': fanIsolatorDefinition.description,
   'switch:door-contact': 'The door moves this switch. Try opening and closing the door and watch what happens to the circuit.',

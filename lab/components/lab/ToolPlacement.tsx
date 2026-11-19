@@ -2,7 +2,7 @@ import { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import type { CircuitDocument, Endpoint, Vec3 } from '../../lib/types';
 import { sceneBounds } from '../../lib/workbench-presentation';
-import { terminalPosition, terminalDirection, type CircuitRoutes } from '../../lib/routing';
+import { probeContact, type CircuitRoutes } from '../../lib/routing';
 import type { WorkshopVisual } from '../../lib/termination-practice';
 
 const up=new THREE.Vector3(0,1,0);
@@ -50,8 +50,9 @@ function Link({a,b,r,c,metal=false}:{a:THREE.Vector3;b:THREE.Vector3;r:number;c:
 }
 export function TestLead({doc,endpoint,origin,rotation,negative}:{doc:CircuitDocument;endpoint:Endpoint;origin:THREE.Vector3;rotation:THREE.Quaternion;negative:boolean}){
   const shape=useMemo(()=>{
-    const tip=new THREE.Vector3(...terminalPosition(doc,endpoint));
-    const normal=new THREE.Vector3(...terminalDirection(doc,endpoint)).normalize();
+    const contact=probeContact(doc,endpoint);
+    const tip=new THREE.Vector3(...contact.position);
+    const normal=new THREE.Vector3(...contact.normal).normalize();
     const shaft=tip.clone().addScaledVector(normal,.08),grip=tip.clone().addScaledVector(normal,.33);
     const outlet=new THREE.Vector3(negative?.062:-.062,.017,0).applyQuaternion(rotation).add(origin);
     const slack=outlet.clone().lerp(grip,.48);slack.y=Math.max(.07,slack.y-.3);slack.z+=negative?.22:.48;

@@ -1,3 +1,4 @@
+import { worktopFaultTitle } from '../../lib/fault-practice';
 import { useState, useMemo } from 'react';
 import { Bookmark, Check, ChevronRight, Search, X } from 'lucide-react';
 import { CHAPTERS, completedCoursebookLesson, courseMatchesQuery, courseTitle, matchesStudyQuery } from '../../lib/coursebook';
@@ -16,7 +17,8 @@ export function BookHome({ resume, start, index }: { resume?: string; start: () 
   </section>;
 }
 
-export function BookIndex({ open, practice, quick, currentLessonId, resumeCurrent, houseCall, progress, showJobs, resumeJobId }: {
+export function BookIndex({ open, practice, quick, currentLessonId, resumeCurrent, houseCall, progress, showJobs, resumeJobId, worktopFault, savedWorktopFault }: {
+  worktopFault:()=>void; savedWorktopFault:boolean;
   open: (lessonId: number, practical: boolean) => void; practice: () => void; quick: string;
   houseCall: (lessonId:number)=>void; progress: StudyProgress; showJobs?:boolean; resumeJobId?:number;
   currentLessonId?: number; resumeCurrent?: () => void;
@@ -26,15 +28,17 @@ export function BookIndex({ open, practice, quick, currentLessonId, resumeCurren
   const searching = Boolean(search.trim());
   const matches = LESSONS.filter(lesson => courseMatchesQuery(lesson, search));
   const jobs = HOUSE_CALLS.filter(job=>matchesStudyQuery(['Jobs at Oakfield house',job.title,job.request,...job.steps.map(step=>step.instruction)].join(' '),search));
+  const kitchen=matchesStudyQuery('Kitchen fault finding at Oakfield house '+worktopFaultTitle+' right worktop strip switch meter',search);
+  const jobCount=jobs.length+(kitchen?1:0);
   return <div className="book-index">
-    <label className="book-search"><Search size={17} aria-hidden="true"/><input aria-label="Search configurations" type="search" value={search}
-      placeholder="Search by name or what it does" onChange={event => setSearch(event.target.value)}/></label>
-    <p className="sr-only" role="status">{searching ? `${jobs.length} ${jobs.length===1?'job':'jobs'} and ${matches.length} ${matches.length === 1 ? 'lesson' : 'lessons'} found` : ''}</p>
-    {jobs.length>0 && <details key={searching?'jobs-found':'jobs'} open={searching||showJobs||undefined}>
-      <summary>Jobs at Oakfield house<small>{jobs.length} {jobs.length===1?'job':'short jobs'}</small></summary>
+    <label className="book-search"><Search size={17} aria-hidden="true"/><input aria-label="Search lessons and jobs" type="search" value={search}
+      placeholder="Search lessons and jobs" onChange={event => setSearch(event.target.value)}/></label>
+    <p className="sr-only" role="status">{searching ? `${jobCount} ${jobCount===1?'job':'jobs'} and ${matches.length} ${matches.length === 1 ? 'lesson' : 'lessons'} found` : ''}</p>
+    {jobCount>0 && <details key={searching?'jobs-found':'jobs'} open={searching||showJobs||undefined}>
+      <summary>Jobs at Oakfield house<small>{jobCount} {jobCount===1?'job':'short jobs'}</small></summary>
       <div className="chapter-rows">{jobs.map(job=><button type="button" key={job.lesson} onClick={()=>job.lesson===resumeJobId&&resumeCurrent?resumeCurrent():houseCall(job.lesson)}>
         <span>{job.title}{resumeJobId===job.lesson&&<small className="book-saved-place"><Bookmark size={12} aria-hidden="true"/>Saved place</small>}{resumeJobId!==job.lesson&&progress.learning[job.lesson]?.activityIds.includes(callActivityId(job.lesson,job.steps.length-1))&&<small className="book-saved-place">Completed</small>}</span><ChevronRight size={16} aria-hidden="true"/>
-      </button>)}</div>
+      </button>)}{kitchen&&<button type="button" onClick={worktopFault}><span>{worktopFaultTitle}<small>{savedWorktopFault?'Saved place':progress.learning[66]?.activityIds.includes('lesson:66:fault:worktop')?'Completed':'Fault practice'}</small></span><ChevronRight size={16} aria-hidden="true"/></button>}</div>
     </details>}
     {CHAPTERS.map(chapter => {
       const lessons = chapter.lessons.map(id => matches.find(lesson => lesson.id === id)).filter(lesson => !!lesson);
@@ -50,7 +54,7 @@ export function BookIndex({ open, practice, quick, currentLessonId, resumeCurren
             <span>Try the chapter practical<small>{courseTitle(practical)} · wire the complete circuit</small></span><ChevronRight size={16} aria-hidden="true"/></button>}
         </div></details>;
     })}
-    {!jobs.length && !matches.length && <div className="book-empty"><p>No matches. Try “light”, “switch” or “motor”.</p>
+    {!jobCount && !matches.length && <div className="book-empty"><p>No matches. Try “light”, “switch” or “motor”.</p>
       <button className="book-link" onClick={event => { setSearch(''); event.currentTarget.closest('.book-index')?.querySelector('input')?.focus(); }}><X size={14} aria-hidden="true"/>Clear search</button></div>}
     {!searching && <button className="book-link" onClick={practice}>Quick practice · {quick}</button>}
   </div>;

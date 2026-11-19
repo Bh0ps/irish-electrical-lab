@@ -66,7 +66,7 @@ async function runGalleryDiagnostics({ window, output, fixtures, directory:appDi
     }
     await window.loadURL(ORIGIN + '/');
     await js(`(${rendererHarness.toString()})()`);
-    await js(`window.__labVerify.until(()=>window.__labVerify.control('Courses'),'chapter index')`);
+    await js(`window.__labVerify.until(()=>window.__labVerify.control('Chapters'),'chapter index')`);
     await js(`window.__galleryScene=()=>new Promise(resolve=>{const handler=e=>{clearTimeout(timer);resolve(e.detail);};const timer=setTimeout(()=>{window.removeEventListener('electrical-lab-scene',handler);resolve(null);},1000);window.addEventListener('electrical-lab-scene',handler,{once:true});window.dispatchEvent(new Event('electrical-lab-scene-request'));});true;`);
     for (const fixture of fixtures) {
       const selected = await js(`(async()=>{const v=window.__labVerify;await v.openCourse(${fixture.id},${JSON.stringify(fixture.title)});await v.sleep(150);const discard=v.control('Discard and continue');if(discard)discard.click();await v.until(()=>!document.querySelector('[role=dialog],[role=alertdialog]'),'course opened');return true;})()`);

@@ -70,7 +70,7 @@ export function assessBuild(document: CircuitDocument, result: SimulationResult,
   const current = result.revision === document.revision;
   const resolved=current && result.converged;
   checks.push({id:'solution',category:'model',status:resolved?'pass':'unresolved',title:'Voltage and current',
-    explanation:!current?'The wiring changed during the test. Test it again.':resolved?'The bench has a reading for this version of the circuit.':'The bench could not calculate reliable readings for this wiring.'});
+    explanation:!current?'The wiring changed during the test. Test it again.':resolved?'The bench worked out the volts and amps for this wiring.':'The bench couldn’t get a steady reading.'});
   const freeBuild=!document.lessonId && !expected;
   const hasMains=document.components.some(c=>c.type==='source'||c.type==='source3');
   const localSupply=freeBuild && resolved && document.components.some(c=>['battery','pv'].includes(c.type) && (result.branchCurrents[c.id+'.dcSource'] || result.branchCurrents[c.id+'.backupSource']));

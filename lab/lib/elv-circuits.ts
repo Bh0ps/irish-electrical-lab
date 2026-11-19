@@ -33,7 +33,7 @@ export function wireElvLesson(b:Bench,id:number) {
       lamp('strip','Cupboard strip');link(['door','OUT'],['strip','L']);link(minus,['strip','N'],'DC-');break;
     case 66:
       for(const side of ['left','right']){
-        contact(side+'-switch',side+' worktop switch');lamp(side,side+' strip',2.5);
+        contact(side+'-switch',side+' worktop switch',plus,true,'dc-rocker');lamp(side,side+' strip',2.5);
         link([side+'-switch','OUT'],[side,'L']);link(minus,[side,'N'],'DC-');
       }break;
     case 67:

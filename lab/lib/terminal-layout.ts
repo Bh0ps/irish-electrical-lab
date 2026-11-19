@@ -1,4 +1,5 @@
 import { dinPort } from './din-devices.ts';
+import {rockerBladeY} from './dc-rocker';
 import type { ComponentDefinition, ComponentInstance, TerminalDefinition, Vec3 } from './types';
 
 /** Original workshop models use +Z for the operating face and +Y for up. */
@@ -17,6 +18,12 @@ export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'vari
 }
 
 export function getComponentTerminals(component: Pick<ComponentInstance, 'type' | 'label' | 'variant' | 'params'>, definition: ComponentDefinition): TerminalDefinition[] {
+  if(component.type==='switch'&&component.variant==='dc-rocker')return definition.terminals.map(t=>{
+    const middle=t.id==='COM';
+    return {...t,label:middle?'2':'1',role:'DC+',group:middle?'Centre blade · from driver':'Outer blade · to strip',
+      purpose:middle?'In this circuit the driver’s positive wire goes to blade 2. The rocker joins it to blade 1.':'Blade 1 carries the switched positive wire to the strip. The negative wire returns directly to the driver.',
+      anchor:[0,rockerBladeY(t.id),-.7725],entryDirection:[0,0,-1],scale:.55};
+  });
   if(component.type==='isolator3'&&component.variant==='fan-isolator'){
     // BG 815 rear elevation, in millimetres viewed from behind the plate. The
     // upper row faces the supply in BG's timer-fan diagram. Legacy terminal

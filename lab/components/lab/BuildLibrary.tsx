@@ -54,7 +54,7 @@ export default function BuildLibrary(props: LibraryProps) {
         </li>)}</ul>}
     </section>
     <details className="library-files"><summary>Files and backups</summary>
-      <p>Export circuit saves one circuit to a file. A full backup also keeps your other builds and lesson progress.</p>
+      <p>Choose Export circuit for this build. Choose Export full backup to take all your builds and lesson progress with you.</p>
       <div className="library-start">
         <Button variant="outline" onClick={props.onImport}><FileUp size={16}/>Import circuit</Button>
         <Button variant="outline" onClick={props.onExport}><FileDown size={16}/>Export circuit</Button>

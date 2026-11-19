@@ -4,7 +4,8 @@ import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
 import { fixturePoint,installedTerminalPoint, type FixturePose } from './site-fixtures';
-import {KITCHEN_LIGHTS as kitchen,stripLead} from './kitchen-lighting';
+import {KITCHEN_LIGHTS as kitchen,ROCKER_BOX,rockerLead,rockerPose,stripLead} from './kitchen-lighting';
+import {rockerWireEntry} from './dc-rocker';
 import {BATH_EXTRACT as bath} from './bathroom-extract';
 import { getComponentTerminals } from './terminal-layout';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types';
@@ -54,7 +55,8 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
 export function houseFixing(id:number,c:ComponentInstance){return c.mount?undefined:houseFixings[id]?.[c.id];}
 export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixture?:FixturePose):Vec3{
   let depth=COMPONENTS[c.type].size[2]*scale/2;
-  if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
+  if(fixture?.worktopRocker)depth=ROCKER_BOX.depth;
+  else if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
   else if(fixture?.extractor)depth=0;
   else if(fixture?.serviceBox)depth=fixture.serviceBox==='timer'?bath.timerOffset:bath.cpcOffset;
   else if(fixture?.flushPlate)depth=.0001;
@@ -66,7 +68,7 @@ export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixtur
 }
 
 interface InstalledEnd {pin:Vec3; chase:Vec3; riser:number; item:SiteItem; component:ComponentInstance;lead?:Vec3[]}
-export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEnd|undefined{
+export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openRocker?:string|ReadonlySet<string>):InstalledEnd|undefined{
   const component=doc.components.find(c=>c.id===end.component),item=site.items.find(c=>c.id===end.component);
   if(!component||!item)return;
   const terminal=getComponentTerminals(component,COMPONENTS[component.type]).find(t=>t.id===end.terminal);
@@ -84,6 +86,12 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):Inst
   // The rear wing and front rooms have separate routes in the ceiling void.
   const rearWing=item.room===REAR_GARDEN.id||(item.room>=4&&item.room<=7);
   const riser=site.kind==='home'&&rearWing?HOME_BACK-.04:service?service.back-.02:-2.87;
+  if(item.fixture?.worktopRocker){
+    const open=typeof openRocker==='string'?openRocker===item.id:!!openRocker?.has(item.id),pose=rockerPose(item.position,open);
+    const contact=fixturePoint(pose.position,item.scale,item.fixture,component,rockerWireEntry(terminal.id),pose.rotation);
+    const lead=rockerLead(item.position,contact,terminal.id,open);
+    return {pin:contact,chase:lead[lead.length-1],riser,item,component,lead};
+  }
   if(doc.lessonId===36&&item.fixture?.bellService){
     const x=serviceBoard.x+bath.outgoingOffset,top=serviceBoard.y+serviceBoard.breakerSize[1]/2,z=serviceBoard.z+serviceBoard.conduitZ;
     const lead:Vec3[]=[pin,[pin[0],pin[1],z],[x,pin[1],z],[x,top,z]];
@@ -124,8 +132,8 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):Inst
 const same=(a:Vec3,b:Vec3)=>a.every((v,k)=>Math.abs(v-b[k])<.000001);
 /** One selected, actually connected core. Routes show this house's example installation.
  * Cable lengths, diagram coordinates and off-site bench bends are independent. */
-export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):Vec3[]|undefined{
-  const a=installedEnd(doc,site,wire.from),b=installedEnd(doc,site,wire.to);
+export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire,openRocker?:string|ReadonlySet<string>):Vec3[]|undefined{
+  const a=installedEnd(doc,site,wire.from,openRocker),b=installedEnd(doc,site,wire.to,openRocker);
   if(!a||!b)return;
   const points:Vec3[]=[];
   function through(...corners:Vec3[]){for(const p of corners)if(!points.length||!same(points[points.length-1],p))points.push(p);}

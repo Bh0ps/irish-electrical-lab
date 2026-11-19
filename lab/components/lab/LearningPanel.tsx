@@ -16,6 +16,7 @@ import { electricalKey } from '../../lib/simulation-identity';
 import { describeEndpoint } from '../../lib/build-hints';
 
 interface Props {
+  onWorktopFault?:()=>void;
   lesson: ConfigurationLesson; document: CircuitDocument; result?: SimulationResult; selected?: string; selectedPart: string;
   record: LearningRecord; evidence: MeasurementEvidence[]; depth: 'foundation' | 'apprentice'; challengeStarted: boolean; mode: string;
   assessment?: BuildAssessment; diagnosisAccepted: boolean; challengeRepaired: boolean;
@@ -363,6 +364,7 @@ export default function LearningPanel(props: Props) {
           </button>)}
         </details>)}
       </details>}
+      {course&&(props.onWorktopFault?<Button variant="outline" onClick={props.onWorktopFault}>One worktop stays dark</Button>:<Button variant="outline" onClick={props.onChallenge}>Try a fault on this circuit</Button>)}
       {course && props.onFullExercises && <Button variant="outline" onClick={props.onFullExercises}>Open all six exercise stages</Button>}
       <details className="reference-notes"><summary>Lesson notes</summary>
         <p>{props.lesson.summary}</p><span className="context-tag">{props.lesson.tag}</span>

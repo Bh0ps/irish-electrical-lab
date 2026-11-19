@@ -10838,5 +10838,70 @@
     "bytes": 1424500,
     "lowBytes": 1048228,
     "bespokeBlender": true
+  },
+  {
+    "key": "switch_dc-rocker",
+    "galleryKey": "switch:dc-rocker",
+    "type": "switch",
+    "name": "left worktop switch",
+    "url": "/models/switch_dc-rocker.glb",
+    "lowUrl": "/models/switch_dc-rocker.low.glb",
+    "thumbnailUrl": "/models/thumbnails/switch_dc-rocker.png",
+    "detailRevision": 3,
+    "detailFamily": "switch",
+    "detailFeatures": [
+      "individual-electrical-terminations",
+      "rg-rocker",
+      "rg-clips",
+      "rg-base",
+      "rg-moving-contact",
+      "terminal-clamp:COM",
+      "terminal-clamp:OUT"
+    ],
+    "sourceMeshCount": 86,
+    "meshCount": 21,
+    "triangles": 46284,
+    "lowTriangles": 21666,
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "2",
+        "role": "DC+",
+        "purpose": "In this circuit the driver\u2019s positive wire goes to blade 2. The rocker joins it to blade 1.",
+        "anchor": [
+          0,
+          0.48,
+          -0.7725
+        ],
+        "group": "Centre blade \u00b7 from driver",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "1",
+        "role": "DC+",
+        "purpose": "Blade 1 carries the switched positive wire to the strip. The negative wire returns directly to the driver.",
+        "anchor": [
+          0,
+          0.7125,
+          -0.7725
+        ],
+        "group": "Outer blade \u00b7 to strip",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "bytes": 1474800,
+    "lowBytes": 661756,
+    "bespokeBlender": true
   }
 ]

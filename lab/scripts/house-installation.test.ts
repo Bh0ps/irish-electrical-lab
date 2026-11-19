@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
 import {BELL_CUPBOARD as b} from '../lib/bell-cupboard';
-import {KITCHEN_LIGHTS as kitchen,stripLead} from '../lib/kitchen-lighting';
+import {KITCHEN_LIGHTS as kitchen,stripLead,rockerPanelCentre,rockerPose,ROCKER_BOX} from '../lib/kitchen-lighting';
+import {rockerProbeContact,rockerWireEntry} from '../lib/dc-rocker';
+import {siteContacts,worktopTestPoints} from '../lib/site-meter';
 import {BATH_EXTRACT as bath,BATH_SHOWER,bathroomWireNote,outsideGrillePose} from '../lib/bathroom-extract';
 import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,REAR_GARDEN,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
-import {houseFixing,installedWireRoute} from '../lib/house-installation';
+import {houseFixing,installedEnd,installedWireRoute} from '../lib/house-installation';
 import {getComponentTerminals} from '../lib/terminal-layout';
 import {fixturePoint,installedTerminalPoint} from '../lib/site-fixtures';
 import {electricalKey} from '../lib/simulation-identity';
@@ -16,6 +18,33 @@ import type {Endpoint,Vec3} from '../lib/types';
 
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!.circuit;
 const near=(a:number,b:number)=>Math.abs(a-b)<1e-7;
+test('only the withdrawn worktop panel exposes its two real blade shoulders; flex follows the occupied crimp',()=>{
+  const doc=lesson(66),before=electricalKey(doc),site=jobSite(doc),fittings=worktopTestPoints(doc,site);
+  assert.deepEqual(fittings.map(f=>f.component.id).sort(),['left','left-switch','right','right-switch']);
+  const strip=fittings.find(f=>f.component.id==='right')!,rocker=fittings.find(f=>f.component.id==='right-switch')!;
+  const {item,component}=rocker,open=rockerPose(item.position,true),fixed=rockerPanelCentre(item.position,false);
+  assert.deepEqual(siteContacts(rocker,false),[]);
+  assert.deepEqual(siteContacts(strip,false),siteContacts(strip,true));
+  assert.ok(near(fixed[2]-kitchen.tileFace,ROCKER_BOX.depth));
+  assert.deepEqual([ROCKER_BOX.cutWidth,ROCKER_BOX.cutHeight,ROCKER_BOX.panel],[.013,.0276,.0015]);
+  for(const {endpoint,position} of siteContacts(rocker,true)){
+    const expected=fixturePoint(open.position,item.scale,item.fixture,component,rockerProbeContact(endpoint.terminal),open.rotation);
+    assert.deepEqual(position,expected);
+    const closed=installedEnd(doc,site,endpoint)!,drawn=installedEnd(doc,site,endpoint,item.id)!;
+    assert.deepEqual(drawn.pin,fixturePoint(open.position,item.scale,item.fixture,component,rockerWireEntry(endpoint.terminal),open.rotation));
+    assert.deepEqual(closed.chase,drawn.chase);
+    const length=(line:Vec3[])=>line.slice(1).reduce((total,p,i)=>total+Math.hypot(...p.map((n,k)=>n-line[i][k])),0);
+    assert.ok(Math.abs(length(closed.lead!)-length(drawn.lead!))<.015);
+    assert.ok(closed.pin[2]>kitchen.tileFace+.008&&closed.pin[2]<fixed[2]-.03);
+    assert.ok(position[2]>fixed[2]+.08&&Math.hypot(...position.map((p,i)=>p-drawn.pin[i]))>.018);
+    const connected=doc.wires.find(w=>[w.from,w.to].some(e=>e.component===item.id&&e.terminal===endpoint.terminal))!;
+    const out=installedWireRoute(doc,site,connected,item.id)!;
+    assert.deepEqual(connected.from.component===item.id?out[0]:out.at(-1),drawn.pin);
+  }
+  const legacy={...doc,components:doc.components.map(c=>c.type==='switch'?{...c,variant:undefined}:c)};
+  assert.ok(worktopTestPoints(legacy,jobSite(legacy)).every(f=>f.kind==='strip'));
+  assert.equal(electricalKey(doc),before);
+});
 test('bathroom fittings face their own rooms and both fan cores pass through the separate rear cable inlet',()=>{
   const doc=lesson(36),site=jobSite(doc),item=(id:string)=>site.items.find(i=>i.id===id)!;
   const part=(id:string)=>doc.components.find(c=>c.id===id)!;
@@ -135,7 +164,10 @@ test('installed runs follow the actual terminals, turn at fitted walls and remai
     for(const wire of doc.wires){
       const path=installedWireRoute(doc,site,wire)!;
       assert.deepEqual(path[0],anchor(wire.from));assert.deepEqual(path.at(-1),anchor(wire.to));
-      for(let i=1;i<path.length;i++)assert.equal(path[i].filter((v,k)=>!near(v,path[i-1][k])).length,1);
+      const [from,to]=[wire.from,wire.to].map(end=>installedEnd(doc,site,end)!);
+      const start=from.item.fixture?.worktopRocker?from.lead!.length:1;
+      const stop=to.item.fixture?.worktopRocker?path.length-to.lead!.length+1:path.length;
+      for(let i=start;i<stop;i++)assert.equal(path[i].filter((v,k)=>!near(v,path[i-1][k])).length,1);
     }
     assert.equal(electricalKey(doc),fingerprint);
   }

@@ -6,6 +6,8 @@ const REFERENCE_HOSTS = ['esbnetworks.ie', 'nsai.ie', 'safeelectric.ie', 'hsa.ie
   'api.grundfos.com', 'www.dimplex.co.uk', 'www.lapp.com', 'www.wago.com', 'www.knipex.com', 'led.meanwell.com', 'www.resideo.com', 'www.belimo.com', 'dam.aspenpumps.com', 'media.ifm.com', 'www.findernet.com', 'cdn.findernet.com', 'www.littelfuse.com', 'www.ledvance.com', 'resources.tridonic.com', 'mac3.it', 'web-assets.knipex.com', 'www.wiha.com', 'storage.electrika.com', 'www.assets.signify.com', 'www.vent-axia.com', 'www.beninca.com', 'www.fronius.com', 'cqr.co.uk', 'lightdream.com.au', 'shop.electrolux.ie', 'www.stiebel-eltron.co.uk', 'www.somfy.co.uk', 'ansell-lighting.com', 'www.timeguard.com', 'www.einhell.co.uk'];
 const MAX_JSON_BYTES = 32 * 1024 * 1024;
 const REFERENCE_FILES = new Set([
+  'https://www.switchcomp.com/switches/rocker-switch/RG1-1A-DC-1-B',
+  'https://www.switchcomp.com/switches-docs/rocker-switch/RG1-1A-DC-1-B.pdf',
   'https://www.tlc-direct.co.uk/Technical/DataSheets/Friedland/P814.pdf',
   'https://asset.eezybridge.com/nc/ba7b9546-29dd-40c4-87a7-885627281b87/077600.pdf',
   'https://res.cloudinary.com/lu1/fl_attachment:BG_IM_NXPSWIL_K/600854/Original.pdf',

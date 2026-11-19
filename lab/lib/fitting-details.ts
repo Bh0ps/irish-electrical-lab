@@ -28,6 +28,11 @@ const breaker:Feature[]=[
 ];
 const residualBreaker:Feature[]=[...breaker,['contact-indicator','contacts','Contact window','This little window shows whether the contacts are open or closed. It cannot tell you whether there is voltage at a terminal.','front']];
 const byModel:Record<string,Feature[]>={
+  'switch:dc-rocker':[
+    ['rg-rocker','actuator','Black rocker','Press one end to close the contact. Press the other to open it. The rocker stays where you leave it.','front'],
+    ['rg-clips','mounting','Panel clips','The ridged spring clips squeeze in as the switch enters the rectangular cutout, then hold the frame against the panel.'],
+    ['rg-base','body','Numbered base','Positions 1 and 2 have blades. Position 3 is moulded into the base but has no blade on this on/off switch.'],
+  ],
   'switch:single-rocker':rocker,'switch2:single-rocker':rocker,'intermediate:single-rocker':rocker,
   'switch:gang-module-left':rocker,'switch:gang-module-right':rocker,
   'led:strip':[

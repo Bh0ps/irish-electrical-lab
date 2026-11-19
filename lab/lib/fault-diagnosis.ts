@@ -1,8 +1,9 @@
 import { definitionFor } from './components.ts';
 import { describeEndpoint } from './endpoint-description.ts';
 import { measureResistance, measureVoltage, simulate } from './simulation.ts';
-import type { CircuitDocument, Complex, ConfigurationLesson, FaultSetting, SimulationResult } from './types.ts';
+import type { CircuitDocument, Complex, ConfigurationLesson, Endpoint, FaultSetting, SimulationResult } from './types.ts';
 import { validateDiagnosisEvidence, type MeasurementEvidence } from './learning.ts';
+import { worktopFaultPoints, worktopFaultReadings } from './worktop-fault.ts';
 
 export type DiagnosisTarget = Pick<ConfigurationLesson['challenge'], 'fault' | 'wire' | 'component'>;
 export interface FaultDiagnosisAssessment { accepted: boolean; explanation: string }
@@ -42,7 +43,6 @@ export function assessFaultDiagnosis(
   const fault = enabled.find(candidate => candidate.type === challenge.fault && (!challenge.wire || candidate.wire === challenge.wire) && (!challenge.component || candidate.component === challenge.component));
   if (!fault || (!challenge.wire && !challenge.component)) return reject('The practice fault is missing from this circuit. Restart fault practice.');
   if (enabled.length !== 1) return reject('There is more than one practice fault on the bench. Restart fault practice to work on one at a time.');
-  if (diagnosis !== fault.type) return reject('Those readings point elsewhere. Follow the feed to the fitting, then follow the return wire back.');
   const targetComponent = fault.component && document.components.find(component => component.id === fault.component);
   if (fault.component && !targetComponent) return reject('The fitting you need has been removed. Restart fault practice to put it back.');
   const wire = fault.wire && document.wires.find(candidate => candidate.id === fault.wire);
@@ -52,6 +52,16 @@ export function assessFaultDiagnosis(
     return !component || !definitionFor(component)?.terminals.some(terminal => terminal.id === endpoint.terminal);
   })) return reject('One end of the wire is missing its terminal. Check both ends on the bench.');
 
+  const hasEnd=(point:Endpoint)=>wire&&[wire.from,wire.to].some(end=>end.component===point.component&&end.terminal===point.terminal);
+  let comparison='';
+  if(document.lessonId===66&&evidence&&hasEnd(worktopFaultPoints.strip.a)&&hasEnd(worktopFaultPoints.switchOutput.a)){
+    const {strip,switchOutput}=worktopFaultReadings(document,result,evidence);
+    if(strip&&switchOutput){
+      const volts=(sample:MeasurementEvidence)=>sample.instrument?.displayed??sample.value!.toLocaleString('en-IE',{maximumSignificantDigits:3});
+      comparison=`The meter showed ${volts(switchOutput)} V at the switch and ${volts(strip)} V across the strip.`;
+    }
+  }
+  if (diagnosis !== fault.type) return reject(comparison ? comparison+' You left one probe on the same pad. Which wire did you check at each end?' : 'Follow the feed to the fitting. Where does the reading change? Check the return wire too.');
   try {
     const clear = repaired(document, fault);
     if (openFaults.has(fault.type)) {
@@ -60,7 +70,10 @@ export function assessFaultDiagnosis(
       const current = magnitude(result.wireCurrents[wire.id]);
       if (current === undefined || current > 1e-6) return reject('Check the current in this wire, then put one voltage probe at each end.');
       const voltage = measureVoltage(result, wire.from, wire.to).value;
-      if (voltage !== null && voltage > 1) return accept(`The break is between ${ends}. The wire carries no current. You have ${voltage.toFixed(2)} V across the break.`);
+      if (voltage !== null && voltage > 1) {
+        if(comparison)return accept(comparison+' Both checks used the same − pad. There’s a break in the wire between the switch and the strip.');
+        return accept(`There’s a break between ${ends}. No current flows in that wire. The voltage across it is ${voltage.toLocaleString('en-IE',{maximumSignificantDigits:3})} V.`);
+      }
       const brokenResistance = measureResistance(continuityDocument(document), wire.from, wire.to).value;
       const intactResistance = measureResistance(continuityDocument(clear), wire.from, wire.to).value;
       if (intactResistance !== null && (brokenResistance === null || brokenResistance > intactResistance * 1.25 + 1e-6)) {
