@@ -30,6 +30,11 @@ const residualBreaker:Feature[]=[...breaker,['contact-indicator','contacts','Con
 const byModel:Record<string,Feature[]>={
   'switch:single-rocker':rocker,'switch2:single-rocker':rocker,'intermediate:single-rocker':rocker,
   'switch:gang-module-left':rocker,'switch:gang-module-right':rocker,
+  'led:strip':[
+    ['flexible-copper-tracks','body','Cut mark and copper pads','The printed line marks the end of a section. Put the probes on the bare pads beside it. Look for +24V and −.','front'],
+    ['surface-mount-bodies','body','Packages and resistors','The white cases hold the LEDs. The small dark parts between them are resistors.','front'],
+    ['smd-led-packages','emitter','Seven LED windows','Current through the LEDs lights these yellow windows. This 100 mm section has seven.','front'],
+  ],
   'pushbutton:sesame':[
     ['sesame-cover','cover','Clip-on cover','The cover clips off to reveal the two wall fixing screws. The round button stays on the base.','front'],
     ['sesame-base','body','Fixing base','The holes at the top and bottom take the wall screws. The two smaller screws closer to the button hold the wires.'],

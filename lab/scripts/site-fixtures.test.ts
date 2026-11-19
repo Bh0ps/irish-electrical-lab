@@ -6,6 +6,7 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {LESSONS} from '../lib/lessons.ts';
 import {BACK,jobSite} from '../lib/job-site.ts';
 import {BELL_CUPBOARD} from '../lib/bell-cupboard';
+import {KITCHEN_LIGHTS as kitchen} from '../lib/kitchen-lighting';
 import {BATTEN_FILAMENT, fixturePoint, TAPE_SECTION_LENGTH, TAPE_SECTIONS} from '../lib/site-fixtures.ts';
 import {terminalSheet} from '../lib/installation-drawing.ts';
 import {simulate,measureVoltage} from '../lib/simulation.ts';
@@ -77,7 +78,7 @@ test('the loaded front plate measures 86 mm on the wall and its wired metal stay
 });
 
 test('under-cabinet emitter face points down and the traced feed lands on the first physical pad',()=>{
-  for(const id of [65,68,69]){
+  for(const id of [65,66,68,69]){
     const doc=lesson(id),c=doc.components.find(c=>c.type==='led'||c.type==='cctstrip')!,item=jobSite(doc).items.find(i=>i.id===c.id)!;
     const pose=item.fixture!;assert.equal(pose.tape,true);
     const normal=new THREE.Vector3(0,0,1).applyEuler(new THREE.Euler(pose.tilt,0,pose.roll));
@@ -90,6 +91,20 @@ test('under-cabinet emitter face points down and the traced feed lands on the fi
     run.rotation.set(pose.tilt??0,0,pose.roll??0);run.add(first);
     const anchor=first.localToWorld(new THREE.Vector3(...pad.anchor)).toArray() as Vec3;
     anchor.forEach((n,i)=>near(n,actual[i],1e-8));
+  }
+});
+
+test('the original single-colour tape fits between the underside of the board and the clip-on diffuser',async()=>{
+  const d=lesson(66),site=jobSite(d),c=d.components.find(part=>part.id==='left')!,item=site.items.find(part=>part.id===c.id)!;
+  const p=item.fixture!;assert.deepEqual(p.scale,[.1,.1,.1]);
+  for(const suffix of ['', '.low']){
+    const section=await model('led_strip'+suffix),box=new THREE.Box3().setFromObject(section);
+    near((box.max.x-box.min.x)*p.scale[0],TAPE_SECTION_LENGTH,1e-5);
+    for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){
+      const position=fixturePoint(item.position,item.scale,p,c,[x,y,z]);
+      assert.ok(position[1]<=kitchen.bottom-.0011&&position[1]>kitchen.bottom-kitchen.profileHeight+.001,section.name+' tape clears base and cover');
+      assert.ok(Math.abs(position[2]-kitchen.profileZ)<.0061,'tape clears the inside of both rails');
+    }
   }
 });
 

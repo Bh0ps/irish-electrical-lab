@@ -80,6 +80,8 @@
 .call-breakers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(8rem,100%),1fr));gap:.5rem}
 .call-breakers button{display:flex;justify-content:space-between;width:100%;min-height:44px;height:auto;white-space:normal}
 .call-breaker-choice .task-feedback{margin-block:.2rem 0}
+.house-call[data-house-tools] .house-job-heading.with-reading-feedback{position:sticky;top:0;z-index:4;flex-wrap:wrap}
+.house-job-heading.with-reading-feedback .task-feedback{flex-basis:100%;margin:0;padding:.35rem .5rem}
 .call-breakers button span{font-size:.85em;font-weight:400}
 .call-chime { display:flex; align-items:baseline; gap:.75rem; margin:.75rem 0 .3rem; }
 .call-chime strong { font-size:1.15em; }

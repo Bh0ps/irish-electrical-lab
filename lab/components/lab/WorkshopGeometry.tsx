@@ -92,6 +92,19 @@ function Board(props:EquipmentProps){
  </group></>;
 }
 function Strip({warmCool,single}:{warmCool:boolean;single:boolean}){
+ if(!warmCool&&!single)return <>
+   <Body detail="flexible-copper-tracks" purpose="The cut mark runs between the two copper pads.">
+     <Box p={[0,.43,.001]} s={[1,.08,.002]} c="#a98050"/><Box p={[0,.43,.0024]} s={[1,.08,.0007]} c="#e6e4da"/>
+     {[-.019,.019].map(y=><Box key={y} p={[.488,.43+y,.0031]} s={[.024,.0168,.0008]} c={copper}/>)}
+   </Body>
+   <Body detail="surface-mount-bodies" purpose="The white packages hold the LEDs. The dark parts are resistors.">
+     {Array.from({length:7},(_,i)=><Box key={i} p={[(i-3)/7,.43,.0085]} s={[.028,.035,.0118]} c="#e6e5dc"/>)}
+     {[-.357,.214].map(x=><Box key={x} p={[x,.43,.0063]} s={[.016,.031,.0065]} c={dark}/>)}
+   </Body>
+   <Body id="emitter" detail="smd-led-packages" purpose="Seven LED windows light one cut section of this tape.">
+     {Array.from({length:7},(_,i)=><Box key={i} p={[(i-3)/7,.43,.0141]} s={[.022,.026,.0018]} c="#efd061"/>)}
+   </Body>
+ </>;
  if(single)return <><Body detail="aluminium-led-board" purpose="The aluminium-backed emitter board conducts heat from the LED package. Separate copper pads connect the two ends of its series current path."><Pin p={[0,.47,-.03]} r={.43} h={.17} n={6}/><Pin p={[0,.47,.057]} r={.40} h={.015} n={6} c={white}/>{[-.31,.31].map(x=><Box key={x} p={[x,.46,.083]} s={[.10,.105,.018]} c={copper}/>)}</Body><Body id="emitter" detail="central-emitter-module" purpose="Current flows through the central emitter while the board beneath it spreads heat."><Pin p={[0,.47,.10]} r={.155} h={.075} c={white}/><Pin p={[0,.47,.155]} r={.115} h={.04} c="#eccf70"/></Body></>;
  return <><Body detail="flexible-copper-tracks" purpose="Copper pads and continuous foil tracks carry the supply along the flexible base. Each repeating section ends at the printed cut mark."><Box p={[0,.43,-.12]} s={[.98,.44,.28]} c="#e9e2c6"/>
  {[-.16,.16].map(y=><Box key={y} p={[0,.43+y,.037]} s={[.97,.027,.021]} c={copper}/>)}

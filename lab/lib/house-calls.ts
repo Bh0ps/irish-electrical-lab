@@ -1,15 +1,18 @@
 import { measureVoltage } from './simulation';
+import { currentEvidence, type MeasurementEvidence } from './learning';
 import { validateCircuit } from './storage';
 import type { StudyProgress } from './progress';
 import type { CircuitDocument, SimulationResult } from './types';
 
 type DoorCall='Idle'|'Front'|'Rear'|'Both';
-interface CallReading { id: string; label: string; on: boolean; dc?: boolean; pair?:[string,string]; nominal?:number; call?:DoorCall }
+interface CallReading { id: string; label: string; on: boolean; dc?: boolean; emitter?:boolean; pair?:[string,string]; nominal?:number; call?:DoorCall }
 export interface CallStep {
   target: string; label: string; instruction: string; changed: string;
   before: CallReading[]; after: CallReading[];
   /** The learner deliberately holds or lets go of a momentary control. */
   pressed?:boolean;
+  /** Put one probe on each pad of this fitting. */
+  measure?:boolean;
 }
 export interface HouseCall {
   lesson: number; title: string; request: string; done: string; steps: CallStep[];
@@ -19,6 +22,9 @@ export interface HouseCall {
 
 const lamp = (on:boolean):CallReading => ({id:'light',label:'Stair light',on});
 const strip = (on:boolean):CallReading => ({id:'strip',label:'Cupboard strip',on,dc:true});
+const worktops=(left:boolean,right:boolean):CallReading[]=>[
+  {id:'left',label:'Left strip',on:left,nominal:24,emitter:true},{id:'right',label:'Right strip',on:right,nominal:24,emitter:true},
+];
 const branches = (on:boolean):CallReading[] => [{id:'load1',label:'Lamp',on},{id:'load2',label:'Socket',on:true}];
 const chime = (call:DoorCall):CallReading[] => [
   {id:'chime',label:'Chime supply · AC1 to AC2',pair:['AC1','AC2'],nominal:12,on:true,call},
@@ -27,25 +33,32 @@ const chime = (call:DoorCall):CallReading[] => [
 ];
 
 export const HOUSE_CALLS:HouseCall[] = [
-  {lesson:65,title:'Check the cupboard light',request:'The cupboard light should come on when you reach for the shelf.',done:'The strip went out with the door shut and lit again when you opened it.',steps:[
+  {lesson:65,title:'Check the cupboard light',request:'The shelf is lit while the cupboard is open. Check what happens when the door shuts.',done:'The strip went out with the door shut and lit again when you opened it.',steps:[
     {target:'door',label:'Move the cupboard door',instruction:'Shut the cupboard door. Does the strip go out?',changed:'The strip went out when the magnet reached the door contact.',before:[strip(true)],after:[strip(false)]},
     {target:'door',label:'Move the cupboard door',instruction:'Open the door and check that the shelf lights up again.',changed:'Opening the door moved the magnet away and the strip came back on.',before:[strip(false)],after:[strip(true)]},
   ]},
   {lesson:9,title:'Try both stair switches',request:'There’s one stair light and a switch at each end. Try them as you would on the way to bed.',done:'You switched one light from both ends of the stairs.',steps:[
-    {target:'near',label:'Press switch A',instruction:'Use switch A to turn off the stair light.',changed:'Switch A broke the path to the light.',before:[lamp(true)],after:[lamp(false)]},
-    {target:'far',label:'Press switch B',instruction:'Leave A alone. Use switch B to turn the light back on.',changed:'Switch B joined the path again, with A still where you left it.',before:[lamp(false)],after:[lamp(true)]},
+    {target:'near',label:'Press switch A',instruction:'Use switch A to turn off the stair light.',changed:'The downstairs switch turned the stair light off.',before:[lamp(true)],after:[lamp(false)]},
+    {target:'far',label:'Press switch B',instruction:'Leave A alone. Use switch B to turn the light back on.',changed:'The landing switch turned the same light back on.',before:[lamp(false)],after:[lamp(true)]},
   ]},
   {lesson:2,title:'Find the lighting breaker',request:'There are two breakers in the board. The lamp is on and the kitchen socket has power.',done:'You found the breaker that switches off just the lamp, then put it back on.',breakers:[{id:'branch1',label:'Breaker 1'},{id:'branch2',label:'Breaker 2'}],steps:[
     {target:'branch1',label:'Choose a breaker',instruction:'Which breaker turns off the lamp and leaves the socket on?',changed:'The lamp went out. The socket still has power.',before:branches(true),after:branches(false)},
     {target:'branch1',label:'Restore the lighting breaker',instruction:'Switch the lamp back on at the board. Check both readings.',changed:'The lamp and the socket have power again.',before:branches(false),after:branches(true)},
   ]},
-  {lesson:72,title:'Check both doorbell buttons',request:'One chime serves both doors. In this job, press once to hold a button down and again to let go.',done:'The chime showed the right door for each button and cleared when you let go.',
+  {lesson:72,title:'Check both doorbell buttons',request:'One chime serves both doors. In this job, press once to hold a button down and again to let go.',done:'You rang from each entrance. The chime showed which door it was and cleared when you let go.',
     bellPushes:[{id:'front',door:'front'},{id:'back',door:'back'}],steps:[
-      {target:'front',pressed:true,label:'Hold front button',instruction:'Hold the front doorbell button. Watch the chime.',changed:'The chime picked up the front-door call.',before:chime('Idle'),after:chime('Front')},
+      {target:'front',pressed:true,label:'Hold front button',instruction:'Hold the front doorbell button. Watch the chime.',changed:'The chime shows Front door.',before:chime('Idle'),after:chime('Front')},
       {target:'front',pressed:false,label:'Let go of front button',instruction:'Let go of the front button. Does the call clear?',changed:'The front call cleared. The chime still has its own supply.',before:chime('Front'),after:chime('Idle')},
       {target:'back',pressed:true,label:'Hold back button',instruction:'Now ring from the back door. Which call shows?',changed:'The back button put voltage on the terminal marked REAR.',before:chime('Idle'),after:chime('Rear')},
       {target:'back',pressed:false,label:'Let go of back button',instruction:'Let go of the back button and check the chime again.',changed:'The back call cleared.',before:chime('Rear'),after:chime('Idle')},
     ]},
+  {lesson:66,title:'Meter the worktop lights',request:'Both worktops are lit. Check one strip with its switch off and the other with its switch on.',done:'You measured the voltage at each strip and showed that either worktop can stay lit on its own.',steps:[
+    {target:'left-switch',label:'Use the left switch',instruction:'Turn off the left worktop light. Leave the right one on.',changed:'The left strip went dark. The right strip is still lit.',before:worktops(true,true),after:worktops(false,true)},
+    {target:'left',label:'Use the meter',measure:true,instruction:'Measure across the two pads on the dark left strip.',changed:'There’s no voltage across the left strip with its switch off.',before:worktops(false,true),after:worktops(false,true)},
+    {target:'right',label:'Use the meter',measure:true,instruction:'Now measure across the lit right strip.',changed:'The right strip still has its own feed from the driver.',before:worktops(false,true),after:worktops(false,true)},
+    {target:'right-switch',label:'Use the right switch',instruction:'Turn off the right worktop light.',changed:'Both strips are off.',before:worktops(false,true),after:worktops(false,false)},
+    {target:'left-switch',label:'Use the left switch',instruction:'Leave the right light off. Switch the left light back on.',changed:'Only the left strip came back on.',before:worktops(false,false),after:worktops(true,false)},
+  ]},
 ];
 
 export const callActivityId = (id:number,step:number) => 'book:'+id+':call-'+step;
@@ -69,6 +82,31 @@ export function savedCallStep(call:HouseCall,id?:string) {
   return Array.from({length:call.steps.length+1},(_,index)=>index).find(index=>callActivityId(call.lesson,index)===id);
 }
 export interface CallOperation { component:string; activity:string; before:CircuitDocument; reading?:SimulationResult }
+export interface CallSample {activity:string; evidence:MeasurementEvidence}
+
+export function checkCallSample(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,sample?:CallSample){
+  const step=call.steps[index];
+  if(!step?.measure||!sample||sample.activity!==callActivityId(call.lesson,index)||doc.lessonId!==call.lesson||!result?.converged||result.revision!==doc.revision)return;
+  const entry=currentEvidence(doc,result,[sample.evidence])[0];
+  if(!entry)return;
+  const side=step.target==='left'?'left':'right';
+  if(entry.mode!=='voltage'||entry.instrument&&entry.instrument.method!=='probe-voltage')return {pass:false,message:'Choose volts and use the two probes.'};
+  if(entry.assisted!==false)return {pass:false,message:'Choose each pad yourself, then record the reading again.'};
+  const pads=[entry.a?.terminal,entry.b?.terminal];
+  if(entry.a?.component!==step.target||entry.b?.component!==step.target||!pads.includes('L')||!pads.includes('N')){
+    const other=side==='left'?'right':'left';
+    const measured=entry.a?.component===other&&entry.b?.component===other?'You measured the '+other+' strip. ':'';
+    return {pass:false,message:measured+'Put one probe on + and the other on −, both on the '+side+' strip. Either way round works.'};
+  }
+  if(result.deviceStates[step.target]?.reverseBlocked)
+    return {pass:false,message:'The strip is wired backwards. Check which driver wire reaches the + pad on the strip.'};
+  if(entry.value===null||!doc.supply.enabled||!callReadings(step.before,doc,result)?.every(r=>r.matches))
+    return {pass:false,message:'Check the switches first. The left strip should be off and the right strip on.'};
+  if(['L','N'].some(pad=>result.terminalVoltages[step.target+'.'+pad]?.frequency!==0))
+    return {pass:false,message:'Check what feeds this strip. Both worktops use the 24 V DC output of the driver.'};
+  const displayed=entry.instrument?.displayed??entry.value.toLocaleString('en-IE',{maximumFractionDigits:1});
+  return {pass:true,message:'The meter read '+displayed+' V on the '+side+' strip. '+(entry.value< -1?'The minus sign means the red probe is on the negative pad.':step.changed)};
+}
 
 export function callReadings(points:CallReading[],doc:CircuitDocument,result?:SimulationResult) {
   if(!result?.converged || result.revision!==doc.revision) return;
@@ -79,14 +117,15 @@ export function callReadings(points:CallReading[],doc:CircuitDocument,result?:Si
     const powered=value===null||!Number.isFinite(value)?undefined:value>=threshold*.9?true:value<=1?false:undefined;
     const call=point.call?result.deviceStates[point.id]?.call:undefined;
     const inRange=point.nominal===undefined || (value!==null && value<=point.nominal*1.1);
-    return {label:point.label,value,powered,call,matches:powered===point.on && inRange && (!point.call || call===point.call)};
+    const lit=point.emitter?result.deviceStates[point.id]?.energized:undefined;
+    return {label:point.label,value,powered,lit,call,matches:powered===point.on && inRange && (!point.emitter||lit===point.on) && (!point.call || call===point.call)};
   });
   return readings;
 }
 
 export function verifiedCallStep(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,action?:CallOperation){
   const step=call.steps[index];
-  if(!step || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==callActivityId(call.lesson,index)
+  if(!step || step.measure || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==callActivityId(call.lesson,index)
     || doc.lessonId!==call.lesson || doc.id!==action.before.id || doc.revision!==action.before.revision+1) return false;
   const allowed = call.breakers ? call.breakers.some(b=>b.id===action.component) : action.component===step.target;
   if(!allowed)return false;
@@ -101,7 +140,7 @@ export function verifiedCallStep(call:HouseCall,index:number,doc:CircuitDocument
 
 export function onlyCallControlsChanged(call:HouseCall,doc:CircuitDocument,original:CircuitDocument){
   if(doc.lessonId!==call.lesson || original.lessonId!==call.lesson)return false;
-  const targets=new Set([...call.steps.map(s=>s.target),...(call.breakers??[]).map(b=>b.id)]);
+  const targets=new Set([...call.steps.filter(s=>!s.measure).map(s=>s.target),...(call.breakers??[]).map(b=>b.id)]);
   function key(d:CircuitDocument){
     const normal=validateCircuit(houseJobLabels(d));
     return JSON.stringify({...normal,id:original.id,revision:0,components:normal.components.map(c=>{

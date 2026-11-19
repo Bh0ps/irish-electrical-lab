@@ -4,6 +4,7 @@ import { Environment, useGLTF } from '@react-three/drei';
 import { SiteFinishes } from './SiteFinishes';
 import { publicAssetUrl } from '../../web/asset-url';
 import { CUPBOARD_HINGE, CUPBOARD_SWING } from '../../lib/site-fixtures';
+import {KITCHEN_LIGHTS as kitchen} from '../../lib/kitchen-lighting';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { createSurfaceTextures, type SurfacePattern } from '../../lib/scene-materials';
@@ -262,7 +263,23 @@ function installation(site:JobSite){
     furniture(-4.4,-2.49,3.65);sink(-5.62,-2.46);
     shelf(-5.8,1.43,-2.63,.87);
     if(/abinet|upboard|orktop|unable-white/.test(site.name)){
-      for(const x of [-4.65,-3.83]){
+      if(site.name==='Worktop lighting'){
+        // The two switch plates sit against this finished tile face.
+        for(let row=0;row<5;row++){
+          for(let col=0;col<12;col++){
+            const a=Math.max(-5.25,-5.25+col*.20-(row%2)*.10);
+            const b=Math.min(-3.12,-5.25+(col+1)*.20-(row%2)*.10);
+            if(b-a>.004)box((a+b)/2,1.00+row*.12,kitchen.tileFace-.0035,b-a-.002,.118,.007,'white');
+          }
+        }
+        box(kitchen.left,.946,-2.44,.32,.017,.19,'oak');
+        for(const h of [.945,.955,.965])pipe(kitchen.right+.04,h,-2.44,.081,.009,'white');
+      }
+      if(site.items.some(i=>i.fixture?.tapeProfile)){
+        const left=kitchen.left-.28,right=kitchen.right+.18;
+        box((left+right)/2,kitchen.railY+.001,kitchen.railZ,right-left,.009,.012,'cream');
+      }
+      for(const x of [kitchen.left,kitchen.right]){
         const workingDoor=site.name==='Cupboard lighting'&&x===-4.65;
         box(x,1.92,-2.748,.79,.78,.034,'cream');
         for(const side of [-1,1])box(x+side*.382,1.92,-2.56,.026,.78,.39,'cream');

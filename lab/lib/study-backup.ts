@@ -63,6 +63,7 @@ function validateLearning(value:unknown):void {
       if(item.status!==undefined&&!['value','open','unresolved'].includes(String(item.status)))fail('unsupported measurement status.');
       if(item.status==='value'&&item.value===null||item.status==='unresolved'&&item.value!==null||item.status==='open'&&(item.mode!=='resistance'||item.value!==null))fail('measurement status conflicts with its value or mode.');
       if(typeof item.explanation!=='string'||item.explanation.length>8192)fail('measurement explanation is invalid.');
+      if(item.measuredAt!==undefined&&(typeof item.measuredAt!=='string'||item.measuredAt.length>2048))fail('invalid label for the measured points.');
       if(item.unit!==({voltage:'V',current:'A',resistance:'Ω'} as Record<string,string>)[String(item.mode)])fail('measurement unit does not match its mode.');
       if(item.a!==undefined)endpoint(item.a,'red probe');if(item.b!==undefined)endpoint(item.b,'black probe');if(item.wire!==undefined)validId(item.wire,'measured conductor');
       if(item.mode==='current'&&item.wire===undefined)fail('a current measurement requires a conductor identity.');

@@ -9,6 +9,7 @@ import { measureResistance, measureVoltage } from './simulation.ts';
 import { endpointKey, type CircuitDocument, type ConfigurationLesson, type Endpoint, type SimulationResult, type Wire } from './types.ts';
 import type { BuildAssessment } from './assessment.ts';
 import { findConnectionWire } from './wire-connections.ts';
+import { measurementPoints } from './measurement-points.ts';
 
 export interface MeasurementEvidence {
   id:string; lessonId?:number; circuitId:string; revision:number; mode:'voltage'|'current'|'resistance';
@@ -17,6 +18,8 @@ export interface MeasurementEvidence {
   status?:'value'|'open'|'unresolved';
   /** True for a meter setup that supplied the points to the learner. */
   assisted?:boolean;
+  /** Labels as they appeared when this reading was recorded. */
+  measuredAt?:string;
   instrument?:InstrumentEvidence;
 }
 export interface LessonActivity {
@@ -31,6 +34,11 @@ export interface LessonActivity {
 }
 export interface ActivityOutcome {status:'pass'|'fail'|'not-run'|'unresolved';explanation:string}
 const eq=(a:Endpoint|undefined,b:Endpoint|undefined)=>!!a&&!!b&&endpointKey(a)===endpointKey(b);
+
+export function resistanceAtProbes(sample:MeasurementEvidence|undefined, doc:CircuitDocument, red?:Endpoint, black?:Endpoint) {
+  if (sample?.mode === 'resistance' && sample.circuitId === doc.id && sample.revision === doc.revision &&
+      eq(sample.a,red) && eq(sample.b,black)) return sample;
+}
 function readingPoints(doc:CircuitDocument,a?:Endpoint,b?:Endpoint) {
   const first=describeEndpoint(doc,a),second=describeEndpoint(doc,b);
   if(!first||!second)return;
@@ -64,7 +72,7 @@ export function captureMeasurement(document:CircuitDocument,result:SimulationRes
     else if(request.mode==='current'&&document.wires.some(w=>w.id===request.wire)){const c=result.wireCurrents[request.wire!];value=c?Math.hypot(c.re,c.im):null;explanation=c?'Current through the selected wire.':'The meter can’t read the current in this wire.';}
   }else if(request.mode!=='resistance')explanation='The meter is still settling. Try again in a moment.';
   const status=Number.isFinite(value)?'value':request.mode==='resistance'&&open?'open':'unresolved';
-  return {id:`measurement-${recordedAt}-${request.mode}-${request.wire??[request.a&&endpointKey(request.a),request.b&&endpointKey(request.b)].join(':')}`,lessonId:document.lessonId,circuitId:document.id,revision:document.revision,...structuredClone(request),value:Number.isFinite(value)?value:null,unit,explanation,recordedAt,controlState:controlSnapshot(document),status,...(request.instrument?{instrument}:{})};
+  return {id:`measurement-${recordedAt}-${request.mode}-${request.wire??[request.a&&endpointKey(request.a),request.b&&endpointKey(request.b)].join(':')}`,lessonId:document.lessonId,circuitId:document.id,revision:document.revision,...structuredClone(request),value:Number.isFinite(value)?value:null,unit,explanation,recordedAt,controlState:controlSnapshot(document),status,measuredAt:measurementPoints(document,request),...(request.instrument?{instrument}:{})};
 }
 function identity(e:MeasurementEvidence){if(e.instrument?.method==='fork-voltage')return 'fork-voltage:'+e.wire;return e.mode==='current'?`current:${e.wire}`:`${e.mode}:${[e.a&&endpointKey(e.a),e.b&&endpointKey(e.b)].sort().join('|')}`;}
 /** Only actual, current measurements count. Opposite probe order is the same observation. */
@@ -155,7 +163,13 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
       answer:'expected',options:predictionOrder(lesson.id+(kind==='explain'?1:0),'expected',options)};
   }
   activities.push(questionActivity('predict'));
-  for(const w of lesson.circuit.wires.filter(w=>w.id!==COURSE_BOND_ID)){const from=lesson.circuit.components.find(c=>c.id===w.from.component)!,to=lesson.circuit.components.find(c=>c.id===w.to.component)!;const ft=definitionFor(from).terminals.find(t=>t.id===w.from.terminal)!,tt=definitionFor(to).terminals.find(t=>t.id===w.to.terminal)!;activities.push({...base(`connect:${w.id}`,'connect',`Connect ${displayPoint(w.from)} to ${displayPoint(w.to)}`,`With all supplies off, join ${displayPoint(w.from)} to ${displayPoint(w.to)} with the ${wireMarking[w.role]} wire.${w.resistance>.1?' This length of wire has '+w.resistance+' Ω of resistance.':''}`,`${ft.purpose} → ${tt.purpose}`),component:to.id,part:'terminals',endpoints:[structuredClone(w.from),structuredClone(w.to)],wire:w.id,expectedRole:w.role});}
+  for(const w of lesson.circuit.wires.filter(w=>w.id!==COURSE_BOND_ID)){
+    const from=describeEndpoint(lesson.circuit,w.from)!,to=describeEndpoint(lesson.circuit,w.to)!;
+    activities.push({...base(`connect:${w.id}`,'connect',`Connect ${displayPoint(w.from)} to ${displayPoint(w.to)}`,
+      `With all supplies off, join ${displayPoint(w.from)} to ${displayPoint(w.to)} with the ${wireMarking[w.role]} wire.${w.resistance>.1?' This length of wire has '+w.resistance+' Ω of resistance.':''}`,
+      [from.purpose,to.purpose===from.purpose?'':to.purpose].filter(Boolean).join(' ')),
+      component:w.to.component,part:'terminals',endpoints:[structuredClone(w.from),structuredClone(w.to)],wire:w.id,expectedRole:w.role});
+  }
   const source=lesson.circuit.components.find(c=>c.type==='source'||c.type==='source3');
   const localSources=lesson.circuit.components.filter(c=>['pv','battery'].includes(c.type)&&Boolean(c.params.on??COMPONENTS[c.type].defaults.on??true));
   const enableLocal=localSources.map(c=>`Choose ${c.label} and turn it on with Operate.`).join(' ');
@@ -176,7 +190,7 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
     if(step.openSignal)instruction+=` Turn off all sources and open the signal wire from ${displayPoint(step.openSignal.a)} to ${displayPoint(step.openSignal.b)}, then turn the supply back on.`;
     if(!instruction.trim())instruction=step.title+'.';
     instruction+=comparison?' Choose Test circuit to compare the two settings.':'';
-    activities.push({...base(`operate:sequence:${index}`,'operate',step.title.replace(/: press$/,''),instruction.trim(),observed.expectations.length ? observed.expectations.map(e=>e.title).join('. ')+'.' : 'Now try the next setting.'),component:target,expectedControls:structuredClone(controls),expectedParams:controls.find(p=>p.component===target)?.params,expectedSupplyEnabled:step.supplyEnabled,expectedSignalOpen:step.openSignal&&structuredClone(step.openSignal),expectedObservations:structuredClone(observed.expectations),scenarioStep:outcomeIndex});
+    activities.push({...base(`operate:sequence:${index}`,'operate',step.title,instruction.trim(),observed.expectations.length ? observed.expectations.map(e=>e.title).join('. ')+'.' : 'Now try the next setting.'),component:target,expectedControls:structuredClone(controls),expectedParams:controls.find(p=>p.component===target)?.params,expectedSupplyEnabled:step.supplyEnabled,expectedSignalOpen:step.openSignal&&structuredClone(step.openSignal),expectedObservations:structuredClone(observed.expectations),scenarioStep:outcomeIndex});
     if(pulse)index++;
   }
   const pair=lessonProbePoints(lesson.id,lesson.circuit);if(pair)activities.push({...base('measure:voltage','measure','Check the voltage',`Put the red probe on ${displayPoint(pair.a)} and the black probe on ${displayPoint(pair.b)}. Record the volts.`,`${lesson.sections.find(s=>s.title==='Where to put the probes')?.beginner??'Put one probe on each terminal.'} If you see zero, check the switch position.`),component:pair.a.component,endpoints:[pair.a,pair.b],measurement:{mode:'voltage',...pair}});

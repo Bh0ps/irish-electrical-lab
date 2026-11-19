@@ -788,6 +788,9 @@ function Terminal({ terminal }: { terminal: TerminalDefinition }) {
   const { props, detailed } = useModel();
   const [hover, setHover] = useState(false);
   const color = terminalColors[terminal.role] ?? '#9faeb7';
+  if(props.component.type==='led'&&props.component.variant==='strip')return <group name={`terminal:${terminal.id}`} userData={{terminalId:terminal.id}} position={terminal.anchor} onClick={e=>{e.stopPropagation();props.onTerminal(terminal.id);}}>
+    <B p={[0,0,-.00045]} s={[.0249,.0168,.0009]} m="copper"/>
+  </group>;
   const pin=props.definition.model==='plug'&&terminal.entryDirection?.[2]===1;
   const strand=['cable','proximity','cctstrip'].includes(props.component.type)||props.component.type==='led'&&['strip','series-module'].includes(props.component.variant??'')||props.component.variant==='comb-busbar',stud=props.component.type==='motor3';
   return <group name={`terminal:${terminal.id}`} userData={{terminalId:terminal.id}} position={terminal.anchor} rotation={entryRotation(terminal)} onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); props.onTerminal(terminal.id); }} onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); setHover(true); }} onPointerOut={() => setHover(false)}>

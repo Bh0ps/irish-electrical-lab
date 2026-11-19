@@ -21259,7 +21259,7 @@
     "galleryKey": "led:strip",
     "name": "Cupboard strip",
     "component": {
-      "id": "gallery-95",
+      "id": "gallery-97",
       "type": "led",
       "label": "Cupboard strip",
       "position": [
@@ -21280,13 +21280,13 @@
       "name": "Low-voltage LED light",
       "group": "Lighting",
       "model": "lamp",
-      "description": "A low-voltage lighting load supplied by its driver.",
+      "description": "The driver feeds this light. Look for the positive and negative marks on the low-voltage side.",
       "terminals": [
         {
           "id": "L",
           "label": "+",
           "role": "DC+",
-          "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+          "purpose": "Positive LED input on this low-voltage light. It takes power from the DC driver.",
           "anchor": [
             -0.085,
             0.4437586206896552,
@@ -21304,7 +21304,7 @@
           "id": "N",
           "label": "−",
           "role": "DC-",
-          "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+          "purpose": "Negative LED return on this low-voltage light. It takes power from the DC driver.",
           "anchor": [
             0.085,
             0.4437586206896552,
@@ -21327,32 +21327,32 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "emitter",
           "name": "Light source",
-          "purpose": "The bulb, LED module or emergency-light emitter converts electrical power into illumination. Visible brightness follows the actual emitting-load power relative to its rating. The display is an illustrative brightness scale; heat, measured optical output and colour rendering are outside the electrical model."
+          "purpose": "This is the part that gives off light. On the bench it gets brighter as it receives more power."
         },
         {
           "id": "electronics",
-          "name": "Electronic control board",
-          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+          "name": "Control board",
+          "purpose": "The board takes signals in and controls the outputs. The bench shows what the board does at its terminals."
         }
       ],
       "size": [
@@ -21374,16 +21374,16 @@
     "terminals": [
       {
         "id": "L",
-        "label": "+",
+        "label": "+24 V",
         "role": "DC+",
-        "purpose": "Positive LED input in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+        "purpose": "The positive wire meets the copper pad marked +24 V here.",
         "anchor": [
-          -0.43,
-          0.55,
-          0.085
+          -0.488,
+          0.449,
+          0.0035
         ],
-        "group": "Permanent supply",
-        "scale": 0.4,
+        "group": "Feed end",
+        "scale": 0.16,
         "entryDirection": [
           0,
           0,
@@ -21394,14 +21394,14 @@
         "id": "N",
         "label": "−",
         "role": "DC-",
-        "purpose": "Negative LED return in this low-voltage DC luminaire model. L/N are retained terminal identifiers; use the driver's +/− output pair rather than a mains supply.",
+        "purpose": "The negative wire returns to the driver from this pad marked −.",
         "anchor": [
-          -0.43,
-          0.31,
-          0.085
+          -0.488,
+          0.411,
+          0.0035
         ],
-        "group": "Permanent supply",
-        "scale": 0.4,
+        "group": "Feed end",
+        "scale": 0.16,
         "entryDirection": [
           0,
           0,
@@ -21409,8 +21409,8 @@
         ]
       }
     ],
-    "meshNodes": 32,
-    "vertices": 2044
+    "meshNodes": 28,
+    "vertices": 1968
   },
   {
     "key": "pwmcontrol_tunable-white",

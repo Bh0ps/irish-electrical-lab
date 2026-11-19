@@ -17,6 +17,24 @@ function meshes(parent:THREE.Object3D){const result:THREE.Mesh[]=[];parent.trave
 function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)=>total+(m.geometry.index?.count??m.geometry.getAttribute('position').count)/3,0);}
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
+test('a cut section of white tape has seven LED windows at the documented pitch and two bare probe pads',async()=>{
+  const asset=manifest.find(model=>model.key==='led_strip')!;
+  for(const url of [asset.url,asset.lowUrl]){
+    const scene=await load(url);scene.updateMatrixWorld(true);
+    const size=new THREE.Box3().setFromObject(scene,true).getSize(new THREE.Vector3());
+    assert.ok(Math.abs(size.x-1)<.002 && Math.abs(size.y-.08)<.001 && Math.abs(size.z-.015)<.001);
+    const at=(x:number,y:number,side:number)=>new THREE.Raycaster(new THREE.Vector3(x,y,side),new THREE.Vector3(0,0,-side)).intersectObject(scene,true)[0];
+    for(let chip=-3;chip<=3;chip++){
+      assert.equal(semanticOwner(at(chip/7,.43,1).object).detail,'smd-led-packages');
+      assert.equal(semanticOwner(at(chip/7,.43,-1).object).detail,'flexible-copper-tracks');
+    }
+    for(const pad of asset.terminals){
+      assert.equal(semanticOwner(at(pad.anchor[0],pad.anchor[1],1).object).terminal,pad.id);
+      assert.equal(semanticOwner(at(pad.anchor[0],pad.anchor[1],-1).object).terminal,undefined);
+    }
+  }
+});
+
 test('the Sesame has two rear wire screws, a plain cover and a separate push cap at both detail levels',async()=>{
   const asset=manifest.find(model=>model.key==='pushbutton_sesame')!;
   for(const url of [asset.url,asset.lowUrl]){
@@ -161,7 +179,10 @@ test('pressure-plate clamps have apertures, multiple materials and exactly one s
       const form=clamp![0].parent!.userData.contactForm;
       const parts=meshes(clamp![0]);assert.ok(parts.length>=(['pin','core end','solder pad','comb tooth'].includes(form)?1:3),asset.key+' attachment hardware materials');
       let identities=0;scene.traverse(node=>{if(node.userData.terminalId===terminal.id)identities++;});assert.equal(identities,1);
-      const box=new THREE.Box3().setFromObject(clamp![0]);assert.ok(box.getSize(new THREE.Vector3()).length()>.04);
+      const size=new THREE.Box3().setFromObject(clamp![0]).getSize(new THREE.Vector3());
+      if(asset.key==='led_strip'){
+        assert.ok(Math.abs(size.x-.0249)<.0004 && Math.abs(size.y-.0168)<.0004 && size.z>0 && size.z<.0011,'size of the exposed copper half-land');
+      }else assert.ok(size.length()>.04);
       assert.ok(triangles(clamp![0])>(form==='pin'||form==='solder pad'||form==='comb tooth'?8:form==='core end'?18:100),asset.key+' physical contact geometry');
     }
   }

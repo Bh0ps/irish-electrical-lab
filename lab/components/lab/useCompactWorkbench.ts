@@ -41,7 +41,9 @@ export function useCompactWorkbench() {
       frame = requestAnimationFrame(() => {
         const scroll = search.closest<HTMLElement>('.context-content, .learn-column');
         if (!scroll || document.activeElement !== search) return;
-        const heading = scroll.querySelector<HTMLElement>(':scope > .phone-sheet-heading');
+        // A house job pins its instruction in place of the normal sheet heading.
+        const heading = scroll.querySelector<HTMLElement>('.house-call[data-house-tools] .house-job-heading') ??
+          scroll.querySelector<HTMLElement>(':scope > .phone-sheet-heading');
         const top = scroll.getBoundingClientRect().top + (heading?.offsetHeight ?? 0) + 8;
         scroll.scrollTop += search.getBoundingClientRect().top - top;
       });

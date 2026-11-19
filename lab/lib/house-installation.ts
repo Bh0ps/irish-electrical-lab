@@ -3,7 +3,8 @@ import {bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
 import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
-import { fixturePoint, type FixturePose } from './site-fixtures';
+import { installedTerminalPoint, type FixturePose } from './site-fixtures';
+import {KITCHEN_LIGHTS as kitchen,stripLead} from './kitchen-lighting';
 import { getComponentTerminals } from './terminal-layout';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from './types';
 
@@ -40,6 +41,7 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
   35:{switch:outsideBath},
   36:{'light-switch':outsideBath,'fan-isolation':side(2,2.2,1.72,-.05,1)},
   37:{override:outsideBath},
+  66:{'left-switch':back(0,kitchen.left,kitchen.switchHeight,kitchen.tileFace+.01),'right-switch':back(0,kitchen.right,kitchen.switchHeight,kitchen.tileFace+.01)},
   71:{front:frontPush,rear:gardenPush,bell:back(1,.59,1.82)},
   72:{front:frontPush,back:gardenPush,chime:back(1,.59,1.82)},
   73:{call:frontPush},
@@ -63,7 +65,7 @@ function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEn
   if(!component||!item)return;
   const terminal=getComponentTerminals(component,COMPONENTS[component.type]).find(t=>t.id===end.terminal);
   if(!terminal)return;
-  const pin=fixturePoint(item.position,item.scale,item.fixture,component,terminal.anchor,item.rotation);
+  const pin=installedTerminalPoint(item,component,terminal);
   const fixing=site.kind==='home'?houseFixing(doc.lessonId??0,component):undefined;
   const service=site.kind!=='home'&&item.room===4?SERVICE_AREAS[site.kind]:undefined;
   const chase:Vec3=[...pin];
@@ -73,6 +75,17 @@ function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEn
   // The rear wing and front rooms have separate routes in the ceiling void.
   const rearWing=item.room===REAR_GARDEN.id||(item.room>=4&&item.room<=7);
   const riser=site.kind==='home'&&rearWing?HOME_BACK-.04:service?service.back-.02:-2.87;
+  if(item.fixture?.tapeProfile){
+    const lead=stripLead(pin,item.position[0],terminal.id);
+    return {pin,chase:lead[lead.length-1],riser,item,component,lead};
+  }
+  if(item.fixture?.kitchenDriver){
+    // Each pair leaves through the slot facing the back wall of its own box.
+    const y=item.position[1]+.006;
+    const exit:Vec3=[pin[0],y,item.position[2]+kitchen.boxZ-kitchen.boxSize[2]/2];
+    const behind:Vec3=[exit[0],y,kitchen.backGapZ];
+    return {pin,chase:behind,riser,item,component,lead:[pin,[pin[0],y,pin[2]],exit,behind]};
+  }
   if(item.fixture?.bellService==='tx'&&(end.terminal==='+'||end.terminal==='-')){
     const lead=bellSecondaryLead(pin);
     return {pin,chase:lead[lead.length-1],riser,item,component,lead};
@@ -101,6 +114,17 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):V
   }
   const shortWallDrop=a.item.room===b.item.room&&Math.hypot(a.chase[0]-b.chase[0],a.chase[2]-b.chase[2])<.13;
   const cupboard=site.kind==='home'&&[13,65,66,68,69].includes(doc.lessonId??0)&&a.item.room===0&&b.item.room===0;
+  if(cupboard&&doc.lessonId!==65&&assembly(a)!==assembly(b)&&(a.item.fixture?.tapeProfile||b.item.fixture?.tapeProfile||a.item.fixture?.kitchenDriver||b.item.fixture?.kitchenDriver)){
+    // Follow the cabinet underside. At a wall switch the cable first drops in
+    // the wall; at a strip it enters the open end of the aluminium channel.
+    function toRail(e:InstalledEnd):Vec3[]{
+      if(e.item.fixture?.tapeProfile)return e.lead!;
+      const x=e.chase[0];
+      return [...(e.lead??[e.pin,e.chase]),[x,kitchen.railY,e.chase[2]],[x,kitchen.railY,kitchen.railZ]];
+    }
+    through(...toRail(a),...toRail(b).reverse());
+    return points;
+  }
   through(a.pin);
   if(assembly(a)===assembly(b)){
     // The links between rail-mounted devices stay inside their own board.
@@ -116,7 +140,8 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):V
     const y=cupboard?Math.max(a.chase[1],b.chase[1]):2.955;
     const ar=cupboard?a.chase[2]:a.riser,br=cupboard?b.chase[2]:b.riser;
     through([a.chase[0],y,a.chase[2]],[a.chase[0],y,ar]);
-    if(ar!==br){
+    if(cupboard)through([b.chase[0],y,ar]);
+    else if(ar!==br){
       // Cross rows over a partition leading to the rear bedroom or sitting room.
       const wing=a.riser===HOME_BACK-.04?a:b;
       const cross=site.kind!=='home'?SERVICE_AREAS[site.kind].side*6.6:wing.item.room===5?3.6:-.6;

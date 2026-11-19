@@ -44,6 +44,10 @@ test('every registry, lesson and gallery terminal has one finite physical mouth 
     if(c.type==='switch' && c.variant==='door-contact') {
       assert.match(resolved.find(t=>t.id==='COM')!.purpose,/door/);
       assert.match(resolved.find(t=>t.id==='OUT')!.purpose,/joins COM/);
+    } else if(c.type==='led' && resolved[0].group==='Feed end') {
+      assert.deepEqual(resolved.map(t=>t.label),['+24 V','−']);
+      assert.match(resolved[0].purpose,/positive.*copper pad/i);
+      assert.match(resolved[1].purpose,/negative.*driver/i);
     } else if(c.type==='selector' && c.variant==='float-changeover') {
       assert.match(resolved.find(t=>t.id==='COM')!.purpose,/float/);
       for(const id of ['A','B']) assert.match(resolved.find(t=>t.id===id)!.purpose,new RegExp(id+' joins COM'));

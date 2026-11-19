@@ -3,17 +3,41 @@ import assert from 'node:assert/strict';
 import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
 import {BELL_CUPBOARD as b} from '../lib/bell-cupboard';
+import {KITCHEN_LIGHTS as kitchen,stripLead} from '../lib/kitchen-lighting';
 import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,REAR_GARDEN,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
 import {houseFixing,installedWireRoute} from '../lib/house-installation';
 import {getComponentTerminals} from '../lib/terminal-layout';
-import {fixturePoint} from '../lib/site-fixtures';
+import {fixturePoint,installedTerminalPoint} from '../lib/site-fixtures';
 import {electricalKey} from '../lib/simulation-identity';
 import {runLessonScenarios} from '../lib/scenarios';
 import type {Endpoint,Vec3} from '../lib/types';
 
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!.circuit;
 const near=(a:number,b:number)=>Math.abs(a-b)<1e-7;
+test('each worktop switch sits below its own light and the local cable enters the slotted end of that channel',()=>{
+  const doc=lesson(66),site=jobSite(doc),get=(id:string)=>site.items.find(i=>i.id===id)!;
+  for(const side of ['left','right']){
+    const item=get(side),rocker=get(side+'-switch'),strip=doc.components.find(c=>c.id===side)!;
+    assert.equal(item.position[0],rocker.position[0]);
+    assert.ok(rocker.position[1]<kitchen.bottom&&rocker.position[1]>.94);
+    assert.ok(item.fixture?.tapeProfile&&item.fixture.tape);
+    for(const w of doc.wires.filter(w=>w.to.component===side)){
+      const t=getComponentTerminals(strip,COMPONENTS.led).find(t=>t.id===w.to.terminal)!;
+      const pin=installedTerminalPoint(item,strip,t),lead=stripLead(pin,item.position[0],t.id);
+      const route=installedWireRoute(doc,site,w)!;
+      assert.deepEqual(route.slice(-lead.length),lead.reverse());
+      assert.ok(route.every(p=>p[1]<kitchen.top+.04&&p[0]>-5.1&&p[0]<-3.45));
+      if(w.from.component===side+'-switch')assert.ok(route.every(p=>p[1]<kitchen.bottom));
+    }
+  }
+  const driver=doc.components.find(c=>c.id==='driver')!,item=get('driver'),terminals=getComponentTerminals(driver,COMPONENTS.driver);
+  assert.deepEqual(item.position,kitchen.driver);
+  const pins=terminals.map(t=>installedTerminalPoint(item,driver,t));
+  assert.ok(pins.slice(0,3).every(p=>p[0]<kitchen.driver[0]-kitchen.caseSize[0]/2&&p[1]>kitchen.top));
+  assert.ok(pins.slice(3).every(p=>p[0]>kitchen.driver[0]+kitchen.caseSize[0]/2&&p[1]>kitchen.top));
+  assert.equal(new Set(pins.map(String)).size,5);
+});
 test('the bell transformer supply cores share the side conduit and the chime circuit leaves at its own top entry',()=>{
   for(const id of [71,72]){
     const doc=lesson(id),site=jobSite(doc),before=electricalKey(doc);
@@ -67,7 +91,7 @@ test('installed runs follow the actual terminals, turn at fitted walls and remai
     const fingerprint=electricalKey(doc),site=jobSite(doc);
     const anchor=(end:Endpoint)=>{
       const c=doc.components.find(c=>c.id===end.component)!,item=site.items.find(i=>i.id===c.id)!;
-      return fixturePoint(item.position,item.scale,item.fixture,c,getComponentTerminals(c,COMPONENTS[c.type]).find(t=>t.id===end.terminal)!.anchor,item.rotation);
+      return installedTerminalPoint(item,c,getComponentTerminals(c,COMPONENTS[c.type]).find(t=>t.id===end.terminal)!);
     };
     for(const wire of doc.wires){
       const path=installedWireRoute(doc,site,wire)!;
