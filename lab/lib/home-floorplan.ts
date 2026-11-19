@@ -1,5 +1,6 @@
 import type {Vec3} from './types';
 import {BATH_KITCHEN_COUNTER,BATH_RACK,BATH_SHOWER} from './bathroom-extract';
+import {cupboardFoot,cupboardLeaf} from './consumer-unit-site';
 
 // Original training house. Room proportions, furniture clearances and door swings
 // were reviewed against Roscommon County Council drawing 22571-PLA-6, House Type C.
@@ -177,11 +178,12 @@ function collisionBoxes(bathroom:boolean,stair:boolean,doorsteps:boolean){
   return boxes;
 }
 const collisions=new Map<string,FloorBox[]>();
-export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:boolean,appliance?:FloorBox,doorsteps=false):Vec3{
-  const key=[bathroom,stair,appliance?.x,appliance?.z,appliance?.w,appliance?.d,doorsteps].join('/');
+export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:boolean,appliance?:FloorBox,doorsteps=false,cupboard=false):Vec3{
+  const key=[bathroom,stair,appliance?.x,appliance?.z,appliance?.w,appliance?.d,doorsteps,cupboard].join('/');
   if(!collisions.has(key)){
     const boxes=collisionBoxes(bathroom,stair,doorsteps);
     if(appliance)boxes.push(appliance);
+    if(cupboard)boxes.push(cupboardFoot,cupboardLeaf);
     collisions.set(key,boxes);
   }
   const boxes=collisions.get(key)!,radius=.16;

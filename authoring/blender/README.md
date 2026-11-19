@@ -82,6 +82,10 @@ The two black switches in course 66 follow Switch Components RG1-1A-DC-1-B. Each
 
 Inspect the back to see the two 6.35 × 0.8 mm blades. Their centres are 9.3 mm apart. In this circuit, blade **2** receives positive from the driver and **1** feeds the strip. The moulding also has a number 3 at an empty position. Connecting a wire fits a separate push-on connector over its blade. Removing the wire exposes the blade again. A probe touches the exposed metal beside the base of either blade. The mating connectors and the cutaway contact mechanism are representative study geometry. Earlier saved circuits keep their original switch and wiring.
 
+### Domestic breaker handles and flags
+
+The one-pole branch breakers in the two-row Gamma enclosure follow the Hager NBN116A exterior. The shared two-pole residual-current device follows the CDA240U. Raising a handle exposes I underneath, and lowering it exposes O above. The CDA has separate contact and trip windows. The upper-left one reports contact position. The lower-right one shows yellow after the simulated differential trip and remains grey on manual switch-off. The window colours come from the mechanical flags. The internal latch and paddle travel are reconstructed for teaching. The fitted circuits and label values follow the learner's circuit document. [NBN116A photograph and dimensions](https://hager.com/ie/catalogue/products/nbn116a-mcb-1p-10ka-15ka-b-16a-1m) · [CDA240U photograph and dimensions](https://hager.com/ie/catalogue/products/cda240u-rccb-2p-40a-30ma-a) · [Hager operating indications](https://assets.hager.com/step-content/P/HA_79103069/Document/std.lang.all/Technical%20Specifications%20SG.pdf)
+
 ## Cable samples
 
 Run `blender --background --python authoring/blender/cable_samples.py` from the project root to rebuild the six original material-picker images. The cross-sections live in `lab/lib/cable-profiles.json`. They show what to recognise at a cut end. The bench enlarges the thin wires so a learner can select them.

@@ -32,10 +32,15 @@ const fusedSpur:Feature[]=[earth,
   ['socket-contact-system','contacts','Double-pole switch','The switch opens both line and neutral. The separate cartridge fuse is in the line path.'],
 ];
 const breaker:Feature[]=[
+  ['din-paddle','actuator','Operating handle','Push the handle up to I to close the contacts. Lower it to O to open them. The mark on the moving drum shows its position.','front'],
   ['din-latch','mounting','Rail clip','This clip hooks the breaker onto the metal rail at the back of the board.'],
   ['protection-mechanism','contacts','Trip latch','When the breaker trips, the latch lets go. The metal contacts spring apart and cut the feed.'],
 ];
-const residualBreaker:Feature[]=[...breaker,['contact-indicator','contacts','Contact window','This little window shows whether the contacts are open or closed. It cannot tell you whether there is voltage at a terminal.','front']];
+const residualBreaker:Feature[]=[...breaker,
+  ['rccb-test-key','test','Test button','T creates a small imbalance when its test circuit has a supply. On a successful test the lever drops, the contact window turns green and the trip window turns yellow.','front'],
+  ['contact-indicator','contacts','Contact window','Red means the contacts are closed. Green means they are open. To check voltage, use the meter.','front'],
+  ['residual-trip-window','contacts','Trip window','This window at the lower right turns yellow after a residual-current trip or a successful test with T. It stays grey if you switch the lever off by hand.','front'],
+];
 const byModel:Record<string,Feature[]>={
   'heater:plx050e':[
     ['plxe-inlet','body','Cool air inlet','Air enters at the bottom of the case, passes the heating element and leaves through the upper grille.','front'],

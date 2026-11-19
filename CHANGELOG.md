@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.20.0 — Find the lighting breaker
+
+- Follow both circuits at Oakfield. Try the numbered breakers separately, read what happens at the lamp and socket, then use the shared RCCB lever to switch both circuits off and back on. An earlier finished job still opens at its original ending, with an option to try the new checks.
+- The board shows two numbered breakers and a wider shared RCCB, with separate contact and trip windows. Operate the lever on the model or use its labelled course control. The **T** button tests the trip.
+- In full screen, **Find → Room map** shows the room you’re viewing and its fittings. Choose a fitting for a close-up, or walk to a room from the map.
+
 ## 1.19.0 — Find your way around Oakfield
 
 - In full screen, tap **Find** to search rooms and fittings by name or drawing reference. **Put meter away** brings back the site after a measurement.

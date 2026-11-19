@@ -1,5 +1,25 @@
 # Verification summary
 
+## 1.20.0 — Find the lighting breaker
+
+**Course and electrical checks.** The job runs against course 2’s actual lamp and socket. Automated checks swapped the two outgoing feeds and verified that credit followed the circuit which lost power. The shared switch disconnected both loads. Both drew zero current, and the solver could no longer resolve a voltage across either one. A trip from the RCCB test button and the subsequent reset earned no credit for moving the shared lever off and on.
+
+**Learner walkthrough.** Headless Chromium at 1280 px completed the job with keyboard controls. Touch-enabled WebKit ran it in portrait at 320 × 844 with 150% text and in landscape at 844 × 390. Checks included choosing the wrong breaker, interpreting the wrong reading and reopening the job with the shared switch off. On the 240 V study supply the final readings were 239.8 V at the lamp and socket.
+
+**Room map.** Touch-enabled Chromium and WebKit opened the map, showed the walker’s position and visited the entrance hall. Cancelling the map left the camera at its previous position. From the hall, the utility cupboard’s list opened the consumer unit close-up. Further 390 px WebKit walks reached the first-floor landing and returned downstairs (course 9), visited the side passage and rear bell push (72), and reached Goods receiving, its emergency fitting and the service yard (44). The walking arrow matched the camera’s location and direction. The close-up marker matched the fitting’s position in each case. Visiting those rooms and fittings left awards and the current lesson step unchanged. A fresh WebKit run captured the map shown in the phone guide. [View the selected room and the walker’s marker](images/oakfield-room-map.png).
+
+**Full-screen controls and repairs.** In touch WebKit, a tap on the walking pad moved 0.25 m. With one-thumb walking enabled, a side tap turned the view 15°. The canvas occupied 390 × 794 pixels in portrait and 844 × 340 in landscape. In the doorbell repair we followed the failed rear call, rejected the wrong screw, repaired the connection with the simulated supply off and needed a fresh test to finish. On the board, an open cover gave access to both levers and the blue T button. Closing it blocked the controls behind it. The trip flag changed on a powered test. The same button with the supply off left the contacts closed. At 320 × 844 with 150% text, all seven board responses fit in a full-width row beneath the controls without splitting words.
+
+**Offline and regression checks.** A fresh WebKit profile verified the hashes of all 259 offline files (50,438,575 bytes). After shutting down the server, we reopened the app, loaded the board job, used the map and visited the consumer unit. All 481 automated checks passed, including reset into a persistent fault. The catalogue checks covered 80 operating scenarios and 80 fault targets, 2,485 activities, 115 equipment variants and all 1,119 routed wires.
+
+**Measured on Windows.** Chrome on an RTX 5070 Ti rendered a 30-component, 42-wire workbench at 1440 × 900. Camera motion averaged 4.22 ms between frames, with 95% of intervals at or below 5.30 ms. The three-second idle sample recorded zero frames and zero solver or routing requests. Across eight supply edits, median solver time was 3.80 ms and the median worker round trip was 15.85 ms.
+
+**Windows replacement.** The installed 1.20.0 app reopened all five seeded study records from 1.19.0 with matching hashes in a disposable profile. Both shortcuts worked, as did shutdown and restart. The installed app ran 80 circuits and passed 120 guided-build checks without external requests or console errors. The graphics driver logged one shader warning. The window took 1.01 seconds to start and the workbench geometry was ready 5.12 seconds after launch. The app processes held 553 MiB of private memory at the measured checkpoint.
+
+**Earlier study data.** A full backup exported by the 1.19.0 web app was restored in the new build on a fresh origin. The original completion and both lighting activities were retained. The learner could then take the new socket and shared-switch checks.
+
+**Physical iPhone.** The mobile results above are WebKit emulation. For a device check, open the Home Screen app in portrait, visit the utility cupboard through **Find → Room map**, operate both breakers, turn the phone sideways and finish the shared-switch check. Reopen the job and verify that its saved place is still there.
+
 ## 1.19.0 — Find your way around Oakfield
 
 **Phone controls.** In touch Chromium and Windows WebKit the full-screen site occupied 390 × 794 pixels on a 390 × 844 portrait viewport and 844 × 340 in landscape. We searched for a fitting, zoomed in, walked, steered with one thumb and returned to the same viewpoint after opening the drawing. At 150% text, the site meter controls remained visible and at least 44 pixels tall on 320 × 844 and 844 × 390 screens. Putting the meter away restored the camera position and angle. Reopening it preserved the two probe locations.

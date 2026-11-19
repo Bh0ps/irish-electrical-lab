@@ -1,10 +1,6 @@
-import {SERVICE_AREAS,serviceWalls,type ServiceKind} from '../../lib/service-floorplan';
+import {SERVICE_AREAS,serviceWalls,serviceSpaces,type ServiceKind} from '../../lib/service-floorplan';
 import type {JobSite} from '../../lib/job-site';
-export function serviceSpaces(kind:ServiceKind){
-  const a=SERVICE_AREAS[kind];
-  return [...[-6.6,-2.2,2.2].map((left,id)=>({id,left,right:left+4.4,back:-2.8,front:2.8})),
-    {id:3,left:-6.6,right:6.6,back:2.8,front:6},{...a,id:4}];
-}
+export {serviceSpaces} from '../../lib/service-floorplan';
 export function ServicePlan({site,kind,x,y}:{site:JobSite;kind:ServiceKind;x:(n:number)=>number;y:(n:number)=>number}){
   const a=SERVICE_AREAS[kind],walls=serviceWalls(kind),spaces=serviceSpaces(kind);
   return <g aria-label={site.building.name+' rooms and service access'}>

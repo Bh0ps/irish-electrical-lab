@@ -138,38 +138,44 @@ def build_din_protection(recipe, root, api):
     front = profile('Operating bezel',nose,-width/2+.12,width/2-.12,cover,ivory,.55)
     lever_x=-width/2+8.75
     lever_count = poles if kind=='mcb3' else 1
+    domestic = kind in ('mcb','rcd')
     for n in range(lever_count):
         x=lever_x+n*17.5
         cut(front,box('Travel opening',(x,41,57),(12.7,16.8,12),cover,None,1.7))
         box('Lever travel well',(x,41,52.7),(12.6,16.6,1.7),cover,dark,1.3)
     label=detail('installation-details','The label flap holds the circuit name. The rating above the handle follows the device settings in this exercise.',cover)
+    if domestic:
+        # Broad, flat transparent label covers and the recessed flag must
+        # retain their normals when a phone uses the Economy mesh.
+        label['preservePlanarLod']=True
     box('Printed upper band',(0,61.2,60.52),(width-1.9,1.1,.16),label,accent,.12)
     descriptor='RCBO' if rcbo else 'RCCB' if rccb else 'MCB'
     words(descriptor,(-width/2+5.8,58.5,60.63),label,ink,2.0)
     # Front and side connection diagrams use the same markings as the housed
     # terminals. Leave manufacturer logos and certification marks off the label.
-    def pole_diagram(parent, pitch, terminal_height, stroke):
+    def pole_diagram(parent, pitch, terminal_height, stroke, print_mat=fine_ink):
         half = terminal_height/2
         def line(x1,y1,x2,y2):
             segment = box('Printed diagram line',((x1+x2)/2,(y1+y2)/2,0),
-                          (math.hypot(x2-x1,y2-y1),stroke,.07),parent,fine_ink,.025)
+                          (math.hypot(x2-x1,y2-y1),stroke,.07),parent,print_mat,.025)
             segment.rotation_euler.z=math.atan2(y2-y1,x2-x1)
         for i in range(poles):
             x=(i-(poles-1)/2)*pitch
             line(x,half,x,1.7)
             line(x,-half,x,-1.2)
             line(x,-1.2,x-1.0,1.4)
-            cyl('Fixed contact mark',(x,1.7,.01),stroke*1.15,.08,parent,fine_ink,n=12)
+            cyl('Fixed contact mark',(x,1.7,.01),stroke*1.15,.08,parent,print_mat,n=12)
             upper=next(t for t in recipe['terminals'] if t['entryDirection'][1]>0 and abs(t['anchor'][0]/UNIT-(i-(poles-1)/2)*17.5)<.02)
             lower=next(t for t in recipe['terminals'] if t['entryDirection'][1]<0 and abs(t['anchor'][0]/UNIT-(i-(poles-1)/2)*17.5)<.02)
             for y,terminal in ((half+1.15,upper),(-half-1.15,lower)):
-                words(terminal['label'],(x,y,0),parent,fine_ink,max(1.2,stroke*7))
+                words(terminal['label'],(x,y,0),parent,print_mat,max(1.2,stroke*7))
         for i in range(1,poles):
             x=(i-(poles-1)/2-.5)*pitch
             line(x-pitch*.27,.2,x+pitch*.18,.2)
     if differential:
         diagram=api.empty('Contact diagram on operating face',label,mm((-width/2+24.6,40.4,59.35)))
-        pole_diagram(diagram,2.65,5.4,.16)
+        face_print=api.material('DIN front schematic marking',(.062,.069,.065),0,.46) if kind=='rcd' else fine_ink
+        pole_diagram(diagram,2.65,5.4,.16,face_print)
     sides=part('body')
     for sign in (-1,1):
         printing=api.empty('Side circuit identification',sides,mm((sign*(width/2-.002),47,20)))
@@ -192,15 +198,35 @@ def build_din_protection(recipe, root, api):
         ty=21.6 if rcbo else 52.2
         test=part('test')
         box('Separate test button opening',(tx,ty,60.64),(11.3,5.2,.45),test,dark,.6)
-        box('Blue test pushbutton',(tx,ty,61.25),(10.5,4.55,2.55),test,turquoise,.58)
-        words('T',(tx,ty,62.57),test,ivory,2.8)
+        key=box('Blue test pushbutton',(tx,ty,61.25),(10.5,4.55,2.55),test,turquoise,.58)
+        if kind=='rcd':
+            # The photograph shows a recessed T in the blue plastic.
+            # Keep its moulded recess in Economy, where a bevel is subpixel.
+            cap=detail('rccb-test-key','The blue T pushbutton trips the powered test loop. It is a separate control from the grey operating handle.',test,preservePlanarLod=True)
+            key.parent=cap
+            shade=api.material('Blue test-key recess',(.026,.090,.14),0,.56)
+            for y,sx,sy in ((ty+.99,2.85,.56),(ty-.24,.56,2.06)):
+                cut(key,box('T deboss',(tx,y,62.50),(sx,sy,.73),cap,None,.06))
+                box('Bottom of recessed test mark',(tx,y,62.18),(sx-.06,sy-.04,.035),cap,shade,.014)
+        else:
+            words('T',(tx,ty,62.57),test,ivory,2.8)
         if rccb:
             words('TEST',(tx,56.8,60.62),label,ink,1.6)
         # Indicator follows the actual solver switch/trip state at runtime.
         fx,fy=(tx,30.8) if rcbo else (lever_x,50.4)
         box('Indicator bezel',(fx,fy,60.65),(10.5,2.6,.46),label,side,.48)
         flag=detail('contact-indicator','The small window shows the position of the main contacts. The test button can open them while the supply is on.',part('contacts'),contactFlag=True)
+        if kind=='rcd':
+            flag['keepDistanceSurface']=True
         box('Contact state flag',(fx,fy,60.94),(9.15,1.6,.23),flag,api.material('Mechanical contact flag',(.55,.079,.043),0,.55),.25)
+        if kind=='rcd':
+            # The lower right optical flag is independent of the upper left
+            # contact flag. Only a differential trip exposes its yellow face.
+            trip_x,trip_y=7.5,33.5
+            bezel=box('Trip window rim',(trip_x,trip_y,60.40),(11.35,3.32,1.05),label,ivory,.56)
+            cut(bezel,box('Recessed trip window',(trip_x,trip_y,60.40),(10.15,2.12,2.40),label,None,.43))
+            trip=detail('residual-trip-window','The lower window turns yellow when the residual trip releases the latch. It stays grey when someone switches the lever off by hand.',part('contacts'),residualTripFlag=True,keepDistanceSurface=True)
+            box('Mechanical trip shutter',(trip_x,trip_y,60.41),(10.1,2.07,.32),trip,api.material('Mechanical residual trip shutter',(.085,.089,.090),0,.52),.35)
     for n in range(lever_count):
         x=lever_x+n*17.5
         # Physically offset the pad from the axle. Up/down moves the entire
@@ -208,6 +234,56 @@ def build_din_protection(recipe, root, api):
         if n==0:
             actuator=api.semantic('actuator',frame,mm((0,41.1,56.3)),{'animation':'rotate','axis':'x','onAngle':-.52,'offAngle':.56})
             actuator.rotation_euler.x=-.52
+        if domestic:
+            paddle=detail('din-paddle','The moving drum reveals I below the raised handle or O above the lowered handle. This is a mechanical contact position, not a voltage reading.',actuator,preservePlanarLod=True)
+            drum_radius=8.1
+            drum_colour=api.material('MCB drum graphite',(.17,.19,.19),0,.44) if kind=='mcb' else grey
+            drum=cyl('Operating drum',(x,0,0),drum_radius,10.7,paddle,drum_colour,'x',72)
+            if kind=='mcb':
+                # Across the narrow pole the broad forward grip sits on two
+                # pierced cheeks. Leave a true transverse hole, including at LOD.
+                wing=[(-3.4,4.6),(-4.3,9.6),(-4.0,11.7),(-2.8,13.4),(2.9,13.4),(3.7,12.35),(3.5,9.5),(2.15,6.55)]
+                for direction in (-1,1):
+                    cheek_x=x+direction*5.8
+                    cheek=profile('Pierced paddle cheek',wing,cheek_x-1.77,cheek_x+1.77,paddle,grey,.42)
+                    cut(cheek,cyl('Open accessory eye',(cheek_x,-.25,9.9),1.45,5.2,paddle,None,'x',32))
+                profile('Wide moulded operating lip',[(-3.75,11.65),(-3.23,13.02),(-2.60,13.6),(2.95,13.6),(3.85,12.6),(3.60,10.7),(2.10,10.35)],x-7.66,x+7.66,paddle,grey,.42)
+            else:
+                grip=profile('Tapered RCCB lever',[(-3.5,4.8),(-3.52,10.8),(-2.5,13.5),(2.9,13.5),(3.65,12.25),(2.30,5.85)],x-5.75,x+5.75,paddle,grey,.52)
+                cut(grip,cyl('Locking pin passage',(x,-.15,9.6),1.18,14,paddle,None,'x',32))
+                notch=.63
+                slot=box('Slot beside the operating neck',(x,drum_radius*math.sin(notch),drum_radius*math.cos(notch)),(4.4,1.15,2.0),paddle,None,.15)
+                slot.rotation_euler.x=-notch
+                cut(drum,slot)
+            # Markings conform to the moving drum. In the opposite position
+            # the corresponding mark rolls under the edge of the fixed fascia.
+            def mark(name, points, faces, material, offset=.05):
+                radius=drum_radius+offset
+                verts=[mm((x+dx,radius*math.sin(a),radius*math.cos(a))) for dx,a in points]
+                mesh=bpy.data.meshes.new(name)
+                mesh.from_pydata(verts,[],faces)
+                mesh.update()
+                obj=bpy.data.objects.new(name,mesh)
+                bpy.context.collection.objects.link(obj)
+                return api.setmesh(obj,paddle,material)
+
+            def sector(name,half_width,low,high,mat,offset):
+                steps=12
+                pts=[(dx,low+(high-low)*i/steps) for i in range(steps+1) for dx in (-half_width,half_width)]
+                quads=[(2*i,2*i+1,2*i+3,2*i+2) for i in range(steps)]
+                mark(name,pts,quads,mat,offset)
+            closed_ink=api.material('Raised I marking',(.89,.90,.87) if kind=='mcb' else (.055,.065,.061),0,.52)
+            open_ink=api.material('Lowered O marking',(.88,.89,.85) if kind=='mcb' else (.055,.065,.061),0,.52)
+            if kind=='mcb':
+                sector('Green open position sector',4.6,.96,1.69,api.material('Green OFF sector',(.035,.16,.093),0,.52),.042)
+            sector('I on moving drum',.58,-1.56,-1.01,closed_ink,.084)
+            samples=40
+            pts=[]
+            for i in range(samples):
+                a=2*math.pi*i/samples
+                pts.extend([(math.cos(a)*w,1.30+math.sin(a)*h/drum_radius) for w,h in ((2.04,2.35),(1.22,1.51))])
+            mark('O on moving drum',pts,[(2*i+1,2*i,2*((i+1)%samples),2*((i+1)%samples)+1) for i in range(samples)],open_ink,.085)
+            continue
         cyl('Pivot barrel',(x,0,0),5,11.2,actuator,grey,'x')
         profile('Curved handle arm',[(-3.4,1.5),(-3.6,10.1),(-2.3,12),(2.9,12),(3.4,10.7),(2.25,1.5)],x-3.85,x+3.85,actuator,grey,.65)
         grip_margin=1.5 if lever_count==3 else 2.0
@@ -288,4 +364,4 @@ def build_din_protection(recipe, root, api):
         for x in (-2.3,2.3):
             cyl('Current path through core',(ring_x+x,40,37),.98,13.0,inside,copper)
         box('Test path resistor',(ring_x,50.3,34),(9,2.1,2.4),inside,brass)
-    return ['individual-electrical-terminations','protection-mechanism','din-latch','installation-details','bench-rail-support']+(['contact-indicator'] if differential else [])
+    return ['individual-electrical-terminations','protection-mechanism','din-latch','installation-details','bench-rail-support']+(['contact-indicator'] if differential else [])+(['din-paddle'] if domestic else [])+(['residual-trip-window','rccb-test-key'] if kind=='rcd' else [])

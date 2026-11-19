@@ -56,7 +56,7 @@ export interface AssetPresentation {
   looseHeaterLead?:THREE.Object3D;
   heaterScreen?:THREE.Object3D;
   fuseMarkings:{node:THREE.Object3D;amps:number}[];
-  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];pickingMaterial?:THREE.Material;cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
+  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];pickingMaterial?:THREE.Material;cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;residualTripFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   terminalBatches:THREE.Mesh[];
   receptacles:{node:THREE.Object3D;terminal:string}[];
   motions:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;angle:number;current:number}[];
@@ -112,8 +112,11 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
     // identities rather than moving these surfaces into the electrical emitter.
     const lampOutput=original instanceof THREE.MeshStandardMaterial&&lampTypes.has(componentType)&&(part==='emitter'||part==='cover'&&componentVariant!=='bulb'&&original.color.getHexString()==='f5f2e9'||part==='electronics'&&original.color.getHexString()==='eee8df');
     const indicator=part==='display'&&(componentType==='indicator'||!!dimensions&&Math.max(dimensions.x,dimensions.y,dimensions.z)<.085);
-    for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.contactFlag){entry.contactFlag=true;break;}
-    if(original instanceof THREE.MeshStandardMaterial&&(entry.contactFlag||lampOutput||part==='emitter'||indicator||original.emissive.r+original.emissive.g+original.emissive.b>0)){
+    for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent){
+      if(owner.userData.contactFlag){entry.contactFlag=true;break;}
+      if(owner.userData.residualTripFlag){entry.residualTripFlag=true;break;}
+    }
+    if(original instanceof THREE.MeshStandardMaterial&&(entry.contactFlag||entry.residualTripFlag||lampOutput||part==='emitter'||indicator||original.emissive.r+original.emissive.g+original.emissive.b>0)){
       const light=original.clone();entry.light=light;presentation.owned.push(light);
       entry.indicator=indicator;entry.lampOutput=lampOutput;
       for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.emitterKind==='filament'){entry.filament=true;break;}
@@ -182,6 +185,7 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
     mesh.node.castShadow=!(batch&&mesh.pickingMaterial)&&castsEquipmentShadow(mesh.node.material,!!mesh.lampOutput,!!mesh.node.userData.lampEnvelope);
     if(mesh.light){
       if(mesh.contactFlag){mesh.light.color.set(closedForPresentation(component,state)?'#b33529':'#417f49');}
+      else if(mesh.residualTripFlag){mesh.light.color.set(state?.tripped?'#e8b632':'#515654');}
       else if(mesh.lampOutput){
         if(mesh.node.userData.lampEnvelope && component.type==='lamp' && mesh.light.transparent){
           // A clear GLS bulb emits at the tungsten coil. Keep the glass

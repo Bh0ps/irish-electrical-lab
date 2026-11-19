@@ -2,6 +2,7 @@ import { FCU_BOX,KITCHEN_PANEL,heaterFlexRoute,fusedIncomingLead } from './fused
 import { COMPONENTS } from './components';
 import {BELL_CUPBOARD as serviceBoard,bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
 import {cromaLeadPath} from './croma-chime';
+import {BOARD_STUDY_ID,UTILITY_BOARD,mountedStudyControl,outgoingBoardLead} from './consumer-unit-site';
 import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
@@ -29,7 +30,7 @@ const frontPush:WallFixing={room:3,face:[1.00,1.17,2.875],yaw:0};
 const gardenPush:WallFixing={room:REAR_GARDEN.id,face:[GARDEN_DOOR.centre-GARDEN_DOOR.width/2-.105,1.17,HOME_BACK-.15],yaw:Math.PI};
 const houseFixings:Record<number,Record<string,WallFixing>>={
   1:{meter:{room:3,face:[2.89,1.24,2.865],yaw:0},supply:{room:3,face:[3.18,.90,2.865],yaw:0},light:back(1,.42,1.84)},
-  2:{load2:kitchenA},
+  2:{load2:kitchenA,load1:back(1,.42,1.94),supply:back(2,5.08,1.50),[BOARD_STUDY_ID]:back(2,UTILITY_BOARD.x,UTILITY_BOARD.bottom)},
   3:{load1:back(1,.42,1.84),load2:kitchenA},
   9:{near:{room:1,face:[HOME_STAIR.divider-.035,1.04,.97],yaw:-Math.PI/2},
     far:side(STAIR_LANDING.id,HOME_STAIR.east,STAIR_TOP+1.04,.97,-1),
@@ -86,6 +87,11 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openR
   const terminal=getComponentTerminals(component,COMPONENTS[component.type]).find(t=>t.id===end.terminal);
   if(!terminal)return;
   const pin=installedTerminalPoint(item,component,terminal);
+  if(doc.lessonId===2&&wire&&mountedStudyControl(component)){
+    const board=site.items.find(i=>i.id===component.mount!.board);
+    const lead=board&&outgoingBoardLead(board,component,pin,end.terminal,wire.role);
+    if(lead)return {pin,chase:lead[lead.length-1],riser:-2.87,item,component,lead};
+  }
   if(doc.lessonId===36&&item.fixture?.ceilingLight){
     return {pin,chase:[pin[0],bath.circuitHeight,pin[2]],riser:pin[2],item,component};
   }

@@ -6,7 +6,7 @@ import type { StudyProgress } from './progress';
 import type { CircuitDocument, SimulationResult } from './types';
 
 type DoorCall='Idle'|'Front'|'Rear'|'Both';
-interface CallReading { id: string; label: string; on: boolean; dc?: boolean; emitter?:boolean; isolated?:boolean; pair?:[string,string]; nominal?:number; call?:DoorCall }
+interface CallReading { id: string; label: string; on: boolean; dc?: boolean; emitter?:boolean; isolated?:boolean; sharedOff?:boolean; pair?:[string,string]; nominal?:number; call?:DoorCall }
 export interface CallStep {
   target: string; label: string; instruction: string; changed: string;
   before: CallReading[]; after: CallReading[];
@@ -18,6 +18,7 @@ export interface CallStep {
   waitForFan?:boolean;
   /** Printed-terminal question between the two switch operations. */
   stairCheck?:'near'|'far';
+  boardQuestion?:boolean;
   savedId?:string;
 }
 export interface HouseCall {
@@ -36,7 +37,9 @@ const worktops=(left:boolean,right:boolean):CallReading[]=>[
 const bathroom=(light:boolean,fan:boolean,isolated=false):CallReading[]=>[
   {id:'light',label:'Bathroom light',on:light,emitter:true},{id:'fan',label:'Extractor',on:fan,emitter:true,isolated},
 ];
-const branches = (on:boolean):CallReading[] => [{id:'load1',label:'Lamp',on},{id:'load2',label:'Socket',on:true}];
+const branches = (lampOn:boolean,socketOn:boolean,sharedOff=false):CallReading[] => [
+  {id:'load1',label:'Lamp',on:lampOn,emitter:true,sharedOff},{id:'load2',label:'Socket',on:socketOn,sharedOff},
+];
 const chime = (call:DoorCall):CallReading[] => [
   {id:'chime',label:'Chime supply',pair:['AC1','AC2'],nominal:12,on:true,call},
   {id:'chime',label:'Front door',pair:['FRONT','AC2'],nominal:12,on:call==='Front'||call==='Both'},
@@ -54,9 +57,17 @@ export const HOUSE_CALLS:HouseCall[] = [
     {target:'far',label:'Choose a wire',instruction:'Which wire has the landing switch picked?',changed:'',before:[lamp(false)],after:[lamp(false)],stairCheck:'far',savedId:'book:9:strapper-landing'},
     {target:'far',label:'Use landing switch',instruction:'Use the landing switch to turn the light back on.',changed:'The landing switch connected the lamp to the live strapper.',before:[lamp(false)],after:[lamp(true)],savedId:'book:9:call-1'},
   ]},
-  {lesson:2,title:'Find the lighting breaker',request:'There are two breakers in the board. The lamp is on and the kitchen socket has power.',done:'You found the breaker that switches off just the lamp, then put it back on.',breakers:[{id:'branch1',label:'Breaker 1'},{id:'branch2',label:'Breaker 2'}],steps:[
-    {target:'branch1',label:'Choose a breaker',instruction:'Which breaker turns off the lamp and leaves the socket on?',changed:'The lamp went out. The socket still has power.',before:branches(true),after:branches(false)},
-    {target:'branch1',label:'Restore the lighting breaker',instruction:'Switch the lamp back on at the board. Check both readings.',changed:'The lamp and the socket have power again.',before:branches(false),after:branches(true)},
+  {lesson:2,title:'Find the lighting breaker',searchTerms:'fuse board consumer unit shared trip switch RCD RCCB lamp kitchen socket breakers',
+    request:'The two numbered switches are breakers. The hall light and kitchen socket both have power. Try one lever on the simulated board.',
+    done:'You checked the lamp and socket separately, then brought both back on with the shared switch.',finishedId:'book:2:call-2',
+    breakers:[{id:'branch1',label:'Breaker 1'},{id:'branch2',label:'Breaker 2'},{id:'group',label:'Shared switch'}],steps:[
+    {target:'branch1',label:'Choose a breaker',instruction:'Which breaker turns off the lamp and leaves the socket on?',changed:'The lamp went out. The socket still has power.',before:branches(true,true),after:branches(false,true)},
+    {target:'branch1',label:'Restore the lighting breaker',instruction:'Put the lighting breaker back on.',changed:'The lamp is lit again.',before:branches(false,true),after:branches(true,true)},
+    {target:'branch2',label:'Find the socket breaker',instruction:'Now switch off just the kitchen socket.',changed:'The socket has lost its supply.',before:branches(true,true),after:branches(true,false),savedId:'book:2:socket-off'},
+    {target:'load1',label:'Read the two fittings',instruction:'Look at the readings. Which fitting still has power?',changed:'The lamp still has power on its own circuit.',before:branches(true,false),after:branches(true,false),boardQuestion:true,savedId:'book:2:read-branches'},
+    {target:'branch2',label:'Restore the socket breaker',instruction:'Put the socket breaker back on.',changed:'The socket has power again.',before:branches(true,false),after:branches(true,true),savedId:'book:2:socket-on'},
+    {target:'group',label:'Turn off the shared switch',instruction:'Turn off the shared switch marked RCCB. Watch both circuits.',changed:'Both circuits stopped drawing current.',before:branches(true,true),after:branches(false,false,true),savedId:'book:2:shared-off'},
+    {target:'group',label:'Restore both circuits',instruction:'Put the shared switch back on.',changed:'The lamp is on and the socket has power.',before:branches(false,false,true),after:branches(true,true),savedId:'book:2:shared-on'},
   ]},
   {lesson:72,title:'Check both doorbell buttons',searchTerms:'hall chime bell push front back two door inputs 12 volts AC',request:'The hall chime serves two doors. Tap a door button to hold it while you check the chime. Tap again to let go.',done:'You rang from both doors and checked the voltage at the hall chime.',finishedId:'book:72:call-4',
     bellPushes:[{id:'front',door:'front'},{id:'back',door:'back'}],steps:[
@@ -105,6 +116,9 @@ export function houseJobLabels(doc:CircuitDocument):CircuitDocument{
   })};
   if(doc.lessonId!==2)return doc;
   return {...doc,components:doc.components.map(c=>{
+    if(c.id==='course-enclosure'&&c.label==='Two-row domestic enclosure')return {...c,label:'Consumer unit'};
+    if(c.id==='group'&&c.label==='Shared RCCB · residual current only')return {...c,label:'Shared switch (RCCB)'};
+    if((c.id==='branch1'||c.id==='branch2')&&c.label==='Outgoing MCB '+c.id.slice(-1))return {...c,label:'Breaker '+c.id.slice(-1)};
     if(c.id==='load1'&&c.label==='Lamp on breaker 1')return {...c,label:'Lamp'};
     if(c.id==='load2'&&c.label==='Socket on breaker 2')return {...c,label:'Kitchen socket'};
     return c;
@@ -208,13 +222,28 @@ export function callReadings(points:CallReading[],doc:CircuitDocument,result?:Si
     const inRange=point.nominal===undefined || (value!==null && value<=point.nominal*1.1);
     const lit=point.emitter?result.deviceStates[point.id]?.energized:undefined;
     const isolated=point.id==='fan'&&result.deviceStates['fan-isolation']?.closed===false&&result.deviceStates.runon?.energized===false&&lit===false&&(value===null||value<=1);
-    const voltageMatches=point.isolated?isolated:powered===point.on && inRange;
+    const current=point.sharedOff?result.branchCurrents[point.id+'.load']:undefined;
+    const disconnected=point.sharedOff===true&&doc.supply.enabled&&result.deviceStates.group?.closed===false&&!result.deviceStates.group.tripped&&
+      ['branch1','branch2'].every(id=>result.deviceStates[id]?.closed===true)&&result.deviceStates[point.id]?.energized===false&&
+      current!==undefined&&Math.hypot(current.re,current.im)<1e-6&&(value===null||value<=1);
+    const voltageMatches=point.sharedOff?disconnected:point.isolated?isolated:powered===point.on && inRange;
     const label=point.id==='chime'&&point.pair?point.label+' · '+point.pair.map(pin=>chimeMark(doc,pin)).join(' to '):point.label;
-    return {label,value,powered,lit,isolated,call,matches:voltageMatches && (!point.emitter||lit===point.on) && (!point.call || call===point.call)};
+    return {label,value,powered,lit,isolated,disconnected,call,matches:voltageMatches && (!point.emitter||lit===point.on) && (!point.call || call===point.call)};
   });
   return readings;
 }
 
+export type BoardChoice={circuitId:string;revision:number;activity:string;component:string};
+export function checkBoardChoice(call:HouseCall,index:number,doc:CircuitDocument,result?:SimulationResult,choice?:BoardChoice){
+  const step=call.steps[index];
+  if(!step?.boardQuestion||!choice||choice.circuitId!==doc.id||choice.activity!==houseStepId(call,index)||choice.revision!==doc.revision||!doc.supply.enabled)return;
+  const rows=callReadings(step.before,doc,result);
+  if(!rows?.every(r=>r.matches))return;
+  const row=rows[step.before.findIndex(r=>r.id===choice.component)];
+  if(!row||row.value===null)return;
+  const volts=row.value.toLocaleString('en-IE',{maximumFractionDigits:1})+' V';
+  return {pass:row.powered===true,message:row.label+' reads '+volts+'. '+(row.powered?'Its circuit still has power.':'Which fitting is still at mains voltage?')};
+}
 export type StairPin='T1'|'T2';
 export type StairChoice={circuitId:string;revision:number;activity:string;pin:StairPin};
 const strapperPins:readonly StairPin[]=['T1','T2'];
@@ -264,9 +293,9 @@ export function checkStairChoice(call:HouseCall,index:number,doc:CircuitDocument
 
 export function verifiedCallStep(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,action?:CallOperation){
   const step=call.steps[index];
-  if(!step || step.measure || step.waitForFan || step.stairCheck || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==houseStepId(call,index)
+  if(!step || step.boardQuestion || step.measure || step.waitForFan || step.stairCheck || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==houseStepId(call,index)
     || doc.lessonId!==call.lesson || doc.id!==action.before.id || doc.revision!==action.before.revision+1) return false;
-  const allowed = call.breakers ? call.breakers.some(b=>b.id===action.component) : action.component===step.target;
+  const allowed = call.breakers && step.target!=='group' ? ['branch1','branch2'].includes(action.component) : action.component===step.target;
   if(!allowed)return false;
   // Each entrance must work on its own, including when a broken input hides a held button.
   if(call.bellPushes?.some(push=>push.id!==step.target && [action.before,doc].some(d=>d.components.find(c=>c.id===push.id)?.params.pressed)))return false;
@@ -295,8 +324,13 @@ export function onlyCallControlsChanged(call:HouseCall,doc:CircuitDocument,origi
   function key(d:CircuitDocument){
     const normal=validateCircuit(houseJobLabels(d));
     return JSON.stringify({...normal,id:original.id,revision:0,components:normal.components.map(c=>{
+      if(call.lesson===2&&c.id==='course-enclosure'){
+        const params={...c.params};delete params.doorOpen;return {...c,params};
+      }
       if(!targets.has(c.id))return c;
       const params={...c.params};
+      if(call.lesson===2&&['branch1','branch2','group'].includes(c.id))delete params.resetToken;
+      if(call.lesson===2&&c.id==='group')delete params.testPressed;
       delete params[c.type==='pushbutton'?'pressed':c.type==='switch2'?'position':'closed'];
       return {...c,params};
     })});

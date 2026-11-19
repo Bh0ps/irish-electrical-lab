@@ -527,6 +527,38 @@ function voltage(solved: Solved, a: string, b: string): C | undefined {
   return av && bv && av.reference === bv.reference ? sub(av, bv) : undefined;
 }
 
+const milliampReading = (amps: number) => `${(amps * 1000).toFixed(1)} mA`;
+
+function residualTripDetail(document: CircuitDocument, item: ComponentInstance, net: Network, solved: Solved, poleSum: C, poles: string[]): string {
+  // Pole currents run IN → OUT. The internal test resistor runs from LIN
+  // directly to NOUT. At the load-side boundary its current has the opposite
+  // sign to the residual that a healthy, powered test produces.
+  const testCurrent = solved.currents[item.id + '.testResistor'] ?? c();
+  const external = add(poleSum, testCurrent);
+  const tolerance = Math.min(.00005, abs(poleSum) * .001);
+  const reading = `${item.label} tripped at an imbalance of ${milliampReading(abs(poleSum))}.`;
+  const testPath = abs(testCurrent) >= tolerance;
+  if (testPath && abs(external) < tolerance) return `${reading} The T button sent current through the internal test resistor and back through the neutral pole.`;
+
+  // A pole imbalance on its own cannot identify an earth fault. Name earth
+  // only when a branch connected to these outgoing poles actually carried
+  // the matching current into a protective terminal before the contacts moved.
+  const paths = installationPaths(document, net, item.id);
+  const outputs = new Set(poles.map(pole => paths.find(terminal(item, pole + 'OUT'))));
+  const pe = new Set(document.components.flatMap(device => definition(device).terminals.filter(t => t.role === 'PE').map(t => terminal(device, t.id))));
+  const earthBranch = net.branches.some(branch => {
+    if (branch.component || pe.has(branch.a) === pe.has(branch.b)) return false;
+    const toEarth = pe.has(branch.b);
+    if (!outputs.has(paths.find(toEarth ? branch.a : branch.b))) return false;
+    const amps = solved.currents[branch.key];
+    return amps && abs(sub(external, toEarth ? amps : scale(amps, -1))) < tolerance;
+  });
+  const path = earthBranch
+    ? `A path to a protective earth terminal carried ${milliampReading(abs(external))}.`
+    : 'Current took a path outside the monitored conductors. Follow the return wiring from the load.';
+  return testPath ? `${reading} The T test resistor carried ${milliampReading(abs(testCurrent))} as well. ${path}` : `${reading} ${path}`;
+}
+
 function evaluate(document: CircuitDocument, solved: Solved, net: Network, states: Record<string, DeviceState>, previous: Record<string, DeviceState>, dt: number, events: SimulationEvent[]): boolean {
   let changed = false;
   const set = (state: DeviceState, key: string, value: number | boolean) => { const old = state[key]; if (typeof value === 'number' && typeof old === 'number' ? Math.abs(value - old) > Math.max(0.00001, Math.abs(value) * 0.0002) : old !== value) { state[key] = value; changed = true; } };
@@ -641,20 +673,32 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
       const branchNames = item.type === 'overload' ? ['phase1', 'phase3', 'phase5'] : isType(item, 'rcd3', 'mcb3') ? ['L1', 'L2', 'L3'] : isType(item, 'rcbo', 'rcd', 'fcu') ? ['L'] : ['main'];
       const current = Math.max(0, ...branchNames.map(name => abs(solved.currents[`${item.id}.${name}`])));
       state.energized = current > 0.0001; state.level = current / rating;
-      const overload = current > rating * 1.05;
-      state.elapsed = overload ? (old?.elapsed || 0) + dt : 0;
-      if (!isType(item, 'rcd', 'rcd3') && (current > rating * number(p, 'instantMultiple', 5) || overload && state.elapsed >= number(p, 'delay', 0.5))) trip(item, state, hasReplaceableFuse(item.type)?'Fuse blown':'Overcurrent trip', `${item.label} carried ${current.toFixed(2)} A before it opened. Its rating is ${rating} A.`);
+      const residualOnly = isType(item, 'rcd', 'rcd3');
+      const overload = !residualOnly && current > rating * 1.05;
+      const previousElapsed = old?.resetToken === state.resetToken ? old.elapsed || 0 : 0;
+      state.elapsed = overload ? previousElapsed + dt : 0;
+      if (!residualOnly && (current > rating * number(p, 'instantMultiple', 5) || overload && state.elapsed >= number(p, 'delay', 0.5))) trip(item, state, hasReplaceableFuse(item.type)?'Fuse blown':'Overcurrent trip', `${item.label} carried ${current.toFixed(2)} A before it opened. Its rating is ${rating} A.`);
+      if (!state.tripped && !residualOnly) state.details = `${current.toFixed(3)} A · ${overload ? 'overload building up' : 'below the overload setting'}.`;
       if (isType(item, 'rcd', 'rcbo', 'rcd3')) {
         const names = item.type === 'rcd3' ? ['L1', 'L2', 'L3', 'N'] : ['L', 'N'];
-        const imbalance = abs(names.reduce((sum, name) => add(sum, solved.currents[`${item.id}.${name}`] || c()), c()));
+        const poleSum = names.reduce((sum, name) => add(sum, solved.currents[`${item.id}.${name}`] || c()), c());
+        const imbalance = abs(poleSum);
+        const threshold = Math.max(.000001, number(p, 'residualRating', number(p, 'tripMa', 30) / 1000));
         state.imbalance = imbalance;
         state.peakResidual = Math.max(Number(state.peakResidual) || 0, imbalance);
-        if (imbalance > Math.max(0.000001, number(p, 'residualRating', number(p, 'tripMa', 30) / 1000))) {
-          if (!state.tripped) state.tripResidual = imbalance;
-          trip(item, state, 'Residual-current trip', `The currents through ${item.label} were out of balance by ${(imbalance * 1000).toFixed(1)} mA. Current returning along earth bypasses its sensor.`);
+        if (residualOnly) state.level = imbalance / threshold;
+        if (state.tripped) continue;
+        if (imbalance > threshold) {
+          state.tripResidual = imbalance;
+          trip(item, state, 'Residual-current trip', residualTripDetail(document,item,net,solved,poleSum,names));
+        } else if (p.testPressed === true) {
+          const testAmps = abs(solved.currents[item.id + '.testResistor']);
+          state.details = testAmps < .00005 ? 'No current passed through the T test path. Check that the contacts are closed and the test path has a supply and a return.'
+            : `The T test resistor carried ${milliampReading(testAmps)}. The contacts stayed closed. Imbalance ${milliampReading(imbalance)}. Trip setting ${milliampReading(threshold)}.`;
+        } else if (residualOnly) {
+          state.details = state.closed ? `${item.type === 'rcd3' ? 'Highest phase current' : 'Line current'} ${current.toFixed(3)} A. Imbalance ${milliampReading(imbalance)}. Trip setting ${milliampReading(threshold)}.` : 'The handle is off. The contacts are open.';
         }
       }
-      if (!state.tripped) state.details = `${current.toFixed(3)} A · ${overload ? 'overload building up' : 'below the overload setting'}.`;
     } else if (isType(item, 'timer', 'sensor', 'smartrelay')) {
       const input = abs(getV(item, 'IN', 'N')) > number(p, 'controlVoltage', nominal) * 0.5;
       const connectedInput = document.wires.some(w => w.from.component === item.id && w.from.terminal === 'IN' || w.to.component === item.id && w.to.terminal === 'IN');

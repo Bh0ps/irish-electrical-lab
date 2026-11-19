@@ -4,9 +4,10 @@ import type {JobSite, SiteItem} from './job-site';
 import type {SitePose} from './site-camera';
 import {fittedHeaterView} from './fused-heater-site';
 import type {Vec3} from './types';
+import {cupboardView} from './consumer-unit-site';
 
-/** A tap on the cap from the doorstep rings it. Farther away, the first tap takes a closer look. */
-export function withinDoorbellReach(eye:Vec3|undefined,cap:Vec3){
+/** At arm's reach a tap operates the fitting; farther away it takes a closer look. */
+export function withinFittingReach(eye:Vec3|undefined,cap:Vec3){
   return !!eye&&Math.hypot(eye[0]-cap[0],eye[1]-cap[1],eye[2]-cap[2])<=.85;
 }
 
@@ -14,6 +15,8 @@ export function withinDoorbellReach(eye:Vec3|undefined,cap:Vec3){
 export function standingView(site:JobSite,item?:SiteItem,aspect=1):SitePose {
   const stair=site.kind==='home'&&site.building.rooms[1]==='Stair hall';
   const room=item?.room??site.room;
+  const board=site.cupboardBoard&&site.items.find(i=>i.id===site.cupboardBoard);
+  if(board&&room===board.room)return cupboardView(board,'walk',aspect);
   const heater=site.items.find(i=>i.fixture?.panelHeater);
   if(room===0&&heater?.room===room)return fittedHeaterView(heater,'walk',aspect);
   const visit=(site.kind==='home'?homeVisit(room,stair,site.doorsteps,aspect):serviceVisit(site,room))??{position:[0,STAIR_EYE,1.6] as [number,number,number],yaw:0,pitch:0};
