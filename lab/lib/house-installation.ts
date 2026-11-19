@@ -1,5 +1,5 @@
 import { COMPONENTS } from './components';
-import { HOME_BACK, HOME_POINTS, HOME_STAIR, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
+import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
 import { fixturePoint, type FixturePose } from './site-fixtures';
@@ -19,6 +19,8 @@ const ring={
   'socket-c':rear(HOME_POINTS.bedroom,.48),
 };
 const outsideBath=side(2,2.2,1.18,-.05,1);
+const frontPush:WallFixing={room:3,face:[1.00,1.17,2.875],yaw:0};
+const gardenPush:WallFixing={room:REAR_GARDEN.id,face:[GARDEN_DOOR.centre-GARDEN_DOOR.width/2-.105,1.17,HOME_BACK-.15],yaw:Math.PI};
 const houseFixings:Record<number,Record<string,WallFixing>>={
   1:{meter:{room:3,face:[2.89,1.24,2.865],yaw:0},supply:{room:3,face:[3.18,.90,2.865],yaw:0},light:back(1,.42,1.84)},
   2:{load2:kitchenA},
@@ -37,11 +39,16 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
   35:{switch:outsideBath},
   36:{'light-switch':outsideBath,'fan-isolation':side(2,2.2,1.72,-.05,1)},
   37:{override:outsideBath},
+  71:{front:frontPush,rear:gardenPush},
+  72:{front:frontPush,back:gardenPush},
+  73:{call:frontPush},
+  80:{push:frontPush},
 };
 export function houseFixing(id:number,c:ComponentInstance){return c.mount?undefined:houseFixings[id]?.[c.id];}
 export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixture?:FixturePose):Vec3{
   let depth=COMPONENTS[c.type].size[2]*scale/2;
   if(fixture?.flushPlate)depth=.0001;
+  else if(fixture?.bellPush)depth=.220*fixture.scale[2];
   else if(fixture?.batten)depth=.161*fixture.scale[2];
   else if(fixture&&['switch','switch2','intermediate'].includes(c.type))
     depth=.0005-(c.type==='switch'?.081:.103)*fixture.scale[2];
@@ -60,9 +67,10 @@ function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEn
   const chase:Vec3=[...pin];
   if(fixing&&Math.abs(Math.sin(fixing.yaw))>.5)chase[0]=fixing.face[0]-Math.sin(fixing.yaw)*.065;
   else if(service&&Math.abs(Math.sin(item.rotation))>.5)chase[0]=service.side*6.6;
-  else chase[2]=fixing?fixing.face[2]-.065:service?service.back-.02:item.room===3?2.8:-2.87;
+  else chase[2]=fixing?fixing.face[2]-Math.cos(fixing.yaw)*.065:service?service.back-.02:item.room===3?2.8:-2.87;
   // The rear wing and front rooms have separate routes in the ceiling void.
-  const riser=site.kind==='home'&&item.room>=4&&item.room<=7?HOME_BACK-.04:service?service.back-.02:-2.87;
+  const rearWing=item.room===REAR_GARDEN.id||(item.room>=4&&item.room<=7);
+  const riser=site.kind==='home'&&rearWing?HOME_BACK-.04:service?service.back-.02:-2.87;
   return {pin,chase,riser,item,component};
 }
 const same=(a:Vec3,b:Vec3)=>a.every((v,k)=>Math.abs(v-b[k])<.000001);

@@ -21,7 +21,7 @@ test('an empty or unfinished attached build receives an informational next step,
   const unfinished = circuit(); unfinished.wires = unfinished.wires.slice(0, 2);
   const before = structuredClone(unfinished);
   const hint = getBuildHint({ document: unfinished, expected });
-  assert.equal(hint?.kind, 'incomplete'); assert.equal(hint?.severity, 'info'); assert.match(hint!.explanation, /Missing:/);
+  assert.equal(hint?.kind, 'incomplete'); assert.equal(hint?.severity, 'info'); assert.match(hint!.explanation, /^Connect .+ to .+ · COM\./);
   assert.doesNotMatch(hint!.title, /incorrect|fault|failed/i); assert.deepEqual(unfinished, before);
 });
 

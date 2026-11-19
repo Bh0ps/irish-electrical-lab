@@ -1,3 +1,5 @@
+import { lessonProbePoints } from './lesson-probe-points.ts';
+import { describeEndpoint } from './endpoint-description.ts';
 import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Endpoint, Parameters, TerminalRole, Wire } from './types';
 import { COURSE_PAGES } from './coursebook-content.ts';
 import * as Registry from './components.ts';
@@ -14,7 +16,7 @@ const GENERATION = { title: 'ESB Networks: micro-generation and standby arrangem
 const HEATING = { title: 'Grant Ireland: documented heating control arrangements', url: 'https://grant.ie/media/mwintcmn/irldoc0033_grant-cylinders_installation-instructions_rev0110_april-26.pdf' };
 const MANUFACTURERS:Record<string,{title:string;url:string}>={
   switching:{title:'Varilight: one-way, two-way and intermediate contact arrangements',url:'https://www.varilight.co.uk/technical-section/wiring-diagrams.php'},
-  dimming:{title:'Varilight: dimmer and LED compatibility',url:'https://www.varilight.co.uk/technical-section/faqs-dimmers.php'},
+  dimming:{title:'VARILIGHT HQ1A one-way dimmer',url:'https://www.varilight.co.uk/configurator/product.php?code=HQ1A'},
   driver:{title:'Varilight: transformer and DC-driver instruction library',url:'https://www.varilight.co.uk/technical-section/leaflets.php'},
   sensor:{title:'DANLERS: PIR supply and switched/voltage-free output variants',url:'https://www.danlers.co.uk/downloadables/194d5e2dab252bdd5f7f1357e0b9d861.pdf'},
   smart:{title:'Shelly: separate switch input and potential-free relay comparison',url:'https://kb.shelly.cloud/knowledge-base/shelly-plus-1'},
@@ -287,8 +289,8 @@ const SPECS: Spec[] = [
     'earth-fault', 'A fault on one circuit has tripped the shared device. Both loads are off.', 'Find the device that feeds both breakers. Does it show a trip?', 'Current is leaking to earth at the lamp load. The shared RCCB detects the imbalance and opens, cutting power to both branches.',
     ['Opening the lamp breaker leaves the socket on.', 'Opening the shared RCCB cuts power to both loads.']],
   ['Individual RCBO circuits', 'Distribution', 'Routine',
-    'Each RCBO checks its own circuit for excess current and leakage. Identify the outgoing neutral as well as the outgoing line.',
-    'Trace each load from LOUT and back to NOUT on the same RCBO. The two outgoing neutrals have separate routes through the board.',
+    'Each RCBO looks after one circuit. Find the wire that takes power to the lamp, then find its neutral coming back to the same breaker.',
+    'Find the load side of each RCBO. Follow its line wire to the fitting and the neutral back to the same breaker. Both neutral terminals are marked N, so check which side you’re looking at.',
     'Switch off the first RCBO. Check both loads, then switch it back on.',
     'Read line to neutral at each load with the first RCBO off. Keeping the same probe pair on each load makes the two readings comparable.',
     'earth-fault', 'The first branch has tripped. Check whether the socket beside it has lost power too.', 'Look at both RCBOs. Follow the neutral from the lamp back to its breaker.', 'The first load has an earth fault. Its own RCBO trips. The other load still has line and neutral through its separate RCBO.',
@@ -322,25 +324,25 @@ const SPECS: Spec[] = [
     'open-live', 'The switch is on but the lamp is dark.', 'Check where voltage is present at the switch, then at lamp L. Switch off the bench supply before checking continuity.', 'There’s a break between the switch output and lamp L. The closed switch has a feed, but it can’t supply the lamp through that broken wire.',
     ['Opening the switch turns the lamp off.', 'Closing the switch restores voltage across the lamp.']],
   ['Parallel lighting bank', 'Lighting', 'Routine',
-    'One switch supplies a group of lamps. Each lamp has its own complete line-to-neutral path through the group.',
+    'One switch turns on all three lamps. Follow the two wires at any lamp and you’ll find it has its own feed and neutral.',
     'Trace the switched line to the L terminal on each lamp. Then follow each N back to neutral. The lamps are connected in parallel.',
     'Operate the shared switch. Compare all three lamps, then try the single-branch fault and see which lights remain on.',
     'Read L to N at each lit lamp. Each should be close to the full supply. The shared feed carries the current for all the lamps that are on.',
     'open-neutral', 'One lamp is dark. The two beside it still work.', 'Compare the dark lamp’s line and neutral connections with the working lamps.', 'Lamp B has an open neutral wire. The other two branches still have complete return paths, so their lamps can stay on.',
-    ['All three lamps receive nearly the same voltage when lit.', 'Opening one branch leaves the other complete branches available.']],
+    ['All three lamps receive nearly the same voltage when lit.', 'Disconnecting one lamp leaves the other two lit.']],
   ['Two-way staircase lighting', 'Lighting', 'Routine',
     'Each two-way switch connects its common terminal to one of two strappers. The two switch positions together decide whether current can reach the lamp.',
-    'Line goes to COM at switch A. The two strappers join T1 to T1 and T2 to T2. COM on switch B supplies the lamp.',
+    'Start at COM on the downstairs switch. Follow the two wires up to the landing, L1 to L1 and L2 to L2. The wire from COM on the landing goes to the lamp.',
     'Try all four combinations of A and B. After each move, note the selected strapper and whether the lamp is on.',
     'Compare the voltage across the lamp in the four positions. For this straight pair of strappers the lamp is on when both switches select the same strapper.',
-    'wrong-control', 'The stairs light works in one combination but misses another.', 'Check each strapper end to end with the simulated supply off.', 'The T1 strapper between A and B is open. The lamp can still work through T2 when both switches select it.',
+    'wrong-control', 'The stairs light works in one combination but misses another.', 'Check each strapper end to end with the simulated supply off.', 'There’s a break in the wire between the two L1 terminals. The lamp still works through L2 when both switches are set that way.',
     ['Either switch can change the lamp state on an intact circuit.', 'Both strappers are needed for all four combinations to work.']],
   ['Three-location intermediate lighting', 'Lighting', 'Routine',
     'An intermediate switch adds a third control point between a pair of two-way switches. It changes how the strappers pass through the middle.',
     'Trace each incoming strapper to the middle switch, then trace the two outgoing wires to the far switch. The middle contacts can join the paths straight through or cross them.',
     'Start with the light on. Change the middle switch, then an end switch. Watch which complete route reaches the lamp each time.',
     'Measure across the lamp as you change one switch at a time. To test a strapper for continuity, isolate the circuit first.',
-    'wrong-control', 'The middle switch changes position, but the lamp misses some combinations.', 'Follow each outgoing wire from the middle switch to the far switch.', 'There’s a break from C on the intermediate switch to T1 on the far switch. Any combination that needs that wire loses the lamp path.',
+    'wrong-control', 'The middle switch changes position, but the lamp misses some combinations.', 'Follow each outgoing wire from the middle switch to the far switch.', 'Follow L2 (C) on the middle switch to L1 on the far switch. That wire is broken. The light goes out whenever the switches need that path.',
     ['Moving the intermediate switch changes the lamp state.', 'An end switch can still operate the lamp with the middle switch crossed.']],
   ['Two-gang independent lighting zones', 'Lighting', 'Routine',
     'Two rockers share a faceplate and a feed. Each rocker switches one lighting zone.',
@@ -348,12 +350,12 @@ const SPECS: Spec[] = [
     'With both lamps on, turn off A. Leave B alone and check which zone changes. Restore A to compare the two outputs.',
     'Compare voltage across lamp A and lamp B. When one rocker is off its lamp can read near zero while the other stays at the supply voltage.',
     'short-circuit', 'Both lighting zones have gone out and the device feeding them has tripped.', 'Look at what protects both zones, then check which branch has the fault.', 'A line-to-neutral short on zone A trips the common protection. The two rockers are independent, but both get their feed through that device.',
-    ['Rocker A controls zone A only.', 'A common upstream trip can switch both zones off.']],
+    ['Rocker A controls zone A only.', 'If their shared breaker trips, both lights go out.']],
   ['Dimmer and dimmable lamp', 'Lighting', 'Equipment dependent',
-    'The lab dimmer varies a series resistance so you can see the effect on current and lamp power. An electronic dimmer may use a different method and must suit its lamp.',
-    'Follow line through the dimmer to the lamp. The lamp returns to neutral. The percentage on the control is a setting, not a reading in watts.',
-    'Keep the dimmer switched on. Compare the lamp at the lower and higher settings. Read the power at each setting.',
-    'Use the lamp power reading in watts. You can also compare the lamp’s voltage and its branch current. A real chopped waveform needs a meter suited to it.',
+    'Turn the knob and watch the reading lamp. At a lower setting the filament glows less brightly and the lamp uses fewer watts.',
+    'The feed goes through the dimmer to the lamp. The other lamp wire goes back to neutral. The two holes on the back of this dimmer work either way round.',
+    'Leave the lamp on. Turn it down, read the watts, then turn it up and read them again.',
+    'Watts tell you how much power the lamp uses. To check the voltage as well, put one probe on each lamp terminal.',
     'wrong-control', 'The knob moves, but the lamp stays dark at every setting.', 'Start at the dimmer’s incoming COM terminal before checking its output.', 'The supply wire to dimmer COM is open. Turning the knob changes its setting but no power reaches the lamp.',
     ['A lower setting reduces lamp power.', 'The lamp’s watt reading changes with the knob.']],
   ['Isolated LED-driver lighting', 'Lighting', 'Equipment dependent',
@@ -414,7 +416,7 @@ const SPECS: Spec[] = [
     ['Both the switch and the fuse must have a complete path.', 'Opening the local switch stops the appliance.']],
   ['Kitchen remote isolation bank', 'Sockets & supplies', 'Routine',
     'Grouped kitchen switches let you disconnect an appliance from a different position. Trace the wire as well as reading the faceplate label.',
-    'Each switch has its own output to a remote outlet. The outlets share the upstream supply but the switched lines are separate.',
+    'All the switches share a feed. Each switch sends power to its own outlet.',
     'Switch A off while B stays on. Identify the outlet that loses power. Restore it and compare the second pair.',
     'Check each outlet between L and N before and after moving a switch. This establishes the actual pairing on the bench.',
     'wrong-control', 'Switch A is on but outlet A has no supply. Outlet B still works.', 'Check A’s outgoing terminal and the line terminal at its labelled outlet.', 'The wire from switch A to outlet A is open. The labels match the intended connection, but that connection is broken.',
@@ -610,14 +612,14 @@ const SPECS: Spec[] = [
     ['The essential lamp uses the backup output.', 'The ordinary load goes off when the grid is absent.']],
   ['Shop sign with timer and daylight sensor', 'Commercial controls', 'Routine',
     'The time clock sets the hours the sign may run. The photocell allows it only in darkness. A contactor then supplies both parts of the sign.',
-    'Trace the time clock through the photocell’s enabling input to the sign contactor coil. The main contact feeds the two sign loads.',
+    'Follow the wire from the time clock to IN on the daylight sensor. When it’s dark, the sensor can switch on the contactor that feeds both parts of the sign.',
     'Set darkness and trading hours together. End the trading period while it’s still dark and check both sign loads.',
     'Compare the clock output, the photocell input and the voltage at the contactor coil. The sign needs both conditions before the coil pulls in.',
     'wrong-control', 'The shop is within trading hours and it’s dark, but the sign stays off.', 'Compare the time clock output with the enabling signal at the photocell.', 'The wire from clock OUT to photocell IN is open. The photocell still senses darkness, but the clock’s signal cannot reach it.',
     ['Either daylight or the end of trading hours can stop the sign.', 'Both sign loads share the contactor output.']],
   ['Refrigeration cooling/defrost interlock', 'Commercial controls', 'Equipment dependent',
     'The refrigeration cabinet needs cooling at one time and defrost heat at another. A changeover relay selects the path.',
-    'The released relay contact allows cooling through the thermostat. When the defrost clock energises the coil, the relay transfers to the heater path.',
+    'With the relay at rest, the thermostat can start the compressor. When the defrost timer powers the coil, the contact moves across to the heater.',
     'Begin in cooling mode. Call for defrost and compare compressor and heater power. End defrost to see the relay return.',
     'Check the relay coil voltage and then the two load voltages. A timer indication alone doesn’t show which contact is supplying a load.',
     'wrong-control', 'The timer calls for defrost, but the cabinet keeps cooling and the defrost heater stays off.', 'Compare the defrost clock output with voltage at the relay coil.', 'The wire from clock OUT to defrost relay A1 is open. The released contact continues to allow cooling and the heater contact stays open.',
@@ -652,35 +654,35 @@ const SPECS: Spec[] = [
     ['All three phases reach an intact outlet.', 'The linked handle disconnects the switched conductors together.']],
   ['Three-phase DOL motor starter', 'Industrial', 'Routine',
     'A direct-on-line starter connects all three phases to the motor through main contacts and an overload. The pushbuttons control a smaller coil circuit.',
-    'Trace the three power paths separately from A1–A2. Start and the holding contact form alternate coil paths. Stop and the overload interrupt the common control feed.',
+    'Find A1 and A2 on the contactor. Start feeds that coil. A second contact, marked 13 and 14, keeps it fed when you release Start. The three larger contacts carry the motor current.',
     'Press and release Start, then check that the motor keeps running. Press Stop and release it. The motor should wait for another start.',
-    'Read the coil voltage after releasing Start. Compare it with the three-phase motor state. A closed pushbutton by itself proves little about holding.',
-    'wrong-control', 'The motor starts, then stops as soon as you lift your finger.', 'Follow the starter’s auxiliary output 14 back to coil A1.', 'The wire from 14 to A1 is open. Start supplies the coil while held, but the auxiliary contact cannot maintain that supply afterwards.',
+    'Put the probes on A1 and A2. Press Start, then let go. Does the coil still have voltage with your finger off the button?',
+    'wrong-control', 'The motor starts, then stops as soon as you lift your finger.', 'Follow the starter’s auxiliary output 14 back to coil A1.', 'The wire from 14 back to A1 is broken. The Start button feeds the coil while you hold it. When you let go, there’s no feed to keep it on.',
     ['A healthy starter holds after Start is released.', 'Stop or the overload control contact can release the coil.']],
   ['Interlocked forward/reverse motor starter', 'Industrial', 'Routine',
     'The forward and reverse contactors feed the same motor with different phase orders. Their interlocks keep the two power paths apart.',
     'Compare the phase connections through both contactors. Follow each direction coil through a normally closed contact on the opposing contactor.',
     'Start forwards, stop, select Reverse and start again. Check the active contactor and the motor’s direction for each run.',
-    'Check each coil separately. While one direction is in, the other coil must remain out. Motor direction here follows the supplied phase order.',
+    'Measure across the forward coil, then the reverse coil. Only the selected coil should have its working voltage. Compare the order of the phase wires that reach the motor.',
     'wrong-control', 'Forward is selected and Start operates the run circuit, but the forward contactor stays out.', 'Trace the forward selector output into the reverse contactor’s normally closed auxiliary contact.', 'The wire from selector A to reverse terminal 21 is open. The reverse contactor can be released and still have no forward command to pass through its interlock.',
-    ['The two contactor paths give different phase orders.', 'The direction interlocks prevent simultaneous operation.']],
+    ['The two contactor paths give different phase orders.', 'With Forward pulled in, Reverse must stay out.']],
   ['Six-terminal star-delta motor starter', 'Industrial', 'Existing',
     'A star–delta starter changes the connections at all six motor winding ends. Its contactors and timer must suit the motor and its winding ratings.',
     'Trace the three winding starts from the main contactor. The star contactor joins the three ends. The delta contactor makes a different set of connections. Each direction of changeover has an interlock.',
     'Start the motor and watch star operate. Let the timer run. Check that star releases before delta takes over.',
-    'Compare the contactor states at the start and after the delay. This steady-state exercise shows the winding connections, not a real starting-current transient.',
+    'Watch the star contactor when you press Start. After the delay, watch it drop out and delta pull in. The bench shows the winding connections. It leaves out the brief rush of starting current.',
     'wrong-control', 'Star works during starting. At changeover it releases, but delta never pulls in.', 'Follow the timer relay’s delta output through the star contactor’s normally closed interlock.', 'The wire from the timer relay’s NO contact to star terminal 21 is open. When star releases, the delta coil still has no feed and the winding circuit is incomplete.',
     ['Star and delta make different connections at the winding ends.', 'The delta path must wait for the star contactor to release.']],
   ['Motor speed control with a variable-frequency drive', 'Industrial', 'Equipment dependent',
     'A variable-frequency drive (VFD) has a mains input, a motor output and a RUN control. They have different jobs and different terminal markings.',
     'Follow the incoming phases to the drive, its output phases to the motor and the separate dry-contact RUN loop back to the drive.',
     'Start with RUN closed and note the motor’s indicated frequency. Open RUN while leaving the drive powered.',
-    'Read the drive input separately from its output state. The lab represents the fundamental output frequency. It does not model the switched output waveform or reproduce a particular meter on a real drive.',
+    'Read the frequency in hertz (Hz) with RUN on. Open RUN and check the motor again. The bench shows the main output frequency. It leaves out the drive’s fast switching pulses.',
     'wrong-control', 'The drive has input power, but the motor has no output.', 'Check continuity of the RUN loop with the simulated sources off.', 'The wire from the run switch output to the drive’s RUN input is open. Mains power at the drive cannot replace that missing command.',
     ['Opening RUN stops the motor output.', 'The running motor follows the drive’s frequency setting.']],
   ['Staged three-phase heater bank', 'Industrial', 'Equipment dependent',
     'Two contactors switch separate stages of a three-phase heater. Both stages share one high-temperature safety contact.',
-    'Follow each thermostat to its own stage coil. Trace the common high limit upstream of both calls and the three power paths to each bank.',
+    'Follow each thermostat to its own contactor coil. Find the high-temperature cut-out that feeds both. If it opens, both heater banks lose power.',
     'Turn off the second-stage call and compare the banks. Then open the high limit and check both stage coils.',
     'Compare total power with one stage and with both. Check the stage coils to distinguish a single thermostat opening from the common high limit opening.',
     'wrong-control', 'Both stages call for heat, but only the first bank heats.', 'Read the stage B thermostat output and the voltage at the second contactor coil.', 'The wire from thermostat B to stage B coil A1 is open. The common limit still supplies stage A, so that bank continues to heat.',
@@ -711,14 +713,14 @@ const SPECS: Spec[] = [
     'Follow the input signals to I1 and I2, the output common to its supply, and Q1 to the starter coil. The overload-status indication has its own channel.',
     'Start with both input conditions present. Remove one, then compare the motor and the independent status indication.',
     'Check the control supply, both input voltages, output COM and the coil circuit. Power at the PLC electronics alone cannot show that Q1 has a supply to switch.',
-    'wrong-control', 'The PLC is on and both sensors are on, but the motor never gets a run command.', 'Compare the signal leaving the presence sensor with I1 at the controller.', 'The wire from the presence sensor output to PLC I1 is open. The two-input AND condition never becomes true, so the starter remains off.',
+    'wrong-control', 'The PLC is on and both sensors are on, but the motor never gets a run command.', 'Compare the signal leaving the presence sensor with I1 at the controller.', 'The wire from the presence sensor to I1 is broken. The PLC needs both I1 and I2 on before it starts the motor. Watch I1 as you operate the sensor.',
     ['The motor command requires both inputs.', 'An independent status output can remain on after the motor stops.']],
   ['Safety relay and contactor feedback', 'Industrial', 'Advanced',
     'A safety relay checks its input channels, feedback and reset before permitting a new start. This exercise models those signals, not a machine safety rating.',
-    'Trace both safety inputs, Reset and the feedback from the starter’s normally closed auxiliary contact. The permitted output feeds the separate ordinary Start circuit.',
+    'Find the wire from terminal 22 on the contactor back to FB on the safety relay. It tells the relay that the contactor has dropped out. Reset and Start each have their own button.',
     'Begin stopped. Reset, then start. Break a safety channel and restore it. Reset again and check that the motor waits for Start.',
     'Compare the safety relay’s armed state with the motor coil state. When the contactor is released, check the feedback path used before resetting the relay.',
-    'wrong-control', 'The machine is stopped and both safety inputs are healthy. Pressing Reset does not arm the relay.', 'Check the feedback from the starter’s released auxiliary contact at terminal FB.', 'The wire from starter terminal 22 to feedback input FB is open. The relay cannot confirm a released contactor before arming. Check this in the stopped, unarmed state.',
+    'wrong-control', 'The machine is stopped and both safety inputs are healthy. Pressing Reset does not arm the relay.', 'With the starter released, follow the wire from terminal 22 back to FB on the safety relay.', 'The wire from starter terminal 22 to feedback input FB is open. The relay cannot confirm a released contactor before arming. Check this in the stopped, unarmed state.',
     ['Opening either safety input stops the motor.', 'After Reset the motor still waits for Start.']],
 ];
 
@@ -841,7 +843,7 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
   const converter=circuit.components.find(c=>['transformer','driver','dcsupply','vfd','pv','battery'].includes(c.type));
   let conversion='';
   if(converter){const p={...Registry.COMPONENTS[converter.type].defaults,...converter.params};
-    if(converter.type==='transformer')conversion=` For ${converter.label}, the output winding is rated ${p.outputVoltage} V with ${p.ratedVoltage??p.nominalVoltage??240} V on the input winding. The turns ratio gives Vsecondary / Vprimary ≈ Nsecondary / Nprimary. The bench marks the two AC winding ends + and −. Measure between them. The output varies with the input voltage and the losses in the winding.`;
+    if(converter.type==='transformer')conversion=` For ${converter.label}, the output winding is rated ${p.outputVoltage} V with ${p.ratedVoltage??p.nominalVoltage??240} V on the input winding. The turns ratio gives Vsecondary / Vprimary ≈ Nsecondary / Nprimary. Put the probes on SEC 1 and SEC 2. This winding supplies AC. The output varies with the input voltage and the losses in the winding.`;
     else if(['driver','dcsupply'].includes(converter.type))conversion=` ${converter.label} keeps its output close to ${p.outputVoltage} V DC within its current and power limits. Input power is roughly output power divided by efficiency, plus the power used on standby.`;
     else if(converter.type==='vfd')conversion=' The drive sends three-phase power to the motor on U, V and W. Measure between two of those terminals. The bench calculates the main AC voltage at the chosen frequency. It leaves out the fast switching pulses, starting torque and cable effects.';
     else if(converter.type==='pv')conversion=' Subtract the solar output from the power used by the loads. A positive result means the house is taking power from the grid. A negative result means power is going back to the grid. This inverter stops exporting when the mains fails.';
@@ -859,7 +861,7 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
     'wrong-control':'The supply may be on while a start or enable signal is missing. Measure at the control input and its return.',
     'stuck-contact':'Check the output with the control both on and off. If it stays on, look for a stuck contact or a wire going around it.',
   };
-  return {beginner,apprentice:`${worked}${conversion} A wire drops voltage when it carries current. To calculate that drop, use ΔV = I × Z, where Z is the wire impedance. ${abnormal[fault]??'Compare the feed, control and return readings to see where the path changes.'}`};
+  return {beginner,apprentice:[worked,conversion.trim(),'For the drop along one wire, use ΔV = I × Z (current times wire impedance).',abnormal[fault]].filter(Boolean).join(' ')};
 
 }
 
@@ -878,6 +880,14 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
     ? 'Real units vary. Check the diagram supplied with yours for its terminal markings and controls.'
     : tag === 'Existing' ? 'You may come across this arrangement in an older installation. Design rules for new work can differ.'
     : 'Use the product diagram when identifying terminals on real equipment.';
+  const probePair=lessonProbePoints(id,circuit);
+  const red=probePair&&describeEndpoint(circuit,probePair.a);
+  const black=probePair&&describeEndpoint(circuit,probePair.b);
+  const probeNote=red&&black
+    ? red.endpoint.component===black.endpoint.component
+      ? `At ${red.equipmentName}, put one probe on ${red.pointLabel} and the other on ${black.pointLabel}. Leave both there while you try the control.`
+      : `Put one probe on ${red.label} and the other on ${black.label}. Read the volts between those two points.`
+    : 'Set the tester to volts and choose the two points you want to compare.';
   const references = [...IRISH];
   if(id>=65&&id<=70)references.push({title:'MEAN WELL · constant-voltage and constant-current LED operation',url:'https://led.meanwell.com/qa.aspx'});
   if(id===43||id>=71&&id<=74||id===80)references.push({title:'Resideo · bell pushes, chimes and transformer ratings',url:'https://www.resideo.com/emea/en/-/media/EMEA%20Site%20Cluster/Mastersite/Documents/Sales%20Literature/Resideo_Electrical_Wholesale_Online_Catalogue_August_2020.pdf/'});
@@ -902,7 +912,7 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
   if(id===63)references.push(MANUFACTURERS.plc);
   if(id===64)references.push(MANUFACTURERS.safety);
   const comparison:Record<number,string>={
-    12:'A real dimmer and lamp have to suit each other. This bench dims the lamp by adding resistance. Use the maker’s guide to check which lamps work with a real dimmer.',
+    12:'This 60 W filament lamp suits the HQ1A dimmer. The real dimmer switches during each AC cycle. The bench uses a resistor to show how the lamp power changes.',
     13:'A transformer changes AC voltage through its windings. The driver here gives the LEDs a steady DC output. Check the output marked on the unit.',
     14:'On a real PIR, the motion detector and timer can be in one fitting. Here you can try them separately. Stop the movement and watch how long the timer keeps the light on.',
     15:'The photocell switches the light when it gets dark. Check the maker’s diagram for the supply and switched output. The daylight setting and delay vary between products.',
@@ -920,14 +930,14 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
     summary: COURSE_PAGES[id].situation,
     sections: [
       ...(id === 7 ? [{title:'Why the lamp can light with a wiring fault',beginner:'The lamp can still light with its earth disconnected. That is why testing the switch alone will miss a fault.',apprentice:'An extra link from outgoing neutral to earth can send some return current around the RCBO. With the lamp on, that can trip it. With the switch off, the wiring test still finds the link. Test circuit tries both switch positions and leaves your switch where you put it.'}] : []),
-      { title: 'What the parts do', beginner: COURSE_PAGES[id].idea, apprentice: purpose + ' ' + caveat },
+      { title: 'What the parts do', beginner: COURSE_PAGES[id].idea, apprentice: purpose },
       { title: 'Follow the wires', beginner: connections, apprentice: roleExplanation(circuit)+' Open Drawing and choose My wiring. Select any wire to read the two terminal markings.' },
       { title: 'Try the controls', beginner: sequence, apprentice: checks.join(' ') },
-      { title: 'Where to put the probes', beginner: measurement, apprentice: 'To measure voltage, use two probes. To measure current with the fork, select one wire. Leave the controls where they are while you take the reading.' },
+      { title: 'Where to put the probes', beginner: measurement, apprentice: probeNote },
       {title:'Work out the readings',...(extra?{beginner:ELV_WORKED[id],apprentice:extra.connection+' A wire loses a little voltage as it carries current. The voltage drop is ΔV = I × Z. On a DC circuit, Z is the wire’s resistance. Use the wire and load values on this bench.'}:calculationNotes(circuit,fault))},
       ...(comparison[id]?[{title:'On the real fitting',beginner:comparison[id],apprentice:'Open the maker’s diagram below. Compare its supply, controls and output terminals with the ones on your bench.'}]:[]),
       { title: 'Find the fault', beginner: briefing, apprentice: hint },
-      { title: 'On a job in Ireland', beginner: context+'. '+caveat, apprentice: 'The nominal Irish supply is 230/400 V at 50 Hz. Domestic lessons start at 240 V. I.S. 10101 is the Irish wiring standard. Restricted electrical work must be carried out by a Registered Electrical Contractor. The lab checks the example wiring. Real installations need inspection and testing on site.' },
+      { title: 'On a job in Ireland', beginner: context+'. '+caveat, apprentice: 'Ireland’s nominal supply is 230 V from line to neutral and 400 V between phases, at 50 Hz. Find the Irish wiring rules under I.S. 10101. Restricted electrical work in Ireland must be carried out by a Registered Electrical Contractor.' },
     ],
     steps: [
       'Find the supply. Read the terminal markings on its wiring side.',

@@ -3308,30 +3308,28 @@
     "detailRevision": 3,
     "detailFamily": "switch",
     "detailFeatures": [
-      "terminal-clamp:COM",
-      "terminal-clamp:OUT",
       "individual-electrical-terminations",
-      "switch-contact-mechanism",
-      "faceplate-fixing",
-      "installation-details"
+      "dimmer-plate",
+      "dimmer-knob",
+      "dimmer-rear-case"
     ],
-    "sourceMeshCount": 149,
-    "meshCount": 39,
-    "triangles": 39136,
-    "lowTriangles": 7268,
+    "sourceMeshCount": 48,
+    "meshCount": 15,
+    "triangles": 32766,
+    "lowTriangles": 17150,
     "terminals": [
       {
         "id": "COM",
         "label": "COM",
         "role": "L",
-        "purpose": "Common supply contact. The dimmer changes the effective resistance between COM and OUT in this study model.",
+        "purpose": "COM is the bench name for this hole. In this lesson the feed comes in here. Either hole can take the feed on this dimmer.",
         "anchor": [
-          -0.11846153846153847,
-          0.5382413793103449,
-          -0.353529411764706
+          0.082,
+          0.297,
+          -0.113
         ],
         "group": "Connections",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -3342,14 +3340,14 @@
         "id": "OUT",
         "label": "OUT",
         "role": "L",
-        "purpose": "Switched, adjustable output to the lamp. Turn the dial to change the equivalent resistance between COM and OUT.",
+        "purpose": "OUT is the bench name for the hole used for the lamp wire. Turn the knob down and watch the lamp.",
         "anchor": [
-          0.11846153846153847,
-          0.5382413793103449,
-          -0.353529411764706
+          -0.041,
+          0.297,
+          -0.113
         ],
         "group": "Connections",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -3357,8 +3355,8 @@
         ]
       }
     ],
-    "bytes": 968156,
-    "lowBytes": 240612,
+    "bytes": 869564,
+    "lowBytes": 484300,
     "bespokeBlender": true
   },
   {

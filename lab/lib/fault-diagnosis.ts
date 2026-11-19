@@ -1,4 +1,5 @@
 import { COMPONENTS } from './components.ts';
+import { describeEndpoint } from './endpoint-description.ts';
 import { measureResistance, measureVoltage, simulate } from './simulation.ts';
 import type { CircuitDocument, Complex, ConfigurationLesson, FaultSetting, SimulationResult } from './types.ts';
 import { validateDiagnosisEvidence, type MeasurementEvidence } from './learning.ts';
@@ -55,11 +56,7 @@ export function assessFaultDiagnosis(
     const clear = repaired(document, fault);
     if (openFaults.has(fault.type)) {
       if (!wire) return reject('Restart fault practice to put the broken wire back on the bench.');
-      const ends = [wire.from, wire.to].map(end => {
-        const item = document.components.find(c => c.id === end.component)!;
-        const marking = COMPONENTS[item.type].terminals.find(t => t.id === end.terminal)?.label ?? end.terminal;
-        return item.label + ' ' + marking;
-      }).join(' and ');
+      const ends = [wire.from, wire.to].map(end => describeEndpoint(document, end)?.label ?? end.terminal).join(' and ');
       const current = magnitude(result.wireCurrents[wire.id]);
       if (current === undefined || current > 1e-6) return reject('Check the reading on this wire and follow it to both terminals.');
       const voltage = measureVoltage(result, wire.from, wire.to).value;

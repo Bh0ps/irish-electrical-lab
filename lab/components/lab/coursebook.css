@@ -6,6 +6,12 @@
   background: var(--card, #fff);
 }
 .meter-demo output { display: block; font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lamp-meter { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .6rem; }
+.lamp-meter > p, .lamp-meter > details { flex-basis: 100%; margin: 0; }
+.lamp-probe-key { display: flex; flex-wrap: wrap; gap: .1rem .85rem; }
+.lamp-meter-result { flex: 1 1 8rem; }
+.lamp-meter-result small { display: block; }
+.lamp-meter button { min-height: 2.75rem; white-space: normal; }
 .contact-diagram { display: flex; align-items: center; justify-content: center; width: 100%; height: 3.25rem; }
 .contact-pin { width: .72rem; height: .72rem; border-radius: 50%; background: #725731; border: 2px solid #372c21; }
 .contact-leaf { width: 3.25rem; height: .36rem; background: #a98546; border: 1px solid #4e442e; transform-origin: left center; transform: rotate(-24deg); }

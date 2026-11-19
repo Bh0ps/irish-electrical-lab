@@ -9,7 +9,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { createSurfaceTextures, type SurfacePattern } from '../../lib/scene-materials';
 import { BACK, FRONT, ROOM_CENTRES, ROOM_WALLS, DOOR_Z, DOOR_WIDTH, type JobSite } from '../../lib/job-site';
 import type { Vec3 } from '../../lib/types';
-import { HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,alignWall,doorsOn,doorLeaf,wallSpans,type FloorWall } from '../../lib/home-floorplan';
+import { GARDEN_DOOR,HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,REAR_GARDEN,alignWall,doorsOn,doorLeaf,wallSpans,type FloorWall } from '../../lib/home-floorplan';
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {serviceRoom} from './ServiceRooms';
 import {stairHall} from './StairHall';
@@ -132,7 +132,7 @@ function installation(site:JobSite){
   }
   if(home){
     box(0,-.15,(HOME_BACK+BACK)/2,13.45,.28,BACK-HOME_BACK,'concrete');
-    for(const room of HOME_ROOMS.filter(r=>r.id>=4)){
+    for(const room of HOME_ROOMS.filter(r=>r.id>=4&&r.id!==REAR_GARDEN.id)){
       const x=(room.left+room.right)/2,z=(room.front+room.back)/2;
       box(x,-.02,z,room.right-room.left-.015,.04,room.front-room.back-.015,room.id===5?'linen':room.id===6?'tile':'oak');
       box(x,2.91,z,room.right-room.left,.07,room.front-room.back,'white');
@@ -151,20 +151,57 @@ function installation(site:JobSite){
         add([i-1,2.20+Math.sin(i)*.22,HOME_BACK-4.82],[.92,1.24,.75],'foliage','ball');
         add([i-.57,2.05,HOME_BACK-4.65],[.65,.74,.58],'green','ball');}
     }
+    const rearWall=HOME_WALLS.find(w=>w.id==='rear')!;
     for(const [left,right,cx,w,sill] of [[-6.6,-.6,-3.70,2.05,.90],[-.6,3.6,.46,1.63,1.09],[3.6,6.6,5.57,1.28,1.30]]){
       const roof=2.33,cz=HOME_BACK-.08,mid=(sill+roof)/2;
-      box((left+right)/2,sill/2,cz,right-left,sill,.14,'wall0');
       box((left+right)/2,(roof+2.86)/2,cz,right-left,2.86-roof,.14,'wall0');
-      for(const [a,b] of [[left,cx-w/2],[cx+w/2,right]])box((a+b)/2,mid,cz,b-a,roof-sill,.14,'wall0');
+      for(const [start,end] of wallSpans(rearWall,false)){
+        const a=Math.max(start,left),b=Math.min(end,right);
+        if(b<=a)continue;
+        box((a+b)/2,sill/2,cz,b-a,sill,.14,'wall0');
+        box((a+b)/2,.070,HOME_BACK+.012,b-a,.14,.032,'white');
+        box((a+b)/2,.115,HOME_BACK-.156,b-a,.23,.025,'concrete');
+        for(const [lo,hi] of [[a,Math.min(b,cx-w/2)],[Math.max(a,cx+w/2),b]]){
+          if(hi>lo)box((lo+hi)/2,mid,cz,hi-lo,roof-sill,.14,'wall0');
+        }
+      }
       box(cx,mid,cz,w,roof-sill,.016,'pane');frame(cx,mid,HOME_BACK-.008,w,roof-sill);
+      frame(cx,mid,HOME_BACK-.144,w,roof-sill);
       box(cx,mid,HOME_BACK+.014,.041,roof-sill,.06,'white');
-      box(cx,sill,HOME_BACK+.055,w+.16,.045,.23,'paint');box((left+right)/2,.070,HOME_BACK+.012,right-left,.14,.032,'white');
+      box(cx,sill,HOME_BACK+.055,w+.16,.045,.23,'paint');
       box(cx,roof+.069,HOME_BACK+.11,w+.34,.035,.035,'metal');
       for(const sign of [-1,1])for(let k=0;k<4;k++){
         const px=cx+sign*(w/2+.10-k*.047);
         box(px,(roof+sill-.13)/2,HOME_BACK+.095+(k%2)*.025,.052,roof-sill+.15,.048,k%2?'curtain':'cream');
       }
     }
+    // The glazed garden door stands open into the sitting room. Its frame, sill,
+    // open leaf and walking gap use the same doorway that appears on the plan.
+    const {centre,width}=GARDEN_DOOR,head=2.09,leaf=doorLeaf(rearWall,GARDEN_DOOR);
+    box(centre,(head+2.33)/2,HOME_BACK-.08,width,2.33-head,.14,'wall0');
+    for(const hand of [-1,1])box(centre+hand*width/2,head/2,HOME_BACK-.08,.065,head,.19,'white');
+    box(centre,head,HOME_BACK-.08,width+.07,.065,.19,'white');
+    box(centre,.014,HOME_BACK-.09,width,.028,.20,'metal');
+    const doorPart=(y:number,z:number,h:number,d:number,thickness:number,finish:string)=>
+      box(leaf.x,y,leaf.z+z,thickness,h,d,finish);
+    doorPart(.34,0,.66,width,.052,'sage');
+    doorPart(1.99,0,.15,width,.052,'sage');
+    doorPart(1.295,0,1.25,width-.14,.016,'pane');
+    for(const s of [-1,1])doorPart(1.295,s*(width/2-.045),1.25,.09,.052,'sage');
+    for(const hand of [-1,1]){
+      const x=leaf.x+hand*.031,z=leaf.z+.33;
+      box(x,1.02,z,.012,.159,.034,'metal');
+      box(x+hand*.018,1.06,z,.043,.018,.019,'metal');
+      box(x+hand*.040,1.06,z-.045,.021,.018,.11,'metal');
+    }
+    for(let i=0;i<3;i++)for(let j=0;j<3;j++)
+      box(centre+(i-1)*.59,.002,HOME_BACK-.46-j*.59,.58,.021,.58,'paving');
+    box(centre,.021,HOME_BACK-.52,.71,.016,.40,'rubber');
+    box(0,2.89,HOME_BACK-.19,13.30,.11,.42,'white');
+    pipe(0,2.92,HOME_BACK-.405,.055,13.31,'iron',Math.PI/2);
+    pipe(-5.92,1.37,HOME_BACK-.223,.041,2.62,'iron');
+    for(const y of [.57,1.89]){pipe(-5.92,y,HOME_BACK-.223,.046,.031,'iron');box(-5.92,y,HOME_BACK-.171,.05,.04,.063,'steel');}
+    box(-5.92,2.71,HOME_BACK-.31,.08,.13,.25,'iron');
     // Upholstered seats face the TV. Furniture feet, cushions, duvet, and a desk lamp
     // reuse the same instanced geometry and small material set throughout the house.
     const f=HOUSE_FURNITURE,s=f.sofa,b=f.bed,t=f.television,d=f.desk,ward=f.wardrobe;
@@ -222,10 +259,8 @@ function installation(site:JobSite){
     box(shoe.x,.15,shoe.z,.93,.033,.29,'sage');box(shoe.x,1.64,-4.918,1.12,.11,.032,'oak');
     for(const offset of [-.38,0,.38]){box(shoe.x+offset,1.64,-4.873,.028,.023,.073,'brass');box(shoe.x+offset,1.67,-4.84,.028,.071,.023,'brass');}
     for(const x of [-.26,-.12,.14,.28])pad(shoe.x+x,.21,shoe.z+.02,.105,.10,.22,x<0?'iron':'fabric');
-    const entrance=site.building.rooms[0]==='Back entrance';
-    furniture(entrance?-3.57:-4.4,-2.49,entrance?1.53:3.65);if(!entrance)sink(-5.62,-2.46);
-    shelf(entrance?-3.26:-5.8,1.43,-2.63,.87);
-    if(entrance){frame(-5.58,1.03,-2.70,.86,2.06,'white');box(-5.58,1.03,-2.72,.84,2.04,.07,'sage');frame(-5.58,1.46,-2.66,.61,.66);box(-5.58,1.46,-2.672,.59,.64,.015,'glass');box(-5.25,1.02,-2.638,.10,.019,.021,'metal');}
+    furniture(-4.4,-2.49,3.65);sink(-5.62,-2.46);
+    shelf(-5.8,1.43,-2.63,.87);
     if(/abinet|upboard|orktop|unable-white/.test(site.name)){
       for(const x of [-4.65,-3.83]){
         const workingDoor=site.name==='Cupboard lighting'&&x===-4.65;

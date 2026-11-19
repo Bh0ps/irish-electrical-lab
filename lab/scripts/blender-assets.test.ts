@@ -179,7 +179,7 @@ test('renaming a custom one-way switch to Start preserves its compatible rocker 
 
 test('each named fitting detail maps to a real selectable assembly and its original parent at either detail level',async()=>{
   const identified=inventory.filter(e=>fittingDetails(e.component,COMPONENTS[e.component.type]).length);
-  assert.equal(identified.length,9);
+  assert.equal(identified.length,10);
   for(const entry of identified){
     const c=entry.component,def=COMPONENTS[c.type],asset=equipmentAsset(c,def)!;
     for(const url of [asset.url,asset.lowUrl]){

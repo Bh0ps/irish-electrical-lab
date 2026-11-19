@@ -25,6 +25,11 @@ const fusedSpur:Feature[]=[earth,['accessory-strain-relief','mounting','Cord gri
 const byModel:Record<string,Feature[]>={
   'switch:single-rocker':rocker,'switch2:single-rocker':rocker,'intermediate:single-rocker':rocker,
   'switch:gang-module-left':rocker,'switch:gang-module-right':rocker,
+  'dimmer:rotary':[
+    ['dimmer-knob','actuator','Aluminium knob','Turn the knob to change how bright the lamp is. On the wall fitting it clicks off when you turn it fully down.','front'],
+    ['dimmer-plate','cover','Wall plate','The two slotted screws hold the plate to the wall box. Turn it over to see where they pass through.','front'],
+    ['dimmer-rear-case','body','Rear case','The green label gives the lamp range, 60 to 400 watts. Look below it for the two wire entries. Either one can take the feed.'],
+  ],
   'rose:default':rose,'lamp:bulb':lamp,'socket:default':socket,'fcu:default':fusedSpur,
 };
 

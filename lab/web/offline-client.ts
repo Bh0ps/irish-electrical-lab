@@ -26,9 +26,8 @@ export function registerOfflineWorker() {
 }
 
 async function register() {
-  if (!window.isSecureContext || !('serviceWorker' in navigator)) {
-    throw new Error('Offline use requires Safari and a secure link.');
-  }
+  if (!window.isSecureContext) throw new Error('Open the secure (HTTPS) lab link to save it for offline use.');
+  if (!('serviceWorker' in navigator)) throw new Error('This browser cannot save the lab for offline use. On iPhone, open the lab in Safari.');
   const worker = await navigator.serviceWorker.register(publicAssetUrl('service-worker.js'), {
     scope: publicAssetUrl(''),
     updateViaCache: 'none',

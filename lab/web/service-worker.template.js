@@ -19,37 +19,68 @@ async function verifiedAsset(asset, response) {
   return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('') === asset.sha256;
 }
 
-async function placeAsset(cache, asset, olderCaches) {
+async function copyVerifiedAsset(cache, asset, olderCaches) {
   const url = scopedUrl(asset.path);
-  if (await cache.match(url)) return;
   for (const oldCache of olderCaches) {
     const cached = await oldCache.match(url);
     if (await verifiedAsset(asset, cached)) {
       await cache.put(url, cached);
-      return;
+      return true;
     }
   }
-  const abort = new AbortController();
-  const timeout = setTimeout(() => abort.abort(), 25_000);
-  try {
-    const response = await fetch(url, { cache: 'no-store', redirect: 'error', signal: abort.signal });
-    if (!await verifiedAsset(asset, response)) throw new Error(`Download verification failed for ${asset.path}`);
-    await cache.put(url, response);
-  } finally {
-    clearTimeout(timeout);
+  return false;
+}
+
+// A temporary network error merits one retry. Permanent errors and a long
+// Retry-After return control to the learner without starting the whole pack over.
+async function fetchVerifiedAsset(asset) {
+  for (let attempt = 1; ; attempt++) {
+    const abort = new AbortController();
+    const timeout = setTimeout(() => abort.abort(), 25_000);
+    let retryable = true;
+    let delay = 600;
+    try {
+      const response = await fetch(scopedUrl(asset.path), { cache: 'no-store', redirect: 'error', signal: abort.signal });
+      if (!response.ok) {
+        retryable = [408, 429, 500, 502, 503, 504].includes(response.status);
+        const after = response.headers.get('retry-after');
+        if (after) {
+          const wait = /^\d+$/.test(after) ? Number(after)*1000 : Date.parse(after) - Date.now();
+          if (Number.isFinite(wait)) delay = Math.max(delay, wait);
+        }
+        throw new Error('Download returned HTTP ' + response.status);
+      }
+      if (!await verifiedAsset(asset, response)) throw new Error('The downloaded file did not match this version.');
+      return response;
+    } catch (error) {
+      if (attempt === 2 || !retryable || delay > 5_000) throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+    await new Promise(resolve => setTimeout(resolve, delay));
   }
 }
 
 async function fill(cache, assets, olderCaches = [], onProgress = () => {}) {
   const keys = new Set((await cache.keys()).map(request => request.url));
-  const todo = assets.filter(asset => !keys.has(scopedUrl(asset.path)));
+  const todo = [];
+  for (const asset of assets) {
+    const url = scopedUrl(asset.path);
+    if (keys.has(url)) {
+      if (await verifiedAsset(asset, await cache.match(url))) continue;
+      await cache.delete(url);
+    }
+    todo.push(asset);
+  }
   let index = 0, completed = assets.length - todo.length, failure;
   await onProgress(completed);
   const consume = async () => {
     while (!failure && index < todo.length) {
       const asset = todo[index++];
       try {
-        await placeAsset(cache, asset, olderCaches);
+        if (!await copyVerifiedAsset(cache, asset, olderCaches)) {
+          await cache.put(scopedUrl(asset.path), await fetchVerifiedAsset(asset));
+        }
         await onProgress(++completed);
       } catch (error) {
         failure ??= error;
@@ -79,6 +110,14 @@ self.addEventListener('install', event => {
       if (ready.length) {
         await fill(next, BUILD.pack, ready);
         await markReady(next);
+      } else if (old.length) {
+        // A partly downloaded pack also belongs to the learner. Carry its
+        // matching files forward; missing or changed files can wait for Resume.
+        const requests = (await Promise.all(old.map(cache => cache.keys()))).flat();
+        const present = new Set(requests.map(request => request.url));
+        for (const asset of BUILD.pack) {
+          if (present.has(scopedUrl(asset.path))) await copyVerifiedAsset(next, asset, old);
+        }
       }
     } catch (error) {
       await caches.delete(cacheName);
@@ -120,10 +159,16 @@ async function broadcast(message) {
 let currentProgress;
 async function startDownload(cache) {
   try {
+    let lastNotice = 0;
     await fill(cache, BUILD.shell);
     await fill(cache, BUILD.pack, [], async completed => {
       currentProgress = statusMessage('downloading', completed);
-      await broadcast(currentProgress);
+      // Status requests can always read the latest count. Coalesce messages
+      // to avoid repainting the settings sheet for each small thumbnail.
+      if (Date.now() - lastNotice >= 200 || completed === 1 || completed === pack.size) {
+        lastNotice = Date.now();
+        await broadcast(currentProgress);
+      }
     });
     await markReady(cache);
     await broadcast(statusMessage('ready', pack.size));

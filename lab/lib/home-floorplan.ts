@@ -5,6 +5,7 @@ import type {Vec3} from './types';
 // https://www.roscommoncoco.ie/en/about_us/part-8-local-authority-own-developments/housing/part-8-sli-an-choiste-monksland/22571-pla-6.pdf
 export const HOME_BACK=-7.2;
 export interface FloorRoom {id:number;name:string;left:number;right:number;back:number;front:number}
+export const REAR_GARDEN:FloorRoom={id:9,name:'Back entrance',left:-6.6,right:6.6,back:HOME_BACK-3.88,front:HOME_BACK};
 export const HOME_ROOMS:FloorRoom[]=[
   {id:0,name:'Kitchen',left:-6.6,right:-2.2,back:-2.8,front:2.8},
   {id:1,name:'Entrance hall',left:-2.2,right:2.2,back:-2.8,front:2.8},
@@ -14,6 +15,7 @@ export const HOME_ROOMS:FloorRoom[]=[
   {id:5,name:'Bedroom',left:3.6,right:6.6,back:HOME_BACK,front:-2.8},
   {id:6,name:'Back hall',left:-.6,right:3.6,back:-5,front:-2.8},
   {id:7,name:'Study',left:-.6,right:3.6,back:HOME_BACK,front:-5},
+  REAR_GARDEN,
 ];
 export const HOME_POINTS={
   sittingWest:{room:4,x:-5.70,z:HOME_BACK},sittingEast:{room:4,x:-1.32,z:HOME_BACK},
@@ -25,10 +27,12 @@ export const HOME_VISITS:Record<number,{position:Vec3;yaw:number;pitch:number}>=
   2:{position:[4.25,1.56,.86],yaw:-.03,pitch:-.03},3:{position:[.24,1.56,5.16],yaw:.08,pitch:-.03},
   4:{position:[-1.18,1.56,-3.96],yaw:1.06,pitch:-.17},5:{position:[4.04,1.56,-3.97],yaw:-.61,pitch:-.23},
   6:{position:[1.25,1.56,-3.14],yaw:-.06,pitch:-.11},7:{position:[1.56,1.56,-5.37],yaw:.68,pitch:-.18},
+  [REAR_GARDEN.id]:{position:[-3.10,1.56,HOME_BACK-3.48],yaw:Math.PI+.25,pitch:-.14},
 };
 // axis is the direction along the wall. Door leaves are shown standing open.
 export interface FloorWall {id:string;axis:'x'|'z';fixed:number;start:number;end:number}
 export interface FloorDoor {wall:string;centre:number;width:number;side:1|-1;hinge:1|-1;hallOnly?:boolean}
+export const GARDEN_DOOR:FloorDoor={wall:'rear',centre:-1.98,width:.94,hinge:1,side:1};
 export const HOME_WALLS:FloorWall[]=[
   {id:'west',axis:'z',fixed:-6.6,start:HOME_BACK,end:2.8},{id:'east',axis:'z',fixed:6.6,start:HOME_BACK,end:2.8},
   {id:'rear',axis:'x',fixed:HOME_BACK,start:-6.6,end:6.6},{id:'front',axis:'x',fixed:2.8,start:-6.6,end:6.6},
@@ -39,6 +43,7 @@ export const HOME_WALLS:FloorWall[]=[
   {id:'study',axis:'x',fixed:-5,start:-.6,end:3.6},
 ];
 export const HOME_DOORS:FloorDoor[]=[
+  GARDEN_DOOR,
   {wall:'front',centre:0,width:1.48,hinge:-1,side:-1},
   {wall:'kitchen-hall',centre:.95,width:1.25,hinge:1,side:-1},{wall:'hall-utility',centre:.95,width:1.25,hinge:1,side:1},
   {wall:'hall-back',centre:1.60,width:.94,hinge:1,side:-1,hallOnly:true},
@@ -117,22 +122,22 @@ export function homeRoomAt(x:number,z:number,stair=false){
   if(stair&&x>STAIR_LANDING.left&&x<STAIR_LANDING.right&&z>STAIR_FOOT&&z<STAIR_LANDING.front)return STAIR_LANDING.id;
   return HOME_ROOMS.find(r=>x>=r.left&&x<=r.right&&z>=r.back&&z<=r.front)?.id??3;
 }
-function collisionBoxes(bathroom:boolean,backEntrance:boolean,stair:boolean){
+function collisionBoxes(bathroom:boolean,stair:boolean){
   const boxes=Object.values(HOUSE_FURNITURE).slice() as FloorBox[];
   for(const wall of HOME_WALLS){
     for(const [a,b] of wallSpans(wall,bathroom,stair))boxes.push(alignWall(wall,(a+b)/2,0,b-a,.12));
     for(const door of doorsOn(wall,bathroom,stair))boxes.push(doorLeaf(wall,door));
   }
-  boxes.push({x:backEntrance?-3.57:-4.4,z:-2.49,w:backEntrance?1.53:3.65,d:.59},{x:3.13,z:-.65,w:1.36,d:.54},{x:5.6,z:-2.49,w:1.4,d:.59});
+  boxes.push({x:-4.4,z:-2.49,w:3.65,d:.59},{x:3.13,z:-.65,w:1.36,d:.54},{x:5.6,z:-2.49,w:1.4,d:.59});
   if(bathroom)boxes.push({x:1.32,z:-2.47,w:1.3,d:.59});
   else if(stair)boxes.push(...stairBarriers());
   else boxes.push({x:.64,z:-2.48,w:.80,d:.74});
   return boxes;
 }
 const collisions=new Map<string,FloorBox[]>();
-export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,backEntrance:boolean,stair:boolean):Vec3{
-  const key=[bathroom,backEntrance,stair].join('/');
-  if(!collisions.has(key))collisions.set(key,collisionBoxes(bathroom,backEntrance,stair));
+export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:boolean):Vec3{
+  const key=[bathroom,stair].join('/');
+  if(!collisions.has(key))collisions.set(key,collisionBoxes(bathroom,stair));
   const boxes=collisions.get(key)!,radius=.16;
   const advance=(axis:'x'|'z',fromAxis:number,across:number,delta:number)=>{
     let next=fromAxis+delta;
@@ -143,7 +148,7 @@ export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,backEntr
       if(delta>0&&fromAxis<=low+.00001)next=Math.min(next,low);
       if(delta<0&&fromAxis>=high-.00001)next=Math.max(next,high);
     }
-    return Math.max(axis==='x'?-6.6+radius:HOME_BACK+radius,Math.min(axis==='x'?6.6-radius:6,next));
+    return Math.max(axis==='x'?-6.6+radius:REAR_GARDEN.back+radius,Math.min(axis==='x'?6.6-radius:6,next));
   };
   const x=advance('x',from[0],from[2],dx);
   const z=advance('z',from[2],x,dz);

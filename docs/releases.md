@@ -1,17 +1,17 @@
 # Windows releases and source packages
 
-Published releases contain a per-user Windows x64 installer, a complete source
-archive, usage instructions and SHA-256 checksums. The source repository retains
-the original model assemblies, exported assets and scripts; generated installers
-are release downloads rather than Git history.
+For Windows, download the setup file from the release page. The web ZIP contains
+the Home Screen app for HTTPS hosting. The source download includes the build
+instructions, Blender models and scripts.
 
 ## Install
 
-1. Download `Irish-Electrical-Lab-1.8.1-Setup.exe` from the project's GitHub release.
-2. Optionally compare its hash with the published `Irish-Electrical-Lab-1.8.1-SHA256.txt`.
+1. Download `Irish-Electrical-Lab-1.9.0-Setup.exe` from the project's GitHub release.
+2. To check your download, compare the result of this PowerShell command with
+   the installer entry in `Irish-Electrical-Lab-1.9.0-SHA256.txt`.
 
    ```powershell
-   Get-FileHash .\Irish-Electrical-Lab-1.8.1-Setup.exe -Algorithm SHA256
+   Get-FileHash .\Irish-Electrical-Lab-1.9.0-Setup.exe -Algorithm SHA256
    ```
 
 3. Run the installer for your Windows account and open **Irish Electrical Lab**
@@ -19,9 +19,7 @@ are release downloads rather than Git history.
 4. Close the app window to stop it. Use **My builds → Files and backups → Export full backup** before
    moving study data to another PC or testing experimental storage changes.
 
-The installer is unsigned; its publisher is not verified by a signing
-certificate. The checksum confirms the downloaded file matches the published
-artifact; it is not an installation or electrical safety certification.
+The installer is unsigned, so Windows may show “Unknown publisher”.
 
 For replacement releases, close the running app and install the new version.
 Compatible updates retain the application identity, loopback origin and study

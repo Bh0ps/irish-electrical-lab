@@ -4,7 +4,7 @@ The installed app contains its own Electron runtime, the production 3D workbench
 
 ## Install and use
 
-Run `release/Irish-Electrical-Lab-1.7.0-Setup.exe` from the `lab` directory. Installation is for your Windows account and creates **Irish Electrical Lab** shortcuts on the Desktop and Start menu. Start with either shortcut. Close the app window to stop the application and its private local server. Use **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** to switch fullscreen.
+Run `release/Irish-Electrical-Lab-1.9.0-Setup.exe` from the `lab` directory. Installation is for your Windows account and creates **Irish Electrical Lab** shortcuts on the Desktop and Start menu. Start with either shortcut. Close the app window to stop the application and its private local server. Use **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** to switch fullscreen.
 
 This is a locally built, unsigned installer, so Windows may identify its publisher as unknown. The installer does not require administrator privileges.
 
@@ -14,9 +14,9 @@ The app uses the fixed local origin `http://127.0.0.1:4187`. It serves only bund
 
 Builds and progress live in `%APPDATA%\Irish Electrical Lab`, outside the installation directory. Replacement installers preserve this profile. Uninstalling also retains it unless you manually remove it.
 
-Use **My builds → Export full backup** to save your draft, named builds and progress to one versioned JSON file. Use **My builds → Restore backup** in the Windows app and select that file in the native Windows dialog. The earlier browser edition calls this menu **Study backup**. Restoration validates every circuit and the progress before replacing the three records in one IndexedDB transaction. Invalid files leave your current work unchanged. **Export circuit** and **Import circuit** transfer individual builds.
+Use **My builds → Files and backups → Export full backup** to save your draft, named builds and progress to one versioned JSON file. Use **My builds → Files and backups → Restore backup** in the Windows app and select that file in the native Windows dialog. The earlier browser edition calls this menu **Study backup**. The app checks the backup before restoring the saved records together. Invalid files leave your current work unchanged. **Export circuit** and **Import circuit** transfer individual builds.
 
-**Learn** keeps the current instruction visible while you inspect, connect or measure. Its six stages are Look, Predict, Build, Try, Measure and Fix. **Sandbox** gives the workbench more room for your own circuits. The labelled tools are Select, Add equipment, Connect and Measure. Choose a setup through **Learn → Courses**; all 64 are available immediately. **More → Wiring hints** turns the optional connection guidance on or off. Hints allow deliberate mistakes so you can investigate them with **Test circuit**.
+**Learn** keeps the current instruction visible while you inspect, connect or measure. Its six stages are Look, Predict, Build, Try, Measure and Fix. **Sandbox** gives the workbench more room for your own circuits. The labelled tools are Select, Add equipment, Connect and Measure. Choose a setup through **Chapters**. All 80 are available from the start. **More → Wiring hints** turns the optional connection guidance on or off. Hints allow deliberate mistakes so you can investigate them with **Test circuit**.
 
 In **1.2.1**, placing the correct new wire for the current guided Build step checks it and advances exactly one step automatically. **Check connection** remains the fallback for a revisited connection or a build reopened after reload. Merely changing stages, loading an example or using Undo/Redo does not award new demonstrations. Fresh guided builds isolate the external supply and every represented PV/battery source. The first Try step in configurations **47 and 48** tells you which local source to enable manually using **Operate** before checking the operating state.
 
@@ -62,10 +62,10 @@ From the `lab` directory, run the lifecycle check against the installed Windows 
 
 ```powershell
 $installedLab = Join-Path $env:LOCALAPPDATA 'Programs/Irish Electrical Lab/Irish Electrical Lab.exe'
-node scripts/desktop-lifecycle-audit.mjs "$installedLab" release-170
+node scripts/desktop-lifecycle-audit.mjs "$installedLab" release-190
 ```
 
-The report is `%TEMP%\Irish-Electrical-Lab-Audits\run-release-170\verification\desktop-lifecycle-report.json`. Omit the label for a new run with an automatically generated name. The first phase checks fullscreen and stores the test bounds. The second starts a fresh process, checks the restored bounds and writes the result. Electron uses the selected audit folder for both native settings and the renderer session before requesting its application lock.
+The report is `%TEMP%\Irish-Electrical-Lab-Audits\run-release-190\verification\desktop-lifecycle-report.json`. Omit the label for a new run with an automatically generated name. The first phase checks fullscreen and stores the test bounds. The second starts a fresh process, checks the restored bounds and writes the result. Electron uses the selected audit folder for both native settings and the renderer session before requesting its application lock.
 
 Upgrade retention verification seeds temporary draft/build/progress records with `--verify-retention-seed`; after installing the replacement installer, `--verify-retention-check` with the same run label compares the records and restores the originals. Both shells in this test must support isolated audit profiles.
 

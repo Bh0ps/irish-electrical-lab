@@ -6,7 +6,7 @@ import {endpointKey} from '../../lib/types';
 import {COMPONENTS} from '../../lib/components';
 import {getComponentTerminals} from '../../lib/terminal-layout';
 import {type JobSite,drawingKind,BACK} from '../../lib/job-site';
-import {HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,HOME_STAIR,STAIR_FOOT,STAIR_LANDING,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
+import {GARDEN_DOOR,HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,HOME_STAIR,REAR_GARDEN,STAIR_FOOT,STAIR_LANDING,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
 import {ServicePlan,serviceSpaces} from './ServicePlan';
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {installedWireRoute} from '../../lib/house-installation';
@@ -71,7 +71,11 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
   const x=(n:number)=>42+(n-left)*41, y=(n:number)=>24+(n-(house?HOME_BACK:back))*41;
   const areaId=planArea==='selected'?(curWire?'whole':site.items.find(i=>i.id===selected)?.room??site.room):planArea;
   const planRoom=areaId!=='whole'?rooms.find(r=>r.id===areaId):undefined;
-  const planBox=planRoom?[x(planRoom.left)-12,y(planRoom.back)-12,(planRoom.right-planRoom.left)*41+24,(planRoom.front-planRoom.back)*41+24].join(' '):house?'0 0 640 592':[0,0,84+(right-left)*41,48+(6-back)*41].join(' ');
+  const showGarden=house&&(site.items.some(i=>i.room===REAR_GARDEN.id)||planRoom?.id===REAR_GARDEN.id);
+  const planTop=showGarden?Math.floor(y(REAR_GARDEN.back)-12):0;
+  // A close plan of the entrance keeps the tag, wall penetration and door swing together on a phone.
+  const crop=planRoom?.id===REAR_GARDEN.id?{left:GARDEN_DOOR.centre-1.9,right:GARDEN_DOOR.centre+1.9,back:HOME_BACK-1.75,front:HOME_BACK+1.12}:planRoom;
+  const planBox=crop?[x(crop.left)-12,y(crop.back)-12,(crop.right-crop.left)*41+24,(crop.front-crop.back)*41+24].join(' '):house?[0,planTop,640,592-planTop].join(' '):[0,0,84+(right-left)*41,48+(6-back)*41].join(' ');
   const width=page==='wiring'?sheet.width:640;
   const ladder=useMemo(()=>page==='ladder'?ladderPaths(docForSheet):[],[page,docForSheet]);
   const ladderWidth=Math.max(640,240+Math.max(0,...ladder.map(r=>r.path.length))*85);
@@ -95,7 +99,7 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
       {page==='plan'?<svg className="electrical-sheet floor-sheet" role="group" aria-label="Installation floor plan" viewBox={planBox} style={{width:Math.max(100,zoom*100)+'%',minWidth:340*zoom}}>
         <defs><pattern id="site-hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 6L6 0" stroke="#b6c3b9" fill="none" strokeWidth=".5"/></pattern></defs>
         {house?<g data-oakfield-plan>
-          {HOME_ROOMS.filter(r=>r.id!==3).map(r=><rect key={r.id} x={x(r.left)} y={y(r.back)} width={(r.right-r.left)*41} height={(r.front-r.back)*41} fill={r.id===6||r.id===1?'#f2f0de':'#f8f8ea'}/>)}
+          {HOME_ROOMS.filter(r=>r.id!==3&&(r.id!==REAR_GARDEN.id||showGarden)).map(r=><rect key={r.id} x={x(r.left)} y={y(r.back)} width={(r.right-r.left)*41} height={(r.front-r.back)*41} fill={r.id===REAR_GARDEN.id?'#e0e8d8':r.id===6||r.id===1?'#f2f0de':'#f8f8ea'}/>)}
           {Object.entries(HOUSE_FURNITURE).map(([name,b])=><rect key={name} x={x(b.x-b.w/2)} y={y(b.z-b.d/2)} width={b.w*41} height={b.d*41} rx="2" fill="#dcded0" stroke="#b5bdac"><title>{name}</title></rect>)}
           {HOME_WALLS.map(w=><g key={w.id}>{wallSpans(w,bathroom,!!stair).map(([a,b])=>{
             const p=alignWall(w,a,0,0,0),q=alignWall(w,b,0,0,0);
@@ -112,7 +116,7 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
             <line x1={x(stair.divider)} x2={x(stair.divider)} y1={y(stair.turn)} y2={y(STAIR_FOOT)}/>
             <path d={`M${x((stair.west+stair.divider)/2)} ${y(STAIR_FOOT)} V${y(stair.turn-.4)} H${x((stair.divider+stair.east)/2)} V${y(STAIR_FOOT+.15)} m-3 -5 l3 5 3 -5`} stroke="#4c655d"/>
           </g>}
-          {HOME_ROOMS.map(r=><text key={r.id} x={x((r.left+r.right)/2)} y={y(r.id===3?4.8:r.front-.60)} textAnchor="middle" className="room-caption">{site.location(r.id)}</text>)}
+          {HOME_ROOMS.filter(r=>r.id!==REAR_GARDEN.id||showGarden).map(r=><text key={r.id} x={x(r.id===REAR_GARDEN.id?GARDEN_DOOR.centre+.89:(r.left+r.right)/2)} y={y(r.id===3?4.8:r.front-.60)} textAnchor="middle" className="room-caption">{site.location(r.id)}</text>)}
         </g>:site.kind!=='home'&&<ServicePlan site={site} kind={site.kind} x={x} y={y}/>}
         {curWire&&floorRoute?.length&&<polyline aria-label="Selected wire route" points={floorRoute.map(p=>x(p[0])+','+y(p[2])).join(' ')} fill="none" stroke={DRAWING_INK[curWire.role]} strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="7 3"/>}
         {site.items.filter(item=>(!planRoom||item.room===planRoom.id)&&docForSheet.components.some(c=>c.id===item.id)).map(item=>{
@@ -121,8 +125,8 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
           // Offset tags from their true fixing points; the leader stays on the installation location.
           const space=rooms.find(r=>r.id===item.room);
           const columns=space?Math.min(6,Math.max(2,Math.floor((space.right-space.left-.45)*41/29))):5;
-          const bx=x(item.room===3?0:(space?.left??-6.6)+.65)+(index%columns)*28;
-          const by=(item.room===3?y(4.22):y((space?.back??BACK)+.96))+Math.floor(index/columns)*25;
+          const bx=x(item.room===REAR_GARDEN.id?item.position[0]:item.room===3?0:(space?.left??-6.6)+.65)+(index%columns)*28;
+          const by=(item.room===REAR_GARDEN.id?y(HOME_BACK-1.13):item.room===3?y(4.22):y((space?.back??BACK)+.96))+Math.floor(index/columns)*25;
           return <Hot key={item.id} name={item.ref+' '+c.label} choose={()=>choose(item.id)}>
             <path d={`M${x(item.position[0])} ${y(item.position[2])}L${bx} ${by}`} stroke="#96a59c" fill="none"/><circle cx={x(item.position[0])} cy={y(item.position[2])} r="2" fill="#37564b"/>
             <rect x={bx-12} y={by-10} width="26" height="20" rx="2" fill={selected===item.id?'#f6c56f':'#fffef5'} stroke="#738d81"/><text x={bx+1} y={by+4} textAnchor="middle" fontSize="9">{item.ref}</text></Hot>;

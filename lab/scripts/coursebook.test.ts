@@ -14,10 +14,10 @@ import { measureVoltage, simulate } from '../lib/simulation.ts';
 
 const lesson = (id: number) => LESSONS.find(l => l.id === id)!;
 const noop = () => undefined;
-function renderBook(id: number, activityId?:string) {
+function renderBook(id: number, activityId?:string, doc=lesson(id).circuit, result=simulate(doc)) {
   const l=lesson(id);
   return renderToStaticMarkup(createElement(LearningPanel,{
-    path:'coursebook', initialActivityId:activityId, lesson:l,document:l.circuit,result:simulate(l.circuit),
+    path:'coursebook', initialActivityId:activityId, lesson:l,document:doc,result,
     selectedPart:'body',record:emptyLearningRecord(), evidence:[],depth:'foundation', challengeStarted:false,
     mode:'explore',diagnosisAccepted:false,challengeRepaired:false,onActivityChange:noop,onTarget:noop,
     onAttempt:noop,onMeasure:noop,onBuild:noop,onTest:noop,onChallenge:noop,onStudied:noop,onReference:noop,
@@ -38,6 +38,23 @@ test('the first practical starts with the lit lamp and uses real, fresh off and 
   }
   assert.match(renderBook(7,'book:7:contact'),/two metal contacts touch/i);
   assert.match(renderBook(7,'book:7:meter-demo'),/volts \(V\)/);
+  assert.match(renderBook(7,'book:7:meter-demo'),/Red probe · <strong>L<\/strong> \(line\).*Black probe · <strong>N<\/strong> \(neutral\)/);
+});
+test('the worked lamp reading follows the probe voltage even when a wire bypasses the switch',()=>{
+  const doc=structuredClone(lesson(7).circuit);
+  const meter=()=>renderBook(7,'book:7:meter-demo',doc);
+  const prediction=getCoursebookActivities(lesson(7)).find(a=>a.kind==='predict')!;
+  assert.match(prediction.explanation,/two terminals.*voltage/);
+  const initial=simulate(doc);
+  doc.components.find(c=>c.id==='switch')!.params.closed=false;
+  doc.revision++;
+  assert.match(renderBook(7,'book:7:meter-demo',doc,initial),/Waiting for the meter/);
+  assert.match(meter(),/0 volts \(V\)/);
+  doc.wires.push({id:'bypass',from:{component:'protect',terminal:'LOUT'},to:{component:'light',terminal:'L'},role:'L',resistance:.01,bends:[]});
+  doc.revision++;
+  assert.match(meter(),/Switch off/);
+  assert.match(meter(),/240 volts \(V\)/);
+  assert.match(renderBook(7,'book:7:meter-demo',doc,{...simulate(doc),converged:false}),/Reading unavailable/);
 });
 test('nine chapters cover every course once with authored questions, distinct finishes and accessible entry points',()=>{
   assert.equal(CHAPTERS.length,9);
@@ -80,6 +97,9 @@ test('assisted placement cannot demonstrate choosing probes, even when the readi
   assert.equal(evaluateActivity(task,doc,r,[reading]).status,'not-run');
   assert.equal(evaluateActivity(task,doc,r,[{...reading,assisted:true}]).status,'not-run');
   const independent={...reading,assisted:false,id:'independent',recordedAt:reading.recordedAt+1};
+  const otherPoint={...captureMeasurement(doc,r,{...task.measurement!,b:{component:'light',terminal:'PE'}}),assisted:false};
+  assert.deepEqual(evaluateActivity(task,doc,r,[otherPoint]),{status:'not-run',explanation:'You measured L to PE on Hall light. For this step, measure L to N on Hall light.'});
+  assert.doesNotMatch(evaluateActivity(task,{...doc,revision:doc.revision+1},r,[otherPoint]).explanation,/You measured/);
   assert.equal(evaluateActivity(task,doc,r,[{...reading,assisted:true},independent]).status,'pass');
   assert.equal(evaluateActivity(task,{...doc,revision:doc.revision+1},r,[independent]).status,'not-run');
 });

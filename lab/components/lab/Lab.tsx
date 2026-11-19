@@ -485,7 +485,20 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
     // A trip to the meter can leave the first end of a wire selected.
     if(next==='wire' && !wireStart) setCamera(c=>({id:c.id+1,action:'rear'}));
   }
-  function chooseStage(stage:LessonStageId){if(stage==='measure'||stage==='build'||stage==='fix')setSurface('bench');setCourseStage(stage);setMoveTarget(undefined);if(stage!=='build')cancelConnection();if(stage==='look'||stage==='predict'||stage==='fix')setTool('select');if(stage==='try'){setTool('select');setPanel(selected?'inspect':'');}if(stage==='measure'){setView('open');setTool('meter');setPanel('meter');setInspectorCollapsed(false);}if(stage==='fix'){setPanel('results');setInspectorCollapsed(false);}if(stage==='build'&&mode==='build'){setView('open');setTool('wire');setPanel('connect');setCamera(c=>({id:c.id+1,action:'rear'}));}}
+  function chooseStage(stage:LessonStageId,putToolsAway:boolean){
+    setCourseStage(stage);setMoveTarget(undefined);
+    if(stage!=='build')cancelConnection();
+    if(putToolsAway){
+      setTool('select');setPanel('');setInspectorCollapsed(true);
+      return;
+    }
+    if(stage==='measure'||stage==='build'||stage==='fix')setSurface('bench');
+    if(stage==='look'||stage==='predict'||stage==='fix')setTool('select');
+    if(stage==='try'){setTool('select');setPanel(selected?'inspect':'');}
+    if(stage==='measure'){setView('open');setTool('meter');setPanel('meter');setInspectorCollapsed(false);}
+    if(stage==='fix'){setPanel('results');setInspectorCollapsed(false);}
+    if(stage==='build'&&mode==='build'){setView('open');setTool('wire');setPanel('connect');setCamera(c=>({id:c.id+1,action:'rear'}));}
+  }
   async function continueReplacement(save:boolean){if(!replacePrompt)return;setReplaceBusy(true);try{const preserved=save?{...clone(docRef.current),id:uid('saved')}:undefined;if(save&&!await saveBuild())return;const action=replacePrompt.action;setReplacePrompt(undefined);action(preserved);}finally{setReplaceBusy(false);}}
   function loadSaved(record:CircuitDocument){let b:CircuitDocument;try{b=validateCircuit(record);}catch(error){setNotice(error instanceof Error?error.message:'This saved build could not be opened.');return;}requestReplacement('Load saved build',()=>{baseline.current=fingerprintLayout(b);commit(b);if(b.lessonId)setLessonId(b.lessonId);setWorkspace('sandbox');setMode('explore');setSelected(undefined);setSelectedWire(undefined);setPanel('');setChallengeStarted(false);setBuildsOpen(false);setCamera(c=>({id:c.id+1,action:'fit'}));setNotice('Saved build loaded.');});}
   function selectConductor(id:string){if(tool==='meter')probePlacement.current.current=true;setMoveTarget(undefined);setSelectedWire(id);setSelected(undefined);setPanel(tool==='meter'?'meter':'inspect');setInspectorCollapsed(false);setConductorPickerOpen(false);setSheetOpen(true);}
