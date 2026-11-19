@@ -1,5 +1,29 @@
 # Verification summary
 
+## 1.21.0 — Take the meter to the fitting
+
+**Opening the job on a small phone.** We opened the heater repair at 320 × 568 with its instructions expanded. In 1.20.0 the canvas was only 44 px high and its controls covered the room. In the revised layout, 194 px of the room remained clear in touch WebKit. With text enlarged to 150%, the clear height was 177 px in WebKit and 176 px in Chromium. We operated the wall switch, followed the next instruction, switched to the drawing and back, and entered full screen. The full job title, first action, supply switch and circuit test stayed reachable.
+
+**Taking a reading in full screen.** In the worktop lighting repair, we put the probes on the dark strip and recorded 0 V. We then picked the other strip by name and measured 24 V DC. On the doorbell, we opened the chime cover and recorded 12 V AC. Moving a probe to an unused contact gave dashes and disabled Record. Putting the meter away restored the original walking position and direction. At 390 × 844, the worktop scene retained 729 px of height above the meter. At 844 × 390 it retained 275 px. The 320 × 568 Chromium run with 150% text retained 381 px, and every meter button measured at least 44 px high.
+
+**At the wall switch.** In a fresh 390 × 844 touch WebKit session on Windows, we opened **The heater stays cold** and chose **Full screen → Tools → Check wall switch**. The fitted plate stayed closed until the simulated supply was off. We tapped the metal screws for L IN and L LOAD. The display showed OL with the switch off and 0 Ω with it on. Recording the reading kept the job at **Measure**. Refitting the plate removed the two probes at the switch. Returning to the training bench restored the probes we had placed on the heater. [View the actual probe tip and meter display](images/wall-switch-meter.png).
+
+**Finding and repairing the fault.** On the 240 V study supply, we recorded 0 V across the heater. Choosing incoming L at the wall switch gave 240 V and a prompt to check its LOAD side. Recording 240 V at LOAD L, with the other probe still on heater N, opened the diagnosis. Trying a different diagnosis and then the wrong screw at the repair both left the job open. After repair the element drew 498 W, fell to 0 W with the switch off and returned to 498 W when switched on again. A fresh test completed the job. We repeated the repair at 1280 px using the equipment list and keyboard in Chromium.
+
+**Saved jobs.** We resumed a 1.20.0 job with its first reading and both probe positions intact. A second run resumed a 1.17.0 repair on the original 300 W heater, with its earlier completion requirements. The focused regression checks also covered the older separate-fuse circuit, reversed probe colours, stale readings and other pairs of points that can show the same voltage.
+
+**Course coverage.** All 484 automated tests passed. The catalogue and simulation checks covered 80 operating scenarios, 80 fault targets, 2,485 course activities, 115 equipment variants and 1,119 routed wires.
+
+**Offline repair.** A fresh touch WebKit session verified all 259 offline files (50,462,798 bytes). We stopped the origin server, closed the app pages and reopened the lab. A previously unvisited heater job loaded the simplified wall fitting. Two taps on its metal screw heads gave 0.001 Ω with the rocker on, displayed as 0 Ω, and OL with it off. Both manually recorded readings survived another close and reopen. The workbench routed all eight wires offline. The run had zero page errors and zero HTTP responses from the stopped origin. The WebKit check reopened pages in one browser session.
+
+**Restart coverage.** Chrome also loaded the unvisited heater and retained both readings across two complete browser-process restarts with the server stopped. On this PC even a standalone cache-write test failed in the WebKit automation runner's persistent profile, so its full-process restart remains unverified.
+
+**Windows replacement.** The 1.21.0 installer retained all five study records from a 1.20.0 disposable profile with matching hashes. The desktop and Start menu shortcuts, shutdown and restart checks passed. The installed app ran all 80 circuits and passed 120 guided-build checks with zero external requests and zero console errors. The graphics driver reported one shader warning. On this PC the window started in 0.99 s, geometry appeared 5.10 s after launch and the app used 566 MiB of private process memory at the measured checkpoint.
+
+**Workbench performance on Windows.** In headless Chrome on an RTX 5070 Ti, panning the 30-component bench averaged 4.01 ms between frames, with 95% at or below 4.4 ms. The three-second idle sample used zero frames and made zero worker requests. All 42 wires routed, with no route findings. Eight supply edits had median solver time 4.2 ms and median worker round trip 16.05 ms.
+
+**Phone coverage.** These touch results used WebKit and Chromium on Windows. A physical iPhone check would include reading the screw markings in portrait, turning the phone sideways with both probe tips placed and reopening the saved job from the Home Screen.
+
 ## 1.20.0 — Find the lighting breaker
 
 **Course and electrical checks.** The job runs against course 2’s actual lamp and socket. Automated checks swapped the two outgoing feeds and verified that credit followed the circuit which lost power. The shared switch disconnected both loads. Both drew zero current, and the solver could no longer resolve a voltage across either one. A trip from the RCCB test button and the subsequent reset earned no credit for moving the shared lever off and on.
@@ -17,6 +41,8 @@
 **Windows replacement.** The installed 1.20.0 app reopened all five seeded study records from 1.19.0 with matching hashes in a disposable profile. Both shortcuts worked, as did shutdown and restart. The installed app ran 80 circuits and passed 120 guided-build checks without external requests or console errors. The graphics driver logged one shader warning. The window took 1.01 seconds to start and the workbench geometry was ready 5.12 seconds after launch. The app processes held 553 MiB of private memory at the measured checkpoint.
 
 **Earlier study data.** A full backup exported by the 1.19.0 web app was restored in the new build on a fresh origin. The original completion and both lighting activities were retained. The learner could then take the new socket and shared-switch checks.
+
+**Updating a phone-sized offline copy.** In touch Chromium and Windows WebKit, we interrupted the 1.19.0 → 1.20.0 download during a breaker model update. The previous offline pack and open job still worked. After a successful retry, closing the last lab tab activated the new pack. We stopped the server, opened the new room map, walked to the kitchen and resumed the saved job. The draft, named build, learning history and bookmark all matched.
 
 **Physical iPhone.** The mobile results above are WebKit emulation. For a device check, open the Home Screen app in portrait, visit the utility cupboard through **Find → Room map**, operate both breakers, turn the phone sideways and finish the shared-switch check. Reopen the job and verify that its saved place is still there.
 

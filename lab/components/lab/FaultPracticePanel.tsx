@@ -7,7 +7,7 @@ import type { MeasurementEvidence } from '../../lib/learning';
 import { measurementPoints } from '../../lib/measurement-points';
 import { faultScore, kitchenFaultChoices, lessonFaultChoices, shownVolts, type FaultStage } from '../../lib/fault-practice';
 import { worktopFaultPoints } from '../../lib/worktop-fault';
-import { hasPanelHeater,heaterFeed, type HeaterReadings, type HeaterRun } from '../../lib/heater-fault';
+import { heaterFeed, heaterFeedMark, heaterProbeTip, type HeaterReadings, type HeaterRun } from '../../lib/heater-fault';
 import { Button } from '../ui/button';
 import HeaterFlexChoice,{type FlexLanding} from './HeaterFlexChoice';
 
@@ -40,12 +40,11 @@ function measurePrompt(props:Props) {
     return 'Leave '+(reverse?'red':'black')+' on '+common+'. On the virtual bench, move '+(reverse?'black':'red')+' to '+pin+' on the back button.';
   }
   if(props.heater){
-    if(!props.switchOn)return hasPanelHeater(props.doc)?'Press the rocker on the white wall plate.':'Turn the heater on at the wall.';
-    if(!props.heater.heater)return 'On the bench meter, put red on heater L and black on heater N.';
-    if(props.heater.output)return 'Check that the bench supply and wall switch are on. Take both readings again.';
-    const reverse=props.heater.heater.a?.terminal==='N',feed=heaterFeed(props.doc);
-    const target=feed?.component==='fuse'?'OUT on the separate fuse':'the L terminal on the LOAD side of the wall switch';
-    return 'Leave '+(reverse?'red':'black')+' on heater N. Move '+(reverse?'black':'red')+' to '+target+'.';
+    if(!props.switchOn)return 'Turn the heater on at the wall.';
+    if(!props.heater.heater)return 'On the bench, check L to N at the heater.';
+    if(props.heater.output)return 'Check the bench supply and wall switch, then measure again.';
+    const reverse=props.heater.heater.a?.terminal==='N';
+    return 'Leave '+(reverse?'red':'black')+' on heater N. Move '+(reverse?'black':'red')+' to '+heaterFeedMark(props.doc)+'.';
   }
   if (!props.worktop) {
     if (props.wrongPoints && props.missing) return props.missing;
@@ -136,11 +135,14 @@ export function FaultPracticePanel(props:Props) {
     </div>
     {stage==='measure'&&!instrumentOpen&&!props.wrongPoints&&!props.samples.length&&(
       props.bell?<p>The front doorbell rings in the hall. The back doorbell is quiet.</p>
-      :props.heater?<p>{props.switchOn?'The rocker is on. Does the feed reach the heater?':'The kitchen panel heater stays cold, even when the wall switch is on.'}</p>
+      :props.heater?<p>{props.switchOn?'L is line and N is neutral. The training bench lets you check both without opening the heater.':'“I’ve tried the wall switch, but the kitchen heater stays cold.”'}</p>
       :worktop?props.switchOn&&props.leftLit&&<p>The left strip is on. Check the one that stays dark.</p>
       :<p>Record two meter readings before choosing the fault.</p>
     )}
-    {stage==='measure'&&(worktop||props.heater||props.bell)&&props.wrongPoints&&<p className="task-feedback attention" role="status">{props.bell&&props.wrongSample?bellProbeTip(props.doc,props.wrongSample,props.bell):'Reading saved. For this check, use the points named above.'}</p>}
+    {stage==='measure'&&props.heater?.heater&&!props.heater.output&&!props.wrongPoints&&
+      <p role="status">At the heater · <b>{readingValue(props.heater.heater)}</b></p>}
+    {stage==='measure'&&(worktop||props.heater||props.bell)&&props.wrongPoints&&<p className="task-feedback attention" role="status">{props.bell&&props.wrongSample?bellProbeTip(props.doc,props.wrongSample,props.bell):
+      props.heater&&props.wrongSample?heaterProbeTip(props.doc,props.wrongSample,props.heater):'Reading saved. For this check, use the points named above.'}</p>}
     {props.feedback&&stage!=='done'&&<p className="task-feedback" role="status">{props.feedback}</p>}
     {stage==='diagnose'&&!instrumentOpen&&<FaultReadings {...props}/>}
     {!instrumentOpen&&<>

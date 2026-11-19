@@ -6,12 +6,12 @@ instructions, Blender models and scripts.
 
 ## Install
 
-1. Download `Irish-Electrical-Lab-1.20.0-Setup.exe` from the project's GitHub release.
+1. Download `Irish-Electrical-Lab-1.21.0-Setup.exe` from the project's GitHub release.
 2. To check your download, compare the result of this PowerShell command with
-   the installer entry in `Irish-Electrical-Lab-1.20.0-SHA256.txt`.
+   the installer entry in `Irish-Electrical-Lab-1.21.0-SHA256.txt`.
 
    ```powershell
-   Get-FileHash .\Irish-Electrical-Lab-1.20.0-Setup.exe -Algorithm SHA256
+   Get-FileHash .\Irish-Electrical-Lab-1.21.0-Setup.exe -Algorithm SHA256
    ```
 
 3. Run the installer for your Windows account and open **Irish Electrical Lab**
@@ -24,6 +24,8 @@ The installer is unsigned, so Windows may show “Unknown publisher”.
 For replacement releases, close the running app and install the new version.
 Compatible updates retain the application identity, loopback origin and study
 profile. Study records are not included in release downloads.
+
+On iPhone, open the Home Screen app online so it can pick up the update. Once the download has finished, close and reopen the app. If you study in Safari instead, close all the lab’s tabs and open it again. Open **More** to check the offline download. [iPhone and offline guide](iphone.md)
 
 ## Build and understand the project
 

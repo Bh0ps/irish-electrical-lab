@@ -4,6 +4,7 @@ import type { CircuitDocument, Endpoint, Vec3 } from '../../lib/types';
 import { sceneBounds } from '../../lib/workbench-presentation';
 import { probeContact, type CircuitRoutes } from '../../lib/routing';
 import type { WorkshopVisual } from '../../lib/termination-practice';
+import {MeterProbe} from './MeterProbe';
 
 const up=new THREE.Vector3(0,1,0);
 const ignore:THREE.Mesh['raycast']=()=>{};
@@ -48,22 +49,23 @@ function Link({a,b,r,c,metal=false}:{a:THREE.Vector3;b:THREE.Vector3;r:number;c:
   if(len<.001)return null;
   return <mesh position={a.clone().lerp(b,.5)} quaternion={new THREE.Quaternion().setFromUnitVectors(up,delta.normalize())} raycast={ignore}><cylinderGeometry args={[r,r,len,12]}/><meshStandardMaterial color={c} roughness={metal?.26:.55} metalness={metal?.75:.02}/></mesh>;
 }
-export function TestLead({doc,endpoint,origin,rotation,negative}:{doc:CircuitDocument;endpoint:Endpoint;origin:THREE.Vector3;rotation:THREE.Quaternion;negative:boolean}){
+export function TestLead({doc,endpoint,origin,rotation,negative,shared=false}:{doc:CircuitDocument;endpoint:Endpoint;origin:THREE.Vector3;rotation:THREE.Quaternion;negative:boolean;shared?:boolean}){
   const shape=useMemo(()=>{
-    const contact=probeContact(doc,endpoint);
+    const contact=probeContact(doc,endpoint,negative&&shared);
     const tip=new THREE.Vector3(...contact.position);
-    const normal=new THREE.Vector3(...contact.normal).normalize();
-    const shaft=tip.clone().addScaledVector(normal,.08),grip=tip.clone().addScaledVector(normal,.33);
+    const normal=new THREE.Vector3(...(contact.approach??contact.normal)).normalize();
+    const shaft=tip.clone().addScaledVector(normal,.08),grip=tip.clone().addScaledVector(normal,contact.approach ? .81 : .33);
     const outlet=new THREE.Vector3(negative?.062:-.062,.017,0).applyQuaternion(rotation).add(origin);
     const slack=outlet.clone().lerp(grip,.48);slack.y=Math.max(.07,slack.y-.3);slack.z+=negative?.22:.48;
-    return {tip,shaft,grip,normal,curve:new THREE.CatmullRomCurve3([outlet,slack,grip.clone().addScaledVector(normal,.18),grip])};
-  },[doc,endpoint,origin,rotation,negative]);
+    return {tip,shaft,grip,normal,approach:contact.approach,curve:new THREE.CatmullRomCurve3([outlet,slack,grip.clone().addScaledVector(normal,.18),grip])};
+  },[doc,endpoint,origin,rotation,negative,shared]);
   const c=negative?'#272a30':'#bd342e';
   return <group><mesh raycast={ignore}><tubeGeometry args={[shape.curve,30,.015,7,false]}/><meshStandardMaterial color="#272a30"/></mesh>
+    {shape.approach?<group position={shape.tip} scale={10}><MeterProbe direction={shape.approach} red={!negative} tail={false}/></group>:<>
     <Link a={shape.tip} b={shape.shaft} r={.012} c="#b4b7b9" metal/>
     <Link a={shape.shaft} b={shape.grip} r={.034} c={c}/>
     <Link a={shape.grip.clone().addScaledVector(shape.normal,-.075)} b={shape.grip} r={.036} c="#272a30"/>
-    <Link a={shape.shaft} b={shape.shaft.clone().addScaledVector(shape.normal,.025)} r={.067} c={c}/></group>;
+    <Link a={shape.shaft} b={shape.shaft.clone().addScaledVector(shape.normal,.025)} r={.067} c={c}/></>}</group>;
 }
 const v=(x:number,y:number,z:number)=>new THREE.Vector3(x,y,z);
 function SampleLabel({text,at,width,height}:{text:string;at:Vec3;width:number;height:number}){

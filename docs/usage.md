@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.20.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.21.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 On a phone, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting, or tap **Find** and search for its name or room. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. **Put meter away** returns to the site. In the two-door bell job the hall chime gives a short caption and a sound for each new call. The two sounds are examples chosen for this lab. You can turn them off in Settings or Site tools. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -16,7 +16,13 @@ The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a po
 
 ## Try a kitchen repair
 
-Open **Chapters → The heater stays cold**. Work the wall switch and take two readings on the virtual bench. Once you have found the fault, choose **Find repair on site**. Switch off the simulated supply and open the fitting. The back box stays on the wall while the plate comes forward. Look for the loose wire from the heater flex. Tap its terminal or choose **Reconnect flex** to use the printed markings. Restore the supply. Switch the heater off, check its watts, then switch it back on. Choose **Test the repair** once you’ve seen it draw power again. This room stays at 18 °C so you can also try the heater’s manual temperature setting.
+Open **Chapters → The heater stays cold**. The customer has tried the wall switch and the kitchen heater still feels cold. Turn it on in the room, then choose **Use the bench meter**. The training bench gives you test points for the sealed heater. Read **L** (line) to **N** (neutral) at the heater. Leave one probe on heater N and compare the reading where the line leaves the wall switch. If you touch the wrong point, the job tells you what you checked.
+
+Once you’ve found the fault, choose **Find repair on site** and follow the repair prompts with the simulated supply off. Restore the supply. Switch the heater off and back on and watch its power in watts. Choose **Test the repair** when you’ve seen the power come back.
+
+For a closer look at the wall switch itself, choose **Full screen → Tools → Check wall switch**. Turn the bench supply off, then choose **Show rear screws**. With the switch on and the fuse intact, **L · IN** to **L · LOAD** reads close to zero ohms (Ω). **Lift and refit** lets you try the other rocker position. With the contacts open in this example the meter shows **OL**. This optional check uses its own two probes. **Put meter away** returns to the room. To continue the voltage checks, turn the supply back on in **Tools**.
+
+![The black probe tip touches the L LOAD screw of the isolated kitchen switch. The display reads 0 Ω and shows the red probe on L IN.](images/wall-switch-meter.png)
 
 ## Read a fitting or a meter
 

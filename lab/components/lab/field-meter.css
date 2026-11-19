@@ -1,0 +1,34 @@
+.field-meter {color:#18372b;background:#fbfcf5;padding:.35rem .45rem;border:1px solid #afc0b0;border-radius:7px;min-width:0}
+.field-meter-row,.field-meter-leads {display:flex;align-items:stretch;gap:.3rem;flex-wrap:wrap}
+.field-meter-row {align-items:center}
+.field-meter-row output {min-width:4.5rem;flex:1 0 auto;padding:.25rem .5rem;font-variant-numeric:tabular-nums;font-size:1.15rem;font-weight:650;color:#1d3323;background:#e7ede1;border:1px solid #bac6b5;border-radius:4px;text-align:center}
+.field-meter button,.switch-check button,.switch-check summary {min-height:44px;cursor:pointer}
+.field-meter button,.switch-check button:not(.book-primary) {padding:.3rem .55rem;border:1px solid #9eafa0;border-radius:6px;color:#204331;background:#fafcf8;font:inherit}
+.field-meter button[aria-pressed=true] {border:2px solid #31593f;background:#e4eedf;padding:calc(.3rem - 1px) calc(.55rem - 1px)}
+.field-meter-leads button {display:grid;grid-template-columns:auto auto;align-content:center;align-items:center;gap:.03rem .28rem;line-height:1.1}
+.field-meter-leads small {grid-column:1 / -1;font-size:.76em}
+.field-meter-leads i {display:block;width:.48rem;height:.48rem;background:#292f31;border-radius:50%}
+.field-meter-leads i[data-lead=red] {background:#ab3737}
+.field-meter .field-meter-save {background:#254f3a;color:white;border-color:#254f3a}
+.field-meter button:disabled {opacity:.55;cursor:default}
+.field-meter p,.switch-check p {margin:.35rem 0 .12rem;line-height:1.3}
+.field-meter-slot {min-width:0;background:#edf2e8;padding:.25rem max(.4rem,env(safe-area-inset-right)) max(.25rem,env(safe-area-inset-bottom)) max(.4rem,env(safe-area-inset-left))}
+.phone-field .canvas-wrap:has(>.field-meter-slot) {display:grid!important;grid-template-rows:minmax(0,1fr) auto}
+.phone-field .canvas-wrap:has(>.field-meter-slot)>.jobsite {grid-area:1/1;position:relative!important;inset:auto!important;min-height:0;height:100%}
+.field-meter-slot {grid-area:2/1}
+.field-meter-return {position:absolute;top:.5rem;right:max(.5rem,env(safe-area-inset-right));z-index:3;min-height:44px;border:1px solid #9eafa0;border-radius:6px;padding:.35rem .7rem;background:#fbfcf5;color:#204331;font:inherit;cursor:pointer}
+.switch-check {display:grid;gap:.5rem;min-width:0}
+.switch-check h3,.switch-check fieldset {margin:0}
+.switch-check fieldset div {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3rem}
+.field-points-dialog[data-slot=dialog-content] {max-height:var(--lab-visible-height,92dvh);width:min(26rem,calc(100vw - 1.25rem));overflow:auto;background:#fafcf7;color:#18372b}
+.field-points-dialog [data-slot=dialog-title] {padding-inline-end:30px}
+.field-points-dialog label {display:grid;gap:.3rem}
+.field-points-dialog select,.field-points-options button {min-height:46px;border:1px solid #9eafa0;border-radius:6px;background:#fff;color:#204331;padding:.35rem .55rem;font:inherit}
+.field-points-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem}
+@media (orientation:landscape) {.field-meter-slot>.field-meter {max-width:48rem;margin-inline:auto}}
+@media (max-width:365px) {
+  .field-meter-slot .field-meter-row {display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .field-meter-slot .field-meter-row>output,.field-meter-slot .field-meter-row>button {grid-column:span 2;min-width:0}
+  .field-meter-slot .field-meter-leads {grid-column:span 2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .field-meter-slot .field-meter-leads button {justify-content:center;padding-inline:.12rem}
+}

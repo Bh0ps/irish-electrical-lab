@@ -36,6 +36,8 @@ import DimmerControl from './DimmerControl';
 import { ConductorPicker, ProbePicker, TerminalPicker, EquipmentList, nextFreePosition } from './ConnectionPicker';
 import { useCompactWorkbench } from './useCompactWorkbench';
 import {useDoorCall} from './useDoorCall';
+import {useInstalledOhmmeter,switchMeasurement} from './useInstalledOhmmeter';
+import {FieldMeter,SwitchMeterSheet} from './FieldMeter';
 import { HouseCallPanel } from './HouseCallPanel';
 import { FaultPracticePanel } from './FaultPracticePanel';
 import { faultChoices, faultScore, worktopComparisonReady, faultStage, faultStageId, worktopFaultTitle } from '../../lib/fault-practice';
@@ -95,6 +97,13 @@ const Workbench=React.lazy(()=>import('./Workbench').catch(()=>({default:({onLis
 const JobSiteView=React.lazy(()=>import('./JobSiteView').catch(()=>({default:({onList}:{onList:()=>void})=><GraphicsUnavailable list={onList}/>})));
 const initialLesson=LESSONS.find(l=>l.id===7)??LESSONS[0];
 
+function useSiteLayout(document:CircuitDocument,reference?:CircuitDocument){
+  return useMemo(()=>{
+    const location=jobSite(document,reference);
+    return {location,testFittings:installedTestFittings(document,location)};
+  },[document,reference]);
+}
+
 export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const touchLayout = useCompactWorkbench();
   const [path,setPath]=useState<'home'|'coursebook'|'full'>('home');
@@ -112,7 +121,9 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const [planTrace,setPlanTrace]=useState<{sequence:number;wire:string;docId:string}>();
   const [drawingOpened,setDrawingOpened]=useState(false),[drawingWire,setDrawingWire]=useState<string>();
   const sitePose=useRef<SavedSitePose|undefined>(undefined);
-  const meterVisit=useRef<{circuit:string;pose?:SitePose;component?:string;selected?:string}|undefined>(undefined);
+  const [meterVisit,setMeterVisit]=useState<{circuit:string;pose?:SitePose;component?:string;selected?:string}>();
+  const fieldPointsButton=useRef<HTMLButtonElement>(null);
+  const [sitePoints,setSitePoints]=useState(false),[recordedFieldPair,setRecordedFieldPair]=useState('');
   const [chimeOpenIn,setChimeOpenIn]=useState<string>();
   const [siteJump,setSiteJump]=useState<SiteFocus>({id:0});
   const [bookmark,setBookmark]=useState<LessonBookmark>();
@@ -220,6 +231,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const evidenceSlot=useRef(lessonId);evidenceSlot.current=lessonId;
   const forkKeyRef=useRef(forkKey);forkKeyRef.current=forkKey;
   const worker=useRef<Worker|null>(null),docRef=useRef(document),dragBefore=useRef<CircuitDocument|null>(null),dimmerBefore=useRef<CircuitDocument|null>(null),saveTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const switchCheck=useInstalledOhmmeter(document,simError?undefined:result,worker);
   const restoring=useRef(false);
   const freshWorkerState=useRef(false);
   const persistDraft = useCallback(() => {
@@ -341,9 +353,9 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const voltageLight=forkVoltage.unit==='V'&&(forkVoltage.status==='overrange'||forkVoltage.value!==null&&Math.abs(forkVoltage.value)>=30);
   const meterTargetMode=useFork?(forkMethod.startsWith('fork')&&!forkSelectingReference?'current':forkMode(forkMethod)):meterMode;
   useEffect(()=>{
-    if(document.supply.enabled||!useFork||tool!=='meter'||forkMethod!=='resistance'||!forkSetup.a||!forkSetup.b||!result?.converged||result.revision!==document.revision)return;
+    if(switchCheck.active||document.supply.enabled||!useFork||tool!=='meter'||forkMethod!=='resistance'||!forkSetup.a||!forkSetup.b||!result?.converged||result.revision!==document.revision)return;
     worker.current?.postMessage({kind:'instrument-preview',document,key:forkKey,setup:forkSetup});
-  },[useFork,tool,forkMethod,forkKey,forkSetup,document,result?.converged,result?.revision]);
+  },[switchCheck.active,useFork,tool,forkMethod,forkKey,forkSetup,document,result?.converged,result?.revision]);
   const reading=meterMode==='voltage'?voltage:meterMode==='resistance'?resistance:{
     value:current, explanation:!selectedWire?'Choose one wire to read its current.':current===null?'There’s no current reading for this wire yet.':'Current through this wire, in amps.',
   };
@@ -391,7 +403,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
           lastFaultReading.current='';setInspectorCollapsed(true);setPanel('lesson');setTool('select');setSheetOpen(true);
         }
       }
-      if(!restoring.current&&m.kind==='measurement'&&m.revision===docRef.current.revision&&m.circuitId===docRef.current.id){setResistance(m.evidence);if(m.evidence&&m.evidence.status!=='unresolved'){const slot=docRef.current.lessonId??evidenceSlot.current;lastFaultReading.current=m.evidence.id;setFaultSample(m.evidence);setProgress(p=>recordEvidence(p,slot,m.evidence));setNotice((m.evidence.instrument?.displayed??(m.value===null?'OL':format(m.value)))+' Ω recorded.');}}
+      if(!restoring.current&&m.kind==='measurement'&&m.revision===docRef.current.revision&&m.circuitId===docRef.current.id){const onSwitch=typeof m.requestId==='string'&&m.requestId.startsWith(switchMeasurement);if(!onSwitch)setResistance(m.evidence);if(m.evidence&&m.evidence.status!=='unresolved'){const slot=docRef.current.lessonId??evidenceSlot.current;if(!onSwitch){lastFaultReading.current=m.evidence.id;setFaultSample(m.evidence);setNotice((m.evidence.instrument?.displayed??(m.value===null?'OL':format(m.value)))+' Ω recorded.');}setProgress(p=>recordEvidence(p,slot,m.evidence));}}
       if(!restoring.current&&m.kind==='diagnosis'&&diagnosisRequest.current&&diagnosisRequest.current.id===m.requestId){
         const request=diagnosisRequest.current;diagnosisRequest.current=null;setCheckingDiagnosis(false);
         if(m.revision===docRef.current.revision&&m.circuitId===docRef.current.id){
@@ -438,7 +450,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
     probePlacement.current={red:false,black:false,current:false};
     setProbeA(undefined);setProbeB(undefined);setActiveProbe('red');setResistance(undefined);
   }
-  function commit(next:CircuitDocument,replacing=false){next=cleanCableRuns(normalizeBoardMounts(next,docRef.current));if(replacing||next.id!==docRef.current.id){pendingProtection.current=undefined;setProtectionMessage(undefined);clearChime();setHistory([]);clearProbes();cancelConnection();}else setHistory(h=>[...h.slice(-39),clone(docRef.current)]);setFuture([]);setDocument({...next,revision:docRef.current.revision+1});}
+  function commit(next:CircuitDocument,replacing=false){next=cleanCableRuns(normalizeBoardMounts(next,docRef.current));if(replacing||next.id!==docRef.current.id){switchCheck.finish();pendingProtection.current=undefined;setProtectionMessage(undefined);clearChime();setHistory([]);clearProbes();cancelConnection();}else setHistory(h=>[...h.slice(-39),clone(docRef.current)]);setFuture([]);setDocument({...next,revision:docRef.current.revision+1});}
   function changeFitting(item:ComponentInstance,variant:string){
     const next=applyEquipmentVariant(item,variant==='automatic'?undefined:variant);
     const missing=connectedTerminalMissing(document,next);
@@ -629,9 +641,9 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       if(forkMethod==='resistance'){worker.current?.postMessage({kind:'measure',document,...request,assisted});return;}
       const entry={...captureMeasurement(document,result,request),assisted};
       if(entry.value===null){setNotice(entry.explanation);return;}
-      saveMeterReading(entry);setNotice(faultSession||chimeCheck||voltageTask?'':liveFork.shown+' '+liveFork.unit+' recorded.');return;
+      saveMeterReading(entry);setNotice(faultSession||chimeCheck||voltageTask?'':liveFork.shown+' '+liveFork.unit+' recorded.');return entry.id;
     }
-    if(!result||result.revision!==document.revision){setNotice('Wait for the meter to settle, then record the reading.');return;}if(meterMode==='resistance'){if(!probeA||!probeB){setNotice('Place both probes before recording a resistance reading.');return;}if(document.supply.enabled){setNotice('Switch off the bench supply and any battery or solar supply before measuring resistance.');return;}worker.current?.postMessage({kind:'measure',document,a:probeA,b:probeB,assisted:!(probePlacement.current.red&&probePlacement.current.black)});return;}const entry={...captureMeasurement(document,result,{mode:meterMode as 'voltage'|'current',a:probeA,b:probeB,wire:selectedWire}),assisted:meterMode==='current'?!probePlacement.current.current:!(probePlacement.current.red&&probePlacement.current.black)};if(entry.value===null){setNotice(entry.explanation);return;}saveMeterReading(entry);setNotice(faultSession||chimeCheck||voltageTask?'':`${format(entry.value)} ${entry.unit} saved.`);}
+    if(!result||result.revision!==document.revision){setNotice('Wait for the meter to settle, then record the reading.');return;}if(meterMode==='resistance'){if(!probeA||!probeB){setNotice('Place both probes before recording a resistance reading.');return;}if(document.supply.enabled){setNotice('Switch off the bench supply and any battery or solar supply before measuring resistance.');return;}worker.current?.postMessage({kind:'measure',document,a:probeA,b:probeB,assisted:!(probePlacement.current.red&&probePlacement.current.black)});return;}const entry={...captureMeasurement(document,result,{mode:meterMode as 'voltage'|'current',a:probeA,b:probeB,wire:selectedWire}),assisted:meterMode==='current'?!probePlacement.current.current:!(probePlacement.current.red&&probePlacement.current.black)};if(entry.value===null){setNotice(entry.explanation);return;}saveMeterReading(entry);setNotice(faultSession||chimeCheck||voltageTask?'':`${format(entry.value)} ${entry.unit} saved.`);return entry.id;}
   function targetActivity(activity:LessonActivity){if(activity.kind==='operate'&&activity.component&&activeSurface==='site'){sitePose.current=undefined;setSiteJump(s=>({id:s.id+1,component:activity.component}));}if(['measure','connect','inspect'].includes(activity.kind)||activity.part==='terminals')setSurface('bench');setManualInspection(undefined);setMoveTarget(undefined);const id=activity.component??activity.endpoints?.[0]?.component;if(id){setSelected(id);setSelectedWire(undefined);setSelectedPart(activity.part??'body');}setInspectorCollapsed(false);setTool(activity.kind==='operate'?'select':activity.kind==='connect'?'wire':activity.kind==='measure'?'meter':'inspect');setPanel(activity.kind==='connect'?'connect':activity.kind==='measure'?'meter':'inspect');if(activity.kind==='connect'||activity.kind==='measure')setView('open');else if(activity.part==='terminals'){const fitting=document.components.find(c=>c.id===id);setView(fitting&&enclosedTerminals(fitting)?'open':'normal');}setCamera(c=>({id:c.id+1,action:activity.part==='terminals'?'rear':'focus'}));}
   function setupMeasurement(activity:LessonActivity){if(!activity.measurement)return;setSurface('bench');probePlacement.current={red:false,black:false,current:false};setSheetOpen(true);const m=activity.measurement;if(useFork)chooseForkMethod(m.mode==='current'?'fork-current':m.mode==='resistance'?'resistance':'probe-voltage');setMeterMode(m.mode);setProbeA(m.a);setProbeB(m.b);if(m.wire){const expected=lesson.circuit.wires.find(w=>w.id===m.wire);const match=document.wires.find(w=>w.id===m.wire||expected&&((w.from.component===expected.from.component&&w.from.terminal===expected.from.terminal&&w.to.component===expected.to.component&&w.to.terminal===expected.to.terminal)||(w.from.component===expected.to.component&&w.from.terminal===expected.to.terminal&&w.to.component===expected.from.component&&w.to.terminal===expected.from.terminal)));setSelectedWire(match?.id);}setTool('meter');setPanel('meter');setInspectorCollapsed(false);setView('open');setCamera(c=>({id:c.id+1,action:'rear'}));setNotice(m.mode==='current'?'The wire is selected. Read the amps, then choose Record reading.':'The probes are in place. Read the meter, then choose Record reading.');}
   async function importCircuit(){try{const raw=await readJsonFile('circuit');if(raw===null)return;const d=validateCircuit(JSON.parse(raw));requestReplacement('Import circuit',()=>{baseline.current=fingerprintLayout(d);commit(d);if(d.lessonId)setLessonId(d.lessonId);setWorkspace('sandbox');setMode('explore');setSelected(undefined);setSelectedWire(undefined);setChallengeStarted(false);setCamera(c=>({id:c.id+1,action:'fit'}));setBuildsOpen(false);setPanel('');setInspectorCollapsed(true);setSurface('bench');setNotice('Circuit imported.');});}catch(e){setNotice(e instanceof Error?e.message:'Could not import this circuit.');}}
@@ -725,15 +737,25 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   }
   function chooseLesson(id:number){requestReplacement('Open configuration',()=>{loadLesson(id);setWorkspace(courseDestination);setMode('explore');setCoursesOpen(false);setBuildsOpen(false);setCourseStage('look');});}
   function openCourses(destination:'learn'|'sandbox',jobs=false){setShowJobs(jobs);setCourseDestination(destination);setCoursesOpen(true);setBuildsOpen(false);}
-  function chooseTool(next:Tool,fixtureId?:string){
-    if(next==='meter'&&activeSurface==='site'&&testFittings.length){
-      if(tool!=='meter'||meterVisit.current?.circuit!==document.id)meterVisit.current={circuit:document.id,pose:sitePose.current,component:siteJump.component,selected};
+  function chooseTool(next:Tool,fixtureId?:string,touchFitting=false){
+    setSitePoints(false);
+    if(next==='meter'&&activeSurface==='site'&&fixtureId&&switchFitting?.component.id===fixtureId){
+      if(!switchCheck.active)setMeterVisit({circuit:document.id,pose:sitePose.current,component:siteJump.component,selected});
+      switchCheck.start(fixtureId);setHandTool(undefined);setTool('meter');setPanel('meter');setInspectorCollapsed(false);
+      setViewOpen(false);setConductorPickerOpen(false);setSheetOpen(!immersive);
+      findFixture(fixtureId);return;
+    }
+    if(switchCheck.active)switchCheck.finish();
+    if(next==='meter'&&activeSurface==='site'&&testFittings.some(f=>f.kind!=='fcu')){
+      if(tool!=='meter'||meterVisit?.circuit!==document.id)setMeterVisit({circuit:document.id,pose:sitePose.current,component:siteJump.component,selected});
       setHandTool(undefined);setMeterMode('voltage');if(useFork)chooseForkMethod('probe-voltage');
-      setViewOpen(false);setConductorPickerOpen(false);setInspectorCollapsed(false);setSheetOpen(true);setTool('meter');setPanel('meter');
-      const target=fixtureId??testFittings.find(s=>s.component.id===selected)?.component.id??(testFittings.length===1?testFittings[0].component.id:worktopFault?'right':undefined);
+      setViewOpen(false);setConductorPickerOpen(false);setInspectorCollapsed(false);setSheetOpen(!(immersive&&touchFitting));setTool('meter');setPanel('meter');
+      const inView=[siteJump.component,selected,worktopFault?'right':location.first].find(id=>id&&testFittings.some(f=>f.item.id===id));
+      const target=fixtureId??inView??(testFittings.length===1?testFittings[0].component.id:undefined);
       if(target!==siteJump.component){sitePose.current=undefined;setSiteJump(prev=>({id:prev.id+1,component:target}));}
       return;
     }
+    if(next==='meter'&&activeSurface==='site'&&!meterVisit)setMeterVisit({circuit:document.id,pose:sitePose.current,component:siteJump.component,selected});
     if(next===tool && (next==='wire'||next==='meter')){
       setSurface('bench');setViewOpen(false);setInspectorCollapsed(false);setSheetOpen(true);
       setPanel(next==='wire'?'connect':'meter');return;
@@ -761,8 +783,8 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   function selectConductor(id:string){if(tool==='meter')probePlacement.current.current=true;setMoveTarget(undefined);setSelectedWire(id);setSelected(undefined);setPanel(tool==='meter'?'meter':'inspect');setInspectorCollapsed(false);setConductorPickerOpen(false);setSheetOpen(true);}
   const attached=document.lessonId===lessonId;
   const hasSite=workspace==='learn'&&attached;
-  const location=useMemo(()=>jobSite(document,attached?lesson.circuit:undefined),[document,attached,lesson]);
-  const testFittings=useMemo(()=>installedTestFittings(document,location),[document,location]);
+  const {location,testFittings}=useSiteLayout(document,attached?lesson.circuit:undefined);
+  const switchFitting=testFittings.find(f=>f.kind==='fcu');
   const activeSurface=surface==='drawing'?'drawing':listView?'list':surface==='site'&&hasSite?'site':'bench';
   const siteChime=activeSurface==='site'?testFittings.find(f=>f.kind==='chime'):undefined;
   const chimeOpen=!!siteChime&&chimeOpenIn===document.id;
@@ -775,6 +797,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     terminal(point);
   }
   function showSurface(value:'site'|'drawing'|'bench'|'list'){
+    if(value!=='site'){setSitePoints(false);if(switchCheck.active)switchCheck.finish();setMeterVisit(undefined);}
     setViewOpen(false);if(value==='drawing')setDrawingOpened(true);
     if(value==='list'){setSurface('bench');setListView(true);return;}
     setSurface(value);setListView(false);
@@ -823,11 +846,13 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   const movingOnTouch=canEdit&&tool==='select'&&!!component&&moveTarget===component.id;
   const toggleMove=()=>{setMoveTarget(movingOnTouch?undefined:component?.id);setTool('select');setSheetOpen(false);};
   const closeTools=()=>{
-    const visit=meterVisit.current;
-    if(visit?.circuit===document.id&&tool==='meter'&&activeSurface==='site'){
-      setSiteJump(prev=>({id:prev.id+1,component:visit.component,restore:visit.pose}));setSelected(visit.selected);setTool('select');
+    setSitePoints(false);
+    if(switchCheck.active)switchCheck.finish();
+    const visit=meterVisit;
+    if(visit?.circuit===document.id&&tool==='meter'&&(activeSurface==='site'||activeSurface==='bench')){
+      setSurface('site');setListView(false);setSiteJump(prev=>({id:prev.id+1,component:visit.component,restore:visit.pose}));setSelected(visit.selected);setTool('select');
     }
-    meterVisit.current=undefined;
+    setMeterVisit(undefined);
     setInspectorCollapsed(true);
     if(currentCall||faultSession){setTool('select');setPanel('lesson');setConductorPickerOpen(false);setSheetOpen(true);return;}
     setSheetOpen(false);if(!touchLayout)setPanel(workspace==='learn'?'lesson':'');
@@ -927,7 +952,24 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     record={measuringBellFault||measuringChime||measuringHeater?recordReading:undefined} covered={(measuringChime||measuringBellFault)&&!!siteChime&&!chimeOpen} red={probeA} black={probeB} active={activeProbe}
     chooseLead={setActiveProbe} place={point=>{if(siteChime&&point.component!==siteChime.component.id){setSurface('bench');terminal(point);}else namedMeterPoint(point);}} adjust={adjustMeter} display={liveVoltageMode?lessonVolts:undefined}
     message={useFork?liveFork.value===null||Number(liveFork.shown)===0?liveFork.explanation:'':voltage?.explanation??''} controls={meterContent}/>:meterContent;
-  const context=panel==='meter'?compactMeter:panel==='results'?resultContent:panel==='connect'?connectContent:panel==='equipment'?paletteContent:panel==='inspect'?inspectorContent:null;
+  function chooseFieldView(v:typeof activeSurface){
+    if(v==='site'){closeTools();setTool('select');}else setMeterVisit(undefined);
+    showSurface(v);setSheetOpen(false);
+  }
+  const fieldPair=JSON.stringify([document.id,document.revision,probeA,probeB,useFork?forkMethod:'study',startActivity]);
+  const switchMeterHere=switchCheck.active&&activeSurface==='site'&&tool==='meter'&&panel==='meter'&&!!switchFitting;
+  const voltageMeterHere=activeSurface==='site'&&voltageToolOpen&&!handTool&&!switchMeterHere&&testFittings.some(f=>f.kind!=='fcu')&&!wrongVoltageMode;
+  const extraSupply=document.components.find(c=>['battery','pv'].includes(c.type)&&Boolean(c.params.on??COMPONENTS[c.type].defaults.on??true));
+  const isolationFailed=Boolean(simError)||(result?.revision===document.revision&&!result.converged);
+  const switchIsolationLabel=document.supply.enabled?'Turn bench supply off':extraSupply?'Switch off '+extraSupply.label:isolationFailed?'Retry circuit check':'Waiting for the circuit…';
+  const isolateSwitch=document.supply.enabled?()=>commit({...document,supply:{...document.supply,enabled:false}})
+    :extraSupply?()=>patch(extraSupply.id,{on:false})
+    :isolationFailed?()=>worker.current?.postMessage({document:docRef.current,electricalGeneration:electricalIdentity.current.generation,dt:0})
+    :undefined;
+  function operateFittedSwitch(){if(switchMeterHere&&switchCheck.safe&&!switchCheck.open)operate(switchFitting.component);}
+  const switchSheet=switchMeterHere&&<SwitchMeterSheet circuit={document} part={switchFitting.component} check={switchCheck}
+    isolate={isolateSwitch} isolateLabel={switchIsolationLabel} operate={operateFittedSwitch} leave={()=>chooseFieldView('site')}/>;
+  const context=panel==='meter'?switchSheet||compactMeter:panel==='results'?resultContent:panel==='connect'?connectContent:panel==='equipment'?paletteContent:panel==='inspect'?inspectorContent:null;
   const briefSwitchAction=panel==='inspect'&&selectedPart==='actuator'&&(
     inBook&&!!activeActivity?.bookStep&&component?.type==='switch'
     || !!currentCall&&canOperate&&component?.type!=='dimmer'&&!conductorPickerOpen
@@ -986,10 +1028,6 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     ? document.supply.enabled?handover&&fusedSwitch?heaterRunAction:{label:testRunning?'Testing…':'Test the repair',run:runTest,disabled:testRunning,
       reading:heaterProved&&heaterWatts!==undefined?'Heater element · '+Math.round(heaterWatts)+' W':undefined}
       :{label:'Turn bench supply on',run:restoreHeaterSupply} : undefined;
-  function chooseFieldView(v:typeof activeSurface){
-    if(v==='site'){closeTools();setTool('select');}
-    showSurface(v);setSheetOpen(false);
-  }
   const fieldViews:FieldAction[]=immersive?[
     ...(hasSite?[{label:'Site',selected:activeSurface==='site',run:()=>chooseFieldView('site')}]:[]),
     {label:'Workbench',selected:activeSurface==='bench',run:()=>chooseFieldView('bench')},
@@ -997,7 +1035,8 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     {label:'Equipment list',selected:activeSurface==='list',run:()=>chooseFieldView('list')},
   ]:[];
   const fieldActions:FieldAction[]=immersive?[
-    {label:'Measure',run:()=>chooseTool('meter')},
+    {label:'Measure',run:()=>chooseTool('meter',undefined,true)},
+    ...(activeSurface==='site'&&switchFitting?[{label:'Check wall switch',run:()=>chooseTool('meter',switchFitting.component.id,true)}]:[]),
     ...(canFindRepair?[{label:'Find repair',run:findRepairOnSite}]:[]),
     ...(selected?[{label:'Inspect fitting',run:()=>inspectFixture(selected)}]:[]),
     ...(!activePractice&&!faultSession&&canEdit?[{label:'Connect',run:()=>chooseTool('wire')},{label:'Add equipment',run:()=>chooseTool('place')}]:[]),
@@ -1006,23 +1045,36 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     ...(!activePractice?document.components.filter(c=>['pv','battery'].includes(c.type)).map(c=>{const on=Boolean(c.params.on??COMPONENTS[c.type].defaults.on??true);return {label:'Switch '+(on?'off ':'on ')+c.label,run:()=>patch(c.id,{on:!on})};}):[]),
     {label:'Undo',run:undo,disabled:!history.length},{label:'Redo',run:redo,disabled:!future.length},
   ]:[];
+  const surfaces=hasSite?['site','drawing','bench','list'] as const:['bench','drawing','list'] as const;
+  const surfaceLabel=(v:typeof surfaces[number])=>v==='site'?'Site':v==='drawing'?'Drawing':v==='bench'?'Workbench':'Equipment list';
   return <TooltipProvider delayDuration={250}><div className={'lab-shell simple-lab installation-lab surface-'+activeSurface+' '+workspace+(touchLayout?' mobile-lab':'')+(immersive?' phone-field':'')+(inBook?' book-shell':'')+(home?' book-landing':'')+(listView?' showing-equipment-list':'')} aria-busy={backupBusy||replaceBusy}>
     {immersive&&<PhoneFieldControls signal={chimeMessage?.circuit===document.id?chimeMessage.text:protectionMessage?.circuit===document.id&&notice===protectionMessage.text?notice:undefined} sound={document.components.some(c=>c.type==='callchime')?{enabled:!chimeMuted,change:()=>muteChime(!chimeMuted)}:undefined} place={activeSurface==='site'?(fieldRoom?.circuit===document.id?fieldRoom.name:location.name):activeSurface==='bench'?'Workbench':activeSurface==='drawing'?'Drawing':'Equipment'}
       hasJob={workspace==='learn'} jobOpen={sheetOpen} toolsOpen={fieldTools} leave={leaveField} tools={setFieldTools}
       job={()=>setSheetOpen(open=>!open)}
       steering={activeSurface==='site'?{enabled:oneThumb,change:()=>setOneThumb(value=>!value)}:undefined} views={fieldViews} actions={fieldActions}/>}
     <header className="app-header"><div className="brand"><span className="brand-icon"><Zap size={21}/></span><div>IRISH ELECTRICAL <b>LAB</b></div></div><nav className="simple-navigation" aria-label="Main navigation"><Button aria-pressed={workspace==='learn'} onClick={()=>{setWorkspace('learn');setPath('home');setPractice(undefined);setSheetOpen(true);setMoveTarget(undefined);setTool('select');setPanel('lesson');setViewOpen(false);}}><BookOpen size={16}/>Learn</Button><Button aria-pressed={workspace==='sandbox'} onClick={()=>{setWorkspace('sandbox');setSurface('bench');setMode('build');setChallengeStarted(false);challengeRef.current.accepted=false;setMoveTarget(undefined);setSheetOpen(false);setTool('select');setPanel('');setInspectorCollapsed(true);}}><Wrench size={16}/>Sandbox</Button></nav><div className="header-right">{workspace==='learn'&&<Button variant="outline" aria-label="Chapters" onClick={()=>openCourses('learn')}><BookOpen size={15}/><span className="header-action-name chapter-nav-label">Chapters</span></Button>}<Button variant="outline" aria-label="My builds" onClick={()=>setBuildsOpen(true)}><FolderOpen size={15}/><span className="header-action-name">My builds</span></Button><Button variant="ghost" aria-label="More settings and help" onClick={()=>{setSettingsFps(lastBenchFps.current);setMoreOpen(true);}}><Settings2 size={15}/><span className="header-action-name">More</span></Button></div></header>
-    <div className={'simple-workspace '+(workspace==='learn'?'with-course':context&&!inspectorCollapsed?'with-tools':'')}><main className="work-area"><div className="workspace-heading"><div>{workspace==='learn'?<><div className="eyebrow">{faultSession?'Fault practice':currentCall?'Oakfield house · House job':lesson.category+' · '+lesson.level}</div><h1>{faultSession?(worktopFault?worktopFaultTitle:heaterFault?heaterFaultTitle:chimeFault?bellFaultTitle:courseTitle(lesson)):currentCall?currentCall.title:home?(hasSite?location.name:'Your workbench'):inBook?courseTitle(lesson):lesson.title}</h1></>:<Input aria-label="Build name" value={document.name} maxLength={256} onChange={e=>commit({...document,name:e.target.value||'My circuit'})}/>}</div>{touchLayout&&!immersive&&<button type="button" ref={fieldLauncher} className="field-start" onClick={enterField}><Maximize2 size={16} aria-hidden="true"/>Full screen</button>}<div className="heading-actions" hidden={inBook && !(mode==='build'||courseStage==='fix'||activeActivity?.kind==='measure'||activeActivity?.id.endsWith(':retest'))}><label className="simple-supply"><span>{document.supply.enabled?'Supply ON':'Supply OFF'}</span><Switch aria-label="Simulated supply" disabled={!!activePractice} checked={document.supply.enabled} onCheckedChange={enabled=>commit({...document,supply:{...document.supply,enabled}})}/></label>{!activePractice&&<Button className="primary-button test-circuit-button" disabled={testRunning} onClick={runTest}><Activity size={16} className={testRunning?'testing-pulse':''}/>{testRunning?'Testing…':'Test circuit'}</Button>}</div></div>
+    <div className={'simple-workspace '+(workspace==='learn'?'with-course':context&&!inspectorCollapsed?'with-tools':'')}><main className="work-area"><div className="workspace-heading"><div>{workspace==='learn'?<><div className="eyebrow">{faultSession?'Fault practice':currentCall?'Oakfield house · House job':lesson.category+' · '+lesson.level}</div><h1>{faultSession?(worktopFault?worktopFaultTitle:heaterFault?heaterFaultTitle:chimeFault?bellFaultTitle:courseTitle(lesson)):currentCall?currentCall.title:home?(hasSite?location.name:'Your workbench'):inBook?courseTitle(lesson):lesson.title}</h1></>:<Input aria-label="Build name" value={document.name} maxLength={256} onChange={e=>commit({...document,name:e.target.value||'My circuit'})}/>}</div>{touchLayout&&!immersive&&activeSurface==='site'&&<label className="site-heading-view"><span>View</span><select aria-label="Installation view" value={activeSurface} onChange={e=>showSurface(e.target.value as typeof surfaces[number])}>{surfaces.map(v=><option key={v} value={v}>{surfaceLabel(v)}</option>)}</select></label>}{touchLayout&&!immersive&&<button type="button" ref={fieldLauncher} className="field-start" onClick={enterField}><Maximize2 size={16} aria-hidden="true"/>Full screen</button>}<div className="heading-actions" hidden={inBook && !(mode==='build'||courseStage==='fix'||activeActivity?.kind==='measure'||activeActivity?.id.endsWith(':retest'))}><label className="simple-supply"><span>{document.supply.enabled?'Supply ON':'Supply OFF'}</span><Switch aria-label="Simulated supply" disabled={!!activePractice} checked={document.supply.enabled} onCheckedChange={enabled=>commit({...document,supply:{...document.supply,enabled}})}/></label>{!activePractice&&<Button className="primary-button test-circuit-button" disabled={testRunning} onClick={runTest}><Activity size={16} className={testRunning?'testing-pulse':''}/>{testRunning?'Testing…':'Test circuit'}</Button>}</div></div>
     {!home&&!sheetOpen&&touchLayout&&workspace==='learn'&&attached&&<button type="button" className="phone-task" aria-expanded={sheetOpen} aria-controls="course-sheet" onClick={()=>setSheetOpen(open=>!open)}>
       <span><b>{activePractice?'Quick practice':courseStage.charAt(0).toUpperCase()+courseStage.slice(1)}</b><span>{sheetOpen?'Lesson and tools':activePractice?practicePrompt:activeActivity?.instruction??'Open lesson'}</span></span>
       <span aria-hidden="true">{sheetOpen?'Hide':'Open'}</span>
     </button>}
     <div className="canvas-wrap">
     {!immersive&&<output aria-live="polite" aria-atomic="true" className="door-call-caption">{chimeMessage?.circuit===document.id?chimeMessage.text:''}</output>}
-    <nav className="surface-tabs" aria-label="Installation views">{(hasSite?['site','drawing','bench','list'] as const:['bench','drawing','list'] as const).map(v=><button key={v} type="button" aria-pressed={activeSurface===v} onClick={()=>showSurface(v)}>{v==='site'?'Site':v==='drawing'?'Drawing':v==='bench'?'Workbench':'Equipment list'}</button>)}</nav>
+    <nav className="surface-tabs" aria-label="Installation views">{surfaces.map(v=><button key={v} type="button" aria-pressed={activeSurface===v} onClick={()=>showSurface(v)}>{surfaceLabel(v)}</button>)}</nav>
     <div className="toolbar" hidden={activeSurface==='drawing'||activeSurface==='site'}><Button variant="ghost" className={'tool-button '+((tool==='select'||tool==='inspect')&&panel!=='equipment'?'active':'')} onClick={()=>chooseTool('select')}><MousePointer2 size={17}/>Select</Button>{!activePractice&&(currentCall||!inBook||activeActivity?.kind==='connect'||activeActivity?.kind==='measure'||activeActivity?.kind==='repair'||courseStage==='fix')&&<>{!inBook&&!faultSession&&<Button variant="ghost" className={'tool-button '+(tool==='place'||panel==='equipment'?'active':'')} onClick={()=>chooseTool('place')}><Plus size={17}/>{touchLayout?'Add':'Add equipment'}</Button>}{!faultSession&&(!inBook||activeActivity?.kind==='connect')&&<Button variant="ghost" className={'tool-button '+(tool==='wire'?'active':'')} onClick={()=>chooseTool('wire')}><Cable size={17}/>Connect</Button>}{(!inBook||activeActivity?.kind!=='connect')&&<Button variant="ghost" className={'tool-button '+(tool==='meter'?'active':'')} onClick={()=>chooseTool('meter')}><Gauge size={17}/>Measure</Button>}</>}{(!faultSession||history.length>0||future.length>0)&&<><span className="toolbar-divider"/><IconButton label="Undo" onClick={undo} disabled={!history.length}><Undo2 size={17}/></IconButton><span className="desktop-bench-action"><IconButton label="Redo" onClick={redo} disabled={!future.length}><Redo2 size={17}/></IconButton></span></>}<span className="toolbar-spacer"/><span className="desktop-bench-action"><IconButton label="Fit workbench" onClick={()=>setCamera(c=>({id:c.id+1,action:'fit'}))}><Maximize2 size={17}/></IconButton><IconButton label="Rear terminals" onClick={()=>setCamera(c=>({id:c.id+1,action:'rear'}))}><RotateCcw size={17}/></IconButton></span><Button variant="ghost" className="tool-button" onClick={()=>{setViewOpen(v=>!v);if(touchLayout)setSheetOpen(false);}}><Focus size={16}/>View</Button></div>
     {drawingOpened&&<div className="drawing-container" hidden={activeSurface!=='drawing'}><JobDrawing planTrace={planTrace?.docId===document.id?planTrace:undefined} key={String(document.lessonId??document.id)+workspace} doc={document} lesson={attached?lesson:undefined} site={location} selected={selected} part={selectedPart} highlight={(id,pin)=>{setSelected(id);setSelectedPart(pin??'body');}} goTo={findFixture} highlightWire={setDrawingWire} openLocation={hasSite} initialPage={hasSite?'plan':'wiring'}/></div>}
-    <React.Suspense fallback={<div className="scene-loading" role="status">Opening the 3D view…</div>}>{activeSurface==='drawing'?null:activeSurface==='site'?<JobSiteView onFieldRoom={reportRoom} putMeterAway={()=>chooseFieldView('site')} enterField={enterField} oneThumb={oneThumb} retest={siteRetest} repairHere={immersive||heaterFault||chimeFault?repairHere:undefined} immersive={immersive} toolsOpen={immersive&&(fieldTools||sheetOpen)} chimeOpen={chimeOpen} setChimeOpen={v=>setChimeOpenIn(v?document.id:undefined)} stairGoal={currentCall?.lesson===9?currentCall.steps[savedCallStep(currentCall,startActivity)??0]?.target:lessonId===9&&activeActivity?.kind==='operate'?activeActivity.component:undefined} testFittings={testFittings} liftProbes={id=>{if(probeA?.component===id){setProbeA(undefined);probePlacement.current.red=false;}if(probeB?.component===id){setProbeB(undefined);probePlacement.current.black=false;}setActiveProbe(probeA?.component===id?'red':'black');setCallSample(undefined);}} openMeter={id=>chooseTool('meter',id)} meter={testFittings.length&&tool==='meter'&&panel==='meter'&&!inspectorCollapsed&&!handTool&&(useFork?forkMethod==='probe-voltage':meterMode==='voltage')?{probe:activeProbe,red:probeA,black:probeB}:undefined} onExplore={()=>setSheetOpen(false)} onPeek={id=>{setDrawingWire(id);if(id&&touchLayout)setSheetOpen(false);}} onPlan={wire=>{setPlanTrace(previous=>({sequence:(previous?.sequence??0)+1,wire,docId:document.id}));setDrawingWire(wire);showSurface('drawing');if(touchLayout)setSheetOpen(false);}} showWallSwitch={inBook&&!home&&['switch-off','switch-on','contact'].includes(activeActivity?.bookStep??'')} site={location} doc={document} result={result} selected={selected} terminalId={selectedPart} touch={touchLayout} tool={tool} jump={siteJump} pose={sitePose} wire={drawingWire} onFocus={id=>findFixture(id)} onService={inspectFixture} onPart={pickSitePart} onTerminal={terminal} onList={()=>showSurface('list')}/>:activeSurface==='list'?<EquipmentList circuit={document} selected={selected} tags={hasSite?Object.fromEntries(location.items.map(item=>[item.id,item.ref+' · '+location.location(item.room)])):undefined} states={Object.fromEntries(document.components.map(c=>[c.id,stateText(c)]))} operable={isControl} onSelect={id=>{setManualInspection({component:id,part:'body'});selectComponent(id);}} onOperate={operate}/>:<Workbench fieldLayout={immersive?(sheetOpen?'field-sheet':'field'):'normal'} onListView={()=>setListView(true)} onCable={id=>{const run=document.cableRuns?.find(r=>r.id===id);if(run){cancelConnection();setCableChoice({kind:run.kind,runId:id});setTool('wire');setView('open');setPanel('connect');setInspectorCollapsed(false);setSheetOpen(true);}}} touchLayout={touchLayout} touchMove={movingOnTouch} document={document} result={result} tool={tool} mode={workspace==='sandbox'?'build':courseStage==='build'?mode:mode==='challenges'?'challenges':'explore'} selected={selected} selectedWire={selectedWire??drawingWire} selectedPart={fittingDetail?'detail:'+fittingDetail.id:selectedPart} view={view} labels={labels} paths={paths} pathFilter={pathFilter} placeType={placementForm.type} placeVariant={placementForm.variant} quality={touchLayout&&quality==='auto'?'economy':quality} scenery={scenery} cameraMode={cameraMode} cameraSpeed={cameraSpeed} guidanceEndpoints={workspace==='learn'&&attached&&!activePractice?activeActivity?.endpoints:undefined} wireStart={tool==='wire'?wireStart:undefined} probes={useFork?[forkSetup.a,forkSetup.b]:[probeA,probeB]} cameraCommand={cameraCommand} onSelect={selectPhysicalPart} onTerminal={terminal} onTerminalHover={setHoverTerminal} onWire={selectConductor} onPlace={place} onMove={move} onFps={reportBenchFps} workshop={handTool} instrumentType={handTool?.type??(useFork?'forktester':undefined)} instrumentParams={{dialPosition:forkDial(forkMethod),held:!!heldReading,fork:forkMethod.startsWith('fork'),redOut:!!forkSetup.a,blackOut:!!forkSetup.b,signal:visibleFork.signal??'',validReference:hasReference,backlight:testerLight,hazard:voltageLight}} meterReading={useFork?visibleFork.shown+' '+visibleFork.unit:(reading?.value==null?(meterMode==='resistance'&&resistance?.status==='open'?'OL':'— — —'):format(reading.value))+' '+(meterMode==='current'?'A':meterMode==='resistance'?'Ω':'V')} meterMode={meterTargetMode}/>}</React.Suspense>
+    <React.Suspense fallback={<div className="scene-loading" role="status">Opening the 3D view…</div>}>{activeSurface==='drawing'?null:activeSurface==='site'?<JobSiteView pointsOpen={immersive&&sitePoints} closePoints={()=>{setSitePoints(false);requestAnimationFrame(()=>fieldPointsButton.current?.focus({preventScroll:true}));}} fcuIsolation={switchMeterHere?{safe:switchCheck.safe,open:switchCheck.open,setOpen:switchCheck.setOpen,isolate:isolateSwitch,label:switchIsolationLabel,operate:operateFittedSwitch,on:switchFitting.component.params.closed!==false}:undefined} onFieldRoom={reportRoom} putMeterAway={()=>chooseFieldView('site')} enterField={enterField} oneThumb={oneThumb} retest={siteRetest} repairHere={immersive||heaterFault||chimeFault?repairHere:undefined} immersive={immersive} toolsOpen={immersive&&(fieldTools||sheetOpen)} chimeOpen={chimeOpen} setChimeOpen={v=>setChimeOpenIn(v?document.id:undefined)} stairGoal={currentCall?.lesson===9?currentCall.steps[savedCallStep(currentCall,startActivity)??0]?.target:lessonId===9&&activeActivity?.kind==='operate'?activeActivity.component:undefined} testFittings={testFittings} liftProbes={id=>{if(probeA?.component===id){setProbeA(undefined);probePlacement.current.red=false;}if(probeB?.component===id){setProbeB(undefined);probePlacement.current.black=false;}setActiveProbe(probeA?.component===id?'red':'black');setCallSample(undefined);}} openMeter={id=>chooseTool('meter',id,true)} meter={switchMeterHere?{probe:switchCheck.lead,red:switchCheck.red,black:switchCheck.black}:voltageMeterHere?{probe:activeProbe,red:probeA,black:probeB}:undefined} onExplore={()=>setSheetOpen(false)} onPeek={id=>{setDrawingWire(id);if(id&&touchLayout)setSheetOpen(false);}} onPlan={wire=>{setPlanTrace(previous=>({sequence:(previous?.sequence??0)+1,wire,docId:document.id}));setDrawingWire(wire);showSurface('drawing');if(touchLayout)setSheetOpen(false);}} showWallSwitch={inBook&&!home&&['switch-off','switch-on','contact'].includes(activeActivity?.bookStep??'')} site={location} doc={document} result={result} selected={selected} terminalId={selectedPart} touch={touchLayout} tool={tool} jump={siteJump} pose={sitePose} wire={drawingWire} onFocus={id=>findFixture(id)} onService={inspectFixture} onPart={pickSitePart} onTerminal={switchMeterHere?switchCheck.pick:terminal} onList={()=>showSurface('list')}/>:activeSurface==='list'?<EquipmentList circuit={document} selected={selected} tags={hasSite?Object.fromEntries(location.items.map(item=>[item.id,item.ref+' · '+location.location(item.room)])):undefined} states={Object.fromEntries(document.components.map(c=>[c.id,stateText(c)]))} operable={isControl} onSelect={id=>{setManualInspection({component:id,part:'body'});selectComponent(id);}} onOperate={operate}/>:<Workbench fieldLayout={immersive?(sheetOpen?'field-sheet':'field'):'normal'} onListView={()=>setListView(true)} onCable={id=>{const run=document.cableRuns?.find(r=>r.id===id);if(run){cancelConnection();setCableChoice({kind:run.kind,runId:id});setTool('wire');setView('open');setPanel('connect');setInspectorCollapsed(false);setSheetOpen(true);}}} touchLayout={touchLayout} touchMove={movingOnTouch} document={document} result={result} tool={tool} mode={workspace==='sandbox'?'build':courseStage==='build'?mode:mode==='challenges'?'challenges':'explore'} selected={selected} selectedWire={selectedWire??drawingWire} selectedPart={fittingDetail?'detail:'+fittingDetail.id:selectedPart} view={view} labels={labels} paths={paths} pathFilter={pathFilter} placeType={placementForm.type} placeVariant={placementForm.variant} quality={touchLayout&&quality==='auto'?'economy':quality} scenery={scenery} cameraMode={cameraMode} cameraSpeed={cameraSpeed} guidanceEndpoints={workspace==='learn'&&attached&&!activePractice?activeActivity?.endpoints:undefined} wireStart={tool==='wire'?wireStart:undefined} probes={useFork?[forkSetup.a,forkSetup.b]:[probeA,probeB]} cameraCommand={cameraCommand} onSelect={selectPhysicalPart} onTerminal={terminal} onTerminalHover={setHoverTerminal} onWire={selectConductor} onPlace={place} onMove={move} onFps={reportBenchFps} workshop={handTool} instrumentType={handTool?.type??(useFork?'forktester':undefined)} instrumentParams={{dialPosition:forkDial(forkMethod),held:!!heldReading,fork:forkMethod.startsWith('fork'),redOut:!!forkSetup.a,blackOut:!!forkSetup.b,signal:visibleFork.signal??'',validReference:hasReference,backlight:testerLight,hazard:voltageLight}} meterReading={useFork?visibleFork.shown+' '+visibleFork.unit:(reading?.value==null?(meterMode==='resistance'&&resistance?.status==='open'?'OL':'— — —'):format(reading.value))+' '+(meterMode==='current'?'A':meterMode==='resistance'?'Ω':'V')} meterMode={meterTargetMode}/>}</React.Suspense>
+    {immersive&&activeSurface==='bench'&&tool==='meter'&&meterVisit?.circuit===document.id&&!sheetOpen&&!fieldTools&&
+      <button type="button" className="field-meter-return" onClick={()=>chooseFieldView('site')}>Put meter away</button>}
+    {immersive&&!sheetOpen&&!fieldTools&&(voltageMeterHere||switchMeterHere&&switchCheck.open)&&<div className="field-meter-slot">
+      {switchMeterHere?<FieldMeter pointsButton={fieldPointsButton} circuit={document} active={switchCheck.lead} red={switchCheck.red} black={switchCheck.black} choose={switchCheck.choose}
+        display={switchCheck.reading.shown+' Ω'} hint={switchCheck.red&&switchCheck.black&&switchCheck.reading.status!=='value'?switchCheck.reading.explanation:undefined}
+        points={()=>setSitePoints(true)} canRecord={switchCheck.canRecord} recorded={switchCheck.recorded} record={switchCheck.record}/>:
+        <FieldMeter pointsButton={fieldPointsButton} circuit={document} active={activeProbe} red={probeA} black={probeB} choose={setActiveProbe}
+          display={useFork?(visibleFork.shown+' '+(visibleFork.unit||'V')+' '+(visibleFork.signal??'')+(heldReading?' HOLD':'')).trim():voltage?.value!=null?format(voltage.value,2)+' V':'— V'}
+          hint={!probeA||!probeB?'Tap a terminal or choose Points.':!lessonVolts?(useFork?liveFork.explanation:voltage?.explanation):undefined}
+          points={()=>setSitePoints(true)} recorded={recordedFieldPair===fieldPair} canRecord={recordedFieldPair!==fieldPair&&!!lessonVolts&&liveVoltageMode&&!!result?.converged&&result.revision===document.revision} record={()=>{if(recordReading())setRecordedFieldPair(fieldPair);}}/>}
+    </div>}
     <div className="canvas-top-label" hidden={activeSurface!=='bench'}><span>{document.components.length+' equipment · '+document.wires.length+' wires'}</span><span className="scene-caption">{SCENERIES.find(scene=>scene.id===scenery)?.label}{cameraMode==='free'?' · Free camera':''}</span></div>{viewOpen&&<div className="simple-view-menu"><div className="context-heading"><b>Workbench view</b><IconButton label="Close view controls" onClick={()=>setViewOpen(false)}><X size={15}/></IconButton></div>{touchLayout&&<div className="quick-actions phone-view-actions">
       <Button variant="outline" disabled={!future.length} onClick={redo}><Redo2 size={15}/>Redo</Button>
       <Button variant="outline" disabled={!!activePractice||!document.wires.length} onClick={()=>{setTool('select');setPanel('inspect');setInspectorCollapsed(false);setConductorPickerOpen(true);setViewOpen(false);setSheetOpen(true);}}><Cable size={15}/>Find conductor</Button>

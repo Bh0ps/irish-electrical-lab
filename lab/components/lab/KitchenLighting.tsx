@@ -26,9 +26,9 @@ function Label({at,w,h,line,sub='',inverse=false}:{at:Vec3;w:number;h:number;lin
   useEffect(()=>()=>texture.dispose(),[texture]);
   return <mesh position={at} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[w,h]}/><meshBasicMaterial map={texture} toneMapped={false}/></mesh>;
 }
-function Cord({points,r,colour}:{points:Vec3[];r:number;colour:string}){
+function Cord({points,r,colour,blockProbes=false}:{points:Vec3[];r:number;colour:string;blockProbes?:boolean}){
   const curve=useMemo(()=>new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),[points]);
-  return <mesh castShadow raycast={()=>{}}><tubeGeometry args={[curve,Math.max(24,points.length*8),r,8,false]}/><meshStandardMaterial color={colour} roughness={.76}/></mesh>;
+  return <mesh castShadow raycast={blockProbes?THREE.Mesh.prototype.raycast:()=>{}}><tubeGeometry args={[curve,Math.max(24,points.length*8),r,8,false]}/><meshStandardMaterial color={colour} roughness={.76}/></mesh>;
 }
 
 function SwitchPlate({width,height,depth,front}:{width:number;height:number;depth:number;front:boolean}){
@@ -144,14 +144,16 @@ export function StripChannel({x,open,level,tint,select}:{x:number;open:boolean;l
   </group>;
 }
 
-export function FittedWireTails({tails}:{tails:{points:Vec3[];colour:string;id:string;radius?:number;stripe?:string;flexible?:boolean}[]}){
-  return <group>{tails.map(tail=>tail.flexible?<Cord key={tail.id} points={tail.points} r={tail.radius??.0008} colour={tail.colour}/>:<group key={tail.id}>{tail.points.slice(1).map((p,i)=>{
+export function FittedWireTails({tails,blockProbes=false}:{tails:{points:Vec3[];colour:string;id:string;radius?:number;stripe?:string;flexible?:boolean}[];blockProbes?:boolean}){
+  const raycast=blockProbes?THREE.Mesh.prototype.raycast:()=>{};
+  return <group onPointerDown={blockProbes?e=>e.stopPropagation():undefined} onPointerUp={blockProbes?e=>e.stopPropagation():undefined} onClick={blockProbes?e=>e.stopPropagation():undefined}>
+    {tails.map(tail=>tail.flexible?<Cord key={tail.id} points={tail.points} r={tail.radius??.0008} colour={tail.colour} blockProbes={blockProbes}/>:<group key={tail.id}>{tail.points.slice(1).map((p,i)=>{
     const a=new THREE.Vector3(...tail.points[i]),v=new THREE.Vector3(...p).sub(a),mid=a.addScaledVector(v,.5);
     const radius=tail.radius??.0008,length=v.length();
     if(length<.000001)return null;
     return <group key={i} position={mid} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize())}>
-      <mesh raycast={()=>{}}><cylinderGeometry args={[radius,radius,length,10]}/><meshStandardMaterial color={tail.colour}/></mesh>
-      {tail.stripe&&<mesh raycast={()=>{}}><cylinderGeometry args={[radius+.00002,radius+.00002,length,5,1,true,.5,2.8]}/><meshStandardMaterial color={tail.stripe}/></mesh>}
+      <mesh raycast={raycast}><cylinderGeometry args={[radius,radius,length,10]}/><meshStandardMaterial color={tail.colour}/></mesh>
+      {tail.stripe&&<mesh raycast={raycast}><cylinderGeometry args={[radius+.00002,radius+.00002,length,5,1,true,.5,2.8]}/><meshStandardMaterial color={tail.stripe}/></mesh>}
     </group>;
   })}</group>)}</group>;
 }

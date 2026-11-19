@@ -1,4 +1,5 @@
 /* Installed view, drawing cabinet and task navigation. */
+.site-heading-view,.jobsite .site-actions>.compact-fitting-tools {display:none}
 .installation-lab {--fir:#194638;--ink:#17362f;--paper:#f6f5ef;--line:#c7d0c5;color:var(--ink)}
 .installation-lab [hidden]{display:none!important}
 .installation-lab.simple-lab .app-header{background:#17392f;color:#fff;border-bottom:1px solid #46675a}
@@ -146,3 +147,48 @@
 .site-walk-stick > i{display:none;position:absolute;left:calc(50% - 15px);top:calc(50% - 15px);width:30px;height:30px;border:1px solid #56775e;border-radius:50%;background:#74a17e66;transform:translate(var(--thumb-x,0),var(--thumb-y,0));pointer-events:none}
 .site-walk-stick[data-pressed] > i{display:block}
 .jobsite[data-immersive] .site-actions .site-repair{background:#27553e;color:#fff;white-space:normal;line-height:1.25}
+/* On a small portrait phone, keep the title on its own line and give the
+   site its four views through one native chooser beside the circuit controls. */
+@media (orientation:portrait) and (max-width:430px) {
+  .mobile-lab.surface-site.learn:not(.phone-field,.book-landing) {
+    & .workspace-heading {display:grid;grid-template-columns:minmax(3rem,1fr) auto auto auto;gap:0 4px;align-items:center}
+    & .workspace-heading>div:first-child {grid-column:1/-1}
+    & .workspace-heading h1 {margin:0;line-height:1.2;font-size:1.08rem;overflow-wrap:break-word}
+    & .workspace-heading .heading-actions:not([hidden]) {display:contents}
+    & .site-heading-view {display:grid;position:relative;align-self:center;min-width:0;height:44px}
+    & .site-heading-view span {position:absolute;inset:2px auto auto 5px;pointer-events:none;color:#4d6358;font-size:.68rem;line-height:1}
+    & .site-heading-view select {width:100%;height:100%;min-width:0;padding:9px 1px 0 2px;border:1px solid #b6c4b8;border-radius:5px;background:#f9faf3;color:#18392e;font:inherit;font-size:.85rem}
+    & .workspace-heading .field-start {min-width:44px;padding-inline:7px;font-size:.85rem}
+    & .canvas-wrap>.surface-tabs {display:none}
+    & .jobsite {inset:0}
+  }
+}
+@media (orientation:portrait) and (max-width:430px) and (max-height:680px) {
+  .mobile-lab.surface-site.learn:not(.phone-field,.book-landing) {
+    & .app-header {padding-top:max(1px,env(safe-area-inset-top));padding-bottom:1px}
+    & .work-area {gap:2px;padding-top:2px;padding-bottom:1px}
+    & .phone-sheet-heading:has(+.fault-practice:not([data-house-tools])) {height:0;min-height:0;border:0;position:sticky;top:0}
+    & .phone-sheet-heading:has(+.fault-practice:not([data-house-tools])) b {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+    & .phone-sheet-heading:has(+.fault-practice:not([data-house-tools])) button {position:absolute;inset:0 0 auto auto;background:#fcfbf6}
+    & .learn-column[data-sheet-open=true]:has(>.fault-practice[data-fault-stage=measure]:not([data-house-tools])) {max-height:25.5dvh;padding-top:4px}
+    & .fault-practice[data-fault-stage=measure]:not([data-house-tools]) {display:flex;flex-direction:column;align-items:stretch}
+    & .fault-practice[data-fault-stage=measure]:not([data-house-tools]) .task-topline {margin:2px 0}
+    & .fault-practice[data-fault-stage=measure]:not([data-house-tools]) .house-job-heading {order:-2;padding-right:40px}
+    & .fault-practice[data-fault-stage=measure]:not([data-house-tools]) h3 {font-size:1.05rem;line-height:1.25;margin:0 0 5px}
+    & .fault-practice[data-fault-stage=measure]:not([data-house-tools])>.primary-button {order:-1;margin:0 0 4px;flex-shrink:0}
+    & .jobsite:has(>.site-actions):not(:has(.stair-locations,.site-landing-prompt)) {
+      & .site-camera {position:absolute;inset:0 0 48px;height:auto}
+      & .site-location {display:none}
+      & .site-actions {inset:auto 0 0;max-width:none;justify-content:flex-start;overflow-x:auto;scrollbar-width:thin;transform:none;border:0;border-top:1px solid #bbc9bb;border-radius:0;box-shadow:none;background:#fafbf4}
+      &:has(.site-cable-toggle) .site-actions {right:67px}
+      & .site-actions>* {flex-shrink:0}
+      & .site-actions:has(.compact-fitting-tools) {flex-wrap:wrap;max-height:65%;overflow-y:auto;gap:0}
+      & .site-actions>.compact-fitting-tools {display:inline-flex}
+      & .compact-fitting-tools::after {content:'';width:.36em;height:.36em;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:translateY(-1px) rotate(45deg)}
+      & .compact-fitting-tools[aria-expanded=true]::after {transform:translateY(1px) rotate(225deg)}
+      & .site-actions>.compact-fitting-tools[aria-expanded=false]~* {display:none}
+      & .site-cable-toggle {inset:auto 0 0 auto;height:46px;width:67px;justify-content:center;padding:0 3px;border-radius:0;font-size:.8rem}
+      & .site-cable-toggle svg {display:none}
+    }
+  }
+}

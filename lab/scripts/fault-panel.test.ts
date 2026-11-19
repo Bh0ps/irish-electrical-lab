@@ -62,11 +62,17 @@ test('heater instructions follow the learner’s leads and name the fitting on t
   const legacy=getLesson(20,older)!;
   const heater={...reading('load','Heater',0),a:{component:'fixed',terminal:'N'},b:{component:'fixed',terminal:'L'}};
   const first=show({lesson:current,doc:current.circuit,heater:{},switchOn:false});
-  assert.match(first,/rocker on the white wall plate/);
+  assert.match(first,/Turn the heater on at the wall/);
+  assert.match(first,/I’ve tried the wall switch/);
   assert.doesNotMatch(first,/Choose the fault|Repair this wire|The flex has lost/);
-  for(const [lesson,point] of [[current,/L terminal on the LOAD side/],[legacy,/OUT on the separate fuse/]] as const){
-    const html=show({lesson,doc:lesson.circuit,heater:{heater},wrongPoints:true});
+  for(const [lesson,point] of [[current,/LOAD L on the wall switch/],[legacy,/OUT on the separate fuse/]] as const){
+    const props={lesson,doc:lesson.circuit,heater:{heater},context:createElement('div',null,'Open meter')};
+    const html=show(props);
     assert.match(html,/Leave red on heater N. Move black/);assert.match(html,point);
-    assert.match(html,/Reading saved. For this check/);
+    assert.match(html,/At the heater · <b>0 V/);
+    const wrongSample={...heater,a:{component:'supply',terminal:'N'}};
+    const wrong=show({...props,wrongPoints:true,wrongSample});
+    assert.match(wrong,/Put red back on N at the heater/);
+    assert.doesNotMatch(wrong,/Repair this wire|You found the fault/);
   }
 });

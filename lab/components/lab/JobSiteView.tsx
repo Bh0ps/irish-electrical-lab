@@ -28,6 +28,7 @@ import BellCupboard from './BellCupboard';
 import {FittedWireTails,KitchenDriver,RockerEnclosure,StripChannel} from './KitchenLighting';
 import {KITCHEN_LIGHTS as kitchen,rockerPose} from '../../lib/kitchen-lighting';
 import {connectedRockerTerminals,rockerConductiveSurface} from '../../lib/dc-rocker';
+import {fcuProbeScrew} from '../../lib/bg851';
 import {BathServiceBox} from './BathroomExtract';
 import {FittedHeaterFlex,HeaterSwitchBox} from './FusedHeaterSite';
 import {FCU_ROCKER,fittedHeaterView,fusedPlatePose,fusedPlateView,looseHeaterCore,sameSiteView} from '../../lib/fused-heater-site';
@@ -36,8 +37,9 @@ import {CORE_COLOUR} from '../../lib/cables';
 import {BELL_CUPBOARD} from '../../lib/bell-cupboard';
 import SiteCablePeek from './SiteCablePeek';
 import HeaterFlexChoice,{flexClue,type FlexLanding} from './HeaterFlexChoice';
+import {SiteProbePicker} from './SiteProbePicker';
 import SiteMeterPads,{type SiteMeter} from './SiteMeterPads';
-import {padCamera,type SiteTestFitting} from '../../lib/site-meter';
+import {padCamera,siteContacts,type SiteTestFitting} from '../../lib/site-meter';
 import { BATTEN_FILAMENT, CUPBOARD_HINGE, CUPBOARD_SWING, fixturePoint, installedTerminalPoint,TAPE_SECTION_LENGTH, TAPE_SECTIONS } from '../../lib/site-fixtures';
 
 
@@ -46,19 +48,20 @@ interface Props {
   site:JobSite; doc:CircuitDocument; result?:SimulationResult; selected?:string; terminalId?:string; wire?:string; touch:boolean; tool:string;
   enterField:()=>void;oneThumb:boolean;putMeterAway:()=>void;
   immersive?:boolean; toolsOpen?:boolean; repairHere?:{targets:string[];label:string;run:()=>void;landing?:FlexLanding;powerOff?:{label:string;run:()=>void}};
-  onFieldRoom:(circuit:string,name:string)=>void;
+  onFieldRoom:(circuit:string,name:string)=>void; pointsOpen:boolean;closePoints:()=>void;
+  fcuIsolation?:{safe:boolean;open:boolean;setOpen:(open:boolean)=>void;isolate?:()=>void;label?:string;on:boolean;operate?:()=>void};
   jump:SiteFocus; pose:React.MutableRefObject<SavedSitePose|undefined>; showWallSwitch?:boolean; stairGoal?:string;
   chimeOpen:boolean; setChimeOpen:(open:boolean)=>void; testFittings:SiteTestFitting[]; meter?:SiteMeter; openMeter:(component?:string)=>void; liftProbes:(component:string)=>void;
   onPeek:(id?:string)=>void;onPlan:(wire:string)=>void;onExplore:()=>void;
   onPart:(id:string,part:string,detail?:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
 }
-function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,repairOpen,probeMode,wideRocker,bathroom,rockerOpen,chimeOpen}:{
-  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;repairOpen:boolean;probeMode:boolean;wideRocker:boolean;bathroom:boolean;rockerOpen:boolean;chimeOpen:boolean;
+function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,fcuOpen,probeMode,wideRocker,bathroom,rockerOpen,chimeOpen}:{
+  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;fcuOpen:boolean;probeMode:boolean;wideRocker:boolean;bathroom:boolean;rockerOpen:boolean;chimeOpen:boolean;
 }){
   const {component:c,definition:def,state}=equipment;
   const {fixture,position}=item;
   const scale=fixture?.scale??[item.scale,item.scale,item.scale] as Vec3;
-  const pose=fixture?.fusedHeater?fusedPlatePose(item,repairOpen):fixture?.worktopRocker?rockerPose(position,rockerOpen):item;
+  const pose=fixture?.fusedHeater?fusedPlatePose(item,fcuOpen):fixture?.worktopRocker?rockerPose(position,rockerOpen):item;
   const rotation=new THREE.Euler(fixture?.tilt??0,pose.rotation,fixture?.roll??0,'YXZ');
   const count=fixture?.tape?TAPE_SECTIONS:1;
   // The two halves share one component and two terminals. Only the magnet rides the leaf.
@@ -76,11 +79,12 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
   const tint=useMemo(()=>new THREE.Color('#ffe9bd').lerp(new THREE.Color('#d9eaff'),cool/Math.max(.001,warm+cool)),[warm,cool]);
   const touched=useRef<{id:number;key:string}|undefined>(undefined);
   const pressedContact=useRef<string|undefined>(undefined);
-  const guarded=probeMode&&(fixture?.worktopRocker||fixture?.croma);
+  const guarded=probeMode&&(fixture?.worktopRocker||fixture?.croma||fixture?.fusedHeater);
   const point=(e:ThreeEvent<PointerEvent>)=>{const o=semanticOwner(e.object);return o.terminal??o.part??'body';};
   const conductingPart=(e:ThreeEvent<PointerEvent>)=>{
     const material=(e.object as THREE.Mesh).material;
     const hit=Array.isArray(material)?material[e.face?.materialIndex??0]:material;
+    if(fixture?.fusedHeater)return fcuOpen&&hit?fcuProbeScrew(e.object,hit.name):undefined;
     const metal=fixture?.croma?chimeOpen&&hit?.name==='K1 clamp screw steel':rockerOpen&&hit&&rockerConductiveSurface(hit.name);
     return metal?semanticOwner(e.object).terminal:undefined;
   };
@@ -97,7 +101,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       e.stopPropagation();onTouchPick(e);
       const owner=semanticOwner(e.object);
       if(owner.terminal){
-        if(fixture?.fusedHeater&&!repairOpen)return;
+        if(fixture?.fusedHeater&&!fcuOpen)return;
         if(guarded&&(pressedContact.current!==owner.terminal||conductingPart(e)!==owner.terminal))return;
         if(probeMode&&fixture?.tape){
           const pad=getComponentTerminals(c,def).find(t=>t.id===owner.terminal);
@@ -119,7 +123,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       {fixture?.kitchenDriver?<KitchenDriver volts={Number(c.params.outputVoltage??24)} open={trace||equipment.selected} choose={()=>equipment.onPart('body')} pick={equipment.onTerminal}/>:Array.from({length:count},(_,i)=><group key={i} position={[(i-(count-1)/2)*TAPE_SECTION_LENGTH,0,0]} scale={scale}>
         <group rotation={[0,0,mountRoll(c)]} scale={mountScale(c)}>
           <Equipment {...equipment} installedHeaterFlex={fixture?.panelHeater} view={fixture?.extractor&&trace||fixture?.croma&&(chimeOpen||trace)?'open':equipment.view} onTerminal={id=>{
-            if(fixture?.fusedHeater&&!repairOpen)return;
+            if(fixture?.fusedHeater&&!fcuOpen)return;
             if(probeMode&&(i>0||(guarded&&pressedContact.current!==id)))return;
             equipment.onTerminal(id);
           }} animate={!cupboardDoor} contactPiece={cupboardDoor?'reed':undefined} />
@@ -127,7 +131,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       </group>)}
       {illuminated&&<pointLight position={emitter} color={c.type==='cctstrip'?tint:'#fff0d0'} intensity={.34*optical} distance={2.9}/>}
     </group>
-    {pin&&!fixture?.croma&&!fixture?.panelHeater&&!(probeMode&&(fixture?.tape||fixture?.worktopRocker))&&<mesh position={installedTerminalPoint(item,c,pin)} renderOrder={15} raycast={()=>{}}>
+    {pin&&!fixture?.croma&&!fixture?.panelHeater&&!(probeMode&&(fixture?.tape||fixture?.worktopRocker||fixture?.fusedHeater))&&<mesh position={installedTerminalPoint(item,c,pin)} renderOrder={15} raycast={()=>{}}>
       <sphereGeometry args={[Math.max(.0018,Math.min(.008,.065*item.scale)),12,8]}/><meshBasicMaterial color="#ffb34a" depthTest={false}/>
     </mesh>}
   </group>;
@@ -310,7 +314,7 @@ class SiteBoundary extends React.Component<{children:React.ReactNode;onList:()=>
   render(){return this.state.failed?<div className="site-unavailable"><b>The 3D site could not open</b><button onClick={this.props.onList}>Use equipment list</button></div>:this.props.children;}
 }
 const keyMap:Record<string,string>={KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
-export default function JobSiteView({onFieldRoom,site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList,showWallSwitch,stairGoal,onPeek,onPlan,onExplore,testFittings,meter,openMeter,liftProbes,chimeOpen,setChimeOpen,enterField,oneThumb,putMeterAway,immersive=false,toolsOpen=false,repairHere,retest}:Props){
+export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList,showWallSwitch,stairGoal,onPeek,onPlan,onExplore,testFittings,meter,openMeter,liftProbes,chimeOpen,setChimeOpen,fcuIsolation,enterField,oneThumb,putMeterAway,immersive=false,toolsOpen=false,repairHere,retest}:Props){
   const rig=useMemo(()=>new SiteWalkInput(),[]);
   const [walkStart,setWalkStart]=useState<SitePose>(),[nearby,setNearby]=useState<string>(),[looked,setLooked]=useState(false);
   const returnWalk=useRef<{job:string;room:number;pose:SitePose}|undefined>(undefined);
@@ -343,6 +347,7 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
   const doorClosed=doc.components.find(c=>c.id===utilityBoard?.id)?.params.doorOpen===false;
   const frameHeater=!!panelHeater;
   const [aspect,setAspect]=useState(1);
+  const [moreFittingTools,setMoreFittingTools]=useState(false);
   useLayoutEffect(()=>{
     const canvasSlot=input.current;
     if(!canvasSlot||(!panelHeater&&!site.doorsteps&&!utilityBoard))return;
@@ -367,6 +372,11 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
   const [visit,setVisit]=useState<{room:number;job:string;jump:number;grille?:boolean}>();
   const meterFitting=meter?testFittings.find(fitting=>fitting.component.id===jump.component):undefined;
   const meterTarget=meterFitting?.component.id;
+  const testingFcu=meterFitting?.kind==='fcu';
+  const meterPlateOpen=!!(testingFcu&&fcuIsolation?.safe&&fcuIsolation.open);
+  const meterRocker=testingFcu&&fcuIsolation?.safe&&!meterPlateOpen?fcuIsolation.operate:undefined;
+  const [screwView,setScrewView]=useState<{focus:number;id:string}>();
+  const aimedScrew=meterPlateOpen&&screwView?.focus===jump.id?screwView.id:undefined;
   const [withdrawnAt,setWithdrawnAt]=useState<number>();
   const [openedRepair,setOpenedRepair]=useState<{job:string;focus:number;id:string}>();
   const [missedTerminal,setMissedTerminal]=useState<{focus:number;pin:string}>();
@@ -381,7 +391,8 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
   const redFitting=meter?.red?.component,blackFitting=meter?.black?.component;
   const pinned=meterTarget!==undefined&&(redFitting===meterTarget||blackFitting===meterTarget);
   const drawn=withdrawnAt===jump.id?meterTarget:undefined;
-  const openRockers=new Set([redFitting,blackFitting,drawn,accessOpen&&repairFitting?.kind==='rocker'?repairId:undefined].filter((id):id is string=>!!id));
+  const openRockers=new Set([redFitting,blackFitting,drawn,accessOpen&&repairFitting?.kind==='rocker'?repairId:undefined].filter((id):id is string=>!!id&&testFittings.some(f=>f.kind==='rocker'&&f.item.id===id)));
+  if(meterPlateOpen&&meterTarget)openRockers.add(meterTarget);
   const openRocker=!!meterTarget&&openRockers.has(meterTarget);
 
   const closeView=!!jump.component&&!walking&&!roomVisit;
@@ -415,7 +426,7 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
     return restored??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined,touch);
   },[jobKey,jump,graphics.view,roomVisit,touch,station,aspect,panelHeater,site,doc.components,doc.lessonId,pose,stair,utilityBoard,boardDevices,doorClosed]);
   const fuseBox=repairId?site.items.find(i=>i.id===repairId&&i.fixture?.fusedHeater):undefined;
-  const target=walking&&walkStart?walkStart:accessOpen&&fuseBox?fusedPlateView(fuseBox,true,touch):accessOpen&&repairFitting?padCamera(repairFitting,true,touch):meterFitting?padCamera(meterFitting,meterFitting.kind==='chime'?chimeOpen:openRocker,touch):roomTarget;
+  const target=walking&&walkStart?walkStart:accessOpen&&fuseBox?fusedPlateView(fuseBox,true,touch):accessOpen&&repairFitting?padCamera(repairFitting,true,touch):meterFitting?padCamera(meterFitting,meterFitting.kind==='chime'?chimeOpen:openRocker,touch,aimedScrew,aspect):roomTarget;
   const stop=useCallback(()=>{rig.stop();pointers.current.clear();blockTap.current=true;},[rig]);
   useEffect(()=>{window.addEventListener('blur',stop);window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
     function release(e:PointerEvent){pointers.current.delete(e.pointerId);}
@@ -519,7 +530,7 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
   const push=site.doorsteps&&!roomVisit&&!wire&&!repairId&&!meter&&(!jump.component||jump.overview)?site.items.find(i=>i.id===station&&fixtureMap.get(i.id)?.variant==='sesame'):undefined;
   const pushLabel=push&&(push.room===3?'Front doorbell':'Back doorbell');
   const wallId=stationSwitch??heaterControl?.id??push?.id??'switch',rocker=site.items.find(item=>item.id===wallId),wallControl=fixtureMap.get(wallId);
-  const wallSwitch=rocker&&wallControl&&(push||heaterControl|| (stationSwitch?!wire:showWallSwitch&&!jump.component))&&!walking&&!lost&&(tool==='select'||tool==='inspect')
+  const wallSwitch=rocker&&wallControl&&(push||heaterControl|| (stationSwitch?!wire:showWallSwitch&&!jump.component))&&!walking&&!lost&&(tool==='select'||tool==='inspect'||meterRocker)
     ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,push?[0,.55,.36]:heaterControl?FCU_ROCKER:stationSwitch?[0,.651,.067]:[0,COMPONENTS.switch.size[1]/2,.20],rocker.rotation)):undefined;
   const zoomButton=immersive&&closeView&&!lost&&(!toolsOpen||meter)?<button type="button" aria-label={magnified?'Reset fitting zoom':'Enlarge fitting'}
     aria-pressed={magnified} onClick={()=>rig.setZoom(magnified?1:2)}>{magnified?'1×':'Zoom'}</button>:undefined;
@@ -542,13 +553,13 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
       onWheel={e=>{if(toolsOpen&&walking)return;rig.zoomBy(Math.max(-.18,Math.min(.18,-e.deltaY*.001)));}}>
       <SiteBoundary key={graphics.generation} onList={onList}><Canvas shadows={!touch} frameloop="demand" dpr={touch&&!(immersive&&closeView)?1:[1,1.5]} camera={{fov:49,near:.012,far:55}} gl={{antialias:!touch,powerPreference:'default'}}
         onCreated={({gl})=>{gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=.99;}}>
-        <ContextRecovery onChange={recoverGraphics}/><SettledCanvas layout={[immersive,toolsOpen,jobKey,jump.id,walking,roomVisit?.room,wire,chimeOpen,openRocker,accessOpen,meterTarget].join('/')}/>{!lost&&<><color attach="background" args={['#cddedd']}/><hemisphereLight args={['#edf3ff','#b0a697',.88]}/>
+        <ContextRecovery onChange={recoverGraphics}/><SettledCanvas layout={[immersive,toolsOpen,jobKey,jump.id,walking,roomVisit?.room,wire,chimeOpen,openRocker,accessOpen,meterTarget,aimedScrew].join('/')}/>{!lost&&<><color attach="background" args={['#cddedd']}/><hemisphereLight args={['#edf3ff','#b0a697',.88]}/>
         <directionalLight castShadow={!touch} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-.0006} shadow-normalBias={.0015} position={[-2.6,2.7,1.3]} intensity={1.12} color="#fff6e7"/>
         <directionalLight position={[-4,2,1]} intensity={.27} color="#c2ddf4"/>
         {site.doorsteps&&<directionalLight position={[2.7,5.2,6.8]} intensity={.68} color="#fff4dd"/>}
         <InstallationRoom site={site} economy={touch} cupboardOpen={!!fixtureMap.get('door')?.params.closed} operateCupboard={()=>{if(!blockTap.current&&!walking&&fixtureMap.has('door'))onPart('door','actuator');}}/>
         {utilityBoard&&<UtilityBoard board={utilityBoard} devices={boardDevices} shield={!fixtureMap.get(utilityBoard.id)?.params.frontOff}/>}
-        <FittedHeaterFlex site={site} doc={doc} open={!!fuseBox&&accessOpen}/>
+        <FittedHeaterFlex site={site} doc={doc} open={meterPlateOpen||!!fuseBox&&accessOpen} blockProbes={meterPlateOpen}/>
         <FittingTails doc={doc} site={site} red={redFitting} black={blackFitting} drawn={drawn}/>
         {visible.map(item=>{const c=fixtureMap.get(item.id)!,def=COMPONENTS[c.type];if(!def)return null;
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
@@ -556,7 +567,7 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
           const cupboardDoor=doc.lessonId===65&&c.id==='door';
           const reveal=accessOpen&&item.id===repairId||tracedIds.includes(item.id)||(item.fixture?.bellService==='protect'&&tracedIds.includes('supply'));
           return <InstalledFixture key={item.id} item={item} optical={optical} pin={t} probeMode={!!meter} chimeOpen={chimeOpen} rockerOpen={openRockers.has(item.id)} cupboardDoor={cupboardDoor} bathroom={doc.lessonId===36} wideRocker={doc.lessonId===36&&!jump.component&&!roomVisit&&!walking&&!meter&&!reveal&&['light-switch','fan-isolation'].includes(item.id)}
-            repairOpen={accessOpen&&item.id===repairId} trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
+            fcuOpen={meterPlateOpen&&item.id===meterTarget||accessOpen&&item.id===repairId} trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
             onTouchPick={e=>{lastTouchPick.current={x:e.clientX,y:e.clientY,at:performance.now()};}} equipment={{
             filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
             connectedTerminals:connectedRockerTerminals(c,item.fixture?.fusedHeater?doc.wires.filter(w=>!looseHeaterCore(doc,w)):doc.wires),lowDetail:!focus,preferLowAsset:touch,view:accessOpen&&item.id===repairId&&!item.fixture?.fusedHeater?'open':'normal',showLabels:false,onModelAvailability:modelAvailability,
@@ -576,7 +587,12 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
               }
               if(accessOpen&&item.id===repairId&&item.fixture?.fusedHeater)return;
               if(item.fixture?.croma&&part==='cover'&&!blockTap.current&&!walking){if(!chimeOpen)setChimeOpen(true);return;}
-              if(meter){if(!blockTap.current&&testFittings.some(s=>s.component.id===c.id)&&meterTarget!==c.id)onFocus(c.id);return;}
+              if(meter){
+                if(blockTap.current)return;
+                if(meterRocker&&meterTarget===c.id&&part==='actuator')meterRocker();
+                else if(meterTarget!==c.id&&testFittings.some(s=>s.component.id===c.id))onFocus(c.id);
+                return;
+              }
               const plainSwitchBody=part==='body'&&c.variant!=='sesame'&&['switch','switch2','pushbutton'].includes(c.type);
               if(!blockTap.current&&(!walking||(stair&&c.type==='switch2')))onPart(c.id,cupboardDoor||plainSwitchBody?'actuator':part,detail);
             },
@@ -589,7 +605,7 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
               }
               if(walking){if(immersive&&!toolsOpen&&item.room===walkRoom)jumpTo(item.id);return;}
               if(meter&&meterTarget!==c.id){if(testFittings.some(s=>s.component.id===c.id))onFocus(c.id);return;}
-              if(meter&&(item.fixture?.worktopRocker&&!openRockers.has(c.id)||item.fixture?.croma&&!chimeOpen))return;
+              if(meter&&(item.fixture?.worktopRocker&&!openRockers.has(c.id)||item.fixture?.croma&&!chimeOpen||item.fixture?.fusedHeater&&!meterPlateOpen))return;
               onTerminal({component:c.id,terminal:id});
             }
           }}/>;
@@ -598,7 +614,7 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
         <WireTrace id={wire} doc={doc} site={site} openRocker={accessOpen&&fuseBox?new Set([...openRockers,fuseBox.id]):openRockers}/><CameraRig steering={immersive&&oneThumb} opticalZoom={closeView} onMagnify={setMagnified} focusId={jump.id} roomArrival={roomArrival} rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom} onNear={setNearby} walkTargets={walkTargets} walkMark={walkMark} wallSwitch={wallSwitch} wallButton={wallButton}/></>}
       </Canvas></SiteBoundary>
       {wallSwitch&&<button ref={wallButton} type="button" className="site-wall-switch" data-overview={heaterOverview||!!push||undefined} hidden aria-label={pushLabel??(heaterControl?'Operate heater switch':stationSwitch==='far'?'Operate landing switch':stationSwitch?'Operate downstairs switch':'Wall switch')} aria-pressed={stationSwitch||push?undefined:wallControl?.params.closed===true}
-        onClick={e=>{e.stopPropagation();if(!e.detail||!blockTap.current)onPart(wallId,'actuator');}}><span>{pushLabel??(heaterControl?'Heater switch':stationSwitch==='far'?'Landing switch':stationSwitch?'Downstairs switch':'Wall switch')}</span></button>}
+        onClick={e=>{e.stopPropagation();if(!e.detail||!blockTap.current){if(meterRocker)meterRocker();else onPart(wallId,'actuator');}}}><span>{pushLabel??(heaterControl?'Heater switch':stationSwitch==='far'?'Landing switch':stationSwitch?'Downstairs switch':'Wall switch')}</span></button>}
     </div>
     {!lost&&visible.some(item=>unavailable.has(item.id))&&<div className="site-model-error" role="status" aria-live="polite">Equipment model unavailable. <button onClick={onList}>Use equipment list</button></div>}
     {lost&&<div className="site-unavailable" role="status"><p>Graphics paused. Your circuit is saved in the workbench.</p><button onClick={()=>recoverGraphics(false)}>Restart site</button><button onClick={onList}>Equipment list</button></div>}
@@ -607,7 +623,16 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
       :<><span className="location-dot"/>{site.building.name} <span> / </span> {roomName}</>}</div>}
     {meter&&!lost&&<div className="site-meter-heading">{zoomButton}
       {immersive&&!toolsOpen&&<button type="button" onClick={putMeterAway}>Put meter away</button>}
-      {meterFitting?.kind!=='chime'&&<label><b>Fitting</b> <select aria-label="Fitting to measure" value={meterTarget??''} onChange={e=>onFocus(e.target.value)}><option value="" disabled>Choose a fitting</option>{testFittings.map(s=><option key={s.component.id} value={s.component.id}>{s.component.label}</option>)}</select></label>}
+      {!testingFcu&&meterFitting?.kind!=='chime'&&<label><b>Fitting</b> <select aria-label="Fitting to measure" value={meterTarget??''} onChange={e=>onFocus(e.target.value)}><option value="" disabled>Choose a fitting</option>{testFittings.map(s=><option key={s.component.id} value={s.component.id}>{s.component.label}</option>)}</select></label>}
+      {testingFcu&&fcuIsolation&&<>
+        <button type="button" aria-expanded={meterPlateOpen} disabled={!fcuIsolation.safe&&!fcuIsolation.isolate} onClick={()=>{
+          if(!fcuIsolation.safe){fcuIsolation.isolate?.();return;}
+          setScrewView(undefined);fcuIsolation.setOpen(!meterPlateOpen);
+        }}>{!fcuIsolation.safe?(fcuIsolation.label??'Turn bench supply off'):meterPlateOpen?(pinned?'Lift and refit':'Refit switch'):'Show rear screws'}</button>
+        {meterPlateOpen&&<label>View <select aria-label="View a terminal screw" value={aimedScrew??''} onChange={e=>setScrewView({focus:jump.id,id:e.target.value})}>
+          <option value="">Whole switch</option>{siteContacts(meterFitting,true).map(s=><option key={s.endpoint.terminal} value={s.endpoint.terminal}>{s.label}</option>)}
+        </select></label>}
+      </>}
       {meterFitting?.kind==='chime'&&<button type="button" aria-expanded={chimeOpen} title={chimeOpen&&pinned?'Lift the meter probes and close the front cover':undefined} onClick={()=>{if(chimeOpen&&pinned)liftProbes(meterFitting.component.id);setChimeOpen(!chimeOpen);}}>{chimeOpen?(pinned?'Lift and close':'Close chime cover'):'Open chime cover'}</button>}
       {meterFitting?.kind==='rocker'&&<button type="button" aria-expanded={openRocker} aria-label={openRocker&&pinned?'Lift probe and refit':undefined} onClick={()=>{if(pinned)liftProbes(meterFitting.item.id);setWithdrawnAt(openRocker?undefined:jump.id);}}>{openRocker?(pinned?'Lift and refit':'Refit panel'):'Show back of switch'}</button>}
     </div>}
@@ -623,8 +648,9 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
       {(!immersive||!walking)&&<button className={walking?'chosen':''} aria-pressed={walking} onClick={toggleWalk}><Footprints size={17}/>{walking?'Finish walk':'Walk'}</button>}
       <SiteDestinations site={site} locate={()=>locateOnMap(site,jobKey,jump.id,pose.current,walking,walking||roomVisit?walkRoom:site.room,roomVisit?undefined:station)} places={destinations} immersive={immersive} stop={stop} afterVisit={()=>input.current?.focus({preventScroll:true})}
         visit={value=>value.startsWith('room:')||value==='grille'?visitRoom(value):jumpTo(value)}/>
+      {!immersive&&!walking&&!lost&&!repairHere&&!retest&&selectedId&&<button type="button" className="compact-fitting-tools" aria-label="Fitting tools" aria-expanded={moreFittingTools} onClick={()=>setMoreFittingTools(v=>!v)}>Fitting</button>}
       {zoomButton}
-      {selectedId&&!walking&&!repairHere&&!retest&&testFittings.some(s=>s.component.id===selectedId)&&<button onClick={()=>openMeter(selectedId)}>Measure</button>}
+      {selectedId&&!walking&&!repairHere&&!retest&&testFittings.some(s=>s.component.id===selectedId)&&<button onClick={()=>openMeter(selectedId)}>{testFittings.some(s=>s.kind==='fcu'&&s.component.id===selectedId)?'Check wall switch':'Measure'}</button>}
       {!walking&&!toolsOpen&&!lost&&!repairId&&repairDestination&&<button className="site-repair" type="button" onClick={()=>jumpTo(repairDestination)}>Find repair</button>}
       {landing&&!toolsOpen&&<HeaterFlexChoice landing={landing}/>}
       {repairId&&!toolsOpen&&!landing&&repairHere&&<button type="button" className="site-repair" onClick={()=>{
@@ -635,6 +661,13 @@ export default function JobSiteView({onFieldRoom,site,doc,result,selected,termin
       {!walking&&!toolsOpen&&!lost&&retest&&<button className="site-repair" type="button" disabled={retest.disabled} onClick={retest.run}>{retest.label}</button>}
       {selectedId&&!walking&&!repairHere&&!retest&&<button aria-label="Inspect equipment on the workbench" onClick={()=>onService(selectedId)}><PanelTopOpen size={17}/><span>Inspect</span></button>}
     </div>}
+    {meter&&pointsOpen&&<SiteProbePicker shown close={closePoints} lead={meter.probe}
+      fittings={testFittings} fitting={meterFitting} choose={onFocus} pick={onTerminal}
+      accessible={meterFitting?.kind==='fcu'?meterPlateOpen:meterFitting?.kind==='chime'?chimeOpen:meterFitting?.kind==='rocker'?openRocker:true}
+      access={meterFitting?.kind==='fcu'&&fcuIsolation
+        ?fcuIsolation.safe?{label:'Show rear screws',run:()=>fcuIsolation.setOpen(true)}:{label:fcuIsolation.label??'Turn bench supply off',run:fcuIsolation.isolate}
+        :meterFitting?.kind==='chime'?{label:'Open chime cover',run:()=>setChimeOpen(true)}
+        :meterFitting?.kind==='rocker'?{label:'Show back of switch',run:()=>setWithdrawnAt(jump.id)}:undefined}/>}
     {walking&&!meter&&!toolsOpen&&!lost&&<>
       {immersive&&!repairDestination&&!retest&&<span className="site-walk-mark" ref={walkMark} aria-hidden="true" hidden><Focus size={22} strokeWidth={2}/></span>}
       {immersive&&touch&&!looked&&<span className="site-look-guide">{oneThumb?'Hold the side arrows to turn.':'Drag the room to look around.'}</span>}
