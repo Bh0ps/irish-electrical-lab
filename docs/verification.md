@@ -1,5 +1,19 @@
 # Verification summary
 
+## 1.18.0 — Walk and repair on a phone
+
+**Walking.** At 390 × 844 in touch Chromium and at 320 × 844 and 844 × 390 in Windows WebKit, tapping Walk opened the full viewport below a 50 px controls bar. A quick arrow tap moved the camera 0.25 m. With one-thumb walking enabled, a side tap turned it 15° in place. The drawing opened and returned to the same position and heading. We checked zoom, exit, reopening and the saved steering preference. In Chromium we also held the pad to walk and cancelled a touch. Lifting the thumb stopped movement.
+
+**Kitchen.** We could see the appliance, its flex and its wall switch on arrival, including at 320 px with 150% text. A tap operated the visible rocker. After diagnosing the fault with the virtual meter, a tap on the wrong terminal kept the flex disconnected. A tap on the actual LOAD L terminal repaired it. With the supply restored, the element went from 498.4 W to 0 W and back to 498.4 W. Testing early left the practical unfinished. A reload retained the stop reading. The final test and its report survived reopening the job. The 24 V worktop lighting repair also passed by touch.
+
+**Equipment.** The new 500 W panel and H-frame mount follow the Dimplex PLX050E. In the study and kitchen, the fitted flex enters the lower right of the case. The bench presents its three cores by name. In the 240 V exercise the room stays at 18 °C. Lowering the setting to 18 °C left the controller supplied and brought element power to zero. We operated the actual temperature keys in both full and offline models. The earlier 300 W kitchen job reopened with its own circuit, measurements and original completion requirements. [Dimplex PLXE Series C manual](https://product-portal.gdhv.com/sites/default/files/2022-12/PLXE%20-%20Series%20C%20Long%20Manual%20-%20Issue%204.pdf)
+
+**Coverage.** All 460 automated checks passed. The catalog, electrical and teaching audits covered 80 courses, 115 model variants and 2,485 activities. All 1,119 example wires passed the routing audit. The offline pack verified 259 assets and both workers. In WebKit, we downloaded the pack, stopped its HTTP server, reopened a previously unvisited heater job, repaired it and reopened its report with zero requests reaching the origin.
+
+**Performance.** On the Windows PC with an RTX 5070 Ti, the 30-component, 42-wire bench took 4.0 ms per frame at the median and 4.5 ms at the 95th percentile during a camera pan. Eight supply edits took a median 3.75 ms in the simulation worker and 14.4 ms round trip. Three seconds at rest produced no frames or worker requests. These were desktop Chromium measurements. Phone interaction checks used touch emulation. Physical iPhone performance, learner observations and an electrician’s review remain unverified.
+
+**Windows replacement.** We seeded a disposable profile with version 1.17.0 and installed 1.18.0. The draft, named build, progress and preferences retained the same record digest. The Desktop and Start menu shortcuts, restart, 80 worker circuits and 120 guided-build checks passed. The app used its existing local origin and made zero external requests. The Windows graphics driver logged a shader warning about FXAA during the native audit. The shader linked and the interaction check passed.
+
 ## 1.17.0 — The heater stays cold
 
 **Kitchen repair.** In touch Chromium and Windows WebKit at 390 × 844, the learner turned the fused switch on and placed both virtual meter probes. The heater read 0 V AC. Moving the red probe to the switch output while leaving black on heater N gave 240 V AC. A reading to earth and a wrong diagnosis both left the job unfinished. Reloading between readings preserved the probe at heater N. On the isolated plate, choosing LOAD N left the wire loose. Connecting to LOAD L, restoring power and running a new test completed the job. Reloading retained the passing report. The same job could be completed with the keyboard and terminal names.

@@ -1,6 +1,7 @@
 import { validateCircuit } from './storage';
 import { COMPONENTS } from './components';
 import { getComponentTerminals } from './terminal-layout';
+import { hasPanelHeater,isHeaterRun,type HeaterRun } from './heater-fault';
 import type { CircuitDocument, Endpoint } from './types';
 
 /** A lesson keeps its working copy when the same bench is used for Sandbox. */
@@ -10,7 +11,7 @@ export interface LessonBookmark {
   activityId: string;
   path: 'coursebook' | 'full';
   mode: 'explore' | 'build' | 'challenges';
-  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; heater?: boolean; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
+  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; heater?: boolean; heaterRun?:HeaterRun; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
 }
 
 export function validateBookmark(value: unknown): LessonBookmark {
@@ -28,6 +29,7 @@ export function validateBookmark(value: unknown): LessonBookmark {
       (fault.repaired && !fault.accepted) || (fault.completed !== undefined && (typeof fault.completed !== 'boolean' || fault.completed && !fault.repaired)) ||
       (fault.worktop !== undefined && (typeof fault.worktop !== 'boolean' || fault.worktop && circuit.lessonId !== 66)) ||
       (fault.heater !== undefined && (typeof fault.heater !== 'boolean' || fault.heater && circuit.lessonId !== 20)) ||
+      (fault.heaterRun!==undefined&&(!fault.heater||!fault.repaired||!hasPanelHeater(circuit)||!isHeaterRun(fault.heaterRun,circuit.revision))) ||
       (fault.readingIds !== undefined && (!Array.isArray(fault.readingIds) || fault.readingIds.length > 30 || fault.readingIds.some(id=>typeof id!=='string'||id.length>512))) || b.mode !== 'challenges')) throw new Error('Invalid saved fault exercise.');
   if(fault?.probes){
     if(!(fault.worktop||fault.heater)||typeof fault.probes!=='object'||Array.isArray(fault.probes))throw new Error('The saved fault probes could not be read.');

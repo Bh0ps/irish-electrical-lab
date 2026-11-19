@@ -207,7 +207,7 @@ test('installed runs follow the actual terminals, turn at fitted walls and remai
       assert.deepEqual(path[0],anchor(wire.from));assert.deepEqual(path.at(-1),anchor(wire.to));
       const flex=heaterFlexRun(doc);
       if(flex&&wire.cable?.runId===flex.id){
-        const sheath=heaterFlexPath(site.items.find(i=>i.id==='fcu-switch')!,site.items.find(i=>i.id==='fixed')!,false);
+        const sheath=heaterFlexPath(site.items.find(i=>i.fixture?.fusedHeater)!,site.items.find(i=>i.id==='fixed')!,false);
         assert.ok(sheath.every(q=>path.some(p=>p.every((v,i)=>near(v,q[i])))));continue;
       }
       const [from,to]=[wire.from,wire.to].map(end=>installedEnd(doc,site,end,undefined,wire)!);

@@ -29,6 +29,19 @@ test('turning the head keeps the other thumb walking; releasing or interrupting 
   assert.deepEqual([rig.stick,rig.nudge,rig.turn,rig.zoom,rig.keys.size,rig.thumb],[[0,0],[0,0],[0,0],0,0,false]);
 });
 
+test('one-thumb steering turns while walking, releases cleanly and supports short taps',()=>{
+  const rig=new SiteWalkInput();
+  rig.moveThumb(.5,.5);
+  assert.ok(Math.abs(rig.advanceSteering(1/60)*60-.9)<1e-9);
+  assert.deepEqual(rig.stick,[.5,.5]);
+  assert.equal(rig.advanceSteering(8),rig.advanceSteering(.045));
+  rig.liftThumb();assert.equal(rig.advanceSteering(1/60),0);
+  rig.turnStep(false);assert.ok(Math.abs(rig.turn[0]*.003+Math.PI/12)<1e-9);
+  assert.deepEqual(rig.nudge,[0,0]);rig.consumeMotion();
+  rig.step('up');assert.deepEqual(rig.nudge,[0,.25]);
+  rig.stop();assert.equal(rig.advanceSteering(1),0);
+});
+
 test('walking starts in clear standing space in the selected room and on the right stair level',()=>{
   const ring=jobSite(getLesson(19)!.circuit),socket=ring.items.find(item=>item.id==='socket-a')!;
   const start=standingView(ring,socket);

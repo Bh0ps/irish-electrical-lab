@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { assessFaultDiagnosis } from '../lib/fault-diagnosis';
-import { heaterComparisonReady, heaterFaultReadings, heaterFeed, heaterLine, heaterNeutral } from '../lib/heater-fault';
+import { elementWatts,finishHeaterPress,hasPanelHeater,heaterComparisonReady,heaterFaultReadings,heaterFeed,heaterHandoverStep,heaterLine,heaterNeutral,heaterRunReady,isHeaterRun,startHeaterPress } from '../lib/heater-fault';
 import { captureMeasurement, validateDiagnosisEvidence } from '../lib/learning';
 import { getLesson } from '../lib/lessons';
 import { faultMeterCheck } from '../lib/fault-checks';
@@ -58,4 +58,65 @@ test('wrong reference, held or assisted reading, stale results, switch off and i
     const captured=[trial.read(heaterLine,heaterNeutral),trial.read(trial.feed,heaterNeutral)];
     assert.equal(heaterComparisonReady(trial.doc,heaterFaultReadings(trial.doc,trial.result,captured)),false);
   }
+});
+
+test('the wall rocker must stop the repaired panel and bring back actual element power',()=>{
+  for(const voltage of [230,240]){
+    const {doc}=setup(false,true,false,voltage);
+    assert.ok(hasPanelHeater(doc));const running=simulate(doc);
+    const off=startHeaterPress(doc,running,'fcu-switch')!;
+    assert.ok(off.before>450&&off.before<505);
+    assert.equal(startHeaterPress(doc,running,'protect'),undefined);
+    doc.components.find(c=>c.id==='fcu-switch')!.params.closed=false;doc.revision++;
+    assert.equal(finishHeaterPress(doc,running,off),undefined);
+    const stopped=simulate(doc),first=finishHeaterPress(doc,stopped,off)!;
+    assert.equal(elementWatts(doc,stopped),0);
+    assert.equal(first.runningBefore,off.before);assert.equal(first.stopped,0);
+    assert.equal(heaterRunReady(doc,stopped,first),false);
+    const restored=validateBookmark({version:1,circuit:doc,path:'full',mode:'challenges',activityId:'lesson:20:retest',
+      fault:{hints:0,accepted:true,repaired:true,scored:false,heater:true,heaterRun:first}});
+    assert.deepEqual(restored.fault?.heaterRun,first);
+    const on=startHeaterPress(doc,stopped,'fcu-switch')!;
+    doc.components.find(c=>c.id==='fcu-switch')!.params.closed=true;doc.revision++;
+    const again=simulate(doc),second=finishHeaterPress(doc,again,on,first)!;
+    assert.equal(second.runningAfter,elementWatts(doc,again));
+    assert.ok(heaterRunReady(doc,again,second));
+    assert.ok(isHeaterRun(second,doc.revision));
+    assert.equal(isHeaterRun({...second,runningAfter:0},doc.revision),false);
+    assert.equal(heaterRunReady({...doc,revision:doc.revision+1},again,second),false);
+    const panel=doc.components.find(c=>c.id==='fixed')!;
+    panel.params.setpoint=16;
+    const satisfied=simulate(doc);
+    assert.equal(elementWatts(doc,satisfied),0);
+    assert.equal(finishHeaterPress(doc,satisfied,on,first),first);
+    assert.equal(heaterRunReady(doc,satisfied,second),false);
+  }
+});
+
+test('visiting a repaired heater, opening the supply, unresolved power and earlier saved heaters earn no handover',()=>{
+  const {doc,result}=setup(false,true,false);
+  assert.equal(startHeaterPress(doc,{...result,converged:false},'fcu-switch'),undefined);
+  assert.equal(startHeaterPress({...doc,supply:{...doc.supply,enabled:false}},result,'fcu-switch'),undefined);
+  const faulty={...doc,faults:[{enabled:true,type:'open-live',wire:'w5'}]};
+  assert.equal(startHeaterPress(faulty,result,'fcu-switch'),undefined);
+  const first=startHeaterPress(doc,result,'fcu-switch')!;
+  assert.equal(finishHeaterPress(doc,result,first),undefined);
+  assert.equal(finishHeaterPress({...doc,id:'another'},result,first),undefined);
+  const legacy=setup(true,true,false);
+  assert.equal(startHeaterPress(legacy.doc,legacy.result,'fcu-switch'),undefined);
+  assert.equal(heaterRunReady(legacy.doc,legacy.result),false);
+});
+
+test('a remaining supply fault asks for a circuit check, whereas a satisfied thermostat asks for heat',()=>{
+  const broken=setup();
+  assert.equal(elementWatts(broken.doc,broken.result),0);
+  assert.equal(heaterHandoverStep(broken.doc,broken.result)?.action,'test');
+  const {doc}=setup(false,true,false);
+  assert.equal(heaterHandoverStep(doc,undefined)?.disabled,true);
+  assert.equal(heaterHandoverStep(doc,undefined,undefined,true)?.disabled,false);
+  doc.components.find(c=>c.id==='fixed')!.params.setpoint=17;
+  const off=simulate(doc),step=heaterHandoverStep(doc,off);
+  assert.equal(step?.action,'raise');assert.match(step!.instruction,/18 °C/);assert.match(step!.reading,/17 °C/);
+  doc.components.find(c=>c.id==='fixed')!.params.setpoint=19;
+  assert.equal(heaterHandoverStep(doc,simulate(doc))?.action,'operate');
 });

@@ -153,9 +153,13 @@ function collisionBoxes(bathroom:boolean,stair:boolean){
   return boxes;
 }
 const collisions=new Map<string,FloorBox[]>();
-export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:boolean):Vec3{
-  const key=[bathroom,stair].join('/');
-  if(!collisions.has(key))collisions.set(key,collisionBoxes(bathroom,stair));
+export function walkHome(from:Vec3,dx:number,dz:number,bathroom:boolean,stair:boolean,appliance?:FloorBox):Vec3{
+  const key=[bathroom,stair,appliance?.x,appliance?.z,appliance?.w,appliance?.d].join('/');
+  if(!collisions.has(key)){
+    const boxes=collisionBoxes(bathroom,stair);
+    if(appliance)boxes.push(appliance);
+    collisions.set(key,boxes);
+  }
   const boxes=collisions.get(key)!,radius=.16;
   const advance=(axis:'x'|'z',fromAxis:number,across:number,delta:number)=>{
     let next=fromAxis+delta;

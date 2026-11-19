@@ -11037,5 +11037,94 @@
     "bytes": 1672396,
     "lowBytes": 1007280,
     "bespokeBlender": true
+  },
+  {
+    "key": "heater_plx050e",
+    "galleryKey": "heater:plx050e",
+    "type": "heater",
+    "name": "Study panel heater",
+    "url": "/models/heater_plx050e.glb",
+    "lowUrl": "/models/heater_plx050e.low.glb",
+    "thumbnailUrl": "/models/thumbnails/heater_plx050e.png",
+    "detailRevision": 3,
+    "detailFamily": "heater",
+    "detailFeatures": [
+      "individual-electrical-terminations",
+      "plxe-outlet",
+      "plxe-rear-chassis",
+      "plxe-inlet",
+      "plxe-wall-bracket",
+      "heat-transfer-construction",
+      "thermal-protection",
+      "plxe-controls",
+      "plxe-screen",
+      "plxe-temperature-up",
+      "plxe-temperature-down",
+      "plxe-fitted-flex",
+      "plxe-bench-lead"
+    ],
+    "sourceMeshCount": 201,
+    "meshCount": 33,
+    "triangles": 46249,
+    "lowTriangles": 29715,
+    "terminals": [
+      {
+        "id": "L",
+        "label": "L",
+        "role": "L",
+        "purpose": "Brown live core in the heater\u2019s factory-fitted lead. This core supplies the heater controller and element.",
+        "anchor": [
+          0.5116666666666667,
+          0.13,
+          -0.3
+        ],
+        "group": "Fitted flex",
+        "scale": 0.36,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "N",
+        "label": "N",
+        "role": "N",
+        "purpose": "Blue neutral core in the heater\u2019s factory-fitted lead. This core supplies the heater controller and element.",
+        "anchor": [
+          0.625,
+          0.13,
+          -0.3
+        ],
+        "group": "Fitted flex",
+        "scale": 0.36,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "PE",
+        "label": "E",
+        "role": "PE",
+        "purpose": "Green and yellow earth core in the heater\u2019s factory-fitted lead. It bonds the metal case to earth.",
+        "anchor": [
+          0.7383333333333333,
+          0.13,
+          -0.3
+        ],
+        "group": "Fitted flex",
+        "scale": 0.36,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "bytes": 1209152,
+    "lowBytes": 831752,
+    "bespokeBlender": true
   }
 ]

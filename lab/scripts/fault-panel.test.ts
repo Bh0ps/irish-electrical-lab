@@ -62,7 +62,7 @@ test('heater instructions follow the learner’s leads and name the fitting on t
   const legacy=getLesson(20,older)!;
   const heater={...reading('load','Heater',0),a:{component:'fixed',terminal:'N'},b:{component:'fixed',terminal:'L'}};
   const first=show({lesson:current,doc:current.circuit,heater:{},switchOn:false});
-  assert.match(first,/Turn the heater on at the wall/);
+  assert.match(first,/rocker on the white wall plate/);
   assert.doesNotMatch(first,/Choose the fault|Repair this wire|The flex has lost/);
   for(const [lesson,point] of [[current,/L terminal on the LOAD side/],[legacy,/OUT on the separate fuse/]] as const){
     const html=show({lesson,doc:lesson.circuit,heater:{heater},wrongPoints:true});

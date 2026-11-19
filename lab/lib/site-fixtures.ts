@@ -4,6 +4,7 @@ import { mountVector } from './board-assembly.ts';
 import {chimeEnvelope,type BellServicePart} from './bell-cupboard';
 import {driverContact,ROCKER_BOX} from './kitchen-lighting';
 import {rockerWireEntry} from './dc-rocker';
+import {PLXE_FLEX_EXIT} from './plxe';
 import type {SiteItem} from './job-site';
 import type { ComponentInstance, TerminalDefinition, Vec3 } from './types.ts';
 
@@ -32,6 +33,7 @@ export interface FixturePose {
   bellPush?: boolean;
   flushPlate?: boolean;
   fusedHeater?: boolean;
+  panelHeater?: boolean;
 }
 
 export function isStrip(c: ComponentInstance) {
@@ -87,6 +89,12 @@ export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboar
 
 /** Map an electrical terminal to the contact the learner can touch in the room. */
 export function installedTerminalPoint(item:SiteItem,component:ComponentInstance,terminal:Pick<TerminalDefinition,'anchor'|'id'>):Vec3{
+  if(item.fixture?.panelHeater){
+    // Here the factory lead is continuous. Each core disappears into the sealed cord entry.
+    const coreOffset=terminal.id==='N'?-.004:terminal.id==='PE'?.004:0;
+    const [x,y,z]=PLXE_FLEX_EXIT;
+    return fixturePoint(item.position,item.scale,item.fixture,component,[x+coreOffset,y+.009,z],item.rotation);
+  }
   // The installed driver has flying leads. Its terminals are in the two connection boxes.
   if(item.fixture?.kitchenDriver){
     const local=driverContact(terminal.id);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.18.0 — Walk and repair on a phone
+
+- Tap **Walk** to use the whole phone screen. Tap an arrow to take a short step or hold it to keep walking. In **Tools**, turn on **One-thumb walking** to steer with the same pad.
+- In the kitchen, the arrival view takes in the wall heater, its flex and the fused switch. Zoom in to repair the fitting. After restoring the supply, switch the heater off and back on and check the power it draws.
+- The new kitchen and study examples use a 500 W Dimplex PLX050E. Its manual heat setting works against a fixed room temperature. Earlier saved examples keep their original heater and wiring.
+
 ## 1.17.0 — The heater stays cold
 
 - Work the kitchen wall switch and use the bench meter to find where the heater loses its feed. Open the isolated fitting on site, land the loose line at its marked terminal, restore power and test again.

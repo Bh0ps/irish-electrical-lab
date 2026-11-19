@@ -29,6 +29,7 @@ const MANUFACTURERS:Record<string,{title:string;url:string}>={
   safety:{title:'Pilz: PNOZ X3 operating manual, reset and feedback comparison',url:'https://www.pilz.com/download/open/OM_PNOZ_X3_20547-EN-16.pdf'},
 };
 
+import { PLX_DEFAULTS } from './panel-heater.ts';
 import { ELV_PAGES, ELV_WORKED, elvPage, lessonIdLimit } from './elv-coursebook.ts';
 import { wireElvLesson } from './elv-circuits.ts';
 type Node = [string, string];
@@ -127,6 +128,10 @@ function buildCircuit(id: number, title: string, legacyFan=false, olderFittings:
     b.mains(id);
     b.live = [id, '+']; b.neutral = [id, '-'];
   };
+  const fixedHeater=(oldWatts:number,label:string)=>{
+    if(olderFittings.includes('fixed'))b.add('heater','fixed',label,{watts:oldWatts,power:oldWatts});
+    else b.add('heater','fixed',id===19?'Study panel heater':'Kitchen panel heater',{...PLX_DEFAULTS,power:PLX_DEFAULTS.watts},undefined,'plx050e');
+  };
   switch (id) {
     case 1: {
       b.add('meter', 'meter', 'Electricity meter'); b.add('isolator', 'main', 'Main switch', { closed: true }); b.add('panel', 'board', 'Distribution board');
@@ -189,7 +194,7 @@ function buildCircuit(id: number, title: string, legacyFan=false, olderFittings:
         b.load('heater','fixed','Heater on the fused branch',['branch-fuse','OUT'],400);
       } else if (id === 19) {
         b.add('fcu','branch-fuse','Heater switch · 3 A fuse',{rating:3,closed:true});
-        b.add('heater','fixed','Heater on the fused branch',{watts:400,power:400});
+        fixedHeater(400,'Heater on the fused branch');
         b.wire(['socket-b','L'],['branch-fuse','LIN']);
         b.wire(['branch-fuse','LOUT'],['fixed','L']);
         b.wire(['branch-fuse','NOUT'],['fixed','N'],'N');
@@ -208,7 +213,7 @@ function buildCircuit(id: number, title: string, legacyFan=false, olderFittings:
         break;
       }
       b.add('fcu','fcu-switch','Heater switch · 3 A fuse',{closed:true,rating:3});
-      b.add('heater','fixed','Fixed heater',{watts:300,power:300});
+      fixedHeater(300,'Fixed heater');
       b.wire(b.live,['fcu-switch','LIN']);
       b.wire(b.neutral,['fcu-switch','NIN'],'N');
       b.wire(['fcu-switch','LOUT'],['fixed','L']);
@@ -980,7 +985,8 @@ function createLesson(spec: Spec, index: number, legacyFan=false, olderFittings:
       : `Put one probe on ${red.label} and the other on ${black.label}. Read the volts between those two points.`
     : 'Set the tester to volts and choose the two points you want to compare.';
   const references = [...IRISH];
-  if((id===19||id===20)&&!olderFittings.length)references.push({title:'BG 851 · switched fused connection unit and wiring diagram',url:'https://www.bgelectrical.uk/uk/wiring-devices/800-series/fused-connection-units/851-01'});
+  if(circuit.components.some(c=>c.variant==='plx050e'))references.push({title:'Dimplex PLX050E · wall bracket, fitted flex and manual heat setting',url:'https://product-portal.gdhv.com/sites/default/files/2022-12/PLXE%20-%20Series%20C%20Long%20Manual%20-%20Issue%204.pdf'});
+  if((id===19||id===20)&&!olderFittings.some(id=>id==='branch-fuse'||id==='fcu-switch'))references.push({title:'BG 851 · switched fused connection unit and wiring diagram',url:'https://www.bgelectrical.uk/uk/wiring-devices/800-series/fused-connection-units/851-01'});
   if(id>=65&&id<=70)references.push({title:'MEAN WELL · constant-voltage and constant-current LED operation',url:'https://led.meanwell.com/qa.aspx'});
   if(id===66)references.push({title:'Switch Components RG1 · 24 V worktop rocker and terminal numbers',url:'https://www.switchcomp.com/switches-docs/rocker-switch/RG1-1A-DC-1-B.pdf'});
   if(id===43||id>=71&&id<=74||id===80)references.push({title:'Resideo · bell pushes, chimes and transformer ratings',url:'https://www.resideo.com/emea/en/-/media/EMEA%20Site%20Cluster/Mastersite/Documents/Sales%20Literature/Resideo_Electrical_Wholesale_Online_Catalogue_August_2020.pdf/'});
@@ -1074,6 +1080,7 @@ const earlierAppliance=createLesson([SPECS[19][0],'Sockets & supplies','Routine'
   'open-live','The heater stays off with the switch on.','Check the output of the separate fuse.',
   'If the fuse output has power, follow the line to the heater.','The wire from fuse OUT to heater L is broken.',
   ['The heater needs both the switch and fuse to conduct.','Opening the switch stops the heater.']],19,false,['fcu-switch']);
+const earlierCombinedHeaters=new Map([19,20].map(id=>[id,createLesson(lessonSpecs[id-1],id-1,false,['fixed'])]));
 const earlierChime=createLesson(lessonSpecs[71],71,false,['chime']);
 export function getLesson(id:number,doc?:CircuitDocument):ConfigurationLesson|undefined {
   if(id===19&&doc?.lessonId===19&&doc.components.some(c=>c.id==='branch-fuse'&&c.type==='fuse'))return earlierBranch;
@@ -1081,6 +1088,7 @@ export function getLesson(id:number,doc?:CircuitDocument):ConfigurationLesson|un
     const wallSwitch=doc.components.find(c=>c.id==='fcu-switch');
     if(wallSwitch?.type==='switch'||!wallSwitch&&doc.components.some(c=>c.id==='fuse'&&c.type==='fuse'))return earlierAppliance;
   }
+  if((id===19||id===20)&&doc?.lessonId===id&&doc.components.some(c=>c.id==='fixed'&&c.type==='heater'&&c.variant!=='plx050e'))return earlierCombinedHeaters.get(id);
   if(id===36&&olderTimerFan(doc))return earlierFan;
   if(id===72&&doc?.lessonId===72&&doc.components.some(c=>c.id==='chime'&&c.type==='callchime'&&(!c.variant||c.variant==='default')))return earlierChime;
   if(id===66&&doc?.lessonId===66){

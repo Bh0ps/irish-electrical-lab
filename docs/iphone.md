@@ -8,10 +8,10 @@ Safari, the Home Screen app, and Windows keep separate study data. On Windows, c
 
 ## Walk around and make a repair
 
-1. Open a job and tap **Full screen** beside its title. Rest one thumb on **Move** and slide it in the direction you want to walk. Drag the room with your other thumb to look around.
-2. Face a fitting and tap **Go closer**, or tap **Find** and choose it by name. In a close-up, tap **Zoom** to double the size of the fitting. Pinch to adjust it or tap **1×** to get the whole fitting back. Tap **Walk** to step back into the room.
+1. Open a job and tap **Walk** or **Full screen**. Tap an arrow to take a short step, or hold it to keep walking. Drag the room to look around. To steer with the same thumb, open **Tools**, turn on **One-thumb walking** and close the tools. The side arrows now turn you. Hold the pad diagonally to walk round a corner. [See the one-thumb controls in the kitchen](images/iphone-one-thumb.png).
+2. Face a fitting. A small frame marks the fitting named on **Go closer**. Tap **Go closer**, or tap **Find** and choose it by name. In a close-up, tap **Zoom** to double the size of the fitting. Pinch to adjust it or tap **1×** to get the whole fitting back. Tap **Walk** to step back into the room.
 3. Tap **Tools** for the meter, workbench, drawing or equipment list. **Job** opens and closes your instructions. You can hide the sheet to touch a meter point, then bring it back to record the reading. Your probes stay in place.
-4. For a repair, choose **Chapters → The heater stays cold**. Use the virtual bench meter to find where the feed stops. After diagnosis, tap **Find repair on site**. Switch off the simulated supply and open the wall fitting. Tap a terminal for the loose brown wire, or tap **Reconnect flex** to choose its marking from a list. The next button turns the supply back on. Tap **Test the repair** to check your work.
+4. For a repair, choose **Chapters → The heater stays cold**. Use the virtual bench meter to find where the feed stops. After diagnosis, tap **Find repair on site**. Switch off the simulated supply and open the wall fitting. Tap a terminal for the loose brown wire, or tap **Reconnect flex** to choose its marking from a list. Turn the supply back on. With the new panel heater, work the wall switch and check that element power falls to zero and comes back. Tap **Test the repair** to finish.
 
 ![Oakfield kitchen in full screen with Move in the lower left, Go closer on the right, and Job and Tools at the top](images/iphone-site-walk.png)
 

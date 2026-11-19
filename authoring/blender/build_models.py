@@ -23,6 +23,7 @@ from white_tape import build_white_tape
 from bathroom_fan import build_bathroom_fan
 from shaver_face import build_shaver_face
 from croma_chime import build_croma_chime
+from plxe import build_plxe
 from png_metadata import strip_text_metadata
 from portable_source import clear_browser_locations
 
@@ -612,6 +613,8 @@ def main():
         workshop=any(o.get('detailId') for o in root.children_recursive) or recipe['component']['type'] in ('forktester','stripper','crimper','torquedriver')
         if recipe['galleryKey']=='switch:dc-rocker':
             features=build_dc_rocker(recipe,root,api)
+        elif recipe['galleryKey']=='heater:plx050e':
+            features=build_plxe(recipe,root,api)
         elif recipe['galleryKey']=='callchime:croma-100a':
             features=build_croma_chime(recipe,root,api)
         elif recipe['galleryKey']=='isolator3:fan-isolator':

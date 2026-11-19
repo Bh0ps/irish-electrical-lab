@@ -2,11 +2,14 @@ import {homeVisit, isStairStation, STAIR_EYE, STAIR_LANDING} from './home-floorp
 import {serviceVisit} from './service-floorplan';
 import type {JobSite, SiteItem} from './job-site';
 import type {SitePose} from './site-camera';
+import {fittedHeaterView} from './fused-heater-site';
 
 /** Enter from standing space in the same room. A fitting close-up can sit over a sink or behind a board. */
-export function standingView(site:JobSite,item?:SiteItem):SitePose {
+export function standingView(site:JobSite,item?:SiteItem,aspect=1):SitePose {
   const stair=site.kind==='home'&&site.building.rooms[1]==='Stair hall';
   const room=item?.room??site.room;
+  const heater=site.items.find(i=>i.fixture?.panelHeater);
+  if(room===0&&heater?.room===room)return fittedHeaterView(heater,'walk',aspect);
   const visit=(site.kind==='home'?homeVisit(room,stair):serviceVisit(site,room))??{position:[0,STAIR_EYE,1.6] as [number,number,number],yaw:0,pitch:0};
   if(!item)return visit;
   if(stair&&isStairStation(item.id)&&room===STAIR_LANDING.id)return visit;
@@ -42,6 +45,9 @@ export class SiteWalkInput {
   moveThumb(x:number,forward:number){this.thumb=true;this.stick=[x,forward];this.wake();}
   liftThumb(){this.thumb=false;this.stick=[0,0];}
   step(dir:string){this.nudge=[dir==='left'?-.25:dir==='right'?.25:0,dir==='up'?.25:dir==='down'?-.25:0];this.wake();}
+  /** Radians of yaw this frame. Drag-to-look keeps its own independent input. */
+  advanceSteering(dt:number){return this.stick[0]*1.8*Math.min(.045,Math.max(0,dt));}
+  turnStep(right:boolean){this.turnBy((right?1:-1)*Math.PI/12/.003,0);}
   turnBy(x:number,y:number){this.turn[0]+=x;this.turn[1]+=y;this.wake();}
   zoomBy(z:number){this.zoom+=z;this.wake();}
   setZoom(value:number){this.requestedZoom=value;this.wake();}
