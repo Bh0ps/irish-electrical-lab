@@ -28,6 +28,7 @@
 .book-shell:not(.book-landing) .simple-workspace .bench-status:not(:has(.attached-lesson)) { display:none; }
 .book-landing .learn-column { background:#fcfaf5; }
 .report-actions { display:flex; flex-wrap:wrap; gap:.5rem; }
+.mobile-lab .findings-group details > summary { min-height:44px; align-content:center; cursor:pointer; }
 .simple-lab .report-actions .quiet-button { min-height:44px; padding:6px 12px; }
 .wire-identification { padding:.45rem 0; }
 .wire-identification summary { cursor:pointer; }
