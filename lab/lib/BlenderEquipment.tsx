@@ -3,7 +3,7 @@ import { createPortal, useFrame, useThree, type ThreeEvent } from '@react-three/
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { equipmentAsset } from './equipment-assets';
-import { animateBlenderModel, prepareBlenderModel, presentBlenderModel, semanticOwner } from './blender-model';
+import { animateBlenderModel, disposeBlenderTerminalBatches, prepareBlenderModel, presentBlenderModel, semanticOwner } from './blender-model';
 import type { EquipmentProps } from './Equipment';
 
 interface CachedAsset {
@@ -18,6 +18,7 @@ const MAX_IDLE_ASSETS = 12;
 function trimIdleAssets() {
   const idle = Array.from(assets.entries()).filter(([, entry]) => entry.users === 0 && entry.source);
   for (const [url, entry] of idle.slice(0, Math.max(0, idle.length - MAX_IDLE_ASSETS))) {
+    if(entry.source)disposeBlenderTerminalBatches(entry.source);
     const geometry = new Set<THREE.BufferGeometry>();
     const materials = new Set<THREE.Material>();
     const textures = new Set<THREE.Texture>();
@@ -157,7 +158,8 @@ export function BlenderEquipment(props:EquipmentProps&{children?:React.ReactNode
     onModelAvailability(id,true);
     return ()=>onModelAvailability(id,false);
   },[missing,onModelAvailability,id]);
-  const presentation=useMemo(()=>source?prepareBlenderModel(source):undefined,[source]);
+  const batchDistantTerminals=lowOnly&&loaded?.url===lowUrl&&!props.selected&&props.view==='normal'&&!props.contactPiece;
+  const presentation=useMemo(()=>source?prepareBlenderModel(source,batchDistantTerminals):undefined,[source,batchDistantTerminals]);
   useEffect(()=>()=>presentation?.owned.forEach(material=>material.dispose()),[presentation]);
   useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,invalidate]);
   useFrame(({camera},dt)=>{if(presentation){

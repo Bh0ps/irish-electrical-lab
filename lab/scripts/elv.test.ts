@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {applyEquipmentVariant} from '../lib/components.ts';
+import {applyEquipmentVariant,equipmentPurpose} from '../lib/components.ts';
 import {getLesson} from '../lib/lessons.ts';
 import {getCoursebookActivities,createCoursebookBuild} from '../lib/coursebook.ts';
 import {measureVoltage,simulate} from '../lib/simulation.ts';
@@ -13,6 +13,15 @@ import {electricalKey} from '../lib/simulation-identity.ts';
 
 const doc=(id:number)=>structuredClone(getLesson(id)!.circuit);
 const ep=(component:string,terminal:string)=>({component,terminal});
+test('inspection uses the fitted LED driver and door switch when explaining a circuit',()=>{
+  const cupboard=doc(65), modules=doc(70);
+  const purpose=(d:typeof cupboard,id:string)=>equipmentPurpose(d.components.find(part=>part.id===id)!);
+  assert.match(purpose(cupboard,'door'),/door moves this switch/i);
+  assert.match(purpose(cupboard,'driver'),/steady DC voltage/i);
+  assert.match(purpose(modules,'cc'),/keep the current/i);
+  const saved={...modules.components.find(part=>part.id==='cc')!, variant:undefined};
+  assert.equal(equipmentPurpose(saved),purpose(modules,'cc'));
+});
 test('AC bell migration preserves software endpoints and existing deliberate conductor changes',()=>{
   const current=doc(43),old=structuredClone(current);
   for(const w of old.wires.slice(-3))w.role=w.from.terminal==='-'?'DC-':'DC+';

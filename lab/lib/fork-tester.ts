@@ -17,7 +17,7 @@ function driveOutput(doc:CircuitDocument,result:SimulationResult,reference:strin
   return reference!==undefined&&reference!=='mains'&&doc.components.some(c=>c.type==='vfd'&&['U','V','W'].some(t=>result.terminalVoltages[c.id+'.'+t]?.reference===reference));
 }
 function number(value:number,unit:string,signal:'AC'|'DC'|undefined,limit:number,places:number,explanation:string):ForkReading {
-  if(!Number.isFinite(value))return wait('The simulator could not resolve a value.',unit);
+  if(!Number.isFinite(value))return wait('The tester has no reading here.',unit);
   if(Math.abs(value)>limit)return {status:'overrange',value:null,shown:unit==='Ω'?'OL':'— — —',unit,signal,explanation:'This value exceeds the instrument range of '+limit+' '+unit+'.'};
   const shown=(Math.round(value*10**places)/10**places).toFixed(places);
   return {status:'value',value,shown,unit,signal,explanation};
@@ -59,7 +59,7 @@ export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:
   }
   const wire=doc.wires.find(w=>w.id===input.wire),unit=method==='fork-current'?'A':'V';
   if(!wire)return wait('Put one insulated core in the bottom of the open fork.',unit);
-  if(r.pwmWires?.includes(wire.id)||[wire.from,wire.to].some(e=>r.pwmTerminals?.includes(endpointKey(e))))return wait('This core carries a pulsed waveform. Compare the steady input or the calculated channel power.',unit);
+  if(r.pwmWires?.includes(wire.id)||[wire.from,wire.to].some(e=>r.pwmTerminals?.includes(endpointKey(e))))return wait('This wire switches on and off too quickly for the bench fork. Measure the supply going into the controller, or check the LED power.',unit);
   if(method==='fork-voltage'&&!r.branchCurrents['wire:'+wire.id])return wait('There is a break in this wire. Set the dial to V and put one probe on each end.',unit);
   const va=r.terminalVoltages[endpointKey(wire.from)],vb=r.terminalVoltages[endpointKey(wire.to)];
   if(!va||!vb||va.reference!==vb.reference)return wait('The bench cannot get a reading on this wire. Follow both ends and check where they connect.',unit);

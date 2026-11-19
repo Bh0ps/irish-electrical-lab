@@ -11,6 +11,13 @@ import type { CircuitDocument } from '../lib/types.ts';
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!;
 const copy=(id=7)=>structuredClone(lesson(id).circuit);
 const failed=(checks:ReturnType<typeof runLessonScenarios>)=>checks.filter(c=>c.status!=='pass');
+test('guided wiring distinguishes both N markings on the breaker and names the actual fitting',()=>{
+  const activities=getLessonActivities(lesson(7));
+  const neutralSteps=activities.filter(a=>a.kind==='connect'&&a.endpoints?.some(e=>e.component==='protect'&&['NIN','NOUT'].includes(e.terminal)));
+  assert.equal(neutralSteps.length,2);
+  assert.match(neutralSteps.find(a=>a.endpoints?.some(e=>e.terminal==='NIN'))!.instruction,/N · Supply/);
+  assert.match(neutralSteps.find(a=>a.endpoints?.some(e=>e.terminal==='NOUT'))!.instruction,/N · Load.*Hall light/);
+});
 test('all 80 authored operating sequences pass at requested and nominal supplies without mutating graphs or states',()=>{
   const failures:unknown[]=[];
   for(const l of LESSONS)for(const voltage of l.circuit.supply.phase==='single'?[230,240]:[400]){
@@ -130,7 +137,7 @@ test('available battery backup advances its energy state while delivering power,
 test('terminal teaching purposes identify coil, contacts, winding pairs and isolated AC output truthfully',()=>{
   const purpose=(type:string,id:string)=>COMPONENTS[type].terminals.find(t=>t.id===id)!.purpose;
   assert.match(purpose('contactor','A1'),/A1–A2/);assert.match(purpose('contactor','13'),/Normally open/);assert.match(purpose('contactor','21'),/Normally closed/);assert.match(purpose('overload','95'),/95–96/);
-  assert.match(purpose('motor3','U1'),/U2/);assert.match(purpose('transformer','+'),/AC secondary/);assert.match(purpose('transformer','-'),/not fixed DC polarity/);assert.equal(COMPONENTS.transformer.terminals.find(t=>t.id==='+')!.role,'output');
+  assert.match(purpose('motor3','U1'),/U2/);assert.match(purpose('transformer','+'),/AC secondary/);assert.match(purpose('transformer','-'),/SEC 1 and one on SEC 2/i);assert.doesNotMatch(purpose('transformer','+'),/positive|negative/i);assert.equal(COMPONENTS.transformer.terminals.find(t=>t.id==='+')!.role,'output');
   for(const def of Object.values(COMPONENTS))for(const t of def.terminals)assert.doesNotMatch(t.purpose,/function depends on the contact map/);
-  for(const l of LESSONS){const section=l.sections.find(s=>s.title==='Calculations and expected readings');assert.ok(section,`${l.id}: missing worked calculation`);assert.match(section.beginner,/[\d]/);assert.match(section.apprentice,/ΔV = I × Z/);}
+  for(const l of LESSONS){const section=l.sections.find(s=>s.title==='Work out the readings');assert.ok(section,`${l.id}: missing worked calculation`);assert.match(section.beginner,/[\d]/);assert.match(section.apprentice,/ΔV = I × Z/);}
 });

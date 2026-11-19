@@ -6,8 +6,9 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Equipment } from '../../lib/Equipment';
 import type { EquipmentView } from '../../lib/Equipment';
-import { COMPONENT_LIST, COMPONENTS } from '../../lib/components.ts';
+import { COMPONENT_LIST, COMPONENTS, equipmentPurpose } from '../../lib/components.ts';
 import { LESSONS } from '../../lib/lessons.ts';
+import { getComponentTerminals } from '../../lib/terminal-layout.ts';
 import { equipmentAssetKey } from '../../lib/equipment-assets';
 import type { ComponentInstance, DeviceState, Vec3 } from '../../lib/types.ts';
 
@@ -141,7 +142,7 @@ export default function ModelGallery() {
   const chosen = inventory.find(entry => entry.key === selection?.key);
   const selectedComponent = chosen?.companions?.find(component => component.id === selection?.componentId) ?? chosen?.component;
   const def = selectedComponent && COMPONENTS[selectedComponent.type];
-  const part = selection?.terminal ? def?.terminals.find(item => item.id === selection.part) : def?.parts.find(item => item.id === selection?.part);
+  const part = selection?.terminal && def && selectedComponent ? getComponentTerminals(selectedComponent, def).find(item => item.id === selection.part) : def?.parts.find(item => item.id === selection?.part);
   return <main className="mg-shell">
     <style>{`
       .mg-shell{height:100vh;overflow:auto;background:#0d171e;color:#edf4f2;font:14px/1.5 Arial,sans-serif;padding:28px 4vw 60px;box-sizing:border-box}
@@ -157,9 +158,9 @@ export default function ModelGallery() {
       @media(max-width:800px){.mg-shell{padding:20px 15px}.mg-top{display:block}.mg-top .mg-link{margin-top:15px}.mg-scene{height:480px}.mg-caption-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mg-batch-heading span{display:none}.mg-count{margin-left:0}}
       @media print{.mg-shell{height:auto;overflow:visible;padding:0}.mg-controls,.mg-link{display:none}.mg-batch{break-inside:avoid}.mg-scene{height:580px}}
     `}</style>
-    <header className="mg-top"><div><div className="mg-eyebrow">Irish Electrical Lab · Asset verification</div><h1>Original 3D equipment inventory</h1><p>Inspect every registry object and the distinct variants used by the lessons. Click a physical part or a terminal to read its purpose. These standalone previews have no live circuit simulation.</p></div><button className="mg-link" onClick={()=>window.location.assign(new URL('/',window.location.href).href)}>Return to study workbench</button></header>
+    <header className="mg-top"><div><div className="mg-eyebrow">Irish Electrical Lab</div><h1>Equipment gallery</h1><p>Choose a fitting, open its cover and pick a part to see what it does. To try it with power on, use the workbench.</p></div><button className="mg-link" onClick={()=>window.location.assign(new URL('/',window.location.href).href)}>Return to study workbench</button></header>
     <div className="mg-controls"><label>Inspection view<select aria-label="Gallery inspection view" value={view} onChange={e => setView(e.target.value as EquipmentView)}><option value="normal">Normal assembly</option><option value="open">Covers open</option><option value="exploded">Exploded assembly</option><option value="cutaway">Conceptual cutaway</option></select></label><label>Camera<select aria-label="Gallery camera side" value={side} onChange={e => setSide(e.target.value as CameraSide)}><option value="angle">Angled</option><option value="front">Front controls</option><option value="rear">Rear terminals</option></select></label><label><input type="checkbox" checked={animate} onChange={e => setAnimate(e.target.checked)} />Animate mechanisms</label><input aria-label="Search equipment gallery" type="search" placeholder="Find equipment or lesson…" value={filter} onChange={e => setFilter(e.target.value)} /><button className="mg-link" disabled={!chosen} onClick={()=>{setFocusedKey(chosen?.key);setSide('angle');}}>Focus selected equipment</button><button className="mg-link" onClick={()=>setFocusedKey(undefined)}>Show full inventory</button><span className="mg-count">{displayed.length} / {inventory.length} previews · {COMPONENT_LIST.length} equipment types</span></div>
-    <aside className="mg-inspector" aria-live="polite">{chosen && def ? <><strong>{selectedComponent?.params.gangModule ? `${selectedComponent.label} · ${selectedComponent.params.gangModule} module` : chosen.name} · {selection?.terminal ? `terminal ${selection.part}` : 'name' in (part ?? {}) ? (part as { name: string }).name : selection?.part}</strong><p>{part?.purpose ?? def.description}</p><small>{chosen.source}{chosen.companions?.length ? ' · One shared plate; independently selectable left/right modules and rear terminals.' : ''}{def.abstraction ? ` · ${def.abstraction}` : ''}</small></> : <><strong>Select an object, part or terminal</strong><p>All objects use original Blender assets with an offline procedural fallback. Covers and inspection views preserve terminal coordinates. Electronic boards and internal mechanisms are representative learning models.</p></>}</aside>
+    <aside className="mg-inspector" aria-live="polite">{chosen && def ? <><strong>{selectedComponent?.params.gangModule ? `${selectedComponent.label} · ${selectedComponent.params.gangModule} module` : chosen.name} · {selection?.terminal ? `terminal ${selection.part}` : 'name' in (part ?? {}) ? (part as { name: string }).name : selection?.part}</strong><p>{part?.purpose ?? equipmentPurpose(selectedComponent ?? chosen.component)}</p><small>{chosen.source}{chosen.companions?.length ? ' · One shared plate; independently selectable left/right modules and rear terminals.' : ''}{def.abstraction ? ` · ${def.abstraction}` : ''}</small></> : <><strong>Select an object, part or terminal</strong><p>Choose a fitting to see its markings. You can lift the cover or pull the parts apart for a closer look. Some inside parts are simplified.</p></>}</aside>
     {batches.map((entries, index) => <GalleryBatch key={index} entries={entries} index={index} view={view} animate={animate} side={side} selection={selection} onSelect={setSelection} />)}
     {!displayed.length && <div className="mg-empty">No equipment matches that search.</div>}
   </main>;

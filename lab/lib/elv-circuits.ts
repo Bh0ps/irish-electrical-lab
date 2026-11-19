@@ -21,7 +21,7 @@ export function wireElvLesson(b:Bench,id:number) {
   const lamp=(name:string,label:string,watts=12,voltage=24,variant='strip')=>add('led',name,label,{ratedVoltage:voltage,watts},variant);
   const contact=(name:string,label:string,from:Point=plus,closed=true,variant?:string)=>{add('switch',name,label,{closed},variant);link(from,[name,'COM']);};
   const push=(name:string,label:string,from:Point,role:TerminalRole='control')=>{add('pushbutton',name,label,{pressed:false},'bell-push');link(from,[name,'COM'],role);};
-  const relay=(name:string,voltage:number)=>add('relay',name,'Interface relay · isolated changeover contact',{ratedVoltage:voltage,coilWatts:1.2});
+  const relay=(name:string,voltage:number)=>add('relay',name,'Changeover relay',{ratedVoltage:voltage,coilWatts:1.2});
   const tx=()=>supply('tx','12 V AC bell transformer',12,'transformer');
   const ac1:Point=['tx','+'],ac2:Point=['tx','-'];
   const ac=(a:Point,to:Point)=>link(a,to,'output');
@@ -29,7 +29,7 @@ export function wireElvLesson(b:Bench,id:number) {
   if(![70,71,72,75,80].includes(id)) supply();
   switch(id){
     case 65:
-      contact('door','Cupboard door contact · closed with door open',plus,true,'door-contact');
+      contact('door','Cupboard door contact',plus,true,'door-contact');
       lamp('strip','Cupboard strip');link(['door','OUT'],['strip','L']);link(minus,['strip','N'],'DC-');break;
     case 66:
       for(const side of ['left','right']){
@@ -42,7 +42,7 @@ export function wireElvLesson(b:Bench,id:number) {
       for(const [pin,role] of [['L','DC+'],['N','DC-']] as const){
         link(['near',pin],['far',pin],role);b.wires[b.wires.length-1].resistance=2;
       }
-      add('isolator','inject','Additional feed · both poles',{closed:false});
+      add('isolator','inject','Extra feed switch',{closed:false});
       link(plus,['inject','LIN']);link(minus,['inject','NIN'],'DC-');
       link(['inject','LOUT'],['far','L']);link(['inject','NOUT'],['far','N'],'DC-');break;
     case 68:case 69:{
@@ -66,22 +66,22 @@ export function wireElvLesson(b:Bench,id:number) {
       tx();add('callchime','chime','Two-input AC chime');ac(ac1,['chime','AC1']);ac(ac2,['chime','AC2']);
       for(const [name,input] of [['front','FRONT'],['back','REAR']]){push(name,name+' door push',ac1,'output');ac([name,'NO'],['chime',input]);}break;
     case 73:
-      add('timer','hold','Visual call timer · 4 s run-on',{ratedVoltage:24,mode:'off-delay',on:true,demand:true,delay:4,requireInput:true});
+      add('timer','hold','Call light timer · 4 s',{ratedVoltage:24,mode:'off-delay',on:true,demand:true,delay:4,requireInput:true});
       push('call','Call button',plus);lamp('beacon','Call beacon',3);
       link(plus,['hold','L']);link(minus,['hold','N'],'DC-');link(['call','NO'],['hold','IN'],'control');
       link(['hold','OUT'],['beacon','L'],'control');link(minus,['beacon','N'],'DC-');break;
     case 74:{
       contact('door','Door contact · closes on opening',plus,false,'door-contact');
       const request:Point=['door','OUT'];lamp('lamp','Door-open indicator',3);
-      add('chime','buzzer','Audible warning · 24 V DC',{ratedVoltage:24,watts:3,doubleInsulated:true});
+      add('chime','buzzer','Door buzzer · 24 V DC',{ratedVoltage:24,watts:3,doubleInsulated:true});
       relay('memory',24);push('ack','Acknowledge warning',request);
       link(request,['lamp','L']);link(minus,['lamp','N'],'DC-');link(request,['memory','COM']);
       link(['memory','NC'],['buzzer','L'],'control');link(minus,['buzzer','N'],'DC-');
       link(['ack','NO'],['memory','A1'],'control');link(['memory','NO'],['memory','A1'],'control');link(minus,['memory','A2'],'DC-');break;
     }
     case 75:
-      supply('supply-a','Thermostat supply',24,'dcsupply');supply('equipment','Equipment demand supply',24,'dcsupply');
-      add('thermostat','stat','Room thermostat',{closed:true,temperature:18,setpoint:21});relay('interface',24);lamp('call','Equipment demand indicator',3);
+      supply('supply-a','Thermostat supply',24,'dcsupply');supply('equipment','Supply for the second circuit',24,'dcsupply');
+      add('thermostat','stat','Room thermostat',{closed:true,temperature:18,setpoint:21});relay('interface',24);lamp('call','Heat call indicator',3);
       link(['supply-a','+'],['stat','COM']);link(['stat','OUT'],['interface','A1'],'control');link(['supply-a','-'],['interface','A2'],'DC-');
       link(['equipment','+'],['interface','COM']);link(['interface','NO'],['call','L'],'control');link(['equipment','-'],['call','N'],'DC-');break;
     case 76:
@@ -90,7 +90,7 @@ export function wireElvLesson(b:Bench,id:number) {
       link(['enable','OUT'],['direction','COM']);link(['direction','A'],['actuator','OPEN'],'control');link(['direction','B'],['actuator','CLOSE'],'control');link(minus,['actuator','COM'],'DC-');break;
     case 77:
       add('selector','float','Condensate float · normal / high',{position:0},'float-changeover');
-      lamp('permit','Equipment permission indicator',3);lamp('alarm','High water alarm indicator',3);
+      lamp('permit','Run indicator',3);lamp('alarm','High water warning light',3);
       link(plus,['float','COM']);link(['float','A'],['permit','L'],'control');link(['float','B'],['alarm','L'],'control');
       link(minus,['permit','N'],'DC-');link(minus,['alarm','N'],'DC-');break;
     case 78:

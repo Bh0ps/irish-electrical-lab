@@ -26,7 +26,7 @@ function start(experiment: QuickPracticeExperiment) {
 
 for (const [index, params, check] of [
   [0, { closed: false }, [0]],
-  [1, { position: 1 }, [0, 'T2']],
+  [1, { position: 1 }, [0, 'L2']],
   [2, { level: .3 }, [5.4]],
   [4, { closed: false }, [0, 240]],
 ] as const) {

@@ -38,7 +38,7 @@ export function simulatePulses(document:CircuitDocument,previous:Record<string,D
       state.lightOutputPower=power;state.energized=power>.02;
       if(item.type==='cctstrip'){
         state.warmWatts=sum(r=>Number(r.deviceStates[item.id].warmWatts)||0);state.coolWatts=sum(r=>Number(r.deviceStates[item.id].coolWatts)||0);
-        state.details='Warm '+state.warmWatts.toFixed(1)+' W · cool '+state.coolWatts.toFixed(1)+' W, averaged over a pulse cycle.';
+        state.details=`Over one pulse cycle, the warm LEDs average ${state.warmWatts.toFixed(1)} W and the cool LEDs average ${state.coolWatts.toFixed(1)} W.`;
       }
     }
     const trip=samples.find(s=>s.result.deviceStates[item.id].tripped);

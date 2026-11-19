@@ -20,6 +20,10 @@ For model changes, preserve the authoritative rear layout in `lab/lib/terminal-l
 
 Document educational assumptions beside new electrical behaviour. Use current Irish terminology and primary public references for lesson content. Identify specialist, equipment-dependent and existing arrangements appropriately. The simulator is a study tool; it must not claim installation approval or manufacturer-specific certification.
 
+## Writing a lesson
+
+Give the learner something to do and something to look for. “Flick the landing switch. What happened to the lamp?” is enough for a first step. Keep the marking they can see on the fitting. For example, “COM is where the feed comes in on this switch.” When a test fails, name the part, say what the meter or lamp actually did, and give them one thing to check. Put the calculation and the exceptions in the expanded notes.
+
 ## Validate and review
 
 Run the source suite, type check, changed-module lint and production build described in the development guide. Add a meaningful regression case when fixing an electrical, evidence, progression or storage defect. Avoid tests that merely duplicate the implementation. Check the whole catalog for changes shared by multiple configurations.
