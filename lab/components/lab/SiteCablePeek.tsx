@@ -33,7 +33,9 @@ export default function SiteCablePeek({doc,site,selected,wireId,onChange,visit,p
   return <aside className="site-cable-peek" aria-label={kitchen?'Kitchen cable route':flex?'Heater cable route':'Cable behind the walls'}>
     <div><strong><Route size={15}/>{kitchen||heaterCore?'Follow the cable':'Behind the walls'}</strong><button aria-label="Hide cable route" onClick={()=>onChange(undefined)}><X size={16}/></button></div>
     <select aria-label="Installed wire to follow" value={wire.id} onChange={e=>onChange(e.target.value)}>{wires.map(w=><option key={w.id} value={w.id}>{text(w)}</option>)}</select>
-    {heaterCore&&<p className="bathroom-cable-note">The flex leaves the bottom of the switch and runs behind the heater. All three wires share this sheath.</p>}
+    {heaterCore&&<p className="bathroom-cable-note">{site.items.some(i=>i.fixture?.panelHeater)
+      ?'The flex leaves the bottom of the switch and enters the lower right of the heater. All three wires are inside it.'
+      :'The flex leaves the bottom of the switch and runs behind the heater. All three wires share this sheath.'}</p>}
     {bathroom&&bathroomWireNote(wire)&&<p className="bathroom-cable-note">{bathroomWireNote(wire)}</p>}
     {isStrapper(wire)&&<p className="bathroom-cable-note">This wire runs up behind the downstairs switch, under the landing and up to the other switch.</p>}
     {chimeMark&&<p className="bathroom-cable-note">This wire comes through K1 at the back of the chime and enters the clamp marked {chimeMark} from the left.</p>}

@@ -53,6 +53,8 @@ export interface AssetPresentation {
   doors:{node:THREE.Object3D;rest:THREE.Quaternion}[];
   shields:THREE.Object3D[];
   benchStands:THREE.Object3D[];
+  looseHeaterLead?:THREE.Object3D;
+  heaterScreen?:THREE.Object3D;
   fuseMarkings:{node:THREE.Object3D;amps:number}[];
   meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];pickingMaterial?:THREE.Material;cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   terminalBatches:THREE.Mesh[];
@@ -77,6 +79,8 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
     const part=semanticOwner(node).part??'';
+    if(node.userData.looseHeaterFlex)presentation.looseHeaterLead=node;
+    if(node.userData.plxeScreen)presentation.heaterScreen=node;
     const occupied=node.userData.matingBlade??node.userData.occupiedTerminal;
     if(occupied)presentation.receptacles.push({node,terminal:String(occupied)});
     if(typeof node.userData.fuseAmps==='number')presentation.fuseMarkings.push({node,amps:node.userData.fuseAmps});
@@ -130,8 +134,9 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
   if(component.type==='dimmer')return component.params.closed!==false;
   return state?.closed??component.params.closed!==false;
 }
-export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet',connectedTerminals=''):void{
-  const batch=view==='normal'&&!contactPiece;
+export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet',connectedTerminals='',installedHeaterFlex=false):void{
+  if(presentation.looseHeaterLead)presentation.looseHeaterLead.visible=!installedHeaterFlex;
+  const batch=view==='normal'&&!contactPiece&&!installedHeaterFlex;
   for(const mesh of presentation.terminalBatches)mesh.visible=batch;
   for(const clip of presentation.receptacles)clip.node.visible=connectedTerminals.split(' ').includes(clip.terminal);
   for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
@@ -141,6 +146,10 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
   for(const shield of presentation.shields)shield.visible=view==='normal'&&!component.params.frontOff;
   for(const cover of presentation.covers){
     cover.node.position.copy(cover.position);cover.node.quaternion.copy(cover.quaternion);
+    if(cover.node.userData.plxeLiftOff){
+      if(view==='open'||view==='exploded')cover.node.position.add(sourceVector([view==='open'?1.56:1.72,.12,.17]));
+      continue;
+    }
     if(cover.node.userData.captiveFcuCarrier){
       if(view==='open'||view==='exploded')cover.node.position.add(sourceVector([0,0,-.132]));
       continue;

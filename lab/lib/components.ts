@@ -2,6 +2,7 @@ import { dinDimensions, dinForm } from './din-devices.ts';
 import type { CircuitDocument, ComponentDefinition, ComponentInstance, TerminalDefinition, TerminalRole, Parameters, Vec3 } from './types';
 import { getComponentTerminals } from './terminal-layout.ts';
 import {CROMA_ENVELOPE,cromaTerminals} from './croma-chime';
+import {PLX_DEFAULTS} from './panel-heater';
 
 const purpose: Record<string, string> = {
   L: 'Line brings power to the fitting. Its usual marking is L.',
@@ -302,7 +303,7 @@ const physicalForms:Record<string,{id:string;name:string}[]>={
   terminal:[{id:'lever-connector',name:'Lever connector'},{id:'comb-busbar',name:'Insulated single-phase comb'}], fuse:[{id:'dc-fuse',name:'DC branch carrier'}],
   panel:[{id:'domestic',name:'Domestic consumer unit'},{id:'industrial',name:'Industrial cabinet'}],
   lamp:[{id:'bulb',name:'B22 bulb and holder'},{id:'downlight',name:'Recessed downlight'},{id:'batten',name:'Linear batten'}],
-  heater:[{id:'immersion',name:'Immersion assembly'},{id:'mat',name:'Underfloor heating mat'},{id:'storage',name:'Storage heater'}],
+  heater:[{id:'immersion',name:'Immersion assembly'},{id:'mat',name:'Underfloor heating mat'},{id:'storage',name:'Storage heater'},{id:'plx050e',name:'500 W wall panel heater · PLX050E'}],
   conduit:[{id:'conduit',name:'Conduit and gland'},{id:'trunking',name:'Slotted trunking'}],
   cable:[{id:'three-core',name:'Three-core cutaway'},{id:'five-core',name:'Five-core cutaway'}],
 };
@@ -342,6 +343,13 @@ const cromaDefinition:ComponentDefinition={
     :p.id==='cover'?{...p,name:'Frosted front panel',purpose:'Open the front panel to reach the five K1 connections.'}:p),
   terminals:cromaTerminals()
 };
+const plxeDefinition:ComponentDefinition={
+  ...COMPONENTS.heater, name:'500 W wall panel heater · PLX050E',size:[1.5,1.754,.72],defaults:PLX_DEFAULTS,
+  description:'Air enters below the heater and warm air leaves through the upper grille. The three-core flex supplies the heater and bonds its metal case to earth.',
+  abstraction:'The manual-mode thermostat compares the setting with a fixed study room temperature. The bench measures element power. The room temperature stays fixed during this exercise. The clock, timer profiles and cut-out mechanism are shown for recognition.',
+  terminals:getComponentTerminals({type:'heater',variant:'plx050e',label:'',params:{}},COMPONENTS.heater),
+  parts:COMPONENTS.heater.parts.map(p=>p.id==='thermal'?{...p,name:'Overheat cut-out',purpose:'An independent cut-out interrupts the element if the heater overheats.'}:p.id==='terminals'?{...p,name:'Three flex cores',purpose:'The three ends of the fitted flex connect to the wall accessory. There are no user wiring terminals on the front of the heater.'}:p),
+};
 const fanIsolatorDefinition:ComponentDefinition={
   ...COMPONENTS.isolator3, name:'Three-pole fan isolator',defaults:{...COMPONENTS.isolator3.defaults,currentRating:10},
   description:'One rocker disconnects the permanent line, switched line and neutral together. The light switch can still operate the bathroom light.',
@@ -349,6 +357,7 @@ const fanIsolatorDefinition:ComponentDefinition={
 };
 /** Named fittings can have their own terminal groups and mounting envelope. */
 export function definitionFor(item:Pick<ComponentInstance,'type'|'variant'>):ComponentDefinition {
+  if(item.type==='heater'&&item.variant==='plx050e')return plxeDefinition;
   if(item.type==='callchime'&&item.variant==='croma-100a')return cromaDefinition;
   if(item.type==='switch2')return bg812Definition;
   if(item.type==='switch'&&item.variant==='dc-rocker')return dcRockerDefinition;
@@ -362,6 +371,7 @@ export const getComponent = (type:string) => COMPONENTS[type];
 export const hasReplaceableFuse=(type:string)=>type==='fcu'||type==='fuse'||type==='plug';
 
 const variantPurpose: Record<string, string> = {
+  'heater:plx050e':plxeDefinition.description,
   'callchime:croma-100a':cromaDefinition.description,
   'switch:dc-rocker':dcRockerDefinition.description,
   'fan:xf100s':'Air comes in through the front grille and leaves through the round duct at the back. Under the cover are two motor connections, L and N. This double-insulated fan has no earth terminal. In the bathroom job a separate timer keeps it running.',
@@ -396,7 +406,14 @@ export function connectedTerminalMissing(doc:CircuitDocument,replacement:Compone
 export function applyEquipmentVariant(item:ComponentInstance,variant:string|undefined):ComponentInstance{
   if(item.variant===variant)return item;
   let params=item.params;
-  if(item.type==='fan'&&(variant==='xf100s'||item.variant==='xf100s')){
+  if(item.type==='heater'&&(variant==='plx050e'||item.variant==='plx050e')){
+    const defaults=definitionFor({...item,variant}).defaults;
+    params={...params,...defaults};
+    if(variant!=='plx050e'){delete params.setpoint;delete params.temperature;}
+    delete params.ohms;
+    if('power' in params)params.power=defaults.watts;
+    if('ratedVoltage' in params)params.ratedVoltage=defaults.nominalVoltage;
+  }else if(item.type==='fan'&&(variant==='xf100s'||item.variant==='xf100s')){
     const defaults=variant==='xf100s'?xf100sDefinition.defaults:COMPONENTS.fan.defaults;
     params={...params,...defaults};
     if(variant!=='xf100s')delete params.classII;

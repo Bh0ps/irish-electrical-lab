@@ -8,6 +8,8 @@ test('graphics preferences handle missing and invalid profiles and bound actual 
   for(const value of [undefined,null,[],true,'free',{version:2},new Date()])assert.deepEqual(normalisePresentationPreferences(value),DEFAULT_PRESENTATION_PREFERENCES);
   const valid={version:1,cameraMode:'free',cameraSpeed:8,scenery:'industrial',quality:'high'} as const;
   assert.deepEqual(normalisePresentationPreferences({...valid,draft:'ignored'}),valid);
+  assert.deepEqual(normalisePresentationPreferences({...valid,oneThumb:true}),{...valid,oneThumb:true});
+  assert.deepEqual(normalisePresentationPreferences({...valid,oneThumb:'false'}),valid);
   assert.equal(normalisePresentationPreferences({...valid,cameraSpeed:Infinity}).cameraSpeed,DEFAULT_PRESENTATION_PREFERENCES.cameraSpeed);
   assert.equal(normalisePresentationPreferences({...valid,cameraSpeed:1000}).cameraSpeed,12);
   assert.equal(normalisePresentationPreferences({...valid,cameraSpeed:-1000}).cameraSpeed,.5);

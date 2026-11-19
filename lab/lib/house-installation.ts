@@ -1,4 +1,4 @@
-import { FCU_BOX,heaterFlexRoute,fusedIncomingLead } from './fused-heater-site';
+import { FCU_BOX,KITCHEN_PANEL,heaterFlexRoute,fusedIncomingLead } from './fused-heater-site';
 import { COMPONENTS } from './components';
 import {BELL_CUPBOARD as serviceBoard,bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
 import {cromaLeadPath} from './croma-chime';
@@ -54,12 +54,18 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
   73:{call:frontPush},
   80:{push:frontPush},
 };
-export function houseFixing(id:number,c:ComponentInstance){if(c.mount)return;
+export function houseFixing(id:number,c:ComponentInstance,panelBranch=false){if(c.mount)return;
+  if(id===19){
+    if(c.id==='branch-fuse'&&c.type==='fcu'&&panelBranch)return back(HOME_POINTS.study.room,3.24,FCU_BOX.originY,HOME_BACK);
+    if(c.id==='fixed'&&c.type==='heater'&&c.variant==='plx050e')return back(HOME_POINTS.study.room,2.68,KITCHEN_PANEL.originY,HOME_BACK);
+  }
   if(id===20&&c.id==='fcu-switch'&&c.type==='fcu')return side(0,-2.2,FCU_BOX.originY,FCU_BOX.wallZ,-1);
+  if(id===20&&c.id==='fixed'&&c.type==='heater'&&c.variant==='plx050e')return side(0,-2.2,KITCHEN_PANEL.originY,KITCHEN_PANEL.wallZ,-1);
   return houseFixings[id]?.[c.id];}
 export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixture?:FixturePose):Vec3{
   let depth=COMPONENTS[c.type].size[2]*scale/2;
   if(fixture?.fusedHeater)depth=FCU_BOX.depth;
+  else if(fixture?.panelHeater)depth=0;
   else if(fixture?.worktopRocker)depth=ROCKER_BOX.depth;
   else if(fixture?.croma)depth=0;
   else if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
@@ -83,7 +89,7 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openR
   if(doc.lessonId===36&&item.fixture?.ceilingLight){
     return {pin,chase:[pin[0],bath.circuitHeight,pin[2]],riser:pin[2],item,component};
   }
-  const fixing=site.kind==='home'?houseFixing(doc.lessonId??0,component):undefined;
+  const fixing=site.kind==='home'?houseFixing(doc.lessonId??0,component,item.fixture?.fusedHeater):undefined;
   const service=site.kind!=='home'&&item.room===4?SERVICE_AREAS[site.kind]:undefined;
   const chase:Vec3=[...pin];
   if(fixing&&Math.abs(Math.sin(fixing.yaw))>.5)chase[0]=fixing.face[0]-Math.sin(fixing.yaw)*.065;
@@ -96,7 +102,8 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openR
     const open=typeof openRocker==='string'?openRocker===component.id:!!openRocker?.has(component.id);
     const lead=fusedIncomingLead(doc,item,wire,open);
     if(lead){
-      const entry=lead[lead.length-1],behind:Vec3=[chase[0],entry[1],entry[2]];
+      const entry=lead[lead.length-1],behind:Vec3=fixing&&Math.abs(Math.sin(fixing.yaw))>.5
+        ?[chase[0],entry[1],entry[2]]:[entry[0],entry[1],chase[2]];
       return {pin:lead[0],chase:behind,riser,item,component,lead:[...lead,behind]};
     }
   }
@@ -157,7 +164,8 @@ const same=(a:Vec3,b:Vec3)=>a.every((v,k)=>Math.abs(v-b[k])<.000001);
 export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire,openRocker?:string|ReadonlySet<string>):Vec3[]|undefined{
   const a=installedEnd(doc,site,wire.from,openRocker,wire),b=installedEnd(doc,site,wire.to,openRocker,wire);
   if(!a||!b)return;
-  const withdrawn=typeof openRocker==='string'?openRocker==='fcu-switch':!!openRocker?.has('fcu-switch');
+  const fuse=doc.lessonId===19?'branch-fuse':'fcu-switch';
+  const withdrawn=typeof openRocker==='string'?openRocker===fuse:!!openRocker?.has(fuse);
   const flex=heaterFlexRoute(doc,site,wire,withdrawn);
   if(flex)return flex;
   const points:Vec3[]=[];

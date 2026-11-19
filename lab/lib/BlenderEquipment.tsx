@@ -6,6 +6,7 @@ import { equipmentAsset } from './equipment-assets';
 import { animateBlenderModel, disposeBlenderTerminalBatches, prepareBlenderModel, presentBlenderModel, semanticOwner } from './blender-model';
 import type { EquipmentProps } from './Equipment';
 import {rockerConductiveSurface} from './dc-rocker';
+import {panelThermostat} from './panel-heater';
 
 interface CachedAsset {
   pending: Promise<THREE.Group>;
@@ -134,6 +135,20 @@ function DisplayText({node,reading}:{node:THREE.Object3D;reading:string}){
   return createPortal(<mesh position={screen.position} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[screen.dimensions.x*.89,screen.dimensions.z*.77]}/><meshBasicMaterial map={map} transparent toneMapped={false} depthWrite={false}/></mesh>,node);
 }
 
+/** Small powered LCD in manual mode. Its number is the thermostat target. */
+function HeaterScreen({node,setpoint}:{node:THREE.Object3D;setpoint:number}){
+  const texture=useMemo(()=>{
+    const canvas=document.createElement('canvas');canvas.width=152;canvas.height=124;
+    const ctx=canvas.getContext('2d');if(!ctx)return null;
+    ctx.fillStyle='#bec9ca';ctx.fillRect(0,0,152,124);
+    ctx.fillStyle='#243637';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='21px Arial';ctx.fillText('Manual',76,23);ctx.font='42px Arial';ctx.fillText(setpoint+'°C',76,74,144);
+    const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;return map;
+  },[setpoint]);
+  useEffect(()=>()=>texture?.dispose(),[texture]);
+  return texture?createPortal(<mesh position={[-33.7/300,5.93/300,0]} rotation={[-Math.PI/2,0,0]} raycast={()=>null}><planeGeometry args={[38.6/300,31.9/300]}/><meshBasicMaterial map={texture} toneMapped={false}/></mesh>,node):null;
+}
+
 function RatingText({node,text}:{node:THREE.Object3D;text:string}){
   const map=useMemo(()=>{
     const canvas=document.createElement('canvas');canvas.width=320;canvas.height=80;
@@ -159,10 +174,10 @@ export function BlenderEquipment(props:EquipmentProps&{children?:React.ReactNode
     onModelAvailability(id,true);
     return ()=>onModelAvailability(id,false);
   },[missing,onModelAvailability,id]);
-  const batchDistantTerminals=lowOnly&&loaded?.url===lowUrl&&!props.selected&&props.view==='normal'&&!props.contactPiece;
+  const batchDistantTerminals=lowOnly&&loaded?.url===lowUrl&&!props.selected&&props.view==='normal'&&!props.contactPiece&&!props.installedHeaterFlex;
   const presentation=useMemo(()=>source?prepareBlenderModel(source,batchDistantTerminals):undefined,[source,batchDistantTerminals]);
   useEffect(()=>()=>presentation?.owned.forEach(material=>material.dispose()),[presentation]);
-  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,invalidate]);
+  useEffect(()=>{if(presentation){presentBlenderModel(presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex);invalidate();}},[presentation,props.view,props.component,props.state,props.contactPiece,props.connectedTerminals,props.installedHeaterFlex,invalidate]);
   useFrame(({camera},dt)=>{if(presentation){
     if(!props.preferLowAsset&&!props.selected&&!props.lowDetail){const distance=camera.position.distanceTo(presentation.scene.getWorldPosition(new THREE.Vector3())),next=distance>(far?12:14);if(next!==far)setFar(next);}
     if(props.animate!==false&&animateBlenderModel(presentation,props.component,props.state,dt))invalidate();
@@ -190,5 +205,5 @@ export function BlenderEquipment(props:EquipmentProps&{children?:React.ReactNode
   const values={...props.definition.defaults,...props.component.params};
   const amp=Number(values.rating??values.currentRating??16),residual=Number(values.residualRating??Number(values.tripMa??30)/1000)*1000;
   const rating=type==='rcbo'?`${amp} A · ${Number(residual.toFixed(2))} mA`:['rcd','rcd3'].includes(type)?`${Number(residual.toFixed(2))} mA`:`${amp} A`;
-  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{props.children}{type!=='forktester'&&displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}{ratingPlates.map(node=><RatingText key={node.uuid} node={node} text={rating}/>)}</group>;
+  return <group userData={{equipmentSource:'Blender',assetKey:entry.galleryKey,lod:loaded?.url.endsWith('.low.glb')?'distance':'full'}} onClick={pick}><primitive object={presentation.scene} dispose={null}/>{props.children}{presentation.heaterScreen&&props.state?.heaterSupplied===true&&<HeaterScreen key={presentation.heaterScreen.uuid} node={presentation.heaterScreen} setpoint={panelThermostat(props.component.params).setpoint}/>}{type!=='forktester'&&displays.map(node=><DisplayText key={node.uuid} node={node} reading={reading}/>)}{ratingPlates.map(node=><RatingText key={node.uuid} node={node} text={rating}/>)}</group>;
 }

@@ -16,7 +16,7 @@ open source under the [MIT license](LICENSE).
   and a comparison of live simulated readings.
 - Walk through domestic, shop and industrial installations. Select a device by its drawing reference, follow a wire between terminals, or open it on the workbench.
 - Explore working extra-low-voltage systems including LED strips, bell pushes, DC sensors and isolated relay interfaces. Practise using a fork tester or preparing a connector in optional tool exercises.
-- Inspect **114 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
+- Inspect **115 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
 - Build freely with up to **80 components and 300 wires**, with individual terminal
   connections, undo/redo, selectable wires and editable equipment parameters.
 - Operate switches, timers, contactors, dimmers and motors. Correct guided wires

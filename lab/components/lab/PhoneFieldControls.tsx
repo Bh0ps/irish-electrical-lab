@@ -7,8 +7,9 @@ export type FieldAction={label:string;run:()=>void;selected?:boolean;disabled?:b
 interface Controls {
   place:string; jobOpen:boolean; hasJob:boolean; toolsOpen:boolean; leave:()=>void; job:()=>void;
   tools:(open:boolean)=>void; views:FieldAction[]; actions:FieldAction[];
+  steering?:{enabled:boolean;change:()=>void};
 }
-export function PhoneFieldControls({place,jobOpen,hasJob,toolsOpen,leave,job,tools,views,actions}:Controls) {
+export function PhoneFieldControls({place,jobOpen,hasJob,toolsOpen,leave,job,tools,views,actions,steering}:Controls) {
   const group=(label:string,items:FieldAction[])=><section className="field-tool-group">
     <h3>{label}</h3><div>{items.map(item=><button type="button" key={item.label} disabled={item.disabled}
       aria-pressed={item.selected} onClick={()=>{tools(false);item.run();}}>
@@ -22,6 +23,7 @@ export function PhoneFieldControls({place,jobOpen,hasJob,toolsOpen,leave,job,too
   </nav>
   <Dialog open={toolsOpen} onOpenChange={tools}><DialogContent className="field-dialog">
     <DialogHeader><DialogTitle>{hasJob?'Site tools':'Workbench tools'}</DialogTitle></DialogHeader>
+    {steering&&<label className="field-steering"><span><b>One-thumb walking</b><small>Use the side arrows to turn.</small></span><input type="checkbox" checked={steering.enabled} onChange={steering.change}/></label>}
     {group('View',views)}{group('Work on the circuit',actions)}
   </DialogContent></Dialog></>;
 }

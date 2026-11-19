@@ -115,8 +115,8 @@
 .stair-stations button{min-height:44px;padding:4px 9px;border:none;border-radius:5px;background:transparent;color:#263d31;font:inherit;font-size:.8rem;font-weight:650;cursor:pointer}
 .stair-stations button[aria-pressed=true]{color:#fff;background:#234d3b}
 .stair-stations button:focus-visible{outline:2px solid #ae762e;outline-offset:1px}
-.site-wall-switch[data-side=left] span{right:100%;left:auto}
-.site-wall-switch[data-side=left] span::before{left:100%;right:auto}
+.site-wall-switch:is([data-side=left],[data-overview]) span{right:100%;left:auto}
+.site-wall-switch:is([data-side=left],[data-overview]) span::before{left:100%;right:auto}
 
 .site-walk-stick {
   position:absolute; z-index:2; left:.75rem; bottom:4.5rem; touch-action:none; user-select:none; -webkit-user-select:none;

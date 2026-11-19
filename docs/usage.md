@@ -6,9 +6,9 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.17.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.18.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
-On a phone, **Full screen** beside the job title opens the room. Use **Move** to walk, drag to look and choose **Go closer** to reach a fitting. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
+On a phone, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
 
 Open **Chapters → Quick practice** to try a working circuit. Make a prediction, or choose **I’m not sure — let me try**. Use the switch, dial or Start button on the lesson card or on the equipment itself. Compare the readings before and after. **Back to lesson** opens the full course.
 
@@ -16,7 +16,7 @@ The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a po
 
 ## Try a kitchen repair
 
-Open **Chapters → The heater stays cold**. Work the wall switch and take two readings on the virtual bench. Once you have found the fault, choose **Find repair on site**. Switch off the simulated supply and open the fitting. The back box stays on the wall while the plate comes forward. Look for the loose wire from the heater flex. Tap its terminal or choose **Reconnect flex** to use the printed markings. Restore the supply and choose **Test the repair**.
+Open **Chapters → The heater stays cold**. Work the wall switch and take two readings on the virtual bench. Once you have found the fault, choose **Find repair on site**. Switch off the simulated supply and open the fitting. The back box stays on the wall while the plate comes forward. Look for the loose wire from the heater flex. Tap its terminal or choose **Reconnect flex** to use the printed markings. Restore the supply. Switch the heater off, check its watts, then switch it back on. Choose **Test the repair** once you’ve seen it draw power again. This room stays at 18 °C so you can also try the heater’s manual temperature setting.
 
 ## Read a fitting or a meter
 
@@ -131,7 +131,7 @@ Replacing changed work offers **Save and continue**, **Discard and continue**, o
 
 Use **Show terminals** to turn the workbench to the wiring side. On the updated switches, lamp holder, rose, socket and fused connection unit, select a detail or look under **Recognise this fitting** to find out what it does. On the double socket, for example, the pressed metal strap joins the two earth terminals. On the ceiling rose, the permanent loop terminals stay separate from the switched feed to the lamp. The shaver lesson shows the transformer separately on the bench so you can measure its input and output.
 
-There are 114 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
+There are 115 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
 
 The environments use locally generated albedo, roughness and normal textures with local reflections. Contact shading, restrained emitter bloom and antialiasing run while frames are needed; **More → Graphics and supply settings → Graphics quality** selects automatic, high or economy settings. Each lamp's dynamic light follows its actual emitting power. Available dynamic-light slots are bounded for performance; all lamps retain their own power-driven surface brightness. Optical output is an illustrative proxy, not a lighting-design calculation.
 

@@ -24257,5 +24257,210 @@
     ],
     "meshNodes": 63,
     "vertices": 3844
+  },
+  {
+    "key": "heater_plx050e",
+    "file": "heater_plx050e.json",
+    "galleryKey": "heater:plx050e",
+    "name": "Study panel heater",
+    "component": {
+      "id": "gallery-83",
+      "type": "heater",
+      "label": "Study panel heater",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "watts": 500,
+        "nominalVoltage": 240,
+        "temperature": 18,
+        "setpoint": 21,
+        "power": 500
+      },
+      "variant": "plx050e"
+    },
+    "definition": {
+      "type": "heater",
+      "name": "Heating assembly",
+      "group": "Heating",
+      "model": "heater",
+      "description": "Current through the element makes heat. The immersion, floor mat and storage heater each use that principle.",
+      "terminals": [
+        {
+          "id": "L",
+          "label": "L",
+          "role": "L",
+          "purpose": "Line brings power to the fitting. Its usual marking is L.",
+          "anchor": [
+            -0.24769230769230768,
+            0.3823793103448276,
+            -0.4429411764705883
+          ],
+          "group": "Heating supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "N",
+          "label": "N",
+          "role": "N",
+          "purpose": "Neutral carries current back to the supply while the load is on.",
+          "anchor": [
+            0,
+            0.3823793103448276,
+            -0.4429411764705883
+          ],
+          "group": "Heating supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "PE",
+          "label": "PE",
+          "role": "PE",
+          "purpose": "Earth connection for the fitting. The earth path stays connected when the switch opens.",
+          "anchor": [
+            0.24769230769230768,
+            0.3823793103448276,
+            -0.4429411764705883
+          ],
+          "group": "Heating supply",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "watts": 1000,
+        "nominalVoltage": 240
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The case holds the working parts in place and keeps them apart."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "Lift the cover on the bench to see the connections underneath."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "element",
+          "name": "Heating element",
+          "purpose": "Current heats the element. With the same resistance, doubling the voltage gives four times the heating power."
+        },
+        {
+          "id": "thermal",
+          "name": "Thermal protection",
+          "purpose": "A sustained overload heats this part until the protection trips. Trip times in the lab are approximate."
+        }
+      ],
+      "size": [
+        1.4,
+        1.3,
+        1
+      ],
+      "variants": [
+        {
+          "id": "immersion",
+          "name": "Immersion assembly"
+        },
+        {
+          "id": "mat",
+          "name": "Underfloor heating mat"
+        },
+        {
+          "id": "storage",
+          "name": "Storage heater"
+        },
+        {
+          "id": "plx050e",
+          "name": "500 W wall panel heater · PLX050E"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "L",
+        "label": "L",
+        "role": "L",
+        "purpose": "Brown live core in the heater’s factory-fitted lead. This core supplies the heater controller and element.",
+        "anchor": [
+          0.5116666666666667,
+          0.13,
+          -0.3
+        ],
+        "group": "Fitted flex",
+        "scale": 0.36,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "N",
+        "label": "N",
+        "role": "N",
+        "purpose": "Blue neutral core in the heater’s factory-fitted lead. This core supplies the heater controller and element.",
+        "anchor": [
+          0.625,
+          0.13,
+          -0.3
+        ],
+        "group": "Fitted flex",
+        "scale": 0.36,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "PE",
+        "label": "E",
+        "role": "PE",
+        "purpose": "Green and yellow earth core in the heater’s factory-fitted lead. It bonds the metal case to earth.",
+        "anchor": [
+          0.7383333333333333,
+          0.13,
+          -0.3
+        ],
+        "group": "Fitted flex",
+        "scale": 0.36,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 59,
+    "vertices": 6351
   }
 ]

@@ -1,6 +1,7 @@
 import { dinPort } from './din-devices.ts';
 import {rockerBladeY} from './dc-rocker';
 import {fcuWireMouths} from './bg851';
+import {plxeTerminals} from './plxe';
 import {cromaTerminals} from './croma-chime';
 import type { ComponentDefinition, ComponentInstance, TerminalDefinition, Vec3 } from './types';
 
@@ -31,6 +32,7 @@ export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'vari
 }
 
 export function getComponentTerminals(component: Pick<ComponentInstance, 'type' | 'label' | 'variant' | 'params'>, definition: ComponentDefinition): TerminalDefinition[] {
+  if(component.type==='heater'&&component.variant==='plx050e')return plxeTerminals(definition.terminals);
   if(component.type==='callchime'&&component.variant==='croma-100a')return cromaTerminals();
   if(component.type==='switch'&&component.variant==='dc-rocker')return definition.terminals.map(t=>{
     const middle=t.id==='COM';

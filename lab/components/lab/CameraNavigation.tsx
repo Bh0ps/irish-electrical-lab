@@ -33,6 +33,7 @@ const heldInput=(keys:Set<string>):CameraInput=>({
 });
 function presetPose(props:CameraNavigationProps,camera:THREE.Camera,canvas:HTMLCanvasElement):CameraPose {
   const action=props.cameraCommand.action,selected=props.document.components.find(c=>c.id===props.selected),focus=!!selected&&['focus','focus-service-detail','rear'].includes(action);
+  const heaterControls=selected?.type==='heater'&&selected.variant==='plx050e'&&props.selectedPart==='detail:plxe-controls';
   const drawer=selected?.type==='fcu'&&['fuse','detail:851-cartridge','detail:851-fuse-drawer'].includes(props.selectedPart??'');
   const starter=action==='first-light'&&props.document.lessonId===7;
   const wirePoints=action==='focus-wire'&&props.selectedWire?props.routing.routes.get(props.selectedWire):undefined;
@@ -57,7 +58,7 @@ function presetPose(props:CameraNavigationProps,camera:THREE.Camera,canvas:HTMLC
     target.addScaledVector(cameraUp,framing*Math.tan(fov/2)*covered);
     offset.multiplyScalar(framing);
   }
-  else if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else if(drawer)offset.set(1.80,.36,1);else offset.set(.28,.2,1);offset.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);offset.multiplyScalar(inspectionDistance(bounds,offset,aspect,fov));}
+  else if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else if(drawer)offset.set(1.80,.36,1);else if(heaterControls)offset.set(.13,1,.18);else offset.set(.28,.2,1);offset.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);offset.multiplyScalar(inspectionDistance(bounds,offset,aspect,fov));}
   else if(action==='rear')offset.set(0,distance*.25,-distance);
   const position=target.clone().add(offset).toArray() as Vec3,to=target.toArray() as Vec3;
   return {position,target:to,quaternion:cameraLookQuaternion(position,to)};

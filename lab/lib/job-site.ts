@@ -1,12 +1,14 @@
 import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Vec3 } from './types';
 import { fixturePoint, physicalFixture, isStrip, type FixturePose } from './site-fixtures.ts';
 import {seatPosition} from './board-assembly';
+import {KITCHEN_PANEL} from './fused-heater-site';
+import {PLXE_MM_PER_UNIT} from './plxe';
 import { COMPONENTS } from './components';
 import {bellServicePart,bellServicePose} from './bell-cupboard';
 import {fittedKitchenDriver,KITCHEN_LIGHTS as kitchen} from './kitchen-lighting';
 import {BATH_EXTRACT as bath} from './bathroom-extract';
 import { houseFixing, onWall } from './house-installation';
-import { HOME_ROOMS, REAR_GARDEN, STAIR_LANDING, walkHome } from './home-floorplan';
+import { HOME_ROOMS, REAR_GARDEN, STAIR_LANDING, walkHome,type FloorBox } from './home-floorplan';
 import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
 
 export type SiteKind = 'home' | 'plant' | 'shop' | 'workshop' | 'works';
@@ -46,7 +48,7 @@ export const JOBS: Record<number,Job> = {
   78:work(0,'Proximity switch'),79:works(2,'DC distribution'),80:home(3,'Entrance installation'),
 };
 export interface SiteItem { id:string; ref:string; room:number; position:Vec3; rotation:number; scale:number; fixture?:FixturePose }
-export interface JobSite {kind:SiteKind; building:Building; name:string; room:number; items:SiteItem[]; first?:string; location:(room:number)=>string}
+export interface JobSite {kind:SiteKind; building:Building; name:string; room:number; items:SiteItem[]; first?:string; floorObstacle?:FloorBox; location:(room:number)=>string}
 const letters:Record<string,string>={source:'U',source3:'U',meter:'P',panel:'DB',gammaboard:'DB',invictaboard:'DB',mcb:'QF',mcb3:'QF',rcbo:'QF',rcd:'FI',rcd3:'FI',isolator:'QS',isolator3:'QS',fuse:'F',transformer:'T',driver:'PS',dcsupply:'PS',relay:'K',contactor:'KM',motor:'M',motor3:'M',valve:'Y',valve3:'Y',fan:'M',pump:'M',lamp:'E',led:'E',indicator:'H',chime:'HA',heater:'R',socket:'X',shaveroutlet:'X',socket3:'X',terminal:'X',pushbutton:'S',switch:'S',switch2:'S',sensor:'B',plc:'A',thermostat:'B'};
 const isSupply=(c:ComponentInstance)=>/^(source3?|mcb3?|rcbo|rcd3?|meter|panel|earthbar|neutralbar|spd|board|enclosure|busbar|invictaboard|gammaboard)$/.test(c.type)||/^(supply|protect|board|group|branch\d+|main-isolator)$/.test(c.id);
 function roomFor(c:ComponentInstance,id:number,room:number) {
@@ -94,6 +96,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
   const all=[...(reference?.components??doc.components)];
   const known=new Set(all.map(c=>c.id));
   for(const c of doc.components)if(!known.has(c.id))all.push(c);
+  const panelBranch=id===19&&all.some(c=>c.id==='fixed'&&c.type==='heater'&&c.variant==='plx050e');
   const counts:Record<string,number>={}, slots=new Map<string,number>();
   const items=all.map(c=>{
     const area=roomFor(c,id,room), prefix=letters[c.type]??(/led|light|strip/.test(c.type)?'E':/sensor|proximity/.test(c.type)?'B':'A');
@@ -117,7 +120,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     if(id===80&&c.id==='courtesy'){x=.99;y=2.07;z=FRONT+.11;}
     const cabinets = kind === 'home' && area === 0 && [13,65,66,68,69].includes(id);
     const atBackWall = !outside && Math.abs(z - (BACK + .11)) < .0001;
-    const mapped=kind==='home'?houseFixing(id,c):undefined;
+    const mapped=kind==='home'?houseFixing(id,c,panelBranch):undefined;
     if(id===36&&!c.mount&&c.id==='light'&&c.type==='lamp'&&c.variant==='downlight'){
       // The bezel is 86 mm across. Its face points down into a ceiling cut-out.
       const scale:Vec3=[.086/.556,.086/.649,.11];
@@ -133,7 +136,11 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
       return {id:c.id,ref,room:0,position:[...kitchen.driver] as Vec3,rotation:0,scale:.1,fixture:{scale:[.1,.1,.1] as Vec3,kitchenDriver:true}};
     }
     let fixture = physicalFixture(c, !!mapped||atBackWall, cabinets,!!mapped&&(id===71||id===72));
-    if(id===20&&c.id==='fcu-switch'&&c.type==='fcu'&&fixture)fixture={...fixture,fusedHeater:true};
+    if((id===20&&c.id==='fcu-switch'||panelBranch&&c.id==='branch-fuse')&&c.type==='fcu'&&fixture)fixture={...fixture,fusedHeater:true};
+    if((id===19||id===20)&&c.id==='fixed'&&c.type==='heater'&&c.variant==='plx050e'&&mapped){
+      const s=PLXE_MM_PER_UNIT/1000;
+      fixture={scale:[s,s,s],panelHeater:true};
+    }
     if(id===36&&!c.mount&&c.id==='runon'&&c.type==='timer')fixture={scale:[.044,.052,.088],serviceBox:'timer'};
     if(id===36&&!c.mount&&c.id==='fan-cpc'&&c.type==='terminal')fixture={scale:[.024,.026,.029],serviceBox:'cpc'};
     let scale = physicalHeight(c) / Math.max(.1, COMPONENTS[c.type]?.size[1] ?? 1);
@@ -178,7 +185,11 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
   const load=(id===24?all.find(c=>c.type==='shaveroutlet'):undefined)??all.find(c=>['gammaboard','invictaboard'].includes(c.type))
     ??(id===3?all.find(c=>c.type==='rcbo'):id===5?all.find(c=>c.type==='spd'):undefined)
     ??all.find(c=>/switch|pushbutton|dimmer|pwmcontrol/.test(c.type)&&roomFor(c,id,room)===room)??all.find(c=>roomFor(c,id,room)===room&&!isSupply(c));
-  return {kind,building,name,room,items,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):id===9&&r===STAIR_LANDING.id?STAIR_LANDING.name:rooms[r]??(kind==='home'?HOME_ROOMS.find(space=>space.id===r)?.name:r===4?SERVICE_AREAS[kind].name:undefined)??name};
+  const panel=items.find(i=>i.fixture?.panelHeater&&installed.has(i.id));
+  const kitchenPanel=panel?.room===0;
+  const floorObstacle=panel?{x:panel.position[0]-(kitchenPanel?KITCHEN_PANEL.depth/2:0),z:panel.position[2]+(kitchenPanel?0:KITCHEN_PANEL.depth/2),
+    w:kitchenPanel?KITCHEN_PANEL.depth:KITCHEN_PANEL.width,d:kitchenPanel?KITCHEN_PANEL.width:KITCHEN_PANEL.depth}:undefined;
+  return {kind,building,name,room,items,floorObstacle,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):id===9&&r===STAIR_LANDING.id?STAIR_LANDING.name:rooms[r]??(kind==='home'?HOME_ROOMS.find(space=>space.id===r)?.name:r===4?SERVICE_AREAS[kind].name:undefined)??name};
 }
 export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wiring'{
   if(!lesson)return 'wiring';
@@ -187,7 +198,7 @@ export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wi
 }
 /** Stop at the walls while allowing passage through the same openings shown on the floor plan. */
 export function walkStep(from:Vec3,dx:number,dz:number,site?:JobSite):Vec3{
-  if(site?.kind==='home')return walkHome(from,dx,dz,site.building.rooms[1]==='Bathroom',site.building.rooms[1]==='Stair hall');
+  if(site?.kind==='home')return walkHome(from,dx,dz,site.building.rooms[1]==='Bathroom',site.building.rooms[1]==='Stair hall',site.floorObstacle);
   if(site)return walkService(from,dx,dz,site.kind);
   const radius=.16;let [x,y,z]=from;
   const clamp=(v:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,v));

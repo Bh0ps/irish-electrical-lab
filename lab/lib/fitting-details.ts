@@ -37,6 +37,14 @@ const breaker:Feature[]=[
 ];
 const residualBreaker:Feature[]=[...breaker,['contact-indicator','contacts','Contact window','This little window shows whether the contacts are open or closed. It cannot tell you whether there is voltage at a terminal.','front']];
 const byModel:Record<string,Feature[]>={
+  'heater:plx050e':[
+    ['plxe-inlet','body','Cool air inlet','Air enters at the bottom of the case, passes the heating element and leaves through the upper grille.','front'],
+    ['plxe-outlet','cover','Upper air outlet','Look between the white blades. The open gaps allow warm air to leave the front of the heater.','front'],
+    ['plxe-controls','body','Manual temperature control','The top-right panel has six touch keys. Use the two arrows to lower or raise the target room temperature.','front'],
+    ['plxe-fitted-flex','body','Factory-fitted flex','The flexible cord enters at the lower right. The wall switch disconnects line and neutral. The green and yellow core stays joined to the case.'],
+    ['plxe-wall-bracket','mounting','Wall bracket','Two lower hooks and two upper spring latches hold the heater on a steel H-frame.'],
+    ['heat-transfer-construction','element','Finned element','The element heats the aluminium fins. Air carries heat away. In the lab you can check the electrical power with the meter.','front'],
+  ],
   'switch:dc-rocker':[
     ['rg-rocker','actuator','Black rocker','Press one end to close the contact. Press the other to open it. The rocker stays where you leave it.','front'],
     ['rg-clips','mounting','Panel clips','The ridged spring clips squeeze in as the switch enters the rectangular cutout, then hold the frame against the panel.'],

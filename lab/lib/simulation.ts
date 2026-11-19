@@ -1,3 +1,4 @@
+import {isPanelHeater,panelThermostat} from './panel-heater.ts';
 import { simulatePulses } from './pulse-simulation.ts';
 import { definitionFor as definition, hasReplaceableFuse } from './components.ts';
 import { endpointKey, type CircuitDocument, type Complex, type ComponentInstance, type DeviceState, type Diagnostic, type Endpoint, type Parameters, type SimulationEvent, type SimulationResult } from './types.ts';
@@ -283,6 +284,7 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
     } else if (loadTypes.has(item.type) || has('L') && has('N') && !converterTypes.has(item.type)) {
       let factor = faults.some(f => f.component === item.id && f.type === 'overload') ? 4 : 1;
       if (item.type === 'emergency') factor = state.normalActive ? 1 : Math.max(0.01, number(p, 'standbyWatts', 1)) / watts;
+      if(isPanelHeater(item)&&!panelThermostat(p).calling)continue;
       const resistance = item.type==='led'&&state.reverseBlocked?1e8:number(p, 'ohms', nominal * nominal / watts) / factor;
       const pf = isType(item, 'motor', 'pump', 'fan', 'heatpump') ? clamp(number(p, 'powerFactor', 0.8), 0.1, 1) : 1;
       resistor(`${item.id}.load`, T('L'), T('N'), resistance * pf * pf, item.id, true, resistance * pf * Math.sqrt(1 - pf * pf));
@@ -773,6 +775,12 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
       state.energized = Math.min(...magnitudes) > 100; state.level = Math.min(...magnitudes) / (document.supply.voltage / Math.sqrt(3)); state.details = `Phase-to-neutral voltages ${magnitudes.map(v => v.toFixed(1)).join(' / ')} V.`;
     } else if (item.type === 'spd') {
       state.energized = powered; state.details = flag(p, 'healthy', true) ? 'The surge device is marked healthy. The bench does not generate a surge.' : 'The surge device is marked faulty.';
+    } else if (isPanelHeater(item)) {
+      const {calling}=panelThermostat(p);
+      state.heaterSupplied=supplyMagnitude>=nominal*.85;
+      state.energized=state.heaterSupplied&&calling;
+      state.level=state.energized?supplyMagnitude/nominal:0;
+      state.details=!state.heaterSupplied?'No working supply at the heater.':calling?'The thermostat is calling for heat.':'The room is at or above the heat setting.';
     } else if (loadTypes.has(item.type) || definition(item)?.terminals.some(t => t.id === 'L') && definition(item)?.terminals.some(t => t.id === 'N')) {
       state.energized = supplyMagnitude > nominal * 0.05; state.level = supplyMagnitude / nominal;
       state.details = supplyV ? `${supplyMagnitude.toFixed(1)} V between line and neutral.` : 'The bench cannot give a voltage between these terminals.';
@@ -811,6 +819,15 @@ function simulateSteady(document: CircuitDocument, previousDeviceStates: Record<
   if (document.components.some(item => definition(item)?.abstraction)) diagnostics.push(diag('abstraction', 'What the bench measures', 'The bench calculates steady readings. It leaves out the brief surge at switch-on, the shape of the voltage wave and motor turning force. Trip times on the bench are for practice.', undefined, 'info', 'model'));
   const componentPower: Record<string, number> = {};
   for (const b of net.branches) if (b.component && b.power) { const v = voltage(solved, b.a, b.b); if (v) componentPower[b.component] = (componentPower[b.component] || 0) + Math.max(0, power(v, solved.currents[b.key] || c())); }
+  for(const item of document.components.filter(isPanelHeater)){
+    const state=states[item.id];
+    delete state.elementWatts;
+    if(!stable||!solved.valid)continue;
+    const branch=net.branches.find(b=>b.key===item.id+'.load');
+    const current=solved.currents[item.id+'.load'];
+    if(!branch)state.elementWatts=0; // The thermostat has opened the element path.
+    else if(current)state.elementWatts=abs(current)**2*branch.z.re;
+  }
   // Optical presentation consumes emitter power, rather than a binary operating
   // threshold or a nearby dimmer's knob. Emergency charging is not illumination.
   for (const item of document.components) if (isType(item, 'lamp', 'light', 'led', 'emergency')) {
