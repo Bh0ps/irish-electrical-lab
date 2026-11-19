@@ -4,6 +4,7 @@
 
 - The 80 lessons use practical fitting names and shorter instructions. The notes on a 350 mA driver describe what happens to its current. The door contact and float switch each have their own explanation.
 - Both bench meters show saved readings with their measuring points. The help explains what zero volts and OL can tell you, and when the bench has no reading.
+- Returning from Measure while connecting a wire keeps the first terminal and the camera position.
 - Large builds draw the fixed hardware on distant terminals in fewer passes. Each screw and wire opening keeps its shape and material. Selecting a terminal, connecting a wire and placing a probe still use the original model.
 
 ## 1.8.0 — On the landing
