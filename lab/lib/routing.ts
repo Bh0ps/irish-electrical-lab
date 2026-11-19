@@ -6,6 +6,7 @@ import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint,
 import { cableCores } from './cables.ts';
 import { cableFace, cableProfile, coreSeat, type CableFace } from './cable-form.ts';
 import {rockerProbeApproach,rockerProbeContact,rockerSleeveEndZ} from './dc-rocker';
+import {bg812Contact} from './wall-rocker';
 
 // Shared with the renderer: selection changes colour, never the cable diameter.
 export const WIRE_RADIUS = .018;
@@ -62,6 +63,10 @@ export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;norm
   const c=doc.components.find(item=>item.id===e.component);
   if(c?.type==='switch'&&c.variant==='dc-rocker'&&['COM','OUT'].includes(e.terminal))
     return {position:localToWorld(c,rockerProbeContact(e.terminal)),normal:rotateDirection(c.rotation,rockerProbeApproach)};
+  if(c?.type==='switch2'){
+    const contact=bg812Contact(e.terminal);
+    if(contact)return {position:localToWorld(c,contact.position),normal:rotateDirection(c.rotation,contact.normal)};
+  }
   return {position:terminalPosition(doc,e),normal:terminalDirection(doc,e)};
 }
 
@@ -69,7 +74,12 @@ export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;norm
  * Local positions are in 100 mm units, measured against the XF100S study mesh.
  * Keep the shafts parallel as they share the 17 × 11 mm hole in the backplate.
  */
-function terminalPassage(c:ComponentInstance|undefined,anchor:Vec3):Vec3[] {
+function terminalPassage(c:ComponentInstance|undefined,anchor:Vec3,singleCore=true):Vec3[] {
+  if(c?.type==='switch2'&&singleCore){
+    // A single core leaves the rear clamp straight before it bends. Shared
+    // mouths keep the router's normal per-core fan-out and distinct paths.
+    return [anchor,add(anchor,scale(rotateDirection(c.rotation,[0,0,-1]),.115))];
+  }
   if(c?.type==='switch'&&c.variant==='dc-rocker'){
     const local=worldToLocal(c,anchor);
     // The crimp grips the wire along the blade; keep the insulation straight
@@ -117,6 +127,9 @@ function obstaclesFor(doc:CircuitDocument):Obstacle[] {
     if(component.type==='switch'&&component.variant==='dc-rocker'){
       min=[-.232,.052,-1.05];max=[.232,.908,.165];
     }
+      if(component.type==='switch2'){
+        min=[-.431,.220,-.146];max=[.431,1.082,.093];
+      }
     const din=dinForm(component.type);
     if(din){
       min[1]=DIN_BENCH_LIFT;max[1]=def.size[1];
@@ -437,7 +450,7 @@ function planHarness(doc:CircuitDocument,priority:Set<string>,reserveBreakouts:b
     .sort((a,b)=>Number(priority.has(b.w.id))-Number(priority.has(a.w.id))||neighbours.get(keyOf(b.e))!.length-neighbours.get(keyOf(a.e))!.length||keyOf(a.e).localeCompare(keyOf(b.e))||a.w.id.localeCompare(b.w.id));
   const owners=new Map(doc.components.map(c=>[c.id,c]));
   const anchors=new Map(entries.map(({e})=>[keyOf(e),harness.heads.get(e.component)?.point??terminalPosition(doc,e)]));
-  const passages=new Map(entries.map(({e})=>[keyOf(e),terminalPassage(owners.get(e.component),anchors.get(keyOf(e))!)]));
+  const passages=new Map(entries.map(({e})=>[keyOf(e),terminalPassage(owners.get(e.component),anchors.get(keyOf(e))!,neighbours.get(keyOf(e))!.length===1)]));
   const directions=new Map(entries.map(({e})=>{
     const sleeve=passages.get(keyOf(e))!;
     return [keyOf(e),sleeve.length>1?rotateDirection(owners.get(e.component)!.rotation,[0,0,-1]):harness.heads.get(e.component)?.outward??terminalDirection(doc,e)];

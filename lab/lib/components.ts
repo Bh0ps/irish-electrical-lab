@@ -306,6 +306,12 @@ const physicalForms:Record<string,{id:string;name:string}[]>={
 };
 for(const def of defs)if(physicalForms[def.type])def.variants=physicalForms[def.type];
 export const COMPONENTS: Record<string,ComponentDefinition> = Object.fromEntries(defs.map(d=>[d.type,d]));
+const bg812Definition:ComponentDefinition={
+  ...COMPONENTS.switch2,
+  abstraction:'The BG 812-01 plate is 86 mm square. Its two fixing screws line up with the lugs in a wall box at least 16 mm deep. The hidden contact mechanism is illustrated for study.',
+  parts:COMPONENTS.switch2.parts.map(p=>p.id==='cover'?{...p,name:'Faceplate',purpose:'Two capped fixing screws hold the white plate against the wall box. They have no electrical switching function.'}
+    :p.id==='terminals'?{...p,name:'Three wire clamps',purpose:'A wire enters from the rear. A separate, recessed screw at the end of the case grips it. The meter touches that terminal screw.'}:p),
+};
 const dcRockerDefinition:ComponentDefinition={
   ...COMPONENTS.switch,name:'DC panel rocker for cabinet lights',size:[.463,.92,1.95],
   description:'This small rocker clips into a panel. It joins the two metal blades behind it to switch the positive wire to one worktop strip.',
@@ -332,6 +338,7 @@ const fanIsolatorDefinition:ComponentDefinition={
 };
 /** Named fittings can have their own terminal groups and mounting envelope. */
 export function definitionFor(item:Pick<ComponentInstance,'type'|'variant'>):ComponentDefinition {
+  if(item.type==='switch2')return bg812Definition;
   if(item.type==='switch'&&item.variant==='dc-rocker')return dcRockerDefinition;
   if(item.type==='fan'&&item.variant==='xf100s')return xf100sDefinition;
   if(item.type==='isolator3'&&item.variant==='fan-isolator')return fanIsolatorDefinition;

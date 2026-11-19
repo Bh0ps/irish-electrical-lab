@@ -7,8 +7,9 @@ import {KITCHEN_LIGHTS as kitchen,stripLead,rockerPanelCentre,rockerPose,ROCKER_
 import {rockerProbeContact,rockerWireEntry} from '../lib/dc-rocker';
 import {siteContacts,worktopTestPoints} from '../lib/site-meter';
 import {BATH_EXTRACT as bath,BATH_SHOWER,bathroomWireNote,outsideGrillePose} from '../lib/bathroom-extract';
-import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,REAR_GARDEN,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
+import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,HOME_STAIR,REAR_GARDEN,STAIR_FOOT,STAIR_TOP,stairFloor,stairSwitchView} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
+import {previousSiteView,type SavedSitePose} from '../lib/site-camera';
 import {houseFixing,installedEnd,installedWireRoute} from '../lib/house-installation';
 import {getComponentTerminals} from '../lib/terminal-layout';
 import {fixturePoint,installedTerminalPoint} from '../lib/site-fixtures';
@@ -18,6 +19,19 @@ import type {Endpoint,Vec3} from '../lib/types';
 
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!.circuit;
 const near=(a:number,b:number)=>Math.abs(a-b)<1e-7;
+test('a late frame from downstairs cannot replace the landing view, while saved walking and meter return views are kept',()=>{
+  const lower:SavedSitePose={job:'home:9',focus:1,...stairSwitchView('near')};
+  const landing={id:2,component:'far'};
+  assert.equal(previousSiteView(lower,'home:9',landing),undefined);
+  assert.equal(previousSiteView(lower,'home:17',{id:1}),undefined);
+  assert.equal(previousSiteView(lower,'home:9',{id:1}),lower);
+  const walked:SavedSitePose={...lower,position:[-.63,4.50,.82],focus:2};
+  assert.equal(previousSiteView(walked,'home:9',landing),walked);
+  const returnFromMeter={id:3,restore:walked};
+  assert.equal(previousSiteView(lower,'home:9',returnFromMeter),walked);
+  const resumed={...walked,focus:3,yaw:.2};
+  assert.equal(previousSiteView(resumed,'home:9',returnFromMeter),resumed);
+});
 test('only the withdrawn worktop panel exposes its two real blade shoulders; flex follows the occupied crimp',()=>{
   const doc=lesson(66),before=electricalKey(doc),site=jobSite(doc),fittings=worktopTestPoints(doc,site);
   assert.deepEqual(fittings.map(f=>f.component.id).sort(),['left','left-switch','right','right-switch']);
@@ -191,13 +205,40 @@ test('the two-way switch rockers face separate level landings at the same local 
     const c=doc.components.find(c=>c.id===id)!,item=site.items.find(i=>i.id===id)!;
     assert.equal(site.location(item.room),name);
     const face=houseFixing(9,c)!.face;
+    assert.deepEqual(item.fixture?.scale,[.1,.1,.1]);
+    const wall=fixturePoint(item.position,item.scale,item.fixture,c,[0,.651,-.014],item.rotation);
+    assert.ok(near(wall[0],face[0]));
+    const view=stairSwitchView(id),[x,,z]=view.position;
+    assert.equal(stairFloor(x,z),level);
     const standingX=face[0]+Math.sin(item.rotation)*.45;
     assert.equal(stairFloor(standingX,face[2]-.1),level);
     assert.equal(stairFloor(standingX,face[2]+.1),level);
-    const height=fixturePoint(item.position,item.scale,item.fixture,c,[0,COMPONENTS[c.type].size[1]/2,.2],item.rotation)[1]-level;
-    assert.ok(height>1.00&&height<1.20);heights.push(height);
+    const height=fixturePoint(item.position,item.scale,item.fixture,c,[0,.651,.067],item.rotation)[1]-level;
+    assert.ok(near(height,1.1051));heights.push(height);
   }
   assert.ok(near(heights[0],heights[1]));assert.ok(runLessonScenarios(doc).every(r=>r.status==='pass'));
+});
+test('both stair strappers cross in the landing floor; all other stair runs approach through the side wall',()=>{
+  const doc=lesson(9),site=jobSite(doc);
+  const straps=doc.wires.filter(w=>[w.from,w.to].every(e=>['near','far'].includes(e.component)));
+  assert.equal(straps.length,2);
+  for(const w of straps){
+    const route=installedWireRoute(doc,site,w)!;
+    assert.ok(route.every(p=>p[2]>STAIR_FOOT&&p[2]<HOME_STAIR.landingEnd));
+    const crossing=route.find((p,i)=>i>0&&Math.abs(p[0]-route[i-1][0])>.9);
+    assert.ok(crossing&&crossing[1]<STAIR_TOP&&crossing[1]>STAIR_TOP-.15);
+  }
+  for(const w of doc.wires){
+    const route=installedWireRoute(doc,site,w)!;
+    for(let i=1;i<route.length;i++){
+      if(Math.abs(route[i][2]-route[i-1][2])>2&&near(route[i][1],STAIR_TOP-.075))
+        assert.ok(route[i][0]>=HOME_STAIR.east-.001,'longitudinal crossing is inside the wall beside the flight');
+    }
+  }
+  const edited={...doc,wires:doc.wires.filter(w=>w.id!==straps[0].id)};
+  assert.deepEqual(installedWireRoute(edited,jobSite(edited),straps[1]),installedWireRoute(doc,site,straps[1]));
+  const localLink={...straps[0],to:{component:'near',terminal:'T2'}};
+  assert.ok(installedWireRoute(doc,site,localLink)!.every(p=>p[1]<1.2));
 });
 test('visitors press each bell from outside and both wires enter through the wall behind the push',()=>{
   for(const [id,backId] of [[71,'rear'],[72,'back']] as const){

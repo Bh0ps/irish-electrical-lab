@@ -40,7 +40,7 @@ export function nextCheckForFinding(finding: Finding): string {
   if (id.startsWith('extra:')) return 'Select the wire and compare its two ends with the lesson drawing.';
   if (id.startsWith('identity:')) return 'Compare the marking on the wire with the one in the lesson.';
   if (id.startsWith('fault:')) return 'Record a reading at the fitting, then repair the fault and test again.';
-  if (id === 'supply') return 'Turn the bench supply on and test again.';
+  if (id === 'supply') return finding.title==='No bench supply connected' ? 'Choose Add equipment and pick a supply for your circuit.' : 'Turn the bench supply on and test again.';
   if (finding.status === 'not-run') return 'Try the control named in this step, then test again.';
   if (finding.category === 'protection') return 'Check the wiring at both ends before you reset the device or test again.';
   if (finding.category === 'operation') return 'Check the switch position. Measure across the fitting, then follow the feed and return wires.';

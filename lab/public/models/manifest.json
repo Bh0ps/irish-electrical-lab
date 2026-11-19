@@ -3128,12 +3128,16 @@
       "faceplate-fixing",
       "ribbed-switch-plate",
       "recessed-switch-cassette",
-      "switch-case-fixings"
+      "switch-case-fixings",
+      "bg812-insert-COM",
+      "bg812-insert-T1",
+      "bg812-insert-T2",
+      "bg812-operator"
     ],
-    "sourceMeshCount": 88,
-    "meshCount": 26,
-    "triangles": 63222,
-    "lowTriangles": 24550,
+    "sourceMeshCount": 90,
+    "meshCount": 30,
+    "triangles": 69714,
+    "lowTriangles": 37164,
     "terminals": [
       {
         "id": "COM",
@@ -3190,8 +3194,8 @@
         ]
       }
     ],
-    "bytes": 1642920,
-    "lowBytes": 705796,
+    "bytes": 1875404,
+    "lowBytes": 1069220,
     "bespokeBlender": true
   },
   {

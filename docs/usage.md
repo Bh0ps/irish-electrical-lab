@@ -6,11 +6,11 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.13.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.14.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
-Open **Chapters → Quick practice** for an experiment on a working example. Pick a prediction, operate the real control, and compare the readings. **Back to lesson** takes you to the full course.
+Open **Chapters → Quick practice** to try a working circuit. Make a prediction, or choose **I’m not sure — let me try**. Use the switch, dial or Start button on the lesson card or on the equipment itself. Compare the readings before and after. **Back to lesson** opens the full course.
 
 The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a port conflict shows a startup error. Work lives in `%APPDATA%\Irish Electrical Lab`, outside installation files, and replacement installers preserve it.
 
@@ -27,6 +27,10 @@ In **Site**, use **Go to** to find a fitting. In Oakfield house you can also cho
 In **Drawing**, choose **Job drawing** for the intended connections and **My wiring** for the current build. Select an equipment tag on the location plan or a pin on the terminal sheet. Select a conductor to see both ends and whether the current build matches it. **Find** travels to the selected end. The dashed site overlay indicates which endpoints are connected. Its route is illustrative. On applicable jobs, the sheet selector also offers a board schedule or a ladder tracing the control path to a load. Drawing selections are for inspection only.
 
 ## Try a house job
+
+In **Try both stair switches**, turn the light off downstairs. Read the volts at L1 and L2 and choose which wire still has the feed. Upstairs, work out which wire the landing switch is using. Flip it and watch the lamp. The two wires between the switches are called *strappers*. The last display may say **No reading** when an unused wire has no connection to the supply. That’s different from measuring 0 V.
+
+Use **Downstairs** and **Landing** to go straight to either rocker. The lesson brings the next switch into view while you’re following along. If you walk or turn the camera yourself, you can choose when to change floors.
 
 Open **Chapters → Jobs at Oakfield house**, or search for a job by name. In the cupboard job, shut the door, watch the strip go dark, then open the door again. Use the fitting in the room or its named control. Both operate the same circuit.
 

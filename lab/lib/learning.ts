@@ -149,7 +149,7 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
     pointNames.set(key, text);
     return text;
   }
-  const activities:LessonActivity[]=lesson.circuit.components.filter(c=>c.id!==COURSE_BOARD_ID).map(c=>({...base(`inspect:${c.id}`,'inspect',`Inspect ${c.label}`,`Choose ${c.label}, then Show terminals. Pick a terminal to see what connects there.`,equipmentPurpose(c)),component:c.id,part:'terminals',endpoints:definitionFor(c).terminals.map(t=>({component:c.id,terminal:t.id}))}));
+  const activities:LessonActivity[]=lesson.circuit.components.filter(c=>c.id!==COURSE_BOARD_ID).map(c=>({...base(`inspect:${c.id}`,'inspect',c.label,'Choose Show terminals. Pick one of the marked points where the wires go.',equipmentPurpose(c)),component:c.id,part:'terminals',endpoints:definitionFor(c).terminals.map(t=>({component:c.id,terminal:t.id}))}));
   const scenario=getScenario(lesson.id,lesson.circuit);
   const page=coursePage(lesson.id,lesson.circuit);
   function questionActivity(kind:'predict'|'explain'):LessonActivity {

@@ -262,6 +262,10 @@
 .practice-comparison { width: 100%; margin: 12px 0; border-collapse: collapse; text-align: left; font-size: 12px; font-variant-numeric: tabular-nums; }
 .practice-comparison th, .practice-comparison td { padding: 8px 5px; border-bottom: 1px solid #dce5ed; }
 .practice-comparison thead { color: #536d81; }
+.practice-dial { display: grid; gap: 4px; width: 100%; }
+.practice-dial span { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; }
+.practice-dial output { font-variant-numeric: tabular-nums; }
+.practice-dial input { width: 100%; min-height: 44px; }
 .offline-settings { padding: 9px 12px; border: 1px solid #d5e3ec; border-radius: 8px; background: #f4f8fb; }
 .offline-settings progress { width: 100%; accent-color: #367963; }
 

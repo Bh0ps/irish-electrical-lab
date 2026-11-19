@@ -142,10 +142,10 @@ function isTerminalAccess(document: CircuitDocument, rendered: RenderedWire, seg
 // This check does not reuse the planner's envelopes.
 interface MeasuredTriangle { vertices:Triangle; bounds:Box3; part:string }
 interface FixtureGeometry { groups:Map<string,Box3>; triangles:MeasuredTriangle[] }
-const modelKey=(c:ComponentInstance)=>c.variant?c.type+':'+c.variant:c.type;
+const modelKey=(c:ComponentInstance)=>c.variant?c.type+':'+c.variant:c.type==='switch2'?'switch2:single-rocker':c.type;
 async function measuredFixtures(low=false) {
   const byType=new Map<string,FixtureGeometry>(),loader=new GLTFLoader();
-  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo','fan:xf100s','isolator3:fan-isolator','switch:dc-rocker']){
+  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo','fan:xf100s','isolator3:fan-isolator','switch:dc-rocker','switch2:single-rocker']){
     const named=type.includes(':'),stem=named?type.replace(':','_'):type+'_default';
     const bytes=readFileSync(new URL('../public/models/'+stem+(low?'.low':'')+'.glb',import.meta.url));
     const {scene}=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');

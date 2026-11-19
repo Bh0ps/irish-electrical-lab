@@ -12,9 +12,10 @@ import { Equipment, type EquipmentProps } from '../../lib/Equipment';
 import { semanticOwner } from '../../lib/blender-model';
 import { getComponentTerminals } from '../../lib/terminal-layout';
 import { walkStep,type JobSite,type SiteItem } from '../../lib/job-site';
-import { HOME_ROOMS, STAIR_EYE, STAIR_LANDING, homeRoomAt, homeVisit, stairFloor } from '../../lib/home-floorplan';
+import { HOME_ROOMS, STAIR_EYE, STAIR_LANDING, homeRoomAt, homeVisit, isStairStation,stairFloor,stairSwitchView } from '../../lib/home-floorplan';
 import { serviceRoomAt,serviceVisit } from '../../lib/service-floorplan';
-import type { CircuitDocument,ComponentInstance,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
+import {previousSiteView,type SavedSitePose,type SiteFocus,type SitePose} from '../../lib/site-camera';
+import type { CircuitDocument,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
 import InstallationRoom from './InstallationRoom';
 import BellCupboard from './BellCupboard';
 import {FittedWireTails,KitchenDriver,RockerEnclosure,StripChannel} from './KitchenLighting';
@@ -29,11 +30,10 @@ import SiteMeterPads,{type SiteMeter} from './SiteMeterPads';
 import {padCamera,type SiteTestFitting} from '../../lib/site-meter';
 import { BATTEN_FILAMENT, CUPBOARD_HINGE, CUPBOARD_SWING, fixturePoint, installedTerminalPoint,TAPE_SECTION_LENGTH, TAPE_SECTIONS } from '../../lib/site-fixtures';
 
-export interface SitePose {position:Vec3;yaw:number;pitch:number}
 interface Rig {keys:Set<string>; turn:[number,number];zoom:number; wake:()=>void; moved:boolean; pose?:SitePose}
 interface Props {
   site:JobSite; doc:CircuitDocument; result?:SimulationResult; selected?:string; terminalId?:string; wire?:string; touch:boolean; tool:string;
-  jump:{id:number;component?:string}; pose:React.MutableRefObject<SitePose|undefined>; showWallSwitch?:boolean;
+  jump:SiteFocus; pose:React.MutableRefObject<SavedSitePose|undefined>; showWallSwitch?:boolean; stairGoal?:string;
   testFittings:SiteTestFitting[]; meter?:SiteMeter; openMeter:(component?:string)=>void; liftProbes:(component:string)=>void;
   onPeek:(id?:string)=>void;onPlan:(wire:string)=>void;onExplore:()=>void;
   onPart:(id:string,part:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
@@ -144,10 +144,10 @@ function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15,
     // Look past the switch through the open bathroom door toward its fan and light.
     return {position:[3.28,1.29,-.78],yaw:touch?2.48:2.51,pitch:.13};
   }
-  if(id===9&&!close&&item?.id==='near')return {position:[-1.86,STAIR_EYE,2.40],yaw:-.31,pitch:touch?-.12:.01};
+  if(id===9&&isStairStation(item?.id))return stairSwitchView(item.id);
   const pose=frontView(item,id,close,height,touch);
   if(!item?.rotation)return pose;
-  const [x,y,z]=item.position,dx=pose.position[0]-x,dz=pose.position[2]-z,angle=item.rotation;
+  const [x,,z]=item.position,dx=pose.position[0]-x,dz=pose.position[2]-z,angle=item.rotation;
   return {position:[x+dx*Math.cos(angle)+dz*Math.sin(angle),pose.position[1],z+dz*Math.cos(angle)-dx*Math.sin(angle)],yaw:pose.yaw+angle,pitch:pose.pitch};
 }
 function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,height:number,touch:boolean):SitePose{
@@ -218,9 +218,12 @@ function CameraRig({rig,walking,target,pose,jobKey,focusId,site,onRoom,wallSwitc
       screenPoint.copy(wallSwitch).project(camera);
       const x=(screenPoint.x+1)*size.width/2,y=(1-screenPoint.y)*size.height/2;
       button.hidden=rig.moved||screenPoint.z< -1||screenPoint.z>1||x<22||x>size.width-22||y<22||y>size.height-22;
-      if(!button.hidden)button.style.transform=`translate(${x-22}px, ${y-22}px)`;
+      if(!button.hidden){
+        button.style.transform=`translate(${x-22}px, ${y-22}px)`;
+        button.dataset.side=x+22+(button.firstElementChild?.clientWidth??0)>size.width-6?'left':'right';
+      }
     }
-    pose.current={position:[p.x,p.y,p.z],...r};
+    pose.current={position:[p.x,p.y,p.z],...r,job:jobKey,focus:focusId};
     if(walking&&keys.size)invalidate();
   });
   return null;
@@ -249,7 +252,7 @@ class SiteBoundary extends React.Component<{children:React.ReactNode;onList:()=>
 }
 const directions=[['up',ArrowUp],['left',ArrowLeft],['down',ArrowDown],['right',ArrowRight]] as const;
 const keyMap:Record<string,string>={KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
-export default function JobSiteView({site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList,showWallSwitch,onPeek,onPlan,onExplore,testFittings,meter,openMeter,liftProbes}:Props){
+export default function JobSiteView({site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList,showWallSwitch,stairGoal,onPeek,onPlan,onExplore,testFittings,meter,openMeter,liftProbes}:Props){
   const rig=useMemo<Rig>(()=>({keys:new Set(),turn:[0,0],zoom:0,moved:false,wake:()=>{}}),[]);
   const wallButton=useRef<HTMLButtonElement>(null);
   const lastTouchPick=useRef<{x:number;y:number;at:number}|undefined>(undefined);
@@ -265,6 +268,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const selectedId=selected??site.first;
   const jobKey=site.kind+':'+(doc.lessonId??doc.id);
   const stair=doc.lessonId===9;
+  const lastStairGoal=useRef<string|undefined>(undefined);
   const [visit,setVisit]=useState<{room:number;job:string;jump:number;grille?:boolean}>();
   const meterFitting=meter?testFittings.find(fitting=>fitting.component.id===jump.component):undefined;
   const meterTarget=meterFitting?.component.id;
@@ -275,12 +279,20 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const openRockers=new Set([redFitting,blackFitting,drawn].filter((id):id is string=>!!id));
   const openRocker=!!meterTarget&&openRockers.has(meterTarget);
   const roomVisit=visit?.job===jobKey&&visit.jump===jump.id?visit:undefined;
+  const station=jump.component??site.first;
+  const stationSwitch=stair&&isStairStation(station)&&!roomVisit?station:undefined;
+  useEffect(()=>{
+    const previous=lastStairGoal.current;lastStairGoal.current=stairGoal;
+    if(stair&&isStairStation(stairGoal)&&station!==stairGoal&&previous!==stairGoal&&!walking&&!rig.moved&&!roomVisit&&!wire&&(!jump.component||jump.component===previous)){
+      onFocus(stairGoal);
+    }
+  },[stair,stairGoal,station,walking,rig,roomVisit,wire,jump.component,onFocus]);
   const roomTarget=useMemo(()=>{
     if(roomVisit?.grille)return outsideGrillePose(touch);
     if(roomVisit){const view=site.kind==='home'?homeVisit(roomVisit.room,stair):serviceVisit(site,roomVisit.room);if(view)return view;}
-    const id=jump.component??site.first,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
-    return pose.current??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined,touch);
-  },[jobKey,jump.id,loadedKey,roomVisit,touch]);
+    const id=station,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
+    return previousSiteView(pose.current,jobKey,jump)??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined,touch);
+  },[jobKey,jump,loadedKey,roomVisit,touch,station]);
   const target=meterFitting?padCamera(meterFitting,openRocker,touch):roomTarget;
   const stop=useCallback(()=>{rig.keys.clear();pointers.current.clear();blockTap.current=true;},[rig]);
   useEffect(()=>{window.addEventListener('blur',stop);window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
@@ -289,7 +301,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   useEffect(()=>{setWalking(false);stop();},[jump.id,jobKey,tool,stop]);
   useEffect(()=>{setWalkRoom(site.room);},[jobKey,site.room]);
   function toggleWalk(){stop();if(!walking&&touch)onExplore();setWalking(!walking);rig.wake();input.current?.focus({preventScroll:true});}
-  function jumpTo(id:string){stop();if(touch)onExplore();setWalking(false);onFocus(id);}
+  function jumpTo(id:string){stop();if(touch&&!(stair&&isStairStation(id)))onExplore();setWalking(false);onFocus(id);}
   function visitRoom(value:string){
     if(value==='grille'){
       stop();if(touch)onExplore();setWalking(false);setWalkRoom(3);
@@ -305,9 +317,9 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const traced=doc.wires.find(w=>w.id===wire);
   const tracedIds=traced?[traced.from.component,traced.to.component]:[];
   const visible=site.items.filter(item=>fixtureMap.has(item.id));
-  const rocker=site.items.find(item=>item.id==='switch'),wallControl=fixtureMap.get('switch');
-  const wallSwitch=rocker&&wallControl&&showWallSwitch&&!walking&&!lost&&!jump.component&&(tool==='select'||tool==='inspect')
-    ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,[0,COMPONENTS.switch.size[1]/2,.20])):undefined;
+  const wallId=stationSwitch??'switch',rocker=site.items.find(item=>item.id===wallId),wallControl=fixtureMap.get(wallId);
+  const wallSwitch=rocker&&wallControl&&(stationSwitch?!wire:showWallSwitch&&!jump.component)&&!walking&&!lost&&(tool==='select'||tool==='inspect')
+    ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,stationSwitch?[0,.651,.067]:[0,COMPONENTS.switch.size[1]/2,.20],rocker.rotation)):undefined;
   return <div className="jobsite" data-site={site.kind}>
     <div className="site-camera" ref={input} tabIndex={0} aria-label={walking?'Walk around the site. Use WASD or the movement pad.':'Installation view. Choose equipment or enter Walk.'}
       onKeyDown={e=>{if(e.key==='Escape'){stop();setWalking(false);}const key=keyMap[e.code];if(walking&&key){e.preventDefault();rig.keys.add(key);rig.wake();}}}
@@ -354,18 +366,23 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
         {meter&&!walking&&testFittings.filter(f=>[meterTarget,redFitting,blackFitting].includes(f.item.id)).map(f=><SiteMeterPads key={f.item.id} fitting={f} open={openRockers.has(f.item.id)} showLabels={f.item.id===meterTarget} meter={meter} pick={onTerminal} blocked={blockTap}/>)}
         <WireTrace id={wire} doc={doc} site={site} openRocker={openRockers}/><CameraRig focusId={jump.id} rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom} wallSwitch={wallSwitch} wallButton={wallButton}/></>}
       </Canvas></SiteBoundary>
-      {wallSwitch&&<button ref={wallButton} type="button" className="site-wall-switch" hidden aria-label="Wall switch" aria-pressed={wallControl?.params.closed===true}
-        onClick={e=>{e.stopPropagation();if(!e.detail||!blockTap.current)onPart('switch','actuator');}}><span>Wall switch</span></button>}
+      {wallSwitch&&<button ref={wallButton} type="button" className="site-wall-switch" hidden aria-label={stationSwitch==='far'?'Operate landing switch':stationSwitch?'Operate downstairs switch':'Wall switch'} aria-pressed={stationSwitch?undefined:wallControl?.params.closed===true}
+        onClick={e=>{e.stopPropagation();if(!e.detail||!blockTap.current)onPart(wallId,'actuator');}}><span>{stationSwitch==='far'?'Landing switch':stationSwitch?'Downstairs switch':'Wall switch'}</span></button>}
     </div>
     {!lost&&visible.some(item=>unavailable.has(item.id))&&<div className="site-model-error" role="status" aria-live="polite">Equipment model unavailable. <button onClick={onList}>Use equipment list</button></div>}
     {lost&&<div className="site-unavailable" role="status"><p>Graphics paused. Your circuit is saved in the workbench.</p><button onClick={()=>{setLost(false);setLoadedKey(n=>n+1);}}>Restart site</button><button onClick={onList}>Equipment list</button></div>}
-    {!meter&&<div className="site-location"><span className="location-dot"/>{site.building.name} <span> / </span> {site.location(walking||roomVisit?walkRoom:(selectedItem?.room??site.room))}</div>}
+    {!meter&&!stair&&<div className="site-location"><span className="location-dot"/>{site.building.name} <span> / </span> {site.location(walking||roomVisit?walkRoom:(selectedItem?.room??site.room))}</div>}
     {meter&&!lost&&<div className="site-meter-heading">
       <label><b>Fitting</b> <select aria-label="Fitting to measure" value={meterTarget??''} onChange={e=>onFocus(e.target.value)}><option value="" disabled>Choose a fitting</option>{testFittings.map(s=><option key={s.component.id} value={s.component.id}>{s.component.label}</option>)}</select></label>
       {meterFitting?.kind==='rocker'&&<button type="button" aria-expanded={openRocker} aria-label={openRocker&&pinned?'Lift probe and refit':undefined} onClick={()=>{if(pinned)liftProbes(meterFitting.item.id);setWithdrawnAt(openRocker?undefined:jump.id);}}>{openRocker?(pinned?'Lift and refit':'Refit panel'):'Show back of switch'}</button>}
     </div>}
-    {!lost&&!meter&&(wire||[1,2,3,13,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61,65,66,68,69,71,72].includes(doc.lessonId??0))&&
-      <SiteCablePeek doc={doc} site={site} selected={selectedId} wireId={wire} onChange={onPeek} visit={jumpTo} plan={onPlan}/>}
+    {!lost&&!meter&&(wire||[1,2,3,9,13,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61,65,66,68,69,71,72].includes(doc.lessonId??0))&&
+      <div className={stair&&!wire?'stair-locations':undefined}>
+        {stair&&!wire&&<nav className="stair-stations" aria-label="Stair switch locations">{(['near','far'] as const).map(id=>
+          <button key={id} type="button" aria-pressed={walking||roomVisit?(walkRoom===STAIR_LANDING.id?'far':'near')===id:stationSwitch===id}
+            onClick={()=>{stop();setWalking(false);onFocus(id);}}>{id==='near'?'Downstairs':'Landing'}</button>)}</nav>}
+        <SiteCablePeek doc={doc} site={site} selected={selectedId} wireId={wire} onChange={onPeek} visit={jumpTo} plan={onPlan}/>
+      </div>}
     {!meter&&<div className="site-actions">
       <button className={walking?'chosen':''} aria-pressed={walking} onClick={toggleWalk}><Footprints size={17}/>{walking?'Finish walk':'Walk'}</button>
       <label className="site-jump"><LocateFixed size={17}/><span>Go to</span><select aria-label="Go to equipment" value="" onChange={e=>e.target.value.startsWith('room:')||e.target.value==='grille'?visitRoom(e.target.value):jumpTo(e.target.value)}><option value="" disabled>Choose a destination</option><optgroup label="Equipment">{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</optgroup><optgroup label="Rooms">{(site.kind==='home'?HOME_ROOMS.map(r=>r.id).concat(stair?[STAIR_LANDING.id]:[]):[0,1,2,3,4]).map(id=><option key={id} value={'room:'+id}>{site.location(id)}</option>)}{doc.lessonId===36&&<option value="grille">Outside fan grille</option>}</optgroup></select></label>

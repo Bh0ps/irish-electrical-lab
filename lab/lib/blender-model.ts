@@ -76,7 +76,8 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
     const part=semanticOwner(node).part??'';
-    if(node.userData.matingBlade)presentation.receptacles.push({node,terminal:String(node.userData.matingBlade)});
+    const occupied=node.userData.matingBlade??node.userData.occupiedTerminal;
+    if(occupied)presentation.receptacles.push({node,terminal:String(occupied)});
     if(node.userData.probeSide)presentation.probeDocks.push({node,red:node.userData.probeSide==='red'});
     if(node.userData.boardDoor)presentation.doors.push({node,rest:node.quaternion.clone()});
     if(node.userData.benchOnly)presentation.benchStands.push(node);
@@ -91,7 +92,8 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
     for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.serviceChamber){entry.serviceChamber=true;presentation.chamber=true;break;}
     for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.conceptualInternal){entry.conceptualInternal=true;break;}
     let constructionDetail=false;for(let owner:THREE.Object3D|null=node;owner;owner=owner.parent)if(owner.userData.detailId){constructionDetail=true;break;}
-    if(part==='body'&&(!constructionDetail||componentVariant==='dc-rocker')||node.userData.inspectionHousing){
+    const bgSwitchCase=componentType==='switch2'&&node.material instanceof THREE.Material&&node.material.name==='Grey insulated switching cassette';
+    if(part==='body'&&(!constructionDetail||componentVariant==='dc-rocker'||bgSwitchCase)||node.userData.inspectionHousing){
       const cutaway=new THREE.MeshStandardMaterial({color:'#97bcb1',transparent:true,opacity:.14,depthWrite:false,roughness:.5,metalness:.04});entry.cutaway=cutaway;presentation.owned.push(cutaway);
     }
     if(node.userData.lampEnvelope){

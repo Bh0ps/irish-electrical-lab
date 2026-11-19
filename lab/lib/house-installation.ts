@@ -59,7 +59,7 @@ export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixtur
   else if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
   else if(fixture?.extractor)depth=0;
   else if(fixture?.serviceBox)depth=fixture.serviceBox==='timer'?bath.timerOffset:bath.cpcOffset;
-  else if(fixture?.flushPlate)depth=.0001;
+  else if(fixture?.flushPlate)depth=c.type==='switch2'?.0014:.0001;
   else if(fixture?.bellPush)depth=c.variant==='sesame'?0:.220*fixture.scale[2];
   else if(fixture?.batten)depth=.161*fixture.scale[2];
   else if(fixture&&['switch','switch2','intermediate'].includes(c.type))
@@ -148,6 +148,21 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire,op
       through(a.pin,[a.pin[0],a.pin[1],z],[b.pin[0],a.pin[1],z],[b.pin[0],b.pin[1],z],b.pin);
     }
     return points;
+  }
+  if(doc.lessonId===9){
+    // The two landings share an enclosed floor edge. The default route runs
+    // through open air above the lower flight if taken along the stair divider.
+    const stairs=(e:InstalledEnd)=>e.component.type==='switch2'&&['near','far'].includes(e.component.id);
+    if((stairs(a)||stairs(b))&&assembly(a)!==assembly(b)){
+      const y=STAIR_TOP-.075,spine=HOME_STAIR.east;
+      const route=(e:InstalledEnd):Vec3[]=>{
+        const [x,,z]=e.chase;
+        if(stairs(e))return [e.pin,e.chase,[x,y,z],[spine,y,z]];
+        return [...(e.lead??[e.pin,e.chase]),[x,y,z],[x,y,e.riser],[spine,y,e.riser]];
+      };
+      through(...route(a),...route(b).reverse());
+      return points;
+    }
   }
   const shortWallDrop=a.item.room===b.item.room&&Math.hypot(a.chase[0]-b.chase[0],a.chase[2]-b.chase[2])<.13;
   if(doc.lessonId===36&&!shortWallDrop&&assembly(a)!==assembly(b)){

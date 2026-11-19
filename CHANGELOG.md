@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.14.0 — Try both stair switches
+
+- Operate the downstairs switch, find which wire it feeds and work the light again from the landing. The job uses the voltages on your own circuit. Earlier saves still open at their original step.
+- Use the named switch on the lesson card or press it in the room. In the lighting lessons, the card reports what changed across the lamp. Quick practice now puts the working control beside the instruction, including a dimmer and a Start button you can hold and release.
+- The stairs job has a floor selector and a cable route through the landing. The BG 812 wall switch has a revised rocker, marked rear terminals and separate points for incoming copper and screwdriver access.
+- Short word explanations open directly from the step that uses them. Inspection and meter prompts use the fitting names and terminal marks on the bench.
+- Fit keeps wide builds visible on a narrow screen. You can tap a fitting in the 80-piece process plant and go straight to its rear terminals.
+
 ## 1.13.0 — One worktop stays dark
 
 - Find a broken wire at Oakfield house. Check the dark strip, leave one probe in place and check the switch. The job uses the readings you actually take and saves your place through the repair and retest.

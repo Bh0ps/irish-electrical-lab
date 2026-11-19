@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HOUSE_CALLS, callActivityId, callReadings, checkCallSample, savedCallStep, houseJobLabels, nextHouseCall, onlyCallControlsChanged, verifiedCallStep } from '../lib/house-calls';
+import { HOUSE_CALLS, houseStepId, stairReadings, checkStairChoice, callActivityId, callReadings, checkCallSample, savedCallStep, houseJobLabels, nextHouseCall, onlyCallControlsChanged, verifiedCallStep } from '../lib/house-calls';
 import { captureMeasurement } from '../lib/learning';
 import { forkRead, instrumentData } from '../lib/fork-tester';
 import { migrateProgress, recordActivity } from '../lib/progress';
@@ -18,8 +18,15 @@ for(const call of HOUSE_CALLS){
     for(const [index,step] of call.steps.entries()){
       const reading=simulate(doc);
       assert.ok(callReadings(step.before,doc,reading)?.every(r=>r.matches));
-      const id=callActivityId(call.lesson,index);
+      const id=houseStepId(call,index);
       const action={component:step.target,activity:id,before:doc,reading};
+      if(step.stairCheck){
+        const view=stairReadings(step.stairCheck,doc,reading);
+        assert.ok(view?.answer);
+        assert.ok(checkStairChoice(call,index,doc,reading,{activity:id,revision:doc.revision,circuitId:doc.id,pin:view.answer.pin})?.pass);
+        assert.equal(verifiedCallStep(call,index,doc,reading,action),false);
+        continue;
+      }
       if(step.measure){
         const evidence={...captureMeasurement(doc,reading,{mode:'voltage',a:{component:step.target,terminal:'L'},b:{component:step.target,terminal:'N'}}),assisted:false};
         assert.equal(checkCallSample(call,index,doc,reading,{activity:id,evidence})?.pass,true);
@@ -37,10 +44,10 @@ for(const call of HOUSE_CALLS){
       assert.equal(verifiedCallStep(call,index,after,solved,action),true);
       assert.equal(verifiedCallStep(call,index,after,reading,action),false);
       assert.equal(verifiedCallStep(call,index,after,solved,{...action,component:'supply'}),false);
-      assert.equal(verifiedCallStep(call,index,after,solved,{...action,activity:callActivityId(call.lesson,index+1)}),false);
+      assert.equal(verifiedCallStep(call,index,after,solved,{...action,activity:houseStepId(call,index+1)}),false);
       assert.equal(verifiedCallStep(call,index,after,solved,{...action,reading:undefined}),false);
       assert.equal(verifiedCallStep(call,index,after,{...solved,converged:false},action),false);
-      const restored=validateBookmark({version:1,circuit:after,activityId:callActivityId(call.lesson,index+1),path:'coursebook',mode:'explore'});
+      const restored=validateBookmark({version:1,circuit:after,activityId:houseStepId(call,index+1),path:'coursebook',mode:'explore'});
       assert.equal(savedCallStep(call,restored.activityId),index+1);
       doc=after;
     }
@@ -99,7 +106,7 @@ test('the next house job skips demonstrated jobs and keeps an unfinished job ava
   progress=recordActivity(progress,cupboard.lesson,callActivityId(cupboard.lesson,0),'house-call',true);
   assert.equal(nextHouseCall(board,progress),cupboard);
   for(const job of [cupboard,stairs]){
-    progress=recordActivity(progress,job.lesson,callActivityId(job.lesson,job.steps.length-1),'house-call',true);
+    progress=recordActivity(progress,job.lesson,houseStepId(job,job.steps.length-1),'house-call',true);
   }
   assert.equal(nextHouseCall(board,progress),undefined);
 });

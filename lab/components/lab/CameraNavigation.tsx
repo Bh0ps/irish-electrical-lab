@@ -6,7 +6,7 @@ import { COMPONENTS } from '../../lib/components';
 import { getComponentTerminals, terminalInspectionDirection } from '../../lib/terminal-layout';
 import { inspectionDistance, sceneBounds, selectedPartBounds, snapWorkbenchPoint } from '../../lib/workbench-presentation';
 import {
-  cameraFarPlane, cameraHasMotion, cameraLookQuaternion, createCameraNavigationState, createCameraTransition,
+  cameraHasMotion, cameraLookQuaternion, createCameraNavigationState, createCameraTransition, workbenchCameraRange,
   DEFAULT_CAMERA_SPEED, queueCameraGesture, sampleCameraTransition, stepCameraNavigation, stopCameraNavigation,
   type CameraInput, type CameraMode, type CameraPose, type CameraQuaternion, type CameraTransition,
 } from '../../lib/camera-navigation';
@@ -286,7 +286,7 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     };
     window.addEventListener('electrical-lab-camera-request',report);window.addEventListener('electrical-lab-receiver-request',receiver);return()=>{window.removeEventListener('electrical-lab-camera-request',report);window.removeEventListener('electrical-lab-receiver-request',receiver);};
   },[camera,gl,scene]);
-  useFrame(({camera:frameCamera})=>{
+  useFrame(({camera:frameCamera,scene:frameScene})=>{
     const current=latest.current,now=performance.now(),dt=lastFrame.current?(now-lastFrame.current)/1000:1/60;lastFrame.current=now;
     if(modalOpen.current||current.dragging)return;
     if(current.cameraCommand.id!==lastCommand.current&&!(current.routingPending&&current.cameraCommand.action==='fit')) {
@@ -301,7 +301,9 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     } else navigation.current=stepCameraNavigation(navigation.current,touchNavigation.current?'orbit':current.mode??'orbit',heldInput(keys.current),dt,{height:gl.domElement.clientHeight,fov:(camera as THREE.PerspectiveCamera).fov??43},current.speed??DEFAULT_CAMERA_SPEED);
     const next=navigation.current;frameCamera.position.set(...next.position);frameCamera.quaternion.set(...next.quaternion);frameCamera.updateMatrixWorld();
     // Imported workbenches may be much larger than the default lesson room.
-    if(frameCamera instanceof THREE.PerspectiveCamera){const far=cameraFarPlane(next.position,clipping.current);if(Math.abs(far-frameCamera.far)>.1){frameCamera.far=far;frameCamera.updateProjectionMatrix();}}
+    const range=workbenchCameraRange(next.position,clipping.current);
+    if(frameScene.fog instanceof THREE.Fog){frameScene.fog.near=range.fogNear;frameScene.fog.far=range.fogFar;}
+    if(frameCamera instanceof THREE.PerspectiveCamera&&Math.abs(range.farPlane-frameCamera.far)>.1){frameCamera.far=range.farPlane;frameCamera.updateProjectionMatrix();}
     if(transition.current||cameraHasMotion(next,heldInput(keys.current)))invalidate();
   });
   return null;

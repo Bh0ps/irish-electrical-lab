@@ -1,5 +1,25 @@
 # Verification summary
 
+## 1.14.0 — Try both stair switches
+
+**Working the switches.** On the standard stairs circuit, the downstairs switch took the lamp from 240 V to 0 V. With the lamp dark, L2 read about 240 V to lamp neutral and L1 read 0 V. Flipping the landing switch brought the lamp back to 240 V. Tests also crossed the two connecting wires, opened a wire and linked the wires together. An unused wire can have no meter reading. The lesson checks the learner’s choice against their own circuit and keeps a missing reading distinct from 0 V. Automatic readings give no credit for placing probes.
+
+**Controls and language.** All 56 named switch actions across 32 courses passed in their operating sequences. Loading a step, pressing the other switch or using an earlier reading could not pass the stairs exercise. All six Quick practice experiments ran through the visible controls in Chrome and Windows WebKit. During the detector experiment the meter stayed at 240 V after movement stopped and fell to 0 V when the timer finished. In the motor experiment, the coil still had 230.8 V after Start was released.
+
+**Finding the fitting.** Mouse and touch checks covered both floors, choosing the wrong wire, trying again and reopening at a saved step. An earlier stairs backup resumed at the landing switch. The room kept a 44-pixel tap target for each rocker at phone widths, including 320 pixels with enlarged text. The new stair cable runs through the enclosed floor at the landing. These routes show the layout of Oakfield house. Actual cable routes depend on the building.
+
+**Model and course checks.** Both detail levels of the BG 812 were checked from the front, back and in cutaway. The incoming copper and the recessed screw head can be inspected separately. The outer case and printed terminal positions follow the manufacturer’s reference. The moving internal contact illustrates the switching action. TypeScript and 412 automated tests passed. All 2,483 activities mapped to the six stages. The electrical audit passed 80 working examples and 80 fault targets, and all 1,116 wires routed. [BG 812 product photographs and dimensions](https://www.bgelectrical.uk/uk/wiring-devices/800-series/20a-16ax-light-switches/812-01)
+
+**Test environments.** Phone-sized Safari-engine checks used WebKit on Windows. A physical iPhone, an independent beginner walkthrough and a qualified electrician’s review remain outstanding.
+
+**Wide builds on a phone-sized screen.** Fit used to pull the camera far enough back to hide the plant behind the workshop fog. In the 390-pixel checks, Chrome and WebKit each displayed the equipment and all 228 routed wires. Tapping the conveyor drive selected that fitting. Show terminals then brought up its rear view. On the stairs, a separate camera check confirmed that choosing Landing brings its rocker into view. Returning from a worktop meter check restored the position and direction the learner had picked.
+
+**Offline.** Chromium and WebKit each checked 255 files (47,112,743 bytes) in the offline download. After a cold reopen with the server off, both ran the stair, extractor and worktop jobs, opened an unseen PLC lesson and restored the saved plant. Neither made a request to the disconnected origin. An interrupted update in Chrome preserved the 1.13.0 app and its saved stair job until a successful retry. Windows WebKit also imported the Windows study backup, reopened it offline and preserved the build and bookmark after an invalid import.
+
+**Desktop performance.** In Chrome at 1440 × 900 on this Windows PC with an RTX 5070 Ti, panning a 30-fitting, 42-wire circuit averaged 115.3 frames per second. The median frame took 8.6 ms and the 95th percentile was 10.9 ms. The settled bench drew zero frames and made zero worker requests over three seconds. Eight supply changes took a median 5.3 ms in the simulation worker and 13.0 ms for a response to reach the page.
+
+**Installed Windows app.** The per-user installer upgraded 1.13.0 on this PC. The Desktop and Start menu shortcuts opened 1.14.0 at the existing origin. A disposable study profile retained its five saved records and named build. The packaged app ran all 80 worker circuits without external requests. The installed run measured 679 ms for app startup and 3.43 seconds for the 3D geometry to become ready. The driver logged one shader warning and the graphics check passed.
+
 ## 1.13.0 — One worktop stays dark
 
 **What the learner sees.** The stairs exercise gave one direction, “Flip the landing switch”, on the 1280-pixel desktop and 390-pixel touch layouts. The floor sensor step still gave its required 40 °C setting. Operating instructions, meter help and recovery messages were checked against the controls they refer to. This was a software walkthrough. Independent learner and electrician feedback remains outstanding.
