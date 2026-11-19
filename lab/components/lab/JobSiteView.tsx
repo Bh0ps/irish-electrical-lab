@@ -687,7 +687,7 @@ export default function JobSiteView({pointsOpen,closePoints,onFieldRoom,site,doc
       <SiteWalkPad steering={immersive&&oneThumb} move={(x,y)=>{blockTap.current=true;rig.moveThumb(x,y);}}
         release={()=>rig.liftThumb()}
         nudge={dir=>{if(immersive&&oneThumb&&(dir==='left'||dir==='right'))rig.turnStep(dir==='right');else rig.step(dir);}}/>
-      {immersive&&(retest||repairDestination||nearby)&&<button className="site-approach" type="button" disabled={retest?.disabled}
+      {immersive&&(retest||repairDestination||nearby)&&<button className="site-approach" type="button" data-job-action={Boolean(retest||repairDestination)||undefined} disabled={retest?.disabled}
         onClick={()=>{if(retest)retest.run();else if(repairDestination||nearby)jumpTo((repairDestination??nearby)!);}}>
         <Focus size={19} aria-hidden="true"/><span>{retest?.label??(repairDestination?'Find repair':'Go closer')}
         {!retest&&<b>{fixtureMap.get((repairDestination??nearby)!)?.label}</b>}</span></button>}

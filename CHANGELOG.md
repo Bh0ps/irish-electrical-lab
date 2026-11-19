@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.23.0 — Start repairs in the room
+
+- The worktop light, heater and back doorbell repairs open in the full-size room on a phone. The current step and its action sit above the room. **Job** opens the full instructions and **Exit** returns to the usual layout.
+- At the fitting, the meter tells you which points to compare. After a wrong reading it explains what you measured. You can still pick the points by name.
+- Holding the forward arrow walks straight even if your thumb lands off centre. Slide it towards the side to steer in one-thumb mode. Turning the phone or leaving the app stops the walk.
+
 ## 1.22.0 — The loose worktop connector
 
 - **One worktop stays dark** opens with both worktops in view. Compare the dark strip with the output of its wall switch using the same meter and return point.
