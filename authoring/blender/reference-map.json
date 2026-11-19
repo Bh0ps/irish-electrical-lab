@@ -3,6 +3,8 @@
   "classification": "Original representative training equipment. Each model illustrates an equipment architecture. Construction, circuit ratings and simplified interfaces are identified in the lesson. Product literature documents the features used for comparison.",
   "coordinateContract": "Recipe Y-up, +Z operating front. Each electrical ID has its own physical cable mouth and outward entry vector. Wall accessories are wired at the rear. DIN protective devices have upper and lower banks, motor boards face upward, and fronts opened for service have connection blocks behind their covers. Source and meter earth connections represent the separate protective path at the installation boundary. The valve flying lead ends in a separate connector strip. Circuit IDs stay fixed when inspecting or moving equipment.",
   "sources": [
+    {"id":"grothe-croma100a-shape","title":"Grothe CROMA 100A 43170 · dimensional drawing","url":"https://www.grothe.de/media/d6/bb/96/1699967668/43170-Croma_100A.jpg","architecture":"Original 163 × 190 × 50.4 mm housing after the maker’s dimensioned drawing, including the silver side strips, hinged 4 mm frosted face, outlet and 60 mm mounting pitch. Grothe’s newer prose datasheet rounds the envelope to 165 × 190 × 50 mm."},
+    {"id":"grothe-croma100a-k1","title":"Grothe CROMA 100A · installer photographs and two-call wiring diagram D","url":"https://www.grothe.de/media/a8/32/9a/1669388291/iba_croma100a_43170-mv003000_2021-08-10.pdf","architecture":"Figures 2, 3a and 6a show the empty cell bay, K1 cable entry, front screw bank and setting controls. Diagram D uses the two 8–12 V supply connections and inputs C1 and C2. Diagram C uses the fifth connection V for dry contacts. Hidden PCB, speaker, screw sections and wire dress are interpreted study geometry."},
     {"id":"rg1-panel","title":"Switch Components RG1-1A-DC-1-B · two-pin panel rocker","url":"https://www.switchcomp.com/switches/rocker-switch/RG1-1A-DC-1-B","architecture":"Manufacturer photographs document the unlit black rocker, two pairs of ribbed spring catches, numbered moulding and two pierced blades. The study fitting clips into a small worktop switch panel."},
     {"id":"rg1-drawing","title":"RG1-1A-DC-1-B · dimensions and circuit, rev B","url":"https://www.switchcomp.com/switches-docs/rocker-switch/RG1-1A-DC-1-B.pdf","architecture":"The current rating in the electrical specification is 10 A at 28 V DC. Numbered 1 and 2 blades are 6.35 mm wide and separated by 9.3 mm. Position 3 has no terminal. A 0.75 to 3 mm panel takes a 27.6 by 13.0 mm cutout."},
     {"id":"bg-815","title":"BG 815-01 · three-pole fan isolator","url":"https://www.bgelectrical.uk/uk/wiring-devices/800-series/10a-3-pole-fan-isolators/815-01","architecture":"A 10 A three-pole rocker on an 86 × 86 mm plate, overall depth 22.2 mm. The maker’s rear photograph shows staggered L1, L2 and N entries in two rows, with screws accessed separately above and below the cassette. The timer fan diagram uses L1 for switched line and L2 for permanent line."},
@@ -654,6 +656,7 @@
     "pwmcontrol:tunable-white": [
       "ledvance-strip"
     ],
+    "callchime:croma-100a": ["grothe-croma100a-shape","grothe-croma100a-k1"],
     "callchime:default": [
       "friedland-chime"
     ],

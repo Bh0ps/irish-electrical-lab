@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ConductorPicker, ProbePicker, TerminalPicker } from './ConnectionPicker';
+import { ConductorPicker, ProbePicker, TerminalPicker, type ChimeProbeChoice } from './ConnectionPicker';
 import { publicAssetUrl } from '../../web/asset-url';
 import { terminations, prepareSample, type PreparationTask, type WorkshopVisual } from '../../lib/termination-practice';
 import type { ForkMethod, ForkReading, ForkSetup } from '../../lib/fork-tester';
 import type { CircuitDocument, Endpoint } from '../../lib/types';
 import './tester-controls.css';
 
-export function TesterControls({doc,setup,reading,held,inspecting,onReturn,backlight,onBacklight,hasReference,voltageLight,activeProbe,onSource,onInspect,onMethod,onReference,onProbe,onEndpoint,onWire,onHold,onClear,onRead,showRecord}:{doc:CircuitDocument;setup:ForkSetup;reading:ForkReading;held:boolean;inspecting:boolean;onReturn:()=>void;backlight:boolean;onBacklight:()=>void;hasReference:boolean;voltageLight:boolean;activeProbe:'red'|'black';onSource:(url:string)=>void;onInspect:(rear?:boolean)=>void;onMethod:(method:ForkMethod)=>void;onReference:(r:ForkSetup['reference'])=>void;onProbe:(color:'red'|'black')=>void;onEndpoint:(e:Endpoint)=>void;onWire:(w:string)=>void;onHold:()=>void;onClear:()=>void;onRead:()=>void;showRecord:boolean}){
+export function TesterControls({doc,setup,reading,held,inspecting,onReturn,backlight,onBacklight,hasReference,voltageLight,activeProbe,onSource,onInspect,onMethod,onReference,onProbe,onEndpoint,onWire,onHold,onClear,onRead,showRecord,chime}:{chime?:ChimeProbeChoice;doc:CircuitDocument;setup:ForkSetup;reading:ForkReading;held:boolean;inspecting:boolean;onReturn:()=>void;backlight:boolean;onBacklight:()=>void;hasReference:boolean;voltageLight:boolean;activeProbe:'red'|'black';onSource:(url:string)=>void;onInspect:(rear?:boolean)=>void;onMethod:(method:ForkMethod)=>void;onReference:(r:ForkSetup['reference'])=>void;onProbe:(color:'red'|'black')=>void;onEndpoint:(e:Endpoint)=>void;onWire:(w:string)=>void;onHold:()=>void;onClear:()=>void;onRead:()=>void;showRecord:boolean}){
   const isFork=setup.method.startsWith('fork'),usingProbes=setup.method==='resistance'||setup.method==='probe-voltage';
   const unitWord=({V:'volts',A:'amps','Ω':'ohms'} as Record<string,string>)[reading.unit];
   const spokenReading=reading.status==='value'?reading.shown+' '+unitWord:reading.status==='open'?'OL, open circuit':reading.status==='overrange'?(reading.shown==='OL'?'OL, resistance above 2,000 ohms':'Above the tester range'):reading.status==='off'?'Tester off':'No reading';
@@ -27,7 +27,7 @@ export function TesterControls({doc,setup,reading,held,inspecting,onReturn,backl
     {isFork&&<button type="button" className="tester-function" onClick={()=>onMethod(setup.method==='fork-current'?'fork-voltage':'fork-current')}>Yellow button · show {setup.method==='fork-current'?'volts':'amps'}</button>}
     {setup.method==='fork-voltage'&&<label>Earth reference<select value={setup.reference} onChange={e=>onReference(e.target.value as ForkSetup['reference'])}><option value="none">Choose a reference</option><option value="pad">Touch rear pad · black probe in holder</option><option value="black">Place black probe on an earth terminal</option></select></label>}
     {isFork&&<details open><summary>Choose one insulated core</summary><ConductorPicker circuit={doc} selected={setup.wire} onPick={onWire}/></details>}
-    {usingProbes&&<ProbePicker circuit={doc} points={{red:setup.a,black:setup.b}} active={activeProbe} onProbe={onProbe} onPick={onEndpoint}/>}
+    {usingProbes&&<ProbePicker circuit={doc} chime={chime} points={{red:setup.a,black:setup.b}} active={activeProbe} onProbe={onProbe} onPick={onEndpoint}/>}
     {setup.method==='fork-voltage'&&setup.reference==='black'&&<details><summary>Choose an earth terminal for the black probe</summary><TerminalPicker circuit={doc} label="black reference tester terminal" probes={{black:setup.b}} activeProbe="black" onPick={onEndpoint}/></details>}
     {setup.method==='resistance'&&<button type="button" aria-pressed={sound} onClick={()=>{if(!sound&&typeof AudioContext!=='undefined'){audio.current??=new AudioContext();void audio.current.resume().catch(()=>{});}setSound(!sound);}}>Continuity tone · {sound?'on':'off'}</button>}
     <p role="status" aria-atomic="true">{!held&&reading.status==='value'&&reading.unit!=='V'&&<span className="sr-only">{spokenReading}. </span>}{held?'HOLD has frozen the display. Release it to see the live reading.':reading.explanation}</p>

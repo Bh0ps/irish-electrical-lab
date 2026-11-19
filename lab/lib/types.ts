@@ -26,6 +26,7 @@ export interface DeviceState { energized: boolean; closed: boolean; tripped: boo
 export interface Diagnostic { id: string; severity: 'info' | 'warning' | 'error'; category: 'operation' | 'protection' | 'model'; title: string; explanation: string; component?: string; wire?: string }
 export interface SimulationEvent { time: number; title: string; detail: string; component?: string }
 export interface SimulationResult {
+  chimeSenseTerminals?: string[];
   revision: number; pwmTerminals?: string[]; pwmWires?: string[]; bondedEarthTerminals?: string[]; terminalVoltages: Record<string, Complex>; branchCurrents: Record<string, Complex>;
   wireCurrents: Record<string, Complex>; componentPower: Record<string, number>; deviceStates: Record<string, DeviceState>;
   diagnostics: Diagnostic[]; events: SimulationEvent[]; totalPower: number; totalCurrent: number;

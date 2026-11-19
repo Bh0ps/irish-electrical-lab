@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.0 — Put the probes on the chime
+
+- Each of the 80 lessons has a short clue about its own circuit. A wrong answer gives you something to look at or try. The explanation is still available under Help.
+- When a lesson asks for volts, choose the fitting and touch each probe to a marked terminal. The full tester is under Meter controls. The lesson checks where you put the probes as well as the reading.
+- At Oakfield house, open the hall chime and measure the front door input with the button held, then released. Check the separate supply at the same fitting. The original Grothe CROMA 100A model includes the five K1 screws and the rear cable entry. Older saved chimes keep their four terminal markings.
+
 ## 1.14.0 — Try both stair switches
 
 - Operate the downstairs switch, find which wire it feeds and work the light again from the landing. The job uses the voltages on your own circuit. Earlier saves still open at their original step.

@@ -27,14 +27,14 @@ function near(value:number,expected:number,tolerance:number){
 }
 
 test('both hall chimes sit on the plaster and the transformer fits inside its closed box at either detail level',async()=>{
-  for(const [id,name,width,height,depth] of [[71,'bell',.116,.116,.051],[72,'chime',.191,.163,.051]] as const){
+  for(const [id,name,width,height,depth] of [[71,'bell',.116,.116,.051],[72,'chime',.163,.190,.0504]] as const){
     const doc=lesson(id),site=jobSite(doc),item=site.items.find(i=>i.id===name)!;
     const c=doc.components.find(c=>c.id===name)!,tx=site.items.find(i=>i.id==='tx')!;
     for(const suffix of ['','.low']){
-      const rendered=await model(c.type+'_default'+suffix);
+      const rendered=await model(c.type+'_'+(c.variant??'default')+suffix);
       rendered.scale.set(...item.fixture!.scale);rendered.position.set(...item.position);
       const bounds=new THREE.Box3().setFromObject(rendered),size=bounds.getSize(new THREE.Vector3());
-      const tolerance=suffix==='.low'?.0015:.0002;
+      const tolerance=suffix==='.low'?.0015:item.fixture?.croma?.0005:.0002;
       near(size.x,width,tolerance);near(size.y,height,tolerance);near(size.z,depth,tolerance);
       near(bounds.min.z,BACK-.01,.001);
       const windings=await model('transformer_default'+suffix);

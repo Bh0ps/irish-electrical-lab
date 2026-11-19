@@ -14,6 +14,7 @@ export interface CallStep {
   pressed?:boolean;
   /** Put one probe on each pad of this fitting. */
   measure?:boolean;
+  chimeReading?:'front-held'|'front-released'|'supply';
   waitForFan?:boolean;
   /** Printed-terminal question between the two switch operations. */
   stairCheck?:'near'|'far';
@@ -37,9 +38,9 @@ const bathroom=(light:boolean,fan:boolean,isolated=false):CallReading[]=>[
 ];
 const branches = (on:boolean):CallReading[] => [{id:'load1',label:'Lamp',on},{id:'load2',label:'Socket',on:true}];
 const chime = (call:DoorCall):CallReading[] => [
-  {id:'chime',label:'Chime supply · AC1 to AC2',pair:['AC1','AC2'],nominal:12,on:true,call},
-  {id:'chime',label:'Front · FRONT to AC2',pair:['FRONT','AC2'],nominal:12,on:call==='Front'||call==='Both'},
-  {id:'chime',label:'Back · REAR to AC2',pair:['REAR','AC2'],nominal:12,on:call==='Rear'||call==='Both'},
+  {id:'chime',label:'Chime supply',pair:['AC1','AC2'],nominal:12,on:true,call},
+  {id:'chime',label:'Front door',pair:['FRONT','AC2'],nominal:12,on:call==='Front'||call==='Both'},
+  {id:'chime',label:'Back door',pair:['REAR','AC2'],nominal:12,on:call==='Rear'||call==='Both'},
 ];
 
 export const HOUSE_CALLS:HouseCall[] = [
@@ -57,12 +58,15 @@ export const HOUSE_CALLS:HouseCall[] = [
     {target:'branch1',label:'Choose a breaker',instruction:'Which breaker turns off the lamp and leaves the socket on?',changed:'The lamp went out. The socket still has power.',before:branches(true),after:branches(false)},
     {target:'branch1',label:'Restore the lighting breaker',instruction:'Switch the lamp back on at the board. Check both readings.',changed:'The lamp and the socket have power again.',before:branches(false),after:branches(true)},
   ]},
-  {lesson:72,title:'Check both doorbell buttons',request:'One chime serves both doors. In this job, press once to hold a button down and again to let go.',done:'You rang from each entrance. The chime showed which door it was and cleared when you let go.',
+  {lesson:72,title:'Check both doorbell buttons',searchTerms:'hall chime bell push front back two door inputs 12 volts AC',request:'One chime serves both doors. Press once to hold a button and again to let go.',done:'You checked both door calls and saw each one clear when you let go.',finishedId:'book:72:call-4',
     bellPushes:[{id:'front',door:'front'},{id:'back',door:'back'}],steps:[
-      {target:'front',pressed:true,label:'Hold front button',instruction:'Hold the front doorbell button. Watch the chime.',changed:'The chime shows Front door.',before:chime('Idle'),after:chime('Front')},
-      {target:'front',pressed:false,label:'Let go of front button',instruction:'Let go of the front button. Does the call clear?',changed:'The front call cleared. The chime still has its own supply.',before:chime('Front'),after:chime('Idle')},
-      {target:'back',pressed:true,label:'Hold back button',instruction:'Now ring from the back door. Which call shows?',changed:'The back button put voltage on the terminal marked REAR.',before:chime('Idle'),after:chime('Rear')},
-      {target:'back',pressed:false,label:'Let go of back button',instruction:'Let go of the back button and check the chime again.',changed:'The back call cleared.',before:chime('Rear'),after:chime('Idle')},
+      {target:'front',pressed:true,label:'Hold front button',instruction:'Ring the front doorbell. Keep the button held.',changed:'The front call reached the chime.',before:chime('Idle'),after:chime('Front')},
+      {target:'chime',measure:true,chimeReading:'front-held',label:'Open meter',instruction:'Measure the front call with the button held.',changed:'The button feeds the front call wire.',before:chime('Front'),after:chime('Front'),savedId:'book:72:meter-front-held'},
+      {target:'front',pressed:false,label:'Let go of front button',instruction:'Let go of the front button.',changed:'The front call cleared.',before:chime('Front'),after:chime('Idle'),savedId:'book:72:call-1'},
+      {target:'chime',measure:true,chimeReading:'front-released',label:'Open meter',instruction:'Measure the front call again with the button up.',changed:'Letting go cuts the feed to the front call wire.',before:chime('Idle'),after:chime('Idle'),savedId:'book:72:meter-front-released'},
+      {target:'chime',measure:true,chimeReading:'supply',label:'Open meter',instruction:'Does the chime still have power? Measure its supply.',changed:'The transformer still feeds the chime with both buttons up.',before:chime('Idle'),after:chime('Idle'),savedId:'book:72:meter-supply'},
+      {target:'back',pressed:true,label:'Hold back button',instruction:'Ring from the back door. Which call comes in?',changed:'The back call reached the chime.',before:chime('Idle'),after:chime('Rear'),savedId:'book:72:call-2'},
+      {target:'back',pressed:false,label:'Let go of back button',instruction:'Let go of the back button and check the chime.',changed:'The back call cleared.',before:chime('Rear'),after:chime('Idle'),savedId:'book:72:call-3'},
     ]},
   {lesson:66,title:'Meter the worktop lights',request:'Both worktops are lit. Check one strip with its switch off and the other with its switch on.',done:'You measured the voltage at each strip and showed that either worktop can stay lit on its own.',steps:[
     {target:'left-switch',label:'Use the left switch',instruction:'Turn off the left worktop light. Leave the right one on.',changed:'The left strip went dark. The right strip is still lit.',before:worktops(true,true),after:worktops(false,true)},
@@ -111,14 +115,70 @@ export function savedCallStep(call:HouseCall,id?:string) {
 export interface CallOperation { component:string; activity:string; before:CircuitDocument; reading?:SimulationResult }
 export interface CallSample {activity:string; evidence:MeasurementEvidence}
 
+export function chimeMark(doc:CircuitDocument,pin:string){
+  return describeEndpoint(doc,{component:'chime',terminal:pin})?.pointLabel??pin;
+}
+function callPair(step:CallStep):[string,string]{
+  return [step.chimeReading==='supply'?'AC1':'FRONT','AC2'];
+}
+export function chimeProbeClue(step:CallStep,doc:CircuitDocument){
+  const [point,reference]=callPair(step).map(pin=>chimeMark(doc,pin));
+  return 'On the chime, put one probe on '+point+' and one on '+reference+'. Record the volts.';
+}
+export function chimeTask(step:CallStep,doc:CircuitDocument){
+  if(!step.chimeReading)return step.instruction;
+  const [point,reference]=callPair(step).map(pin=>chimeMark(doc,pin));
+  if(step.chimeReading==='supply')return 'Check the chime supply. Measure '+point+' to '+reference+'.';
+  return 'Measure '+point+' to '+reference+' '+(step.chimeReading==='front-held'?'with the front button held.':'with the front button up.');
+}
+export function chimeMeterControl(step:CallStep,doc:CircuitDocument){
+  if(!step.chimeReading)return;
+  const held=(id:string)=>doc.components.find(c=>c.id===id&&c.type==='pushbutton')?.params.pressed;
+  if(held('back')===true)return {id:'back',label:'Let go of back button'};
+  if(held('front')!==undefined&&held('front')!==(step.chimeReading==='front-held')){
+    return {id:'front',label:step.chimeReading==='front-held'?'Hold front button':'Let go of front button'};
+  }
+}
+function checkChimeSample(step:CallStep,doc:CircuitDocument,result:SimulationResult,entry:MeasurementEvidence){
+  const [point,reference]=callPair(step);
+  const probes=[entry.a,entry.b],pins=probes.map(p=>p?.terminal);
+  if(!probes.every(p=>p?.component==='chime')||!pins.includes(point)||!pins.includes(reference)){
+    const onChime=probes.filter(p=>p?.component==='chime').map(p=>p?.terminal);
+    const parked=onChime.includes(reference)?reference:onChime.includes(point)?point:undefined;
+    if(parked){
+      const missing=parked===reference?point:reference;
+      return {pass:false,message:'Leave one probe on '+chimeMark(doc,parked)+'. Move the other to '+chimeMark(doc,missing)+'.'};
+    }
+    return {pass:false,message:chimeProbeClue(step,doc)};
+  }
+  if(!['front','back'].every(id=>doc.components.some(c=>c.id===id&&c.type==='pushbutton')))return {pass:false,message:'Check that both door buttons are on your bench.'};
+  const correction=chimeMeterControl(step,doc);
+  if(correction)return {pass:false,message:correction.label+' and take a fresh reading.'};
+  const volts=result.terminalVoltages;
+  const a=volts['chime.'+point],b=volts['chime.'+reference];
+  if(!a?.frequency||a.frequency!==b?.frequency)return {pass:false,message:'Check the transformer. This chime uses a 12 V AC supply.'};
+  const observed=callReadings(step.before,doc,result);
+  if(!observed?.every(r=>r.matches)){
+    const supply=observed?.[0]?.value;
+    if(!doc.supply.enabled||supply==null||supply<1)return {pass:false,message:'Check both supply wires from the transformer to the chime.'};
+    if(supply<10.8||supply>13.2)return {pass:false,message:'The chime supply reads '+supply.toLocaleString('en-IE',{maximumFractionDigits:1})+' V. Check the transformer’s 12 V output.'};
+    return {pass:false,message:'Check which wire comes from each button. Each door should ring on its own.'};
+  }
+  const displayed=entry.instrument?.displayed??entry.value!.toLocaleString('en-IE',{maximumFractionDigits:1});
+  return {pass:true,message:displayed+' V AC. '+step.changed};
+}
+
 export function checkCallSample(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,sample?:CallSample){
   const step=call.steps[index];
   if(!step?.measure||!sample||sample.activity!==houseStepId(call,index)||doc.lessonId!==call.lesson||!result?.converged||result.revision!==doc.revision)return;
-  const entry=currentEvidence(doc,result,[sample.evidence])[0];
-  if(!entry)return;
+  const proposed=sample.evidence;
+  if(proposed.circuitId!==doc.id||proposed.revision!==doc.revision)return;
+  if(proposed.mode!=='voltage'||proposed.instrument&&proposed.instrument.method!=='probe-voltage')return {pass:false,message:'Choose volts and use the two probes.'};
+  if(proposed.assisted!==false)return {pass:false,message:step.chimeReading?'Choose both chime terminals yourself, then record the reading.':'Choose each pad yourself, then record the reading again.'};
+  const entry=currentEvidence(doc,result,[proposed])[0];
+  if(!entry||entry.value===null)return;
+  if(step.chimeReading)return checkChimeSample(step,doc,result,entry);
   const side=step.target==='left'?'left':'right';
-  if(entry.mode!=='voltage'||entry.instrument&&entry.instrument.method!=='probe-voltage')return {pass:false,message:'Choose volts and use the two probes.'};
-  if(entry.assisted!==false)return {pass:false,message:'Choose each pad yourself, then record the reading again.'};
   const pads=[entry.a?.terminal,entry.b?.terminal];
   if(entry.a?.component!==step.target||entry.b?.component!==step.target||!pads.includes('L')||!pads.includes('N')){
     const other=side==='left'?'right':'left';
@@ -147,7 +207,8 @@ export function callReadings(points:CallReading[],doc:CircuitDocument,result?:Si
     const lit=point.emitter?result.deviceStates[point.id]?.energized:undefined;
     const isolated=point.id==='fan'&&result.deviceStates['fan-isolation']?.closed===false&&result.deviceStates.runon?.energized===false&&lit===false&&(value===null||value<=1);
     const voltageMatches=point.isolated?isolated:powered===point.on && inRange;
-    return {label:point.label,value,powered,lit,isolated,call,matches:voltageMatches && (!point.emitter||lit===point.on) && (!point.call || call===point.call)};
+    const label=point.id==='chime'&&point.pair?point.label+' · '+point.pair.map(pin=>chimeMark(doc,pin)).join(' to '):point.label;
+    return {label,value,powered,lit,isolated,call,matches:voltageMatches && (!point.emitter||lit===point.on) && (!point.call || call===point.call)};
   });
   return readings;
 }

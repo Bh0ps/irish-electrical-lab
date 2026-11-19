@@ -33,3 +33,15 @@
 .sample-equipment { flex-wrap:nowrap; }
 .sample-equipment p { margin:.15rem 0; }
 @media(pointer:coarse){.tester-controls button,.termination-practice button,.tester-controls summary,.termination-practice summary{min-height:44px}.tester-controls select,.termination-practice select{font-size:16px;min-height:44px}}
+.lesson-voltmeter {display:grid;gap:.55rem;min-width:0}
+.lesson-voltmeter output {padding:.45rem .65rem;color:#193b36;background:#e7f1e9;border:1px solid #acc7bf;border-radius:.4rem;font-weight:650;font-variant-numeric:tabular-nums}
+.lesson-voltmeter label {display:flex;align-items:center;gap:.6rem;min-width:0}
+.lesson-voltmeter select {width:100%;min-width:0;color:inherit;background:white;min-height:44px;border:1px solid #99aeae;border-radius:.4rem;font:inherit}
+.lesson-voltmeter fieldset {min-width:0;border:0;padding:0;margin:0}
+.lesson-voltmeter fieldset div,.lesson-meter-leads {display:flex;gap:.4rem;flex-wrap:wrap}
+.lesson-voltmeter legend,.lesson-voltmeter p {font-size:.9rem;margin:0 0 .2rem}
+.lesson-meter-leads button,.lesson-voltmeter fieldset button {min-height:44px;min-width:44px;padding:.3rem .55rem;overflow-wrap:anywhere;border:1px solid #91a6a3;color:#233936;background:#fff;border-radius:.4rem;font:inherit}
+.lesson-meter-leads button {flex:1 1 5rem;text-align:left}
+.lesson-meter-leads span {display:block;font-size:.85em}
+.lesson-voltmeter button[aria-pressed=true] {box-shadow:inset 0 0 0 2px #2e6259;background:#eef6f2}
+.lesson-voltmeter summary {cursor:pointer;min-height:32px;padding:.35rem 0}

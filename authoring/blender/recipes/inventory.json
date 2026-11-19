@@ -24015,5 +24015,247 @@
     ],
     "meshNodes": 58,
     "vertices": 15725
+  },
+  {
+    "key": "callchime_croma-100a",
+    "file": "callchime_croma-100a.json",
+    "galleryKey": "callchime:croma-100a",
+    "name": "Hall chime",
+    "component": {
+      "id": "gallery-106",
+      "type": "callchime",
+      "label": "Hall chime",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "ratedVoltage": 12
+      },
+      "variant": "croma-100a"
+    },
+    "definition": {
+      "type": "callchime",
+      "name": "Two-input AC door chime",
+      "group": "Safety",
+      "model": "alarm",
+      "description": "The chime has a supply of its own. The front and back buttons each have a separate wire, so you can tell which door is calling.",
+      "terminals": [
+        {
+          "id": "AC1",
+          "label": "AC1",
+          "role": "output",
+          "purpose": "One wire from the bell transformer comes here. Put the other probe on AC2 to check the AC supply, even with both buttons released.",
+          "anchor": [
+            -0.31350000000000006,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "AC2",
+          "label": "AC2",
+          "role": "output",
+          "purpose": "This wire goes back to the transformer. Leave one probe here to check the supply at AC1 or a button at FRONT or REAR.",
+          "anchor": [
+            -0.10450000000000001,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "FRONT",
+          "label": "FRONT",
+          "role": "control",
+          "purpose": "Hold the front door button and measure from FRONT to AC2. If its wire and the supply are sound, you should see the bell supply voltage.",
+          "anchor": [
+            0.10450000000000001,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "id": "REAR",
+          "label": "REAR",
+          "role": "control",
+          "purpose": "Hold the back door button and measure from REAR to AC2. If its wire and the supply are sound, you should see the bell supply voltage.",
+          "anchor": [
+            0.31350000000000006,
+            0.19949999999999998,
+            -0.056999999999999995
+          ],
+          "group": "Connections",
+          "scale": 0.68,
+          "entryDirection": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "defaults": {
+        "ratedVoltage": 12
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The case holds the working parts in place and keeps them apart."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "Lift the cover on the bench to see the connections underneath."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "electronics",
+          "name": "Control board",
+          "purpose": "The board takes signals in and controls the outputs. The bench shows what the board does at its terminals."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "This part moves the contacts when you use the control."
+        }
+      ],
+      "size": [
+        1.1,
+        0.95,
+        0.6
+      ],
+      "variants": [
+        {
+          "id": "croma-100a",
+          "name": "Grothe CROMA 100A · two-door electronic chime"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "AC2",
+        "label": "=/~",
+        "role": "output",
+        "group": "K1 · Behind the front panel",
+        "purpose": "One side of the bell transformer. In this circuit, leave one probe here to compare either door signal with this same point.",
+        "anchor": [
+          0.205,
+          1.08,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "AC1",
+        "label": "8/12V",
+        "role": "output",
+        "group": "K1 · Behind the front panel",
+        "purpose": "The other side of the 8–12 volt supply. It also feeds the two door buttons in this circuit.",
+        "anchor": [
+          0.205,
+          1.03,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "FRONT",
+        "label": "C1",
+        "role": "control",
+        "group": "K1 · Behind the front panel",
+        "purpose": "Call input 1. The front door button sends the transformer voltage here.",
+        "anchor": [
+          0.205,
+          0.9800000000000001,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "REAR",
+        "label": "C2",
+        "role": "control",
+        "group": "K1 · Behind the front panel",
+        "purpose": "Call input 2. The back door button sends the transformer voltage here.",
+        "anchor": [
+          0.205,
+          0.93,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "V",
+        "label": "V",
+        "role": "control",
+        "group": "K1 · Behind the front panel",
+        "purpose": "Common for the alternative contact-sensing connection. A button can join V to C1 or C2. This screw is unused when the buttons send their own voltage.",
+        "anchor": [
+          0.205,
+          0.8800000000000001,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      }
+    ],
+    "meshNodes": 63,
+    "vertices": 3844
   }
 ]

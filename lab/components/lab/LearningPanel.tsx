@@ -26,6 +26,7 @@ interface Props {
   onBuild: () => void; onTest: () => void; onChallenge: () => void; onStudied: () => void; onReference: (url: string) => void;
   onStageChange?: (stageId: LessonStageId, putToolsAway: boolean) => void;
   onRecord?: () => void;
+  voltageMeter?: {open:boolean; ready:boolean; show:()=>void};
   wireAddition?: GuidedWireAddition;
   onUndoWire?: (addition: GuidedWireAddition) => boolean;
   wallSwitchPress?: {circuitId:string;revision:number};
@@ -108,10 +109,8 @@ export default function LearningPanel(props: Props) {
       onAttempt(activity, true);
       setAccepted(true);
       setCheckedState(stateKey);
-      setFeedback('Reading checked and saved.');
-    } else {
-      setFeedback(checked.explanation);
     }
+    setFeedback(checked.explanation);
   }, [activity, currentAccepted, onAttempt, props.document, props.evidence, props.result, stateKey]);
   const lampVoltage = bookLampVoltage(props.document, props.result);
   const lampReadingPending = !props.result || props.result.revision !== props.document.revision;
@@ -248,6 +247,8 @@ export default function LearningPanel(props: Props) {
   if (!activity) return <p>No guided activity is available.</p>;
 
   const primaryAction = namedSwitch && !currentAccepted ? 'operate' : getLessonPrimaryAction(activity, { currentAccepted, mode: props.mode, challengeStarted: props.challengeStarted, assessmentCurrent, canRecord, measurementRecorded });
+  const voltageMeter=activity.measurement?.mode==='voltage' ? props.voltageMeter : undefined;
+  const showMeter=primaryAction==='record' && voltageMeter && !voltageMeter.open;
   const atRequestedPosition = namedSwitch && Object.entries(activity.expectedParams ?? {}).every(([k,v])=>namedSwitch.params[k]===v);
   const switchAction = namedSwitch?.type==='selector' ? 'Turn the selector' : namedSwitch && ['mcb','rcbo'].includes(namedSwitch.type) ? 'Move the breaker handle' :
     namedSwitch && ['isolator','isolator3'].includes(namedSwitch.type) ? 'Move the handle' : 'Press the switch';
@@ -273,7 +274,7 @@ export default function LearningPanel(props: Props) {
     : primaryAction === 'build' ? 'Start guided build'
       : primaryAction === 'challenge' ? 'Start fault exercise'
         : primaryAction === 'test' ? 'Test circuit'
-          : primaryAction === 'record' ? 'Record reading'
+          : primaryAction === 'record' ? (showMeter?'Open meter':'Record reading')
           : activity.kind === 'predict' || activity.kind === 'explain' ? 'Check answer'
             : activity.kind === 'measure' ? 'Check recorded reading'
               : activity.kind === 'repair' ? 'Check repair'
@@ -288,6 +289,7 @@ export default function LearningPanel(props: Props) {
     else if (primaryAction === 'build') props.onBuild();
     else if (primaryAction === 'challenge') props.onChallenge();
     else if (primaryAction === 'test') props.onTest();
+    else if (showMeter) voltageMeter.show();
     else if (primaryAction === 'record') props.onRecord?.();
     else verify();
   }
@@ -301,6 +303,7 @@ export default function LearningPanel(props: Props) {
     : activity.measurement?.mode === 'resistance' ? 'Switch off all supplies on the bench, including batteries. Put one probe on each end of the wire.'
     : activity.measurement?.mode === 'voltage' ? 'Choose a terminal for each probe. The number on the meter is the voltage between those two points.'
     : switchStep ? 'Press the white wall switch below the lamp, or use the on/off button here.'
+    : activity.clue ? activity.clue
     : activity.kind === 'predict' ? 'You can try the circuit first if you’re unsure.'
     : activity.kind === 'explain' ? 'Think back to which control you moved and what changed on the bench.'
     : activity.kind === 'repair' ? 'Read the fault report. Use the meter to check the fitting that stopped working.'
@@ -348,6 +351,7 @@ export default function LearningPanel(props: Props) {
         switchOn={switchClosed} supplyOn={props.document.supply.enabled}
         onOperate={() => props.onOperateComponent?.('switch')}/>}
       {connectionNotice && <div className="task-feedback success" role="status" data-guided-connection-checked>{connectionNotice}<span className="sr-only"> Next step: {activity.title}</span></div>}
+      {props.context && voltageMeter?.open && <div className="lesson-context">{props.context}</div>}
       {feedback && (!namedSwitch || currentAccepted) && (!wireToUndo || wireToUndo.circuitId===props.document.id && wireToUndo.revision===props.document.revision) && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
         {accepted && !currentAccepted ? 'The circuit has changed. Check this step again.' : feedback}
         {wireToUndo?.circuitId===props.document.id && props.onUndoWire && <Button variant="outline" size="sm" onClick={()=>{
@@ -356,8 +360,8 @@ export default function LearningPanel(props: Props) {
           taskHeading.current?.focus({preventScroll:true});
         }}>Undo this wire</Button>}
       </div>}
-      {props.context && (!course || !activity.bookStep) && <div className="lesson-context">{props.context}</div>}
-      <Button onClick={primary} disabled={question && !answer || !!starterText && (lampVoltage === null || !props.document.supply.enabled) || primaryAction === 'operate' && (lampReadingPending || !props.document.supply.enabled || switchTripped)} className="primary-button full" data-learning-primary={primaryAction}>
+      {props.context && !voltageMeter?.open && (!course || !activity.bookStep) && <div className="lesson-context">{props.context}</div>}
+      <Button onClick={primary} disabled={primaryAction==='record' && voltageMeter?.open && !voltageMeter.ready || question && !answer || !!starterText && (lampVoltage === null || !props.document.supply.enabled) || primaryAction === 'operate' && (lampReadingPending || !props.document.supply.enabled || switchTripped)} className="primary-button full" data-learning-primary={primaryAction}>
         {primaryLabel}{primaryAction === 'next' || bookReading ? <ArrowRight size={15} aria-hidden="true"/> : null}
       </Button>
       <div className="task-support-actions">
@@ -367,7 +371,7 @@ export default function LearningPanel(props: Props) {
         {activity.kind === 'predict' && !currentAccepted && <Button variant="link" size="sm" onClick={() => go(index+1)}>{tryPredictionAtLamp && feedback ? 'Try it on the meter' : 'I’m not sure — let me try'}</Button>}
       </div>
       {helpLevel > 0 && <p className="task-feedback" role="status">{helpLevel === 1 ? clue : helpLevel === 2 ? (targetName ? `Look for the highlighted part on ${targetName}.` : 'Look for the highlighted terminal.') : activity.explanation}</p>}
-      <TermsInThisStep key={activity.id} text={[activity.title, activity.instruction, ...(activity.options ?? []).map(option=>option.label), feedback, helpLevel === 3 ? activity.explanation : ''].join(' ')}/>
+      <TermsInThisStep key={activity.id} text={[activity.title, activity.instruction, ...(activity.options ?? []).map(option=>option.label), feedback, helpLevel===1?clue:helpLevel===3?activity.explanation:''].join(' ')}/>
       {props.context && course && activity.bookStep && <div className="lesson-context">{props.context}</div>}
       {savedAchievement && !currentAccepted && <p className="task-saved-progress">Completed on an earlier try.</p>}
     </section>

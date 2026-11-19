@@ -59,6 +59,7 @@ export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:
   }
   const wire=doc.wires.find(w=>w.id===input.wire),unit=method==='fork-current'?'A':'V';
   if(!wire)return wait('Choose one insulated wire for the fork. Seat it in the bottom of the opening.',unit);
+  if([wire.from,wire.to].some(e=>r.chimeSenseTerminals?.includes(endpointKey(e))))return wait('This wire goes to V on the chime. Use the probes on 8/12V and =/~ to check its supply.',unit);
   if(r.pwmWires?.includes(wire.id)||[wire.from,wire.to].some(e=>r.pwmTerminals?.includes(endpointKey(e))))return wait('The controller pulses this wire on and off. The fork cannot give a reading here. Try the controller’s supply wires or check the LED power.',unit);
   if(method==='fork-voltage'&&!r.branchCurrents['wire:'+wire.id])return wait('There is a break in this wire. Set the dial to V and put one probe on each end.',unit);
   const va=r.terminalVoltages[endpointKey(wire.from)],vb=r.terminalVoltages[endpointKey(wire.to)];

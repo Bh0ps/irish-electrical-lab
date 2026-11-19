@@ -63,7 +63,7 @@ export function wireElvLesson(b:Bench,id:number) {
       tx();bell('bell','Shared 12 V AC chime');for(const name of ['front','rear']){push(name,name+' bell push',ac1,'output');ac([name,'NO'],['bell','L']);}
       ac(ac2,['bell','N']);break;
     case 72:
-      tx();add('callchime','chime','Two-input AC chime');ac(ac1,['chime','AC1']);ac(ac2,['chime','AC2']);
+      tx();add('callchime','chime','Hall chime',{},'croma-100a');ac(ac1,['chime','AC1']);ac(ac2,['chime','AC2']);
       for(const [name,input] of [['front','FRONT'],['back','REAR']]){push(name,name+' door push',ac1,'output');ac([name,'NO'],['chime',input]);}break;
     case 73:
       add('timer','hold','Call light timer · 4 s',{ratedVoltage:24,mode:'off-delay',on:true,demand:true,delay:4,requireInput:true});

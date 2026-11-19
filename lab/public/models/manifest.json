@@ -10907,5 +10907,124 @@
     "bytes": 1474800,
     "lowBytes": 661756,
     "bespokeBlender": true
+  },
+  {
+    "key": "callchime_croma-100a",
+    "galleryKey": "callchime:croma-100a",
+    "type": "callchime",
+    "name": "Hall chime",
+    "url": "/models/callchime_croma-100a.glb",
+    "lowUrl": "/models/callchime_croma-100a.low.glb",
+    "thumbnailUrl": "/models/thumbnails/callchime_croma-100a.png",
+    "detailRevision": 3,
+    "detailFamily": "alarm",
+    "detailFeatures": [
+      "croma-acrylic",
+      "croma-rear-entry",
+      "alarm-transducer",
+      "croma-sound-outlet",
+      "alarm-backup-or-solenoid",
+      "croma-sound-controls",
+      "individual-electrical-terminations"
+    ],
+    "sourceMeshCount": 163,
+    "meshCount": 46,
+    "triangles": 63915,
+    "lowTriangles": 36631,
+    "terminals": [
+      {
+        "id": "AC2",
+        "label": "=/~",
+        "role": "output",
+        "group": "K1 \u00b7 Behind the front panel",
+        "purpose": "One side of the bell transformer. In this circuit, leave one probe here to compare either door signal with this same point.",
+        "anchor": [
+          0.205,
+          1.08,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "AC1",
+        "label": "8/12V",
+        "role": "output",
+        "group": "K1 \u00b7 Behind the front panel",
+        "purpose": "The other side of the 8\u201312 volt supply. It also feeds the two door buttons in this circuit.",
+        "anchor": [
+          0.205,
+          1.03,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "FRONT",
+        "label": "C1",
+        "role": "control",
+        "group": "K1 \u00b7 Behind the front panel",
+        "purpose": "Call input 1. The front door button sends the transformer voltage here.",
+        "anchor": [
+          0.205,
+          0.9800000000000001,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "REAR",
+        "label": "C2",
+        "role": "control",
+        "group": "K1 \u00b7 Behind the front panel",
+        "purpose": "Call input 2. The back door button sends the transformer voltage here.",
+        "anchor": [
+          0.205,
+          0.93,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      },
+      {
+        "id": "V",
+        "label": "V",
+        "role": "control",
+        "group": "K1 \u00b7 Behind the front panel",
+        "purpose": "Common for the alternative contact-sensing connection. A button can join V to C1 or C2. This screw is unused when the buttons send their own voltage.",
+        "anchor": [
+          0.205,
+          0.8800000000000001,
+          0.218
+        ],
+        "entryDirection": [
+          -1,
+          0,
+          0
+        ],
+        "scale": 0.34
+      }
+    ],
+    "bytes": 1672396,
+    "lowBytes": 1007280,
+    "bespokeBlender": true
   }
 ]

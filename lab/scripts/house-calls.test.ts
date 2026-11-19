@@ -28,7 +28,8 @@ for(const call of HOUSE_CALLS){
         continue;
       }
       if(step.measure){
-        const evidence={...captureMeasurement(doc,reading,{mode:'voltage',a:{component:step.target,terminal:'L'},b:{component:step.target,terminal:'N'}}),assisted:false};
+        const [pin,reference]=step.chimeReading?[step.chimeReading==='supply'?'AC1':'FRONT','AC2']:['L','N'];
+        const evidence={...captureMeasurement(doc,reading,{mode:'voltage',a:{component:step.target,terminal:pin},b:{component:step.target,terminal:reference}}),assisted:false};
         assert.equal(checkCallSample(call,index,doc,reading,{activity:id,evidence})?.pass,true);
         assert.equal(verifiedCallStep(call,index,doc,reading,action),false);
         continue;
@@ -97,7 +98,7 @@ test('the next house job skips demonstrated jobs and keeps an unfinished job ava
   const [cupboard,stairs,board,bell,worktops,fan]=HOUSE_CALLS;
   let progress=migrateProgress(undefined);
   assert.equal(nextHouseCall(board,progress),bell);
-  progress=recordActivity(progress,bell.lesson,callActivityId(bell.lesson,bell.steps.length-1),'house-call',true);
+  progress=recordActivity(progress,bell.lesson,houseStepId(bell,bell.steps.length-1),'house-call',true);
   assert.equal(nextHouseCall(board,progress),worktops);
   progress=recordActivity(progress,worktops.lesson,callActivityId(worktops.lesson,worktops.steps.length-1),'house-call',true);
   assert.equal(nextHouseCall(board,progress),fan);
@@ -166,7 +167,8 @@ test('the doorbell job watches each chime input and its live supply during a hol
     return {...doc,revision:doc.revision+1,components:doc.components.map(c=>c.id===target?{...c,params:{...c.params,pressed}}:c)};
   }
   function attempt(index:number,before:CircuitDocument,after:CircuitDocument,component:string){
-    return verifiedCallStep(call,index,after,simulate(after),{component,activity:callActivityId(72,index),before,reading:simulate(before)});
+    const activity=callActivityId(72,index);
+    return verifiedCallStep(call,savedCallStep(call,activity)!,after,simulate(after),{component,activity,before,reading:simulate(before)});
   }
   const front=change(job,'front',true),both=change(front,'back',true),rear=change(job,'back',true),idle=change(front,'front',false);
   const values=(d:CircuitDocument)=>callReadings(call.steps[0].before,d,simulate(d))!.map(r=>Math.round(r.value!));

@@ -1,5 +1,6 @@
 import { COMPONENTS } from './components';
 import {BELL_CUPBOARD as serviceBoard,bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
+import {cromaLeadPath} from './croma-chime';
 import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
@@ -56,6 +57,7 @@ export function houseFixing(id:number,c:ComponentInstance){return c.mount?undefi
 export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixture?:FixturePose):Vec3{
   let depth=COMPONENTS[c.type].size[2]*scale/2;
   if(fixture?.worktopRocker)depth=ROCKER_BOX.depth;
+  else if(fixture?.croma)depth=0;
   else if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
   else if(fixture?.extractor)depth=0;
   else if(fixture?.serviceBox)depth=fixture.serviceBox==='timer'?bath.timerOffset:bath.cpcOffset;
@@ -86,6 +88,14 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openR
   // The rear wing and front rooms have separate routes in the ceiling void.
   const rearWing=item.room===REAR_GARDEN.id||(item.room>=4&&item.room<=7);
   const riser=site.kind==='home'&&rearWing?HOME_BACK-.04:service?service.back-.02:-2.87;
+  if(item.fixture?.croma){
+    const lead=cromaLeadPath(end.terminal).map(p=>fixturePoint(item.position,item.scale,item.fixture,component,p,item.rotation));
+    if(lead.length){
+      const entry=lead[lead.length-1];
+      const behind:Vec3=[entry[0],entry[1],chase[2]];
+      return {pin,chase:behind,riser,item,component,lead:[...lead,behind]};
+    }
+  }
   if(item.fixture?.worktopRocker){
     const open=typeof openRocker==='string'?openRocker===item.id:!!openRocker?.has(item.id),pose=rockerPose(item.position,open);
     const contact=fixturePoint(pose.position,item.scale,item.fixture,component,rockerWireEntry(terminal.id),pose.rotation);

@@ -1,4 +1,9 @@
 const terms: Array<[RegExp, string, string]> = [
+  [/\b(volts?|voltage)\b/i, 'Volts (V)', 'Put a probe on each of two points. The volts tell you the electrical difference between them. Both points can be live even when the meter reads zero.'],
+  [/\b(amps?|current reading)\b/i, 'Amps (A)', 'Current is how much electric charge passes each second. The fork measures the AC current in one wire.'],
+  [/\b(watts?|lamp power)\b/i, 'Watts (W)', 'Watts tell you how quickly something uses energy. Compare the watts at the lamp when you turn the dimmer up or down.'],
+  [/\b(in series|in parallel)\b/i, 'Series and parallel', 'In series, the same current passes through one fitting and then the next. In parallel, each fitting has a separate path between the same two points.'],
+  [/\b(heater|heating|immersion) elements?\b/i, 'Element', 'The part of a heater that gets hot when current flows through it.'],
   [/\bRCBO\b/i, 'RCBO', 'A breaker that can trip when too much current flows or when some current comes back by another route.'],
   [/\b(RCD|RCCB)\b/i, 'RCD or RCCB', 'It compares the current going out with the current coming back. If some takes another path, the device can trip. An RCCB needs a separate fuse or breaker for overloads.'],
   [/\bMCB\b/i, 'MCB', 'A circuit breaker that trips when too much current flows.'],

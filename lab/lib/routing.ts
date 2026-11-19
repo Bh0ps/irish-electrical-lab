@@ -7,6 +7,7 @@ import { cableCores } from './cables.ts';
 import { cableFace, cableProfile, coreSeat, type CableFace } from './cable-form.ts';
 import {rockerProbeApproach,rockerProbeContact,rockerSleeveEndZ} from './dc-rocker';
 import {bg812Contact} from './wall-rocker';
+import {CROMA_ENVELOPE,cromaLeadPath,cromaProbeContact} from './croma-chime';
 
 // Shared with the renderer: selection changes colour, never the cable diameter.
 export const WIRE_RADIUS = .018;
@@ -61,6 +62,10 @@ export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
 
 export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;normal:Vec3} {
   const c=doc.components.find(item=>item.id===e.component);
+  if(c?.type==='callchime'&&c.variant==='croma-100a'){
+    const contact=cromaProbeContact(e.terminal);
+    if(contact)return {position:localToWorld(c,contact.position),normal:rotateDirection(c.rotation,contact.normal)};
+  }
   if(c?.type==='switch'&&c.variant==='dc-rocker'&&['COM','OUT'].includes(e.terminal))
     return {position:localToWorld(c,rockerProbeContact(e.terminal)),normal:rotateDirection(c.rotation,rockerProbeApproach)};
   if(c?.type==='switch2'){
@@ -74,7 +79,16 @@ export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;norm
  * Local positions are in 100 mm units, measured against the XF100S study mesh.
  * Keep the shafts parallel as they share the 17 × 11 mm hole in the backplate.
  */
-function terminalPassage(c:ComponentInstance|undefined,anchor:Vec3,singleCore=true):Vec3[] {
+function terminalPassage(c:ComponentInstance|undefined,anchor:Vec3,singleCore=true,pin?:string):Vec3[] {
+  if(c?.type==='callchime'&&c.variant==='croma-100a'&&pin){
+    const passage=cromaLeadPath(pin);
+    if(passage.length){
+      // Keep the normal trunk spacing after the five insulated wires leave
+      // the smaller K1 aperture. The installed tails end at the backplate.
+      const end=passage[passage.length-1],tail:Vec3=[(end[0]+.04)*3-.04,(end[1]-.937)*3+.937,-.25];
+      return [anchor,...[...passage.slice(1),tail].map(p=>localToWorld(c,p))];
+    }
+  }
   if(c?.type==='switch2'&&singleCore){
     // A single core leaves the rear clamp straight before it bends. Shared
     // mouths keep the router's normal per-core fan-out and distinct paths.
@@ -123,6 +137,9 @@ function obstaclesFor(doc:CircuitDocument):Obstacle[] {
     let max:Vec3=[def.size[0]/2,def.size[1]*1.05,def.size[2]/2].map((v,i)=>Math.max(v,...terminals.map(t=>t.anchor[i]+.015))) as Vec3;
     if(component.type==='fan'&&component.variant==='xf100s'){
       min=[-.815,.065,-.45];max=[.815,1.695,.30];
+    }
+    if(component.type==='callchime'&&component.variant==='croma-100a'){
+      min=[-CROMA_ENVELOPE[0]/2,0,0];max=[CROMA_ENVELOPE[0]/2,CROMA_ENVELOPE[1],CROMA_ENVELOPE[2]];
     }
     if(component.type==='switch'&&component.variant==='dc-rocker'){
       min=[-.232,.052,-1.05];max=[.232,.908,.165];
@@ -194,7 +211,11 @@ function hitsBody(a:Vec3,b:Vec3,obstacles:Obstacle[],owner?:string):boolean {
 }
 class SegmentIndex {
   private pairedPads = new Map<string,string>();
+  private chimePorts = new Map<string,string>();
   constructor(doc:CircuitDocument,private reserveBreakouts=true) {
+    for(const chime of doc.components.filter(c=>c.type==='callchime'&&c.variant==='croma-100a')){
+      for(const pin of getComponentTerminals(chime,definitionFor(chime)))this.chimePorts.set(keyOf({component:chime.id,terminal:pin.id}),chime.id);
+    }
     for(const component of doc.components) if(component.type==='led'&&component.variant==='strip'){
       const positive=keyOf({component:component.id,terminal:'L'}), negative=keyOf({component:component.id,terminal:'N'});
       this.pairedPads.set(positive,negative);this.pairedPads.set(negative,positive);
@@ -203,7 +224,7 @@ class SegmentIndex {
   nearTerminalSpacing(a:string,b:string,normal:number):number {
     // On 8 mm tape these two solder lands are closer than the usual spare
     // clearance. The insulation must still clear right up to each pad.
-    return this.pairedPads.get(a)===b ? 2*WIRE_RADIUS+.001 : normal;
+    return this.pairedPads.get(a)===b || this.chimePorts.has(a)&&this.chimePorts.get(a)===this.chimePorts.get(b) ? 2*WIRE_RADIUS+.001 : normal;
   }
   segments:Segment[]=[];
   buckets=new Map<string,number[]>();
@@ -349,7 +370,7 @@ function createHarness(doc:CircuitDocument,obstacles:Obstacle[]):Harness {
     const members=doc.wires.filter(w=>w.cable?.runId===run.id);
     const ends=[run.from,run.to].map((endpoint,side)=>{
       const owner=doc.components.find(c=>c.id===endpoint.component)!;
-      const passage=terminalPassage(owner,terminalPosition(doc,endpoint));
+      const passage=terminalPassage(owner,terminalPosition(doc,endpoint),true,endpoint.terminal);
       const anchor=passage.at(-1)!;
       const normal=passage.length>1?rotateDirection(owner.rotation,[0,0,-1]):terminalDirection(doc,endpoint);
       const right=rotateDirection(owner.rotation,[1,0,0]);
@@ -450,7 +471,7 @@ function planHarness(doc:CircuitDocument,priority:Set<string>,reserveBreakouts:b
     .sort((a,b)=>Number(priority.has(b.w.id))-Number(priority.has(a.w.id))||neighbours.get(keyOf(b.e))!.length-neighbours.get(keyOf(a.e))!.length||keyOf(a.e).localeCompare(keyOf(b.e))||a.w.id.localeCompare(b.w.id));
   const owners=new Map(doc.components.map(c=>[c.id,c]));
   const anchors=new Map(entries.map(({e})=>[keyOf(e),harness.heads.get(e.component)?.point??terminalPosition(doc,e)]));
-  const passages=new Map(entries.map(({e})=>[keyOf(e),terminalPassage(owners.get(e.component),anchors.get(keyOf(e))!,neighbours.get(keyOf(e))!.length===1)]));
+  const passages=new Map(entries.map(({e})=>[keyOf(e),terminalPassage(owners.get(e.component),anchors.get(keyOf(e))!,neighbours.get(keyOf(e))!.length===1,e.terminal)]));
   const directions=new Map(entries.map(({e})=>{
     const sleeve=passages.get(keyOf(e))!;
     return [keyOf(e),sleeve.length>1?rotateDirection(owners.get(e.component)!.rotation,[0,0,-1]):harness.heads.get(e.component)?.outward??terminalDirection(doc,e)];
@@ -476,7 +497,7 @@ function planHarness(doc:CircuitDocument,priority:Set<string>,reserveBreakouts:b
     const right=unit(sub(basis,scale(normal,dot(basis,normal)))),up=unit(cross(right,normal));
     const own=occupied.segments.filter(s=>s.joint===keyOf(e));
     if(sleeve.length>1&&(own.length||sleeve.slice(1).some((p,i)=>
-      hitsBody(sleeve[i],p,obstacles,e.component)||occupied.hit(sleeve[i],p,w.id))))return undefined;
+      hitsBody(sleeve[i],p,obstacles,e.component)||occupied.hit(sleeve[i],p,w.id,owners.get(e.component)?.variant==='croma-100a'?keyOf(e):undefined))))return undefined;
     // Allocate a compact cone around the physical cable-entry direction.
     const depths=harness.heads.has(e.component)?[.22,.34,.5,.7]:owners.get(e.component)?.mount?[.20,.28,.34,.50,.70,.94]:priority.size?[.5,.34,.70,.94]:[.34,.50,.70,.94];
     for(const depth of depths)for(const radius of [0,.12,.18,.24,.32,.44,.60])for(let angle=0;angle<(radius?16:1);angle++) {
@@ -657,14 +678,17 @@ export function auditRoutes(doc:CircuitDocument,routing=routeCircuit(doc)):Routi
     const path=physical.get(w.id);if(!path)continue;
     const passages=[w.from,w.to].map(end=>{
       const owner=doc.components.find(c=>c.id===end.component);
-      return owner?terminalPassage(owner,terminalPosition(doc,end)):[];
+      return owner?terminalPassage(owner,terminalPosition(doc,end),true,end.terminal):[];
     });
+    const isCroma=[w.from,w.to].map(e=>doc.components.find(c=>c.id===e.component)?.variant==='croma-100a');
     const matchesPassage=(start:Vec3,end:Vec3,sleeve:Vec3[])=>sleeve.slice(1).some((p,i)=>
       distance(start,sleeve[i])<1e-7&&distance(end,p)<1e-7);
     if(selfOverlap(path))issues.push({wire:w.id,message:'Route crosses itself.'});
     for(let i=1;i<path.length;i++) {
-      const joint=i===1||atCableFace(w.from,path[i-1])?keyOf(w.from)
-        :i===path.length-1||atCableFace(w.to,path[i])?keyOf(w.to):undefined;
+      const packedFrom=isCroma[0]&&matchesPassage(path[i-1],path[i],passages[0]);
+      const packedTo=isCroma[1]&&matchesPassage(path[i],path[i-1],passages[1]);
+      const joint=i===1||packedFrom||atCableFace(w.from,path[i-1])?keyOf(w.from)
+        :i===path.length-1||packedTo||atCableFace(w.to,path[i])?keyOf(w.to):undefined;
       const owner=i===1||matchesPassage(path[i-1],path[i],passages[0])?w.from.component:
         i===path.length-1||matchesPassage(path[i],path[i-1],passages[1])?w.to.component:undefined;
       if(hitsBody(path[i-1],path[i],obstacles,owner))issues.push({wire:w.id,message:'Route crosses an equipment clearance.'});

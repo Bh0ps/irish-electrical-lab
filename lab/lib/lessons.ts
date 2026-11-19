@@ -884,11 +884,11 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
 
 }
 
-function createLesson(spec: Spec, index: number, legacyFan=false, olderWorktopSwitches:readonly string[]=[]): ConfigurationLesson {
+function createLesson(spec: Spec, index: number, legacyFan=false, olderFittings:readonly string[]=[]): ConfigurationLesson {
   const id = index + 1;
   const [title, category, tag, purpose, connections, sequence, measurement, fault, briefing, hint, answer, checks] = spec;
   const circuit = furnishCourseBoard(buildCircuit(id, title,legacyFan));
-  for(const part of circuit.components)if(olderWorktopSwitches.includes(part.id))delete part.variant;
+  for(const part of circuit.components)if(olderFittings.includes(part.id)){delete part.variant;if(part.type==='callchime')part.label='Two-input AC chime';}
   const extra=elvPage(id);
   const target:ChallengeTarget = extra ? {path:extra.target} : CHALLENGE_TARGETS[id];
   if (!target) throw new Error(`Lesson ${id} has no exact challenge target`);
@@ -917,6 +917,7 @@ function createLesson(spec: Spec, index: number, legacyFan=false, olderWorktopSw
   if(id===77)references.push({title:'Aspen Pumps · high-level safety switch with common, NC and NO terminals',url:'https://dam.aspenpumps.com/api/media/file/AW0012%20Silent%2B%20MINI%20WHITE%20MANUAL%2009-23%20Issue%207%20Print%20v2-8.pdf?prefix=media'});
   if(id===78)references.push({title:'ifm · normally open PNP inductive sensor',url:'https://media.ifm.com/dam/546f88cf-4cdf-47ac-b6ee-bee685c33458/Original/IFS204-02_EN-GB.pdf'});
   if(id===79)references.push({title:'Littelfuse · DC blade-fuse carrier ratings',url:'https://www.littelfuse.com/assetdocs/277-in-line-datasheet?assetguid=95bec608-b8d0-4cce-90c8-f39241cc9a9e'});
+  if(id===72&&!olderFittings.includes('chime'))references.push({title:'Grothe CROMA 100A · diagram D, page 5',url:'https://www.grothe.de/media/a8/32/9a/1669388291/iba_croma100a_43170-mv003000_2021-08-10.pdf'});
   if (id === 7) references.push({title:'IET: neutral–earth faults and residual-current protection (circuit principle)',url:'https://electrical.theiet.org/media/1066/2006_19_summer_wiring_matters__complete_no_adverts.pdf'});
   if (id >= 49) references.push(HSA);
   if (id >= 25 && id <= 34) references.push(HEATING);
@@ -939,9 +940,10 @@ function createLesson(spec: Spec, index: number, legacyFan=false, olderWorktopSw
   if(id===63)references.push(MANUFACTURERS.plc);
   if(id===64)references.push(MANUFACTURERS.safety);
   const comparison:Partial<Record<number,string>>={
+    72:olderFittings.includes('chime')?'On this earlier chime, AC1 and AC2 are the supply. FRONT and REAR are the two call terminals.':'Diagram D on this chime uses 8/12V and =/~ for the transformer. C1 is the front call and C2 is the back call. V is unused in this setup.',
     ...(id===36&&!legacyFan?{36:'This standard XF100S has two supply terminals. The timer is a separate part on the bench. The spare earth wire is parked in a connector beside the fan.'}:{}),
     12:'This 60 W filament lamp suits the HQ1A dimmer. The real dimmer switches during each AC cycle. The bench uses a resistor to show how the lamp power changes.',
-    66:olderWorktopSwitches.length===2 ? 'This older bench uses wall switches for the two lights. Follow the markings on their backs. For a real 24 V DC strip, the switch needs a suitable DC rating. The current kitchen example uses a DC-rated rocker.' : olderWorktopSwitches.length ? 'Follow the markings on each switch. In this example the older wall switch and the RG1 rocker have different markings. Each switches the positive wire feeding its own strip.' : 'On the back of each RG1 rocker, find the two metal tabs. In this kitchen the 24 V feed goes to tab 2. The wire to the strip leaves from tab 1. The switch will work with those two wires swapped.',
+    66:olderFittings.length===2 ? 'This older bench uses wall switches for the two lights. Follow the markings on their backs. For a real 24 V DC strip, the switch needs a suitable DC rating. The current kitchen example uses a DC-rated rocker.' : olderFittings.length ? 'Follow the markings on each switch. In this example the older wall switch and the RG1 rocker have different markings. Each switches the positive wire feeding its own strip.' : 'On the back of each RG1 rocker, find the two metal tabs. In this kitchen the 24 V feed goes to tab 2. The wire to the strip leaves from tab 1. The switch will work with those two wires swapped.',
     13:'A transformer changes AC voltage through its windings. The driver here gives the LEDs a steady DC output. Check the output marked on the unit.',
     14:'On a real PIR, the motion detector and timer can be in one fitting. Here you can try them separately. Stop the movement and watch how long the timer keeps the light on.',
     15:'The photocell switches the light when it gets dark. Check the maker’s diagram for the supply and switched output. The daylight setting and delay vary between products.',
@@ -964,7 +966,7 @@ function createLesson(spec: Spec, index: number, legacyFan=false, olderWorktopSw
       { title: 'Try the controls', beginner: sequence, apprentice: checks.join(' ') },
       { title: 'Where to put the probes', beginner: measurement, apprentice: probeNote },
       {title:'Work out the readings',...(extra?{beginner:ELV_WORKED[id],apprentice:extra.connection+' A wire loses a little voltage as it carries current. The voltage drop is ΔV = I × Z. On a DC circuit, Z is the wire’s resistance. Use the wire and load values on this bench.'}:calculationNotes(circuit,fault))},
-      ...(comparison[id]?[{title:'On the real fitting',beginner:comparison[id],apprentice:'Open the maker’s diagram below. Compare its supply, controls and output terminals with the ones on your bench.'}]:[]),
+      ...(comparison[id]?[{title:id===72&&olderFittings.includes('chime')?'On this earlier bench':'On the real fitting',beginner:comparison[id],apprentice:id===72&&olderFittings.includes('chime')?'The two button inputs share AC2 as their return. Keep one lead there to check either door.':'Open the maker’s diagram below. Compare its supply, controls and output terminals with the ones on your bench.'}]:[]),
       { title: 'Find the fault', beginner: briefing, apprentice: hint },
       { title: 'On a job in Ireland', beginner: context+'. '+caveat, apprentice: 'Ireland’s nominal supply is 230 V from line to neutral and 400 V between phases, at 50 Hz. Find the Irish wiring rules under I.S. 10101. Restricted electrical work in Ireland must be carried out by a Registered Electrical Contractor.' },
     ],
@@ -988,8 +990,10 @@ const earlierFan=createLesson([SPECS[35][0],'Ventilation & motors','Routine','In
 // Earlier kitchen saves used wall plates. Keep their printed terminal names in
 // guided tasks as well as on the bench, without changing the learner's wiring.
 const earlierKitchens=new Map<string,ConfigurationLesson>();
+const earlierChime=createLesson(lessonSpecs[71],71,false,['chime']);
 export function getLesson(id:number,doc?:CircuitDocument):ConfigurationLesson|undefined {
   if(id===36&&olderTimerFan(doc))return earlierFan;
+  if(id===72&&doc?.lessonId===72&&doc.components.some(c=>c.id==='chime'&&c.type==='callchime'&&(!c.variant||c.variant==='default')))return earlierChime;
   if(id===66&&doc?.lessonId===66){
     const older=['left-switch','right-switch'].filter(id=>doc.components.some(part=>part.id===id&&part.type==='switch'&&!part.variant));
     if(older.length){

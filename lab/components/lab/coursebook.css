@@ -81,7 +81,16 @@
 .call-breakers.stair-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
 .call-breakers button{display:flex;justify-content:space-between;width:100%;min-height:44px;height:auto;white-space:normal}
 .call-breaker-choice .task-feedback{margin-block:.2rem 0}
+.house-call[data-house-call="72"][data-house-tools] .house-job-heading,
 .house-call[data-house-tools] .house-job-heading.with-reading-feedback{position:sticky;top:0;z-index:4;flex-wrap:wrap}
+/* Keep the job in view while the tester and its terminal list scroll below it. */
+.mobile-lab .learn-column[data-sheet-open="true"]:not([data-picker-keyboard]):has(.house-call[data-house-call="72"][data-house-tools]){display:flex;flex-direction:column;overflow:hidden}
+.mobile-lab .learn-column:not([data-picker-keyboard]) .house-call[data-house-call="72"][data-house-tools]{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.mobile-lab .learn-column:not([data-picker-keyboard]) .house-call[data-house-call="72"][data-house-tools] .house-job-heading{position:static;flex:none}
+.mobile-lab .learn-column:not([data-picker-keyboard]) .house-call[data-house-call="72"][data-house-tools] .course-tool-context{min-height:0;overflow:auto;overscroll-behavior:contain;margin-bottom:0}
+@media(max-width:350px) and (orientation:portrait){
+  .mobile-lab .learn-column[data-sheet-open="true"]:not([data-picker-keyboard]):has(.house-call[data-house-call="72"][data-house-tools]){max-height:min(56dvh,calc(var(--lab-visible-height,100dvh)*.56))}
+}
 .house-job-heading.with-reading-feedback .task-feedback{flex-basis:100%;margin:0;padding:.35rem .5rem}
 .call-breakers button span{font-size:.85em;font-weight:400}
 .call-chime { display:flex; align-items:baseline; gap:.75rem; margin:.75rem 0 .3rem; }

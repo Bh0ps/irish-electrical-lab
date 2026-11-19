@@ -102,6 +102,12 @@
 .site-pad-rocker.site-pad-positive::after{left:0;right:auto;transform-origin:left;transform:rotate(-32deg)}
 .site-pad-rocker.site-pad-negative button{top:5px}
 .site-pad button small{font-size:.75rem}
+.chime-probe-choice{margin:.5rem 0;padding:.45rem .60rem;border:1px solid var(--line);border-radius:6px}
+.chime-probe-choice legend{padding:0 .2rem;font-weight:650}
+.chime-probe-choice p{margin:.15rem 0 .45rem}
+.chime-probe-choice>div{display:flex;gap:.3rem;flex-wrap:wrap}
+.chime-probe-choice button{min-width:44px;min-height:44px;padding:.3rem .55rem;color:var(--ink);background:white;border:1px solid var(--line);border-radius:5px}
+.chime-probe-choice button[aria-pressed=true]{color:white;background:#234c3b}
 .stair-locations{position:absolute;inset:6px 6px auto;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:4px;pointer-events:none}
 .stair-locations>*{pointer-events:auto}
 .stair-locations>.site-cable-toggle{position:static;margin-left:auto}

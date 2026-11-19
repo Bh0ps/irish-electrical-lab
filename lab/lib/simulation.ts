@@ -307,10 +307,23 @@ class Union {
   join(a: string, b: string) { const x = this.find(a), y = this.find(b); if (x !== y) this.parent.set(y, x); }
 }
 const PATH_DEVICES = new Set(['socket','mcb','mcb3','fuse','fcu','rcd','rcbo','rcd3','isolator','isolator3','panel','meter','rose','plug','plug3','cable','switch','switch2','intermediate','selector','changeover','junction','terminal','earthbar','neutralbar','contactor','relay','overload','thermostat','cutout','timer','sensor','smartrelay','plc','safetyRelay','valve','valve3']);
-function contactPaths(document: CircuitDocument, net: Network): Union {
+function contactPaths(document: CircuitDocument, net: Network, includePushbuttons=false): Union {
   const paths = new Union(), itemMap = new Map(document.components.map(item => [item.id, item]));
-  for (const b of net.branches) if (b.key.startsWith('wire:') || !b.power && b.component && PATH_DEVICES.has(itemMap.get(b.component)?.type || '')) paths.join(b.a, b.b);
+  for (const b of net.branches) {
+    const type = b.component && itemMap.get(b.component)?.type;
+    if (b.key.startsWith('wire:') || !b.power && type && (PATH_DEVICES.has(type) || includePushbuttons && type==='pushbutton')) paths.join(b.a,b.b);
+  }
   return paths;
+}
+
+// K1 on the CROMA accepts either a voltage on C1/C2 or a button joining V
+// to that input. The maker gives no sensing voltage for V (sheet 43170, p. 5).
+function chimeInputInRange(volts: C | undefined, ac: boolean, positiveOnly = false) {
+  if (!volts) return false;
+  // Round to a tenth so a nominal 8 V source still works with the small
+  // voltage drop in the lesson wires. This is a bench threshold.
+  const reading = Math.round((ac || !positiveOnly ? abs(volts) : volts.re) * 10) / 10;
+  return reading >= 8 && reading <= 12;
 }
 
 /** Installation findings follow conductor endpoints and actual contact paths.
@@ -506,6 +519,8 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
   // A grid-following inverter must not infer grid presence from its own injected voltage.
   // Trace conductor and closed-contact paths, excluding loads/sense impedances/source bonds.
   const gridPaths = contactPaths(document, net);
+  const chimePaths = document.components.some(item => item.type === 'callchime' && item.variant === 'croma-100a')
+    ? contactPaths(document,net,true) : undefined;
   const gridSources = document.components.filter(item => isType(item, 'source', 'source3') && net.voltages.some(s => s.kind === 'grid' && s.component === item.id));
   const gridConnected = (item: ComponentInstance) => gridSources.some(source => {
     const names = source.type === 'source3' ? ['L1','L2','L3'] : ['L'];
@@ -567,10 +582,22 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
       state.energized=!reversed&&supplyMagnitude>nominal*.05;state.level=state.energized?supplyMagnitude/nominal:0;
       state.details=reversed?'The module is wired backwards. Only a small leakage current flows.':supplyV?`${supplyMagnitude.toFixed(1)} V across the light.`:'The bench cannot give a voltage across this light.';
     } else if(item.type==='callchime'){
-      const supplied=abs(getV(item,'AC1','AC2'))>nominal*.6&&(solved.frequencies?.[terminal(item,'AC1')]??0)>0;
-      const front=supplied&&abs(getV(item,'FRONT','AC2'))>nominal*.55,rear=supplied&&abs(getV(item,'REAR','AC2'))>nominal*.55;
+      const supply = getV(item,'AC1','AC2'), ac = (solved.frequencies?.[terminal(item,'AC1')] ?? 0) > 0;
+      const croma = item.variant === 'croma-100a';
+      const supplied = croma ? chimeInputInRange(supply,ac) : abs(supply)>nominal*.6 && ac;
+      const inputOn = (pin: string) => {
+        const input = getV(item,pin,'AC2');
+        if (!supplied) return false;
+        if (!croma) return abs(input)>nominal*.55;
+        const common = chimePaths!.find(terminal(item,'V'));
+        const dry = common === chimePaths!.find(terminal(item,pin))
+          && ['AC1','AC2'].every(p => common !== chimePaths!.find(terminal(item,p)));
+        return dry || chimeInputInRange(input,(solved.frequencies?.[terminal(item,pin)] ?? 0)>0,true);
+      };
+      const front=inputOn('FRONT'), rear=inputOn('REAR');
       set(state,'energized',front||rear);state.call=front&&rear?'Both':front?'Front':rear?'Rear':'Idle';
-      state.details=front&&rear?'Front and rear calls are both on.':front?'The front push is calling.':rear?'The rear push is calling.':'No call at the chime.';
+      state.details=croma&&!supplied?'Check for 8 to 12 volts between 8/12V and =/~ on the chime.':front&&rear?'Both door buttons are calling.':front?'The front door button is calling.':rear?'The back door button is calling.':'Neither door button is calling.';
+      if (croma) state.supplyOutOfRange = !!supply && abs(supply) > .05 && !supplied;
     } else if(item.type==='floatvalve'){
       const opening=abs(getV(item,'OPEN','COM'))>nominal*.55,closing=abs(getV(item,'CLOSE','COM'))>nominal*.55;
       state.direction=Number(opening)-Number(closing);state.energized=opening||closing;state.conflict=opening&&closing;
@@ -794,6 +821,7 @@ function simulateSteady(document: CircuitDocument, previousDeviceStates: Record<
       if (conductive.find(pe) !== conductive.find(GROUND)) diagnostics.push(diag(`cpc:${item.id}`, 'Earth connection missing', 'The earth terminal has no path back to the supply earth. The equipment can still run with this wire missing.', item.id, 'warning', 'protection'));
     }
     if(state.reverseBlocked)diagnostics.push(diag('reverseDC:'+item.id,'LED polarity is reversed','The LED is dark. Follow + on the supply to + on the light, then check the − wire.',item.id));
+    if(state.supplyOutOfRange)diagnostics.push(diag('chime-supply:'+item.id,'Check the chime supply',state.details,item.id));
     if(state.conflict)diagnostics.push(diag('opposed:'+item.id,'The valve is being told to open and close','Both directions are switched on. Turn one off and watch the valve.',item.id));
     if (item.type === 'motor3' && state.unbalance && Number(state.unbalance) > 0.15) diagnostics.push(diag(`phase:${item.id}`, 'Motor phase supply is unbalanced', 'The motor windings are getting different voltages. Check all three phase feeds and the links between the windings.', item.id));
     if (item.type === 'motor3' && state.level > 1.15) diagnostics.push(diag(`windingVoltage:${item.id}`, 'Motor winding voltage is too high', 'Compare the winding rating with the measured voltage. Check whether the links are set for star or delta.', item.id));
@@ -815,6 +843,20 @@ function simulateSteady(document: CircuitDocument, previousDeviceStates: Record<
   const earthRoot=conductive.find(GROUND);
   const bondedEarthTerminals=document.components.flatMap(item=>(definition(item)?.terminals??[]).filter(t=>t.role==='PE'&&conductive.find(terminal(item,t.id))===earthRoot).map(t=>terminal(item,t.id)));
   const signalPaths = contactPaths(document, net), signalGroups = new Set(document.components.filter(item => item.type === 'alarm').map(item => signalPaths.find(terminal(item,'LINK'))));
+  const chimes = document.components.filter(item => item.type === 'callchime' && item.variant === 'croma-100a');
+  let chimeSenseTerminals: string[] | undefined;
+  if (chimes.length) {
+    const paths = contactPaths(document,net,true);
+    const sense = new Set(chimes.map(chime => paths.find(terminal(chime,'V'))));
+    // A wire to an actual supply terminal fixes its potential externally.
+    for (const item of document.components) {
+      const pins = item.type==='callchime'?['AC1','AC2']:isType(item,'source','source3')?['L','L1','L2','L3','N','PE']
+        :isType(item,'driver','dcsupply','transformer')?['+','-']:[];
+      for (const pin of pins) sense.delete(paths.find(terminal(item,pin)));
+    }
+    chimeSenseTerminals = [...net.nodes].filter(name=>!name.startsWith('@') && sense.has(paths.find(name)));
+    for (const name of chimeSenseTerminals) signalGroups.add(signalPaths.find(name));
+  }
   const wireCurrents = Object.fromEntries(document.wires.filter(wire => !signalGroups.has(signalPaths.find(endpointKey(wire.from)))).map(wire => [wire.id, solved.currents[`wire:${wire.id}`] || c()]));
   const elapsedMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - start;
   const converged=stable&&solved.valid&&!diagnostics.some(d=>d.severity==='error');
@@ -826,7 +868,7 @@ function simulateSteady(document: CircuitDocument, previousDeviceStates: Record<
       state.meterWatts=power(supply,lineCurrent);
     }
   }
-  return { revision: document.revision, bondedEarthTerminals, terminalVoltages, branchCurrents: { ...solved.currents, ...solved.sourceCurrents }, wireCurrents, componentPower, deviceStates: states, diagnostics, events, totalPower, totalCurrent, converged, elapsedMs, nodes: solved.nodes, ...(preTrip ? { preTrip } : {}) };
+  return { revision: document.revision, ...(chimeSenseTerminals?.length ? {chimeSenseTerminals} : {}), bondedEarthTerminals, terminalVoltages, branchCurrents: { ...solved.currents, ...solved.sourceCurrents }, wireCurrents, componentPower, deviceStates: states, diagnostics, events, totalPower, totalCurrent, converged, elapsedMs, nodes: solved.nodes, ...(preTrip ? { preTrip } : {}) };
 }
 
 export function simulate(document:CircuitDocument, previousDeviceStates:Record<string,DeviceState>={},dt=.1):SimulationResult {
@@ -838,6 +880,7 @@ export interface MeterReading { value: number | null; explanation: string; reaso
 export function measureVoltage(result: SimulationResult, a: Endpoint, b: Endpoint): MeterReading {
   const av = result.terminalVoltages[endpointKey(a)], bv = result.terminalVoltages[endpointKey(b)];
   if (!result.converged) return { value: null, explanation: 'The bench could not get a steady reading. Choose Test circuit to check the wiring.' };
+  if ([a,b].some(point=>result.chimeSenseTerminals?.includes(endpointKey(point)))) return {value:null,explanation:'V senses a closed door button. The bench has no voltage reading for that contact. To check the chime supply, measure between 8/12V and =/~.'};
   if ([a,b].some(point=>result.pwmTerminals?.includes(endpointKey(point)))) return {value:null,explanation:'This output switches on and off rapidly. Measure the DC supply at the controller, or check the power drawn by each LED channel.'};
   if ((!av || !bv) && [a,b].some(endpoint => endpoint.terminal === 'LINK' && result.deviceStates[endpoint.component]?.conceptualInterlink)) return { value: null, explanation: 'Read the LINK indicator to see whether the alarm is sending a signal. This bench does not calculate the signal voltage.' };
   if (!av || !bv) return { value: null, explanation: 'The bench has no voltage to compare at one or both probe points. Check for a loose end. A point with no fixed voltage is called floating.' };

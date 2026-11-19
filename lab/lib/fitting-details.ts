@@ -73,6 +73,14 @@ const byModel:Record<string,Feature[]>={
     ['alarm-backup-or-solenoid','body','Return spring','When the button is released, this spring moves the striker back.'],
   ],
   'callchime:default':[['two-note-sound-bars','body','Sound bars','The metal bars ring when struck. FRONT and REAR are separate button connections, so the bench can show which door is calling.']],
+  'callchime:croma-100a':[
+    ['croma-acrylic','cover','Frosted front panel','Open the front panel to see the two call connections.','front'],
+    ['croma-rear-entry','body','K1 cable entry','The wires enter through one opening in the back and separate before they reach the terminal screws.'],
+    ['croma-sound-outlet','body','Speaker grille','Sound passes through the small holes in front of the speaker.'],
+    ['alarm-transducer','electronics','Loudspeaker','The two buttons send separate signals to one electronic chime. The speaker and board inside the case are simplified for inspection.'],
+    ['alarm-backup-or-solenoid','body','Empty battery compartment','This installation uses its bell transformer. The four C-cell positions are empty.'],
+    ['croma-sound-controls','actuator','Sound settings','The real chime has a volume wheel and two setup buttons. The lab uses two fixed training calls.'],
+  ],
 };
 
 /** Show details only when the corresponding selectable assembly exists in the model. */
