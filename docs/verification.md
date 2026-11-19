@@ -12,6 +12,8 @@
 
 **Offline use.** In a Windows WebKit touch session we downloaded the complete offline pack, closed the tab and stopped the HTTP server. A new tab opened the previously unvisited heater job, completed it, closed and restored its passing report with zero requests to the origin. The offline audit also exercised interrupted updates, retry and both workers. The 450 automated checks passed, including all 80 operating and fault scenarios.
 
+**Desktop upgrade and backup.** Windows Setup retained the Desktop and Start menu shortcuts. The corrected installer opened the existing draft, named build, bookmark, measurements and progress seeded by the 1.16 executable. Its 390 installed assets matched the build and shutdown/restart worked. A backup from Windows round-tripped through WebKit Files with the original draft, build, bookmark and progress intact. A corrupt import left the prior data in place.
+
 **Windows performance.** In Chrome on the RTX 5070 Ti, a 30-component bench with 42 wires had a median submitted-frame interval of 4.0 ms during a mouse pan. The 95th percentile was 4.5 ms. Eight electrical edits took a median 3.95 ms inside the solver and 16.60 ms for the round trip. At idle, three seconds produced zero frames and zero simulation or routing requests. These measurements were taken at 1440 × 900 with automatic graphics settings, using the final local web build `3e6813b174c7d6dd8983fba9`.
 
 **Test conditions.** The phone sessions used browser engines on Windows. Physical iPhone frame time, independent learner observations and electrician field review remain unverified.
