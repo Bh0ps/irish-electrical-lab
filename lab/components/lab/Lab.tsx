@@ -40,6 +40,7 @@ import {useInstalledOhmmeter,switchMeasurement} from './useInstalledOhmmeter';
 import {FieldMeter,SwitchMeterSheet} from './FieldMeter';
 import { HouseCallPanel } from './HouseCallPanel';
 import { FaultPracticePanel } from './FaultPracticePanel';
+import {repairMeterPrompt} from '../../lib/repair-meter-guidance';
 import { faultChoices, faultScore, worktopComparisonReady, faultStage, faultStageId, worktopFaultTitle } from '../../lib/fault-practice';
 import { faultClue } from '../../lib/fault-checks';
 import { reseatWorktopConnector, worktopFaultReadings, worktopLampStatus, worktopLooseEnd } from '../../lib/worktop-fault';
@@ -80,6 +81,7 @@ import SimulationWorker from '../../lib/simulation.worker?worker';
 import { equipmentChoices } from '../../lib/menu-equipment';
 import { readRecord, validateCircuit, writeRecord, writeRecordsAtomic, type Progress } from '../../lib/storage';
 import type { CircuitDocument, ComponentInstance, Endpoint, SimulationEvent, SimulationResult, TerminalRole, Vec3 } from '../../lib/types';
+import {endpointKey} from '../../lib/types';
 
 const clone=<T,>(v:T):T=>structuredClone(v);
 const faults=faultChoices;
@@ -143,6 +145,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const {muted:chimeMuted,changeMuted:muteChime,message:chimeMessage,press:prepareChime,receive:receiveChime,clear:clearChime}=useDoorCall();
   const [oneThumb,setOneThumb]=useState(false);
   const [fieldOpen,setFieldOpen]=useState(false),[fieldTools,setFieldTools]=useState(false);
+  const [fieldTaskHost,setFieldTaskHost]=useState<HTMLDivElement|null>(null);
   const fieldLauncher=useRef<HTMLButtonElement>(null), priorSheet=useRef(true),nativeField=useRef(false);
   const immersive=touchLayout&&fieldOpen;
   function leaveField(){
@@ -150,12 +153,21 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
     if(nativeField.current){nativeField.current=false;void setFullscreen(false).catch(()=>{});}
     requestAnimationFrame(()=>fieldLauncher.current?.focus({preventScroll:true}));
   }
+  function showField(restoreSheet:boolean){
+    priorSheet.current=restoreSheet;setSheetOpen(false);setViewOpen(false);setFieldTools(false);setFieldOpen(true);
+  }
   function enterField(){
-    priorSheet.current=sheetOpen;setSheetOpen(false);setViewOpen(false);setFieldTools(false);setFieldOpen(true);
+    showField(sheetOpen);
     if(!isDesktop() && !globalThis.document.fullscreenElement && canFullscreen()){
       nativeField.current=true;
       void setFullscreen(true).catch(()=>{nativeField.current=false;});
     }
+  }
+  function arriveAtRepair(){
+    if(touchLayout&&!isDesktop()&&!listView&&!startWithList&&window.matchMedia('(pointer: coarse)').matches){
+      // The job fills the app window. Browser fullscreen stays on the user's explicit control.
+      showField(true);
+    }else setSheetOpen(true);
   }
   useEffect(()=>{
     if(!fieldOpen)return;
@@ -296,6 +308,8 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const faultReadings=diagnosisAccepted&&worktopFault?{strip:storedFaultSample(0),switchOutput:storedFaultSample(1)}:faultObservation.readings;
   const heaterReadings=heaterFault&&diagnosisAccepted?{heater:storedFaultSample(0),output:storedFaultSample(1)}:liveHeaterReadings;
   const doorReadings=chimeFault&&diagnosisAccepted?{call:storedFaultSample(0),push:storedFaultSample(1)}:liveBellReadings;
+  const wrongFaultReading=!!faultSample&&faultSample.revision===document.revision&&
+    (faultJob?!faultObservation.samples.some(e=>e.id===faultSample.id):faultObservation.samples.length>=2&&!faultObservation.ready);
   const visibleAssessment=assessment&&investigating?investigationReport(assessment):assessment;
   const dueReview=useMemo(()=>reviewQueue(progress),[progress]);
   const suggestedPractice = useMemo(() => chooseQuickPractice(progress), [progress]);
@@ -579,7 +593,8 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     setPractice(undefined);setActiveActivity(undefined);activityCircuit.current='';setMoveTarget(undefined);cancelConnection();clearProbes();setEvents([]);
     setWorkspace('learn');setMode('challenges');setFaultJob(job);setHeaterRun(undefined);pendingHeaterPress.current=undefined;setSurface(job?'site':'bench');sitePose.current=undefined;
     if(job)setSiteJump(prev=>({id:prev.id+1,component:job==='chime'?'back':job==='heater'?'fcu-switch':'right',overview:job==='chime'||job==='worktop'||job==='heater'&&hasPanelHeater(example)}));
-    setSheetOpen(true);setPanel('lesson');setTool('select');setInspectorCollapsed(true);setCamera(c=>({id:c.id+1,action:'fit'}));
+    if(job)arriveAtRepair();else setSheetOpen(true);
+    setPanel('lesson');setTool('select');setInspectorCollapsed(true);setCamera(c=>({id:c.id+1,action:'fit'}));
     scoredFault.current=forScore;setScored(forScore);setChallengeStarted(true);setDiagnosisAccepted(false);setChallengeRepaired(false);setChallengeComplete(false);
     lastFaultReading.current='';setDiagnosis('');setFaultFeedback('');setFaultSample(undefined);setFaultReadingIds([]);setCheckingDiagnosis(false);diagnosisRequest.current=null;setHints(0);setNotice('');
     challengeRef.current={accepted:false,repaired:false,lessonId:course.id,hints:0,circuitId:example.id};
@@ -752,7 +767,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       if(bookmark.mode!=='explore'||bookmark.path==='full')setSurface('bench');setMode(bookmark.mode);setSheetOpen(true);setInspectorCollapsed(false);
       const f=bookmark.fault;if(f){scoredFault.current=f.scored;setScored(f.scored);setChallengeStarted(true);setHints(f.hints);
         lastFaultReading.current='';setFaultJob(f.worktop?'worktop':f.heater?'heater':f.chime?'chime':undefined);setHeaterRun(f.heaterRun);pendingHeaterPress.current=undefined;setFaultReadingIds(f.readingIds??[]);setFaultSample(undefined);setFaultFeedback('');setCheckingDiagnosis(false);setDiagnosis('');
-        if(f.worktop||f.heater||f.chime){setProbeA(f.probes?.red);setProbeB(f.probes?.black);setActiveProbe(f.probes?.red?.terminal===(f.chime?'AC2':'N')?'black':'red');
+        if(f.worktop||f.heater||f.chime){arriveAtRepair();setProbeA(f.probes?.red);setProbeB(f.probes?.black);setActiveProbe(f.probes?.red?.terminal===(f.chime?'AC2':'N')?'black':'red');
           probePlacement.current={red:!!f.probes?.red,black:!!f.probes?.black,current:false};setMeterMode('voltage');setForkMethod('probe-voltage');setSurface('site');setSiteJump(prev=>({id:prev.id+1,component:f.chime?'back':f.heater?'fcu-switch':'right',overview:!!f.chime||!!f.heater&&hasPanelHeater(circuit)||!!f.worktop&&(f.repaired||!f.probes?.red&&!f.probes?.black)}));}
         const finished=f.completed??(!(f.heater&&hasPanelHeater(circuit))&&f.repaired&&progress.lastTest?.assessment.passed===true&&testRecordMatches(progress.lastTest,circuit)&&!!progress.learning[circuit.lessonId!]?.activityIds.includes('fault-repaired'));setChallengeComplete(finished);setDiagnosisAccepted(f.accepted);setChallengeRepaired(f.repaired);challengeRef.current={accepted:f.accepted&&!finished,repaired:f.repaired,lessonId:bookmark.circuit.lessonId!,hints:f.hints,circuitId:bookmark.circuit.id};}
     };
@@ -985,6 +1000,10 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   const fieldPair=JSON.stringify([document.id,document.revision,probeA,probeB,useFork?forkMethod:'study',startActivity]);
   const switchMeterHere=switchCheck.active&&activeSurface==='site'&&tool==='meter'&&panel==='meter'&&!!switchFitting;
   const voltageMeterHere=activeSurface==='site'&&voltageToolOpen&&!handTool&&!switchMeterHere&&testFittings.some(f=>f.kind!=='fcu')&&!wrongVoltageMode;
+  const sameRecordedPair=wrongFaultReading&&faultSample?.a&&faultSample.b&&probeA&&probeB&&
+    endpointKey(faultSample.a)===endpointKey(probeA)&&endpointKey(faultSample.b)===endpointKey(probeB);
+  const fieldProbeHint=voltageMeterHere&&faultSession&&faultJob&&faultStep==='measure'
+    ?repairMeterPrompt(document,faultJob,faultReadings,heaterReadings,doorReadings,sameRecordedPair?faultSample:undefined):undefined;
   const extraSupply=document.components.find(c=>['battery','pv'].includes(c.type)&&Boolean(c.params.on??COMPONENTS[c.type].defaults.on??true));
   const isolationFailed=Boolean(simError)||(result?.revision===document.revision&&!result.converged);
   const switchIsolationLabel=document.supply.enabled?'Turn bench supply off':extraSupply?'Switch off '+extraSupply.label:isolationFailed?'Retry circuit check':'Waiting for the circuit…';
@@ -1063,10 +1082,32 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       sitePose.current=undefined;setSiteJump(prev=>({id:prev.id+1,component:worktopFault?'right':'fcu-switch',overview:true}));
     }
   }
-  const siteRetest=immersive&&faultSession&&faultStep==='retest'&&!sheetOpen
-    ? document.supply.enabled?handover&&fusedSwitch?heaterRunAction:{label:testRunning?'Testing…':'Test the repair',run:runTest,disabled:testRunning,
-      reading:worktopStatus??(heaterProved&&heaterWatts!==undefined?'Heater element · '+Math.round(heaterWatts)+' W':undefined)}
-      :{label:'Turn bench supply on',reading:worktopStatus,run:restoreRepairSupply} : undefined;
+  const repairTestFailed=!!assessment&&!assessmentStale&&!assessment.passed;
+  function openFaultReport(){setPanel('results');setInspectorCollapsed(false);setSheetOpen(true);}
+  const showFailedReport=repairTestFailed&&!testRunning;
+  let siteRetest;
+  if(immersive&&faultSession&&faultStep==='retest'&&!sheetOpen){
+    if(!document.supply.enabled)siteRetest={label:'Turn bench supply on',reading:worktopStatus,run:restoreRepairSupply};
+    else if(handover&&fusedSwitch)siteRetest=heaterRunAction;
+    else siteRetest={
+      label:showFailedReport?'See test report':testRunning?'Testing…':'Test the repair',
+      run:showFailedReport?openFaultReport:runTest,disabled:testRunning,
+      reading:worktopStatus??(heaterProved&&heaterWatts!==undefined?'Heater element · '+Math.round(heaterWatts)+' W':undefined),
+    };
+  }
+  function openFaultMeter(){
+    if(faultJob){
+      setMeterMode('voltage');
+      if(useFork)chooseForkMethod('probe-voltage');
+    }
+    if(chimeFault&&doorReadings?.call){
+      setSurface('bench');setTool('meter');setPanel('meter');setInspectorCollapsed(false);setSheetOpen(true);setView('open');
+      return;
+    }
+    const besideFitting=immersive&&!sheetOpen&&activeSurface==='site';
+    const fitting=chimeFault?'chime':worktopFault&&besideFitting?(faultReadings.strip?'right-switch':'right'):undefined;
+    chooseTool('meter',fitting,besideFitting);
+  }
   const fieldViews:FieldAction[]=immersive?[
     ...(hasSite?[{label:'Site',selected:activeSurface==='site',run:()=>chooseFieldView('site')}]:[]),
     {label:'Workbench',selected:activeSurface==='bench',run:()=>chooseFieldView('bench')},
@@ -1089,6 +1130,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   return <TooltipProvider delayDuration={250}><div className={'lab-shell simple-lab installation-lab surface-'+activeSurface+' '+workspace+(touchLayout?' mobile-lab':'')+(immersive?' phone-field':'')+(inBook?' book-shell':'')+(home?' book-landing':'')+(listView?' showing-equipment-list':'')} aria-busy={backupBusy||replaceBusy}>
     {immersive&&<PhoneFieldControls signal={chimeMessage?.circuit===document.id?chimeMessage.text:protectionMessage?.circuit===document.id&&notice===protectionMessage.text?notice:undefined} sound={document.components.some(c=>c.type==='callchime')?{enabled:!chimeMuted,change:()=>muteChime(!chimeMuted)}:undefined} place={activeSurface==='site'?(fieldRoom?.circuit===document.id?fieldRoom.name:location.name):activeSurface==='bench'?'Workbench':activeSurface==='drawing'?'Drawing':'Equipment'}
       hasJob={workspace==='learn'} jobOpen={sheetOpen} toolsOpen={fieldTools} leave={leaveField} tools={setFieldTools}
+      taskHost={faultSession&&faultJob&&activeSurface==='site'&&!sheetOpen&&!fieldTools&&!voltageMeterHere&&!switchMeterHere?setFieldTaskHost:undefined}
       job={()=>setSheetOpen(open=>!open)}
       steering={activeSurface==='site'?{enabled:oneThumb,change:()=>setOneThumb(value=>!value)}:undefined} views={fieldViews} actions={fieldActions}/>}
     <header className="app-header"><div className="brand"><span className="brand-icon"><Zap size={21}/></span><div>IRISH ELECTRICAL <b>LAB</b></div></div><nav className="simple-navigation" aria-label="Main navigation"><Button aria-pressed={workspace==='learn'} onClick={()=>{setWorkspace('learn');setPath('home');setPractice(undefined);setSheetOpen(true);setMoveTarget(undefined);setTool('select');setPanel('lesson');setViewOpen(false);}}><BookOpen size={16}/>Learn</Button><Button aria-pressed={workspace==='sandbox'} onClick={()=>{setWorkspace('sandbox');setSurface('bench');setMode('build');setChallengeStarted(false);challengeRef.current.accepted=false;setMoveTarget(undefined);setSheetOpen(false);setTool('select');setPanel('');setInspectorCollapsed(true);}}><Wrench size={16}/>Sandbox</Button></nav><div className="header-right">{workspace==='learn'&&<Button variant="outline" aria-label="Chapters" onClick={()=>openCourses('learn')}><BookOpen size={15}/><span className="header-action-name chapter-nav-label">Chapters</span></Button>}<Button variant="outline" aria-label="My builds" onClick={()=>setBuildsOpen(true)}><FolderOpen size={15}/><span className="header-action-name">My builds</span></Button><Button variant="ghost" aria-label="More settings and help" onClick={()=>{setSettingsFps(lastBenchFps.current);setMoreOpen(true);}}><Settings2 size={15}/><span className="header-action-name">More</span></Button></div></header>
@@ -1111,7 +1153,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
         points={()=>setSitePoints(true)} canRecord={switchCheck.canRecord} recorded={switchCheck.recorded} record={switchCheck.record}/>:
         <FieldMeter pointsButton={fieldPointsButton} circuit={document} active={activeProbe} red={probeA} black={probeB} choose={setActiveProbe}
           display={useFork?(visibleFork.shown+' '+(visibleFork.unit||'V')+' '+(visibleFork.signal??'')+(heldReading?' HOLD':'')).trim():voltage?.value!=null?format(voltage.value,2)+' V':'— V'}
-          hint={!probeA||!probeB?'Tap a terminal or choose Points.':!lessonVolts?(useFork?liveFork.explanation:voltage?.explanation):undefined}
+          hint={probeA&&probeB&&!lessonVolts?(useFork?liveFork.explanation:voltage?.explanation):fieldProbeHint??(!probeA||!probeB?'Tap a terminal or choose Points.':undefined)}
           points={()=>setSitePoints(true)} recorded={recordedFieldPair===fieldPair} canRecord={recordedFieldPair!==fieldPair&&!!lessonVolts&&liveVoltageMode&&!!result?.converged&&result.revision===document.revision} record={()=>{if(recordReading())setRecordedFieldPair(fieldPair);}}/>}
     </div>}
     <div className="canvas-top-label" hidden={activeSurface!=='bench'}><span>{document.components.length+' equipment · '+document.wires.length+' wires'}</span><span className="scene-caption">{SCENERIES.find(scene=>scene.id===scenery)?.label}{cameraMode==='free'?' · Free camera':''}</span></div>{viewOpen&&<div className="simple-view-menu"><div className="context-heading"><b>Workbench view</b><IconButton label="Close view controls" onClick={()=>setViewOpen(false)}><X size={15}/></IconButton></div>{touchLayout&&<div className="quick-actions phone-view-actions">
@@ -1125,14 +1167,12 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     </main>{workspace==='learn'&&(attached||home)?<aside id="course-sheet" className="learn-column" data-sheet-open={home&&!immersive||sheetOpen}><div className="phone-sheet-heading"><b>{voltageTask&&voltageToolOpen?activeActivity.instruction:'Lesson and tools'}</b><IconButton label="Close lesson sheet" onClick={()=>setSheetOpen(false)}><X size={17}/></IconButton></div>{home&&immersive&&context&&!inspectorCollapsed?courseContext:home?<BookHome resume={(bookmark?.fault?.worktop?worktopFaultTitle:bookmark?.fault?.heater?heaterFaultTitle:bookmark?.fault?.chime?bellFaultTitle:savedCall?.title)??(bookmark?courseTitle(LESSONS.find(l=>l.id===bookmark.circuit.lessonId)!):undefined)} start={resumeBook} index={()=>openCourses('learn')}/>:faultSession?<FaultPracticePanel key={document.id} lesson={lesson} doc={document} stage={faultStep} worktop={worktopFault} heater={heaterReadings} bell={doorReadings} toggleDoor={id=>{const push=document.components.find(c=>c.id===id);if(push)holdButton(push);}} scored={scored} hints={hints} clue={clue}
         diagnosis={diagnosis} setDiagnosis={value=>{setDiagnosis(value);setFaultFeedback('');}} feedback={faultFeedback} checking={checkingDiagnosis} submit={submit}
         flexLanding={flexLanding} findRepair={canFindRepair&&activeSurface!=='list'&&(immersive||!!repairEnd||heaterFault||chimeFault)?findRepairOnSite:undefined} isolateForRepair={repairEnd||heaterFault||chimeFault||immersive?repairPowerOff:undefined}
-        repair={repair} worktopStatus={worktopStatus} heaterRun={heaterRun} heaterRunAction={heaterRunAction} restoreSupply={!document.supply.enabled?restoreRepairSupply:undefined} test={runTest} testing={testRunning} failed={!!assessment&&!assessmentStale&&!assessment.passed}
-        openReport={()=>{setPanel('results');setInspectorCollapsed(false);setSheetOpen(true);}} showClue={showHint} closeTools={closeTools} scoreThis={()=>requestReplacement('Start scored fault challenge',()=>startChallenge(true,lesson,faultJob))}
-        context={courseContext} next={()=>openCourses('learn',true)}
-        openMeter={()=>{if(faultJob){setMeterMode('voltage');if(useFork)chooseForkMethod('probe-voltage');}if(chimeFault&&doorReadings?.call){
-            setSurface('bench');setTool('meter');setPanel('meter');setInspectorCollapsed(false);setSheetOpen(true);setView('open');
-          }else chooseTool('meter',chimeFault?'chime':undefined);}}
+        repair={repair} worktopStatus={worktopStatus} heaterRun={heaterRun} heaterRunAction={heaterRunAction} restoreSupply={!document.supply.enabled?restoreRepairSupply:undefined} test={runTest} testing={testRunning} failed={repairTestFailed}
+        openReport={openFaultReport} showClue={showHint} closeTools={closeTools} scoreThis={()=>requestReplacement('Start scored fault challenge',()=>startChallenge(true,lesson,faultJob))}
+        context={courseContext} fieldTaskHost={fieldTaskHost} openJob={()=>setSheetOpen(true)} next={()=>openCourses('learn',true)}
+        openMeter={openFaultMeter}
         readings={faultReadings} missing={faultObservation.missing} samples={faultObservation.samples}
-        wrongSample={faultSample} wrongPoints={!!faultSample&&faultSample.revision===document.revision&&(faultJob?!faultObservation.samples.some(e=>e.id===faultSample.id):faultObservation.samples.length>=2&&!faultObservation.ready)}
+        wrongSample={faultSample} wrongPoints={wrongFaultReading}
         leftLit={result?.revision===document.revision?!!result.deviceStates.left?.energized:undefined} switchOn={document.components.find(c=>c.id===(heaterFault?'fcu-switch':'right-switch'))?.params.closed===true} operateSwitch={()=>{const sw=document.components.find(c=>c.id===(heaterFault?'fcu-switch':'right-switch'));if(sw)operate(sw);}}/>:activePractice?<QuickPracticePanel key={document.id} experiment={activePractice} document={document} result={dimmingActive?undefined:result} simulationError={simError}
       onAttempt={success=>setProgress(p=>recordActivity(p,activePractice.lessonId,activePractice.activityId,activePractice.competency,success))}
       onPrediction={correct=>setProgress(p=>recordActivity(p,lessonId,activePractice.activityId+':prediction',activePractice.competency+'-prediction',correct))}

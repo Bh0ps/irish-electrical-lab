@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {getLesson} from '../lib/lessons';
 import {jobSite} from '../lib/job-site';
 import {homeRoomAt,STAIR_EYE,STAIR_TOP} from '../lib/home-floorplan';
-import {fittingZoom,SiteWalkInput,standingView,walkStick,withinFittingReach} from '../lib/site-walk';
+import {fittingZoom,SiteWalkInput,standingView,walkPadVector,walkStick,withinFittingReach} from '../lib/site-walk';
 
 test('a visitor can press a doorbell at the door, or approach it from across the path',()=>{
   assert.equal(withinFittingReach([1,1.56,3.43],[1,1.17,2.893]),true);
@@ -24,6 +24,18 @@ test('the touch stick ignores small jitter and limits diagonal travel to the wal
   assert.deepEqual(walkStick(0,-48,48),[0,1]);
   const [side,forward]=walkStick(60,-60,48);
   assert.ok(Math.abs(side-forward)<1e-8&&Math.abs(Math.hypot(side,forward)-1)<1e-8);
+});
+
+test('holding anywhere on a pad arrow keeps its direction until the thumb deliberately slides',()=>{
+  for(const offset of [-18,0,17]){
+    assert.deepEqual(walkPadVector('up',offset,-42,offset+3,-39,47),[0,1]);
+    assert.deepEqual(walkPadVector('down',offset,42,offset+2,38,47),[0,-1]);
+    assert.deepEqual(walkPadVector('left',-42,offset,-40,offset+4,47),[-1,0]);
+    assert.deepEqual(walkPadVector('right',42,offset,46,offset,47),[1,0]);
+  }
+  const [side,forward]=walkPadVector('up',17,-44,43,-41,47);
+  assert.ok(side>.4&&forward>.8&&Math.hypot(side,forward)<=1.000001);
+  assert.deepEqual(walkPadVector(undefined,1,-2,0,-47,47),[0,1]);
 });
 
 test('turning the head keeps the other thumb walking; releasing or interrupting stops travel',()=>{

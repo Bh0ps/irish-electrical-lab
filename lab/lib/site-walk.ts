@@ -37,6 +37,19 @@ export function walkStick(x:number,y:number,radius:number):[number,number] {
   return [x/distance*intensity,-y/distance*intensity];
 }
 
+export type WalkDirection='up'|'down'|'left'|'right';
+const arrowVectors:Record<WalkDirection,[number,number]>={up:[0,1],down:[0,-1],left:[-1,0],right:[1,0]};
+export const WALK_DRAG_SLOP=7;
+
+/** The whole arrow means straight ahead or one turn. A deliberate slide
+ * steers from that direction, wherever the thumb first touched the arrow. */
+export function walkPadVector(direction:WalkDirection|undefined,startX:number,startY:number,x:number,y:number,radius:number):[number,number] {
+  if(!direction)return walkStick(x,y,radius);
+  const [side,forward]=arrowVectors[direction],dx=x-startX,dy=y-startY;
+  if(Math.hypot(dx,dy)<=WALK_DRAG_SLOP)return [side,forward];
+  return walkStick(side*radius+dx,-forward*radius+dy,radius);
+}
+
 /** Pinching a close-up changes the lens, leaving the camera on its side of the wall. */
 export function fittingZoom(current:number,delta:number,requested?:number){
   return Math.max(1,Math.min(3,requested??current*Math.exp(delta*2)));

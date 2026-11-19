@@ -6,6 +6,14 @@
 .field-bar button {border:0;border-radius:6px;background:transparent;color:inherit;padding:0 .45rem}
 .field-bar button[aria-expanded=true] {background:#375648}
 .field-place {flex:1;min-width:0;font-size:.9rem;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field-job-slot {flex:none;max-height:35%;overflow-y:auto;overscroll-behavior:contain;background:#f5f6eb;color:#18382a}
+.field-job-slot:empty,.phone-field:has(.site-landing-prompt,.site-meter-heading,.field-meter-slot)>.field-job-slot {display:none}
+.field-job-step {display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .65rem;padding:.3rem max(10px,env(safe-area-inset-right)) .3rem max(10px,env(safe-area-inset-left));border-bottom:1px solid #bdcaba}
+.field-job-step p {flex:1 1 10rem;min-width:0;margin:0;font-size:.94rem;line-height:1.3}
+.field-job-step button {min-height:44px;max-width:100%;border:1px solid #24543a;border-radius:6px;padding:.35rem .7rem;background:#27553e;color:white;font:inherit;font-size:.92rem;font-weight:650;line-height:1.25;white-space:normal;cursor:pointer}
+.field-job-step button:disabled {opacity:.65}
+.field-job-step:focus-visible,.field-job-step button:focus-visible {outline:3px solid #d59a27;outline-offset:-3px}
+.phone-field:has(.site-actions .site-repair,.site-approach[data-job-action]) .field-job-step[data-site-action] button {display:none}
 .installation-lab.mobile-lab.phone-field .simple-workspace {position:relative;display:block;flex:1;min-height:0}
 .installation-lab.mobile-lab.phone-field .work-area,.installation-lab.mobile-lab.phone-field .canvas-wrap {height:100%;width:100%;min-height:0;margin:0;padding:0;gap:0;border:0;border-radius:0}
 .installation-lab.mobile-lab.phone-field .canvas-wrap>:is(.jobsite,.drawing-container,.equipment-list-view) {inset:0}

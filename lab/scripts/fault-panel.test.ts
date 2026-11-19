@@ -9,13 +9,18 @@ import type {MeasurementEvidence} from '../lib/learning';
 
 const lesson=getLesson(66)!;
 const idle=()=>{};
-const base:ComponentProps<typeof FaultPracticePanel>={
+const base:Omit<ComponentProps<typeof FaultPracticePanel>,'switchOn'>={
   lesson,doc:lesson.circuit,stage:'measure',worktop:false,scored:false,hints:0,clue:'',feedback:'',
   diagnosis:'',setDiagnosis:idle,submit:idle,checking:false,repair:idle,test:idle,testing:false,failed:false,
   openReport:idle,showClue:idle,closeTools:idle,openMeter:idle,next:idle,readings:{},samples:[],missing:'',
-  wrongPoints:false,scoreThis:idle,switchOn:true,operateSwitch:idle,
+  wrongPoints:false,scoreThis:idle,operateSwitch:idle,
 };
-const show=(change:Partial<typeof base>)=>renderToStaticMarkup(createElement(FaultPracticePanel,{...base,...change}));
+const show=(change:Partial<typeof base>)=>{
+  const props={...base,...change};
+  const switchId=props.heater?'fcu-switch':'right-switch';
+  const switchOn=props.doc.components.find(c=>c.id===switchId)?.params.closed===true;
+  return renderToStaticMarkup(createElement(FaultPracticePanel,{...props,switchOn}));
+};
 const reading=(id:string,measuredAt:string,value:number|null,mode:MeasurementEvidence['mode']='voltage'):MeasurementEvidence=>({
   id,measuredAt,value,mode,unit:mode==='voltage'?'V':mode==='resistance'?'Ω':'A',
   circuitId:lesson.circuit.id,revision:lesson.circuit.revision,explanation:'',recordedAt:1,controlState:{},
@@ -94,11 +99,17 @@ test('heater instructions follow the learner’s leads and name the fitting on t
   older.components.find(c=>c.id==='fcu-switch')!.type='switch';
   const legacy=getLesson(20,older)!;
   const heater={...reading('load','Heater',0),a:{component:'fixed',terminal:'N'},b:{component:'fixed',terminal:'L'}};
-  const first=show({lesson:current,doc:current.circuit,heater:{},switchOn:false});
-  assert.match(first,/Turn the heater on at the wall/);
-  assert.match(first,/I’ve tried the wall switch/);
-  assert.doesNotMatch(first,/Choose the fault|Repair this wire|The flex has lost/);
   for(const [lesson,point] of [[current,/LOAD L on the wall switch/],[legacy,/OUT on the separate fuse/]] as const){
+    const open=structuredClone(lesson.circuit);
+    open.components.find(c=>c.id==='fcu-switch')!.params.closed=false;
+    const first=show({lesson,doc:open,heater:{}});
+    assert.match(first,/Turn the heater on at the wall/);
+    assert.match(first,/Turn heater switch on/);
+    assert.match(first,/I’ve tried the wall switch/);
+    assert.doesNotMatch(first,/Choose the fault|Repair this wire|The flex has lost/);
+    const switched=show({lesson,doc:lesson.circuit,heater:{}});
+    assert.match(switched,/On the bench, check L to N at the heater/);
+    assert.match(switched,/Use the bench meter/);
     const props={lesson,doc:lesson.circuit,heater:{heater},context:createElement('div',null,'Open meter')};
     const html=show(props);
     assert.match(html,/Leave red on heater N. Move black/);assert.match(html,point);

@@ -1,5 +1,25 @@
 # Verification summary
 
+## 1.23.0 — Start repairs in the room
+
+**Opening a job.** We chose each of the three named repairs from the chapter picker. On a 320 × 568 touch WebKit screen with 150% text, the room in 1.22.0 occupied 304 × 141 to 304 × 177 px. The new layout gave the worktop and doorbell 320 × 393 px and the heater 320 × 422 px. The action was 46 px high. At 390 × 844 the room was 390 × 739 px. At 844 × 390 it was 844 × 285 px. Desktop Chrome at 1280 × 820 retained the ordinary workspace. [View the heater job on arrival](images/phone-repair-start.png).
+
+**Acting on the instruction.** We switched the heater on, held the rear doorbell button and recorded 0 V across the dark worktop strip. Each survived exiting and continuing the job. At the right switch, measuring the incoming blade gave 24 V and a prompt explaining where the voltage came from. Recording the outgoing blade against the strip return opened the diagnosis. Choosing the wrong blade during repair kept the strip dark. Reconnecting the lead and running a fresh powered test finished the job.
+
+**Walking.** On a 390 × 844 Chrome touch screen, holding the forward arrow 17 px off centre previously turned the camera by 22°. In the revised pad the same press moved the learner 1.08 m with zero change of direction. Sliding the thumb sideways turned the view by 20°. We also walked with one finger while looking with a second. Rotating the screen, cancelling, releasing outside the pad and leaving the page all stopped movement. Changing the visual zoom from 1.30× to 1.60× stopped an active walk.
+
+**Other ways in.** We blocked WebGL at launch, interrupted it in a running job and separately blocked the 3D site download. The equipment list allowed measurement to continue. We exercised Save, Discard and Cancel with an edited draft. A keyboard-opened job put the field action one Tab away. Exit returned focus to Full screen. All phone dimensions and touch results here come from Windows browser emulation. Physical iPhone handling and feedback from first-time learners remain unverified.
+
+**Checking a failed repair.** After fixing the worktop connector we removed the incoming line conductor. The next test named the missing wire and its two endpoints, and left the repair open. We reopened the same finding from Job and from the site. Undo put the conductor back. A new powered test was required to earn completion.
+
+**Saved work offline.** We interrupted the update twice on a 1.22.0 kitchen job. The previous version still opened. After retrying, we stopped the server, closed the old lab tab and opened the updated app in touch WebKit. The draft, named build, earlier achievement, repair stage, both voltage readings and both probe positions matched. We reconnected the modelled wire and retested with zero requests reaching the stopped server.
+
+**Course checks.** All 496 automated tests passed. The catalogue checks covered 115 model registrations. The simulation and teaching checks passed across 80 lessons, 80 fault targets, 243 operating steps and 1,414 electrical checks. All 2,485 activities kept their stage and evaluator. All 1,119 example conductors routed.
+
+**Windows replacement.** Setup upgraded this PC from 1.22.0 to 1.23.0. All five records in the disposable study profile matched their earlier hashes. Both shortcuts and shutdown and restart passed. The installed app ran all 80 circuits and passed 120 guided-build checks with zero external requests and zero console errors. The driver issued one shader warning. The window opened in 1.03 s, the first geometry appeared at 5.43 s and the measured processes used 534 MiB of private memory.
+
+**Desktop bench performance.** On this PC's RTX 5070 Ti, headless Chrome rendered the 30-part, 42-wire bench at a median 4.0 ms per frame while panning. The 95th percentile was 4.9 ms. Three seconds at rest produced zero rendered frames and zero worker requests. Eight supply edits took a median 4.3 ms to solve and 16.0 ms for the worker round trip.
+
 ## 1.22.0 — The loose worktop connector
 
 **Finding and repairing the break.** In the 24 V kitchen job, the dark strip read 0 V. With the same return point, both metal blades of the closed switch read 24 V. Recording the incoming blade alone did not identify the break. The reading at the outgoing blade and the one at the strip supported the diagnosis. The original 1.21.0 job then accepted a generic repair button. In this version, the right-hand wire ends in a loose push-on. With the simulated supply off, we withdrew the switch plate and could see the stationary blade and the loose jaws. Touching the sleeve, dragging past a blade or choosing the occupied blade left the fault in place.

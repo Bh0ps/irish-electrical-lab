@@ -9,8 +9,9 @@ interface Controls {
   tools:(open:boolean)=>void; views:FieldAction[]; actions:FieldAction[];
   signal?:string; sound?:{enabled:boolean;change:()=>void};
   steering?:{enabled:boolean;change:()=>void};
+  taskHost?:(node:HTMLDivElement|null)=>void;
 }
-export function PhoneFieldControls({place,jobOpen,hasJob,toolsOpen,leave,job,tools,views,actions,steering,signal,sound}:Controls) {
+export function PhoneFieldControls({place,jobOpen,hasJob,toolsOpen,leave,job,tools,views,actions,steering,signal,sound,taskHost}:Controls) {
   const group=(label:string,items:FieldAction[])=><section className="field-tool-group">
     <h3>{label}</h3><div>{items.map(item=><button type="button" key={item.label} disabled={item.disabled}
       aria-pressed={item.selected} onClick={()=>{tools(false);item.run();}}>
@@ -23,6 +24,7 @@ export function PhoneFieldControls({place,jobOpen,hasJob,toolsOpen,leave,job,too
     {hasJob&&<button type="button" aria-expanded={jobOpen} aria-controls="course-sheet" onClick={job}><BookOpen aria-hidden="true" size={17}/>Job</button>}
     <button type="button" aria-haspopup="dialog" aria-expanded={toolsOpen} onClick={()=>tools(true)}><Wrench aria-hidden="true" size={17}/>Tools</button>
   </nav>
+  {taskHost&&<div className="field-job-slot" ref={taskHost}/>}
   <Dialog open={toolsOpen} onOpenChange={tools}><DialogContent className="field-dialog">
     <DialogHeader><DialogTitle>{hasJob?'Site tools':'Workbench tools'}</DialogTitle></DialogHeader>
     {steering&&<label className="field-steering"><span><b>One-thumb walking</b><small>Use the side arrows to turn.</small></span><input type="checkbox" checked={steering.enabled} onChange={steering.change}/></label>}
