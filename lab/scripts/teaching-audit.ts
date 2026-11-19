@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LESSONS } from '../lib/lessons.ts';
-import { COMPONENTS } from '../lib/components.ts';
+import { definitionFor } from '../lib/components.ts';
 import { getLessonActivities } from '../lib/learning.ts';
 import { getScenario, runLessonScenarios } from '../lib/scenarios.ts';
 import { simulate } from '../lib/simulation.ts';
@@ -14,7 +14,7 @@ const details=LESSONS.map(lesson=>{
   const activities=getLessonActivities(lesson),scenario=getScenario(lesson.id)!;
   const expectedSections=['What the parts do','Follow the wires','Try the controls','Where to put the probes','Work out the readings','Find the fault','On a job in Ireland'];
   for(const title of expectedSections){const section=lesson.sections.find(s=>s.title===title);if(!section?.beginner.trim()||!section.apprentice.trim())errors.push(`${lesson.id}: missing ${title}`);}
-  for(const component of lesson.circuit.components)for(const terminal of COMPONENTS[component.type].terminals)if(!terminal.purpose.trim()||terminal.purpose.includes('function depends on the contact map'))errors.push(`${lesson.id}: generic purpose ${component.type}.${terminal.id}`);
+  for(const component of lesson.circuit.components)for(const terminal of definitionFor(component).terminals)if(!terminal.purpose.trim()||terminal.purpose.includes('function depends on the contact map'))errors.push(`${lesson.id}: generic purpose ${component.type}.${terminal.id}`);
   const covered=new Set(activities.filter(a=>a.id.includes('operate:sequence:')).map(a=>Number(a.id.split(':').at(-1))));
   for(let i=0;i<scenario.steps.length;i++){const previous=scenario.steps[i-1],step=scenario.steps[i];const combined=previous?.patches.length===1&&previous.patches[0].params.pressed===true&&step.patches.length===1&&step.patches[0].params.pressed===false&&previous.patches[0].component===step.patches[0].component;if(!covered.has(i)&&!combined)errors.push(`${lesson.id}: operating activity missing step ${i}`);}
   const operatingResults=(lesson.circuit.supply.phase==='single'?[230,240]:[400]).map(voltage=>{

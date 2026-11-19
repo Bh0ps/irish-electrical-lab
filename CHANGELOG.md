@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0 — At the door
+
+- Check the front and back doorbells at Oakfield house. Each push has two rear screw terminals. Hold one, read the chime and let go. Older three-contact pushes still work in saved builds.
+- The doorbell transformer and breaker sit in enclosures. Follow their short connecting wires on the cupboard drawing. Open the meter or look for a wire during a house job and return to the same step.
+- Lesson questions, equipment descriptions and fault reports use the names and markings on the fittings. Quick practice gives a different clue for each experiment. Help explains trade terms in the question and its answers.
+
 ## 1.9.0 — At the switch
 
 - Try the hall switch with the probes on the lamp, then place the probes yourself. If you measure a different pair, the lesson tells you which terminals you picked. The meter folds away when you move on to your answer.

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COMPONENT_LIST, COMPONENTS } from '../lib/components.ts';
+import { COMPONENT_LIST, COMPONENTS, definitionFor } from '../lib/components.ts';
 import { LESSONS, validateLessons } from '../lib/lessons.ts';
 import { getComponentTerminals } from '../lib/terminal-layout.ts';
 import { createGalleryInventory, galleryVariantKey } from '../components/lab/ModelGallery.tsx';
@@ -59,7 +59,7 @@ const details = LESSONS.map(lesson => {
     if (!wire.bends.every(finiteVector)) fail(`${prefix}/${wire.id}: non-finite conductor bend`);
     for (const endpoint of [wire.from, wire.to]) {
       const component = instances.get(endpoint.component);
-      if (!component || !COMPONENTS[component.type]?.terminals.some(terminal => terminal.id === endpoint.terminal)) fail(`${prefix}/${wire.id}: invalid terminal endpoint ${endpoint.component}.${endpoint.terminal}`);
+      if (!component || !definitionFor(component)?.terminals.some(terminal => terminal.id === endpoint.terminal)) fail(`${prefix}/${wire.id}: invalid terminal endpoint ${endpoint.component}.${endpoint.terminal}`);
     }
   }
   if (!text(lesson.title) || !text(lesson.summary) || !text(lesson.context) || !text(lesson.category)) fail(`${prefix}: missing introductory lesson content`);
@@ -79,7 +79,7 @@ const galleryTypes = new Set(inventory.map(entry => entry.component.type));
 const galleryKeys = new Set(inventory.map(entry => entry.key));
 for(const entry of inventory)for(const component of [entry.component,...entry.companions??[]]) {
   const terminals=getComponentTerminals(component,COMPONENTS[component.type]);
-  if(terminals.length!==COMPONENTS[component.type].terminals.length)fail(`${entry.key}: incomplete resolved terminal set`);
+  if(terminals.length!==definitionFor(component).terminals.length)fail(`${entry.key}: incomplete resolved terminal set`);
   for(const terminal of terminals)if(!terminal.entryDirection||Math.abs(Math.hypot(...terminal.entryDirection)-1)>1e-6||!terminal.group)fail(`${entry.key}/${terminal.id}: connection needs a marked bank and a unit entry direction`);
 }
 

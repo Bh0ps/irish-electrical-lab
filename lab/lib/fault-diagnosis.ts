@@ -1,4 +1,4 @@
-import { COMPONENTS } from './components.ts';
+import { definitionFor } from './components.ts';
 import { describeEndpoint } from './endpoint-description.ts';
 import { measureResistance, measureVoltage, simulate } from './simulation.ts';
 import type { CircuitDocument, Complex, ConfigurationLesson, FaultSetting, SimulationResult } from './types.ts';
@@ -42,14 +42,14 @@ export function assessFaultDiagnosis(
   const fault = enabled.find(candidate => candidate.type === challenge.fault && (!challenge.wire || candidate.wire === challenge.wire) && (!challenge.component || candidate.component === challenge.component));
   if (!fault || (!challenge.wire && !challenge.component)) return reject('The practice fault is missing from this circuit. Restart fault practice.');
   if (enabled.length !== 1) return reject('There is more than one practice fault on the bench. Restart fault practice to work on one at a time.');
-  if (diagnosis !== fault.type) return reject('That fault does not fit these readings. Follow the feed and return wires, then try again.');
+  if (diagnosis !== fault.type) return reject('Those readings point elsewhere. Follow the feed to the fitting, then follow the return wire back.');
   const targetComponent = fault.component && document.components.find(component => component.id === fault.component);
   if (fault.component && !targetComponent) return reject('The fitting you need has been removed. Restart fault practice to put it back.');
   const wire = fault.wire && document.wires.find(candidate => candidate.id === fault.wire);
   if (fault.wire && !wire) return reject('The wire you need has been removed. Restart fault practice to put it back.');
   if (wire && [wire.from, wire.to].some(endpoint => {
     const component = document.components.find(candidate => candidate.id === endpoint.component);
-    return !component || !COMPONENTS[component.type]?.terminals.some(terminal => terminal.id === endpoint.terminal);
+    return !component || !definitionFor(component)?.terminals.some(terminal => terminal.id === endpoint.terminal);
   })) return reject('One end of the wire is missing its terminal. Check both ends on the bench.');
 
   try {
@@ -58,9 +58,9 @@ export function assessFaultDiagnosis(
       if (!wire) return reject('Restart fault practice to put the broken wire back on the bench.');
       const ends = [wire.from, wire.to].map(end => describeEndpoint(document, end)?.label ?? end.terminal).join(' and ');
       const current = magnitude(result.wireCurrents[wire.id]);
-      if (current === undefined || current > 1e-6) return reject('Check the reading on this wire and follow it to both terminals.');
+      if (current === undefined || current > 1e-6) return reject('Check the current in this wire, then put one voltage probe at each end.');
       const voltage = measureVoltage(result, wire.from, wire.to).value;
-      if (voltage !== null && voltage > 1) return accept(`The break is between ${ends}. No current flows through this wire. The voltage across the break is ${voltage.toFixed(2)} V.`);
+      if (voltage !== null && voltage > 1) return accept(`The break is between ${ends}. The wire carries no current. You have ${voltage.toFixed(2)} V across the break.`);
       const brokenResistance = measureResistance(continuityDocument(document), wire.from, wire.to).value;
       const intactResistance = measureResistance(continuityDocument(clear), wire.from, wire.to).value;
       if (intactResistance !== null && (brokenResistance === null || brokenResistance > intactResistance * 1.25 + 1e-6)) {
@@ -71,7 +71,7 @@ export function assessFaultDiagnosis(
       const restored = simulate(clear, result.deviceStates, 0);
       const restoredCurrent = magnitude(restored.wireCurrents[wire.id]);
       if (restored.converged && restoredCurrent !== undefined && restoredCurrent > 1e-5) return accept(`No current flows between ${ends}. In a copy of your circuit, repairing this wire lets current flow again.`);
-      return reject('Zero amps alone can mean the equipment is switched off. Try its control, or switch off all supplies and check continuity across the wire.');
+      return reject('A sound wire can read 0 A when the load is off. Try the switch. To check the wire for a break, turn off all supplies and measure continuity between its ends.');
     }
 
     if (!targetComponent || !['short-circuit', 'earth-fault', 'overload'].includes(fault.type)) return reject('The bench has no meter check for this fault. Restart the exercise.');
@@ -100,7 +100,7 @@ export function assessFaultDiagnosis(
       && result.deviceStates[component.id]?.tripped
       && reproduced.deviceStates[component.id]?.tripped
       && !repairedResult.deviceStates[component.id]?.tripped);
-    if (reproduced.converged && repairedResult.converged && corroboratedTrip) return accept(`${corroboratedTrip.label} tripped. The bench tried a reset in a copy of your circuit. It tripped again with the fault present and stayed on after repair.`);
+    if (reproduced.converged && repairedResult.converged && corroboratedTrip) return accept(`${corroboratedTrip.label} tripped. In a copy of your circuit, resetting it with the fault still there made it trip again. After the repair it stayed on.`);
     return reject('These readings do not yet show the fault. Try running the affected equipment and check its current.');
   } catch {
     return reject('The bench could not compare the readings. Check both connections and measure again.');

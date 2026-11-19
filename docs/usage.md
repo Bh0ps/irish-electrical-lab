@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.9.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.10.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -30,7 +30,9 @@ In **Drawing**, choose **Job drawing** for the intended connections and **My wir
 
 Open **Chapters → Jobs at Oakfield house**, or search for a job by name. In the cupboard job, shut the door, watch the strip go dark, then open the door again. Use the fitting in the room or its named control. Both operate the same circuit.
 
-In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. Once you have done all three, you can try an unscored fault on the same circuit.
+In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. Once you have done all four, you can try an unscored fault on the same circuit.
+
+In **Check both doorbell buttons**, hold the front button and read the name on the chime. Let go, then try the back door. You can use the buttons in the house or the named controls in the job sheet. **Measure** and **Find conductor** keep your place. Choose **Back to job** when you’re done.
 
 **Continue learning** takes you back to the last check with the controls where you left them. In the chapter index, a lesson shows **Completed** after its practical steps and final explanation have been checked. You can still choose **I’m not sure** on a prediction.
 
@@ -107,7 +109,7 @@ Replacing changed work offers **Save and continue**, **Discard and continue**, o
 
 Use **Show terminals** to turn the workbench to the wiring side. On the updated switches, lamp holder, rose, socket and fused connection unit, select a detail or look under **Recognise this fitting** to find out what it does. On the double socket, for example, the pressed metal strap joins the two earth terminals. On the ceiling rose, the permanent loop terminals stay separate from the switched feed to the lamp. The shaver lesson shows the transformer separately on the bench so you can measure its input and output.
 
-There are 109 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
+There are 110 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
 
 The environments use locally generated albedo, roughness and normal textures with local reflections. Contact shading, restrained emitter bloom and antialiasing run while frames are needed; **More → Graphics and supply settings → Graphics quality** selects automatic, high or economy settings. Each lamp's dynamic light follows its actual emitting power. Available dynamic-light slots are bounded for performance; all lamps retain their own power-driven surface brightness. Optical output is an illustrative proxy, not a lighting-design calculation.
 

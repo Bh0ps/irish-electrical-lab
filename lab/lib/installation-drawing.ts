@@ -1,4 +1,4 @@
-import {COMPONENTS} from './components';
+import {COMPONENTS,definitionFor} from './components';
 import {getComponentTerminals} from './terminal-layout';
 import {endpointKey,type CircuitDocument,type Endpoint,type Wire} from './types';
 import type {JobSite} from './job-site';
@@ -31,7 +31,7 @@ export function drawingNets(doc:CircuitDocument){
   doc.components.forEach(c=>getComponentTerminals(c,COMPONENTS[c.type]).forEach(t=>root(endpointKey({component:c.id,terminal:t.id}))));
   doc.wires.forEach(w=>{const a=root(endpointKey(w.from)),b=root(endpointKey(w.to));if(a!==b)parents.set(b,a);});
   const names=new Map<string,string>();
-  for(const c of doc.components.filter(c=>/^source3?$/.test(c.type)))for(const t of COMPONENTS[c.type].terminals){
+  for(const c of doc.components.filter(c=>/^source3?$/.test(c.type)))for(const t of definitionFor(c).terminals){
     const k=root(endpointKey({component:c.id,terminal:t.id}));
     names.set(k,names.has(k)?names.get(k)+' / '+t.label:t.label);
   }
@@ -41,7 +41,7 @@ export function drawingNets(doc:CircuitDocument){
 export function controlElements(doc:CircuitDocument){
   const nets=drawingNets(doc);
   const out:{component:string;kind:'coil'|'no'|'nc'|'load';a:Endpoint;b:Endpoint;left:string;right:string}[]=[];
-  for(const c of doc.components){const terms=COMPONENTS[c.type].terminals.map(t=>t.id);
+  for(const c of doc.components){const terms=definitionFor(c).terminals.map(t=>t.id);
     function add(one:string,two:string,kind:typeof out[number]['kind']){
       if(!terms.includes(one)||!terms.includes(two))return;
       const a={component:c.id,terminal:one},b={component:c.id,terminal:two};
@@ -59,7 +59,7 @@ export function ladderPaths(doc:CircuitDocument){
   const feeds=new Set<string>();
   for(const c of doc.components){
     if(!['source','source3','rcbo','mcb','mcb3','rcd','dcsupply','transformer','driver','fuse'].includes(c.type))continue;
-    for(const t of COMPONENTS[c.type].terminals.filter(t=>['L','L1','L2','L3','LOUT','L1OUT','OUT','+'].includes(t.id))){
+    for(const t of definitionFor(c).terminals.filter(t=>['L','L1','L2','L3','LOUT','L1OUT','OUT','+'].includes(t.id))){
       const key=nets.get(endpointKey({component:c.id,terminal:t.id}));if(key)feeds.add(key);
     }
   }

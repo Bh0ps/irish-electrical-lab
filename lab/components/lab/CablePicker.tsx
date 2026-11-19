@@ -8,10 +8,10 @@ import './cable-picker.css';
 const descriptions:Record<CableKind,string> = {
   'bell-pair':'One red wire and one white wire twist together. Each has a solid copper centre.',
   'led-pair':'The red and black wires are joined side by side. Check the + and − marks on the LED strip.',
-  'multi-strip':'Four wires lie side by side. Follow the markings on the controller and strip to find the wire for each channel.',
-  single: 'One wire with its own insulation. Use a single for a link between terminals.',
-  flat: 'A flat grey cover holds three wires. On this Irish sample, the green-and-yellow earth is in the middle.',
-  flex: 'The round cover holds three wires. Each is made of fine copper strands so the flex bends easily.',
+  'multi-strip':'Four wires lie side by side in a ribbon. Match the letters on the LED strip with the letters on the controller.',
+  single: 'One copper wire with its own insulation. There are no other wires under the cover.',
+  flat: 'Look at the cut end. The flat grey sheath is the outer cover. The green-and-yellow earth wire sits in the middle on this sample.',
+  flex: 'The round sheath holds three wires. Look at a cut end and you’ll see the fine copper strands that let the flex bend.',
 };
 
 function CableSample({kind}:{kind:CableKind}) {
@@ -61,7 +61,7 @@ export function CablePicker({document: circuit,value,onChange,onSelectWire,onRem
             ?<button type="button" onClick={()=>onSelectWire(wire.id)}>Find on bench</button>
             :<small>{wire?'Connected':'Both ends loose'}</small>}</li>;})}
       </ul>}
-      {selected&&list.length===0&&onRemoveEmptyRun&&<button type="button" onClick={()=>{onRemoveEmptyRun(selected.id);onChange({kind:value.kind});}}>Remove empty sheath</button>}
+      {selected&&list.length===0&&onRemoveEmptyRun&&<button type="button" onClick={()=>{onRemoveEmptyRun(selected.id);onChange({kind:value.kind});}}>Remove empty cable</button>}
     </>}
   </details>;
 }

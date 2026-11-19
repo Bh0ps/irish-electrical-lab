@@ -11,12 +11,12 @@ open source under the [MIT license](LICENSE).
 ## What you can do
 
 - Start with **One switch, one light**. Follow nine chapters covering 80 configurations, or jump straight to a chapter practical. The six-stage exercises are available under lesson details.
-- Open **Chapters → Jobs at Oakfield house** for a short job. Try both stair switches, check a cupboard light or find the breaker for a lamp. Read the voltage at each fitting as you go.
+- Open **Chapters → Jobs at Oakfield house** for a short job. Try the stair switches, check a cupboard light, find the lighting breaker or ring the bell from both doors. Read the voltage at each fitting as you go.
 - Try six **Quick practice** experiments with a prediction, a real control action,
   and a comparison of live simulated readings.
 - Walk through domestic, shop and industrial installations. Select a device by its drawing reference, follow a wire between terminals, or open it on the workbench.
 - Explore working extra-low-voltage systems including LED strips, bell pushes, DC sensors and isolated relay interfaces. Practise using a fork tester or preparing a connector in optional tool exercises.
-- Inspect **109 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
+- Inspect **110 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
 - Build freely with up to **80 components and 300 wires**, with individual terminal
   connections, undo/redo, selectable wires and editable equipment parameters.
 - Operate switches, timers, contactors, dimmers and motors. Correct guided wires

@@ -1,4 +1,5 @@
 import { COMPONENTS } from './components';
+import {bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
 import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
@@ -39,23 +40,24 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
   35:{switch:outsideBath},
   36:{'light-switch':outsideBath,'fan-isolation':side(2,2.2,1.72,-.05,1)},
   37:{override:outsideBath},
-  71:{front:frontPush,rear:gardenPush},
-  72:{front:frontPush,back:gardenPush},
+  71:{front:frontPush,rear:gardenPush,bell:back(1,.59,1.82)},
+  72:{front:frontPush,back:gardenPush,chime:back(1,.59,1.82)},
   73:{call:frontPush},
   80:{push:frontPush},
 };
 export function houseFixing(id:number,c:ComponentInstance){return c.mount?undefined:houseFixings[id]?.[c.id];}
 export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixture?:FixturePose):Vec3{
   let depth=COMPONENTS[c.type].size[2]*scale/2;
-  if(fixture?.flushPlate)depth=.0001;
-  else if(fixture?.bellPush)depth=.220*fixture.scale[2];
+  if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
+  else if(fixture?.flushPlate)depth=.0001;
+  else if(fixture?.bellPush)depth=c.variant==='sesame'?0:.220*fixture.scale[2];
   else if(fixture?.batten)depth=.161*fixture.scale[2];
   else if(fixture&&['switch','switch2','intermediate'].includes(c.type))
     depth=.0005-(c.type==='switch'?.081:.103)*fixture.scale[2];
   return [fixing.face[0]+Math.sin(fixing.yaw)*depth,fixing.face[1],fixing.face[2]+Math.cos(fixing.yaw)*depth];
 }
 
-interface InstalledEnd {pin:Vec3; chase:Vec3; riser:number; item:SiteItem; component:ComponentInstance}
+interface InstalledEnd {pin:Vec3; chase:Vec3; riser:number; item:SiteItem; component:ComponentInstance;lead?:Vec3[]}
 function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEnd|undefined{
   const component=doc.components.find(c=>c.id===end.component),item=site.items.find(c=>c.id===end.component);
   if(!component||!item)return;
@@ -71,6 +73,10 @@ function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEn
   // The rear wing and front rooms have separate routes in the ceiling void.
   const rearWing=item.room===REAR_GARDEN.id||(item.room>=4&&item.room<=7);
   const riser=site.kind==='home'&&rearWing?HOME_BACK-.04:service?service.back-.02:-2.87;
+  if(item.fixture?.bellService==='tx'&&(end.terminal==='+'||end.terminal==='-')){
+    const lead=bellSecondaryLead(pin);
+    return {pin,chase:lead[lead.length-1],riser,item,component,lead};
+  }
   return {pin,chase,riser,item,component};
 }
 const same=(a:Vec3,b:Vec3)=>a.every((v,k)=>Math.abs(v-b[k])<.000001);
@@ -82,6 +88,17 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):V
   const points:Vec3[]=[];
   function through(...corners:Vec3[]){for(const p of corners)if(!points.length||!same(points[points.length-1],p))points.push(p);}
   const assembly=(e:InstalledEnd)=>e.component.mount?.board??e.component.id;
+  const partA=a.item.fixture?.bellService,partB=b.item.fixture?.bellService;
+  if(partA&&partB){
+    if((partA==='tx')!==(partB==='tx')){
+      through(...bellPrimaryLead(a.pin,partA),...bellPrimaryLead(b.pin,partB).reverse());
+    }else{
+      // Incoming terminals and the top of the RCBO share the left enclosure.
+      const z=Math.min(a.pin[2],b.pin[2])-.004;
+      through(a.pin,[a.pin[0],a.pin[1],z],[b.pin[0],a.pin[1],z],[b.pin[0],b.pin[1],z],b.pin);
+    }
+    return points;
+  }
   const shortWallDrop=a.item.room===b.item.room&&Math.hypot(a.chase[0]-b.chase[0],a.chase[2]-b.chase[2])<.13;
   const cupboard=site.kind==='home'&&[13,65,66,68,69].includes(doc.lessonId??0)&&a.item.room===0&&b.item.room===0;
   through(a.pin);
@@ -92,7 +109,7 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):V
       [b.pin[0],b.pin[1],Math.min(a.pin[2],b.pin[2])-.008],b.pin);
     return points;
   }
-  through(a.chase);
+  through(...(a.lead??[a.chase]));
   if(shortWallDrop){
     through([a.chase[0],b.chase[1],a.chase[2]],[b.chase[0],b.chase[1],a.chase[2]]);
   }else{
@@ -107,6 +124,6 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):V
     }
     through([b.chase[0],y,br],[b.chase[0],y,b.chase[2]]);
   }
-  through(b.chase,b.pin);
+  through(...(b.lead?[...b.lead].reverse():[b.chase,b.pin]));
   return points;
 }

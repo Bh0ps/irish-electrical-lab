@@ -1,5 +1,17 @@
 # Verification summary
 
+## 1.10.0 — At the door
+
+**Lesson wording.** Reviewed the nine chapters. We revised 43 course pages, the shared instructions used across all 80 lessons and the six Quick practice experiments. At 390 and 1280 pixels, a learner could predict, turn the switch, see the reading fall from 240 V to 0 V, get a clue after a wrong explanation and try again. A regression also breaks the feed to the hall lamp. With the switch closed, feedback reports the lamp’s actual 0 W reading and directs the learner to Test circuit.
+
+**House and fittings.** Mouse and emulated touch sessions operated both door buttons in the house and from the list. They tried the wrong door, held both buttons, reloaded while holding one and completed all four checks. A separate job used Measure and Find conductor at 320 pixels with 150% text and returned to the same step. Both levels of the Sesame model have two selectable rear terminals and an unmarked push cap on the face. Tests cover a reversed pair of bell wires and a saved three-contact push with its NC terminal still in use.
+
+**Offline and upgrades.** In Chromium and WebKit, the offline phone build verified 249 files (44,205,335 bytes). After the server stopped, both browser engines finished the new doorbell job and reopened the 80-fitting, 228-wire process plant. An interrupted update kept the 1.9.0 stair-light bookmark usable. Stopping the download worker partway through the new pack also preserved the files already checked. Windows WebKit restored a backup from the installed Windows app and exported the same study data.
+
+**Installed Windows app.** The replacement installer upgraded 1.9.0 to 1.10.0 on Windows. All five records in the separate upgrade test profile matched before and after. Desktop and Start shortcuts, restart, port-conflict handling, 80 worker circuits and 120 guided checks passed. The WebKit backup imported back into the installed app with the same six-wire draft, named build and lesson progress. The runtime audit recorded one graphics-driver warning.
+
+**Source checks.** All 369 automated tests and TypeScript passed. All 80 circuits passed their operating and fault checks. The teaching audit ran 1,382 checks at the lesson voltages and mapped all 2,471 exercise activities to their stages. The model catalog found 110 variants. Lint on the changed JavaScript and TypeScript files had the same 24 errors and 12 warnings as 1.9.0. Mobile observations used Windows browser engines with touch emulation. A supervised learner session, a qualified electrician’s read-through and testing on a physical iPhone remain outstanding.
+
 ## 1.9.0 — At the switch
 
 **Learn by trying it.** Fresh Chrome sessions at 1280 × 800 and 390 × 844 completed the opening hall-light lesson. With the same probes left across the lamp, operating the switch changed the display between 240 V and 0 V. Both sessions tried an incorrect prediction and continued. Returning to the lesson after a reload restored the switch position and the saved step. The demonstration earned no independent meter reading. Choosing lamp L and PE by hand produced a valid 239.962 V reading and a prompt naming the requested L and N pair. Choosing L and N gave 239.957 V and earned credit. The meter folded away for the explanation. With both probes on the lamp, their coloured tips remain visible and the card names both terminals together.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { COMPONENTS, COMPONENT_LIST } from '../lib/components.ts';
+import { definitionFor, COMPONENTS, COMPONENT_LIST } from '../lib/components.ts';
 import { getComponentTerminals, terminalInspectionDirection } from '../lib/terminal-layout.ts';
 import { createGalleryInventory } from '../components/lab/ModelGallery.tsx';
 import { LESSONS } from '../lib/lessons.ts';
@@ -11,10 +11,33 @@ import type { ComponentInstance, CircuitDocument, Vec3 } from '../lib/types.ts';
 const sample=(type:string,variant?:string):ComponentInstance=>({id:type,type,label:COMPONENTS[type].name,variant,params:{...COMPONENTS[type].defaults},position:[0,0,0],rotation:0});
 const layout=(type:string,variant?:string)=>getComponentTerminals(sample(type,variant),COMPONENTS[type]);
 
+test('breaker terminal help identifies the numbered screw and its partner on the actual fitting',()=>{
+  for(const type of ['mcb','mcb3','rcbo','rcd','rcd3']){
+    const terminals=layout(type);
+    for(const terminal of terminals){
+      const index=terminals.indexOf(terminal),top=index<terminals.length/2;
+      const other=terminals[(index+terminals.length/2)%terminals.length];
+      assert.ok(terminal.purpose.startsWith((top?'Top ':'Bottom ')+terminal.label+' '),type+' '+terminal.id);
+      assert.ok(terminal.purpose.endsWith('marked '+other.label+'.'));
+    }
+  }
+});
+
+test('each intermediate switch hole describes its two actual paths and chime inputs name the right door',()=>{
+  for(const [index,[straight,crossed]] of [['C','D'],['D','C'],['A','B'],['B','A']].entries()){
+    const {purpose}=layout('intermediate')[index];
+    assert.ok(purpose.includes('joins '+straight+'. Flick the rocker and it joins '+crossed+'.'));
+  }
+  const inputs=layout('callchime');
+  assert.match(inputs.find(t=>t.id==='FRONT')!.purpose,/front door button.*FRONT to AC2/);
+  assert.match(inputs.find(t=>t.id==='REAR')!.purpose,/back door button.*REAR to AC2/);
+  assert.ok(COMPONENT_LIST.every(d=>d.parts.every(part=>part.purpose.trim())), 'every selectable part has an explanation');
+});
+
 test('every registry, lesson and gallery terminal has one finite physical mouth and a unit entry direction',()=>{
   const instances=[...COMPONENT_LIST.map(d=>sample(d.type)),...createGalleryInventory().flatMap(e=>[e.component,...e.companions??[]]),...LESSONS.flatMap(l=>l.circuit.components)];
   for(const c of instances){
-    const d=COMPONENTS[c.type],resolved=getComponentTerminals(c,d);
+    const d=definitionFor(c),resolved=getComponentTerminals(c,d);
     assert.equal(resolved.length,d.terminals.length,c.id);
     assert.equal(new Set(resolved.map(t=>t.id)).size,resolved.length,c.id);
     assert.deepEqual(resolved.map(t=>[t.id,t.role]),d.terminals.map(t=>[t.id,t.role]));

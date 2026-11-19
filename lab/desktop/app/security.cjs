@@ -7,6 +7,7 @@ const REFERENCE_HOSTS = ['esbnetworks.ie', 'nsai.ie', 'safeelectric.ie', 'hsa.ie
 const MAX_JSON_BYTES = 32 * 1024 * 1024;
 function allowedReference(value) {
   if (typeof value !== 'string' || value.length > 4096) return false;
+  if (value === 'https://www.tlc-direct.co.uk/Technical/DataSheets/Friedland/P814.pdf') return true;
   try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password && !url.port && REFERENCE_HOSTS.some(host => url.hostname === host || url.hostname.endsWith('.' + host)); } catch { return false; }
 }
 function validKind(value) { return value === 'circuit' || value === 'backup'; }

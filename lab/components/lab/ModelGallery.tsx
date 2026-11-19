@@ -6,7 +6,7 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Equipment } from '../../lib/Equipment';
 import type { EquipmentView } from '../../lib/Equipment';
-import { COMPONENT_LIST, COMPONENTS, equipmentPurpose } from '../../lib/components.ts';
+import { COMPONENT_LIST, COMPONENTS, definitionFor, equipmentPurpose } from '../../lib/components.ts';
 import { LESSONS } from '../../lib/lessons.ts';
 import { getComponentTerminals } from '../../lib/terminal-layout.ts';
 import { equipmentAssetKey } from '../../lib/equipment-assets';
@@ -124,7 +124,7 @@ function GalleryBatch({ entries, index, view, animate, side, selection, onSelect
       </Canvas> : <div className="mg-placeholder">Models load as this sheet enters view.</div>}
     </div>
     <div className="mg-caption-grid">{entries.map((entry, i) => <button key={entry.key} data-gallery-key={entry.key} className={selection?.key === entry.key ? 'selected' : ''} onClick={() => onSelect({ key: entry.key, part: 'body', terminal: false })}>
-      <b>{index * 12 + i + 1}. {entry.name}</b><span>{COMPONENTS[entry.component.type].group} · {COMPONENTS[entry.component.type].terminals.length} terminals</span><small>{entry.source}</small>
+      <b>{index * 12 + i + 1}. {entry.name}</b><span>{COMPONENTS[entry.component.type].group} · {definitionFor(entry.component).terminals.length} terminals</span><small>{entry.source}</small>
     </button>)}</div>
   </section>;
 }

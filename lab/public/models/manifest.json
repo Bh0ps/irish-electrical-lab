@@ -10576,5 +10576,67 @@
     "bytes": 1132440,
     "lowBytes": 300128,
     "bespokeBlender": true
+  },
+  {
+    "key": "pushbutton_sesame",
+    "galleryKey": "pushbutton:sesame",
+    "type": "pushbutton",
+    "name": "Doorbell push",
+    "url": "/models/pushbutton_sesame.glb",
+    "lowUrl": "/models/pushbutton_sesame.low.glb",
+    "thumbnailUrl": "/models/thumbnails/pushbutton_sesame.png",
+    "detailRevision": 3,
+    "detailFamily": "switch",
+    "detailFeatures": [
+      "individual-electrical-terminations",
+      "sesame-cover",
+      "sesame-base",
+      "sesame-plunger"
+    ],
+    "sourceMeshCount": 38,
+    "meshCount": 12,
+    "triangles": 31124,
+    "lowTriangles": 18002,
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "Top screw",
+        "role": "control",
+        "purpose": "Either wire can go here. Press the button and the top and bottom screws are connected.",
+        "anchor": [
+          0.035,
+          0.8,
+          0.054
+        ],
+        "group": "Rear contacts",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NO",
+        "label": "Bottom screw",
+        "role": "control",
+        "purpose": "Either wire can go here. Press the button and the top and bottom screws are connected.",
+        "anchor": [
+          0.035,
+          0.3,
+          0.054
+        ],
+        "group": "Rear contacts",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "bytes": 841512,
+    "lowBytes": 503204,
+    "bespokeBlender": true
   }
 ]

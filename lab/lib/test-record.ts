@@ -10,11 +10,11 @@ export function testFingerprint(document:CircuitDocument):string {
   return (a>>>0).toString(16).padStart(8,'0')+(b>>>0).toString(16).padStart(8,'0');
 }
 export function captureTestRecord(document:CircuitDocument,assessment:BuildAssessment,recordedAt=Date.now()):TestRecord {
-  if(assessment.circuitId!==document.id||assessment.revision!==document.revision)throw new Error('An older test cannot be recorded for the current circuit.');
+  if(assessment.circuitId!==document.id||assessment.revision!==document.revision)throw new Error('The circuit changed after this test. Run Test circuit again to save a fresh result.');
   return validateTestRecord({version:1,fingerprint:testFingerprint(document),recordedAt,assessment});
 }
 export function validateTestRecord(value:unknown):TestRecord {
-  const fail=()=>{throw new Error('Invalid saved test report. Current study data is preserved.');};
+  const fail=()=>{throw new Error('This saved test report could not be opened. Your study work is still on this device.');};
   const plain=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)&&[Object.prototype,null].includes(Object.getPrototypeOf(v));
   const text=(v:unknown,max:number):v is string=>typeof v==='string'&&v.length>0&&v.length<=max;
   if(!plain(value)||value.version!==1||!text(value.fingerprint,16)||!/^[a-f0-9]{16}$/.test(value.fingerprint)||!Number.isSafeInteger(value.recordedAt)||Number(value.recordedAt)<0) return fail();

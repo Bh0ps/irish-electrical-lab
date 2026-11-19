@@ -27,22 +27,22 @@ type Finding = Pick<AssessmentCheck, 'id' | 'category' | 'status' | 'title' | 'e
 export function nextCheckForFinding(finding: Finding): string {
   const id = finding.id;
   if (id === 'scenario:unassigned') return 'Open Live readings to check your own circuit.';
-  if (finding.status === 'unresolved' || finding.category === 'model') return 'Check the supply and the connections at the named fitting. Then run Test circuit again.';
-  if (id.includes('neutralEarth:')) return 'Turn the simulated supply off. Follow the highlighted wire between neutral and earth.';
+  if (finding.status === 'unresolved' || finding.category === 'model') return 'Check the supply and the fittings shown on the bench. Then choose Test circuit again.';
+  if (id.includes('neutralEarth:')) return 'Switch off the bench supply. Follow the neutral and earth wires to find where they meet.';
   if (id.includes('cpc:')) return 'Follow the wire from the earth terminal (PE) back to the supply earth.';
   if (id.includes('polarity:')) return 'Trace L back to line and N back to neutral.';
-  if (id.includes('tripped:')) return 'Check the wiring and read what tripped. Repair the fault, reset the device and test again.';
-  if (id.includes('mechanical:') || id.includes('interlock')) return 'Check which contactor is on before trying the other direction.';
-  if (id.includes('neutral:')) return 'Measure across the load, then trace its return wire.';
+  if (id.includes('tripped:')) return 'Look at the trip reading. Fix the cause before you reset the device and test again.';
+  if (id.includes('mechanical:') || id.includes('interlock')) return 'Check which contactor is pulled in. Its partner must stay open.';
+  if (id.includes('neutral:')) return 'Put the probes on L and N at the fitting, then follow N back to the supply.';
   if (id.includes('phase:') || id.includes('windingVoltage:')) return 'Check the voltage across each winding and compare it with the motor rating.';
   if (id.startsWith('equipment:')) return 'If you just removed it, choose Undo to put it back.';
   if (id.startsWith('connection:')) return 'Choose Connect and pick those two terminals.';
   if (id.startsWith('extra:')) return 'Select the wire and compare its two ends with the lesson drawing.';
   if (id.startsWith('identity:')) return 'Compare the marking on the wire with the one in the lesson.';
-  if (id.startsWith('fault:')) return 'Take a reading at the fault. Repair it and test again.';
+  if (id.startsWith('fault:')) return 'Record a reading at the fitting, then repair the fault and test again.';
   if (id === 'supply') return 'Turn the bench supply on and test again.';
   if (finding.status === 'not-run') return 'Try the control named in this step, then test again.';
-  if (finding.category === 'protection') return 'Follow the highlighted wire to its terminals. Check the connection before you reset or test again.';
+  if (finding.category === 'protection') return 'Check the wiring at both ends before you reset the device or test again.';
   if (finding.category === 'operation') return 'Check the switch position. Measure across the fitting, then follow the feed and return wires.';
   return 'Compare your wiring with the drawing and test again.';
 }
@@ -83,8 +83,8 @@ export function getBuildHint({ document, result, expected }: BuildHintInput): Bu
     nextCheck: 'Open Test circuit to find out why.',
   };
   if (!document.components.length) return {
-    id: 'hint:empty', kind: 'incomplete', severity: 'info', title: 'Start with your equipment',
-    explanation: 'Start with a supply.', nextCheck: 'Choose Add equipment to place it on the bench.',
+    id: 'hint:empty', kind: 'incomplete', severity: 'info', title: 'Empty bench',
+    explanation: 'Place a supply, then add what you want it to run.', nextCheck: 'Choose Add equipment to place it on the bench.',
   };
   if (!expected || document.lessonId === undefined || document.lessonId !== expected.lessonId) return undefined;
   const checks = assessConnections(document, expected).filter(check => check.status !== 'pass');
@@ -95,7 +95,7 @@ export function getBuildHint({ document, result, expected }: BuildHintInput): Bu
   const incomplete = check.id.startsWith('equipment:') || check.id.startsWith('connection:');
   return {
     id: check.id, kind: incomplete ? 'incomplete' : 'different-from-lesson', severity: incomplete ? 'info' : 'warning',
-    title: incomplete ? 'Lesson build is unfinished' : 'This differs from the lesson', explanation: check.explanation,
+    title: incomplete ? check.title : 'Different from this lesson', explanation: check.explanation,
     nextCheck: nextCheckForFinding(check),
     ...(check.component ? { component: check.component } : {}), ...(check.wire ? { wire: check.wire } : {}),
   };

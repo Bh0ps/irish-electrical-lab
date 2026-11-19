@@ -1,8 +1,8 @@
 const terms: Array<[RegExp, string, string]> = [
   [/\bRCBO\b/i, 'RCBO', 'A breaker that can trip when too much current flows or when some current comes back by another route.'],
-  [/\b(RCD|RCCB)\b/i, 'RCD', 'A device that compares the current going out and coming back. A difference can make it trip.'],
+  [/\b(RCD|RCCB)\b/i, 'RCD or RCCB', 'It compares the current going out with the current coming back. If some takes another path, the device can trip. An RCCB needs a separate fuse or breaker for overloads.'],
   [/\bMCB\b/i, 'MCB', 'A circuit breaker that trips when too much current flows.'],
-  [/\b(CPC|protective conductor|protective earth)\b/i, 'Protective earth', 'The earth wire. It gives fault current a path back to the supply so protection can operate.'],
+  [/\b(CPC|PE|protective conductor|protective earth)\b/i, 'Earth wire (PE)', 'If a live wire touches an earthed metal case, the earth wire carries fault current back to the supply. This helps the protection trip.'],
   [/\bcontinuity\b/i, 'Continuity', 'A check for an unbroken electrical path. Switch off every supply before using this meter setting.'],
   [/\bcontactor\b/i, 'Contactor', 'A switch operated by a coil. A small control circuit can switch a larger load, such as a motor.'],
   [/\bcoil\b/i, 'Coil', 'A winding of wire. In a relay or contactor, current through it makes a magnet pull the contacts over.'],
@@ -24,6 +24,18 @@ const terms: Array<[RegExp, string, string]> = [
   [/\bstranded\b/i, 'Stranded wire', 'Many fine metal strands make up one conductor. You can see them together at the cut end.'],
   [/\b(run-on|off-delay)\b/i, 'Run-on', 'The fan or light stays on for a set time after the switch or sensor turns off.'],
   [/\bOL\b/i, 'OL', 'This resistance reading is outside the meter’s range. An open wire can give this reading.'],
+  [/\bload(s)?\b/i, 'Load', 'Something that uses electrical power, such as a lamp, heater or motor.'],
+  [/\b(feed|feeder|feeds)\b/i, 'Feed', 'The wire or cable that brings power to a fitting or circuit.'],
+  [/\b(switched line|SL)\b/, 'Switched line (SL)', 'The wire carrying power from a switch to the fitting it controls.'],
+  [/\b(radial|radials)\b/i, 'Radial circuit', 'The cable starts at the board and ends at the last fitting. It can have branches.'],
+  [/\bring (final|circuit)\b/i, 'Ring circuit', 'The cable runs from the board through the sockets and back to the same breaker.'],
+  [/\b(holding contact|hold-in contact|seal-in contact)\b/i, 'Holding contact', 'On a starter, this contact keeps the coil powered after you let go of Start. Stop breaks that path.'],
+  [/\b(changeover|change-over)\b/i, 'Changeover', 'A switch moves the common connection from one path to another.'],
+  [/\b(AC|DC)\b/, 'AC and DC', 'With AC the current changes direction, as it does at a mains socket. DC flows in one direction, as it does from a battery.'],
+  [/\bSPD\b/i, 'Surge protection device (SPD)', 'At the board, it helps limit sudden voltage spikes. It does not switch the lights on or off.'],
+  [/\b(load shedding|shed the load)\b/i, 'Load shedding', 'A controller switches off one load to leave power available for another.'],
+  [/\bPLC\b/i, 'PLC', 'A small industrial computer. It reads inputs such as switches, then uses its program to control outputs.'],
+  [/\bVFD\b/i, 'VFD', 'A drive that changes the frequency of the supply to a motor to control its speed.'],
 ];
 
 export function TermsInThisStep({text}:{text:string}) {

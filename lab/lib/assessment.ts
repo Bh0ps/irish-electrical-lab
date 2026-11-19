@@ -45,7 +45,7 @@ export function assessConnections(document: CircuitDocument, expected: CircuitDo
     if (present && present.role !== w.role) check(`identity:${present.id}`, false, 'Check the wire marking', `The wire from ${wireEnds(document, present)} is in the right place. It’s marked ${present.role}. The drawing calls for ${w.role}.`, {wire:present.id});
   }
   for (const w of extras) check(`extra:${w.id}`, false, 'Extra connection', `Your wire runs from ${wireEnds(document, w)}. There’s no wire between these terminals in the lesson drawing.`, {wire:w.id});
-  for (const f of document.faults.filter(f => f.enabled)) check(`fault:${f.type}:${f.wire ?? f.component}`, false, 'Practice fault still present', 'The fault on the bench still needs a repair.', {wire:f.wire, component:f.component});
+  for (const f of document.faults.filter(f => f.enabled)) check(`fault:${f.type}:${f.wire ?? f.component}`, false, 'Practice fault still present', 'Repair the fault, then run Test circuit again.', {wire:f.wire, component:f.component});
   return checks;
 }
 
@@ -68,8 +68,8 @@ export function assessBuild(document: CircuitDocument, result: SimulationResult,
     checks.push({id, category, status: passed ? 'pass' : 'fail', title, explanation, ...target});
   const current = result.revision === document.revision;
   const resolved=current && result.converged;
-  checks.push({id:'solution',category:'model',status:resolved?'pass':'unresolved',title:'Circuit calculation',
-    explanation:!current?'The wiring changed during the test. Test it again.':resolved?'The bench calculated voltage and current for this wiring.':'The bench could not calculate reliable readings for this wiring.'});
+  checks.push({id:'solution',category:'model',status:resolved?'pass':'unresolved',title:'Voltage and current',
+    explanation:!current?'The wiring changed during the test. Test it again.':resolved?'The bench has a reading for this version of the circuit.':'The bench could not calculate reliable readings for this wiring.'});
   const freeBuild=!document.lessonId && !expected;
   const hasMains=document.components.some(c=>c.type==='source'||c.type==='source3');
   const localSupply=freeBuild && resolved && document.components.some(c=>['battery','pv'].includes(c.type) && (result.branchCurrents[c.id+'.dcSource'] || result.branchCurrents[c.id+'.backupSource']));
@@ -77,22 +77,22 @@ export function assessBuild(document: CircuitDocument, result: SimulationResult,
     checks.push({id:'supply',category:'operation',status:'not-run',title:hasMains?'Bench supply is off':'No bench supply connected',
       explanation:hasMains?'Turn the supply on to try the circuit. Leave it off for a resistance check.':'You can check continuity with the power off. Add a supply to try the circuit under power.'});
   }else{
-    check('supply','operation',document.supply.enabled||localSupply,'Simulated supply',localSupply?'A local source is supplying voltage.':document.supply.enabled?`The supply is on at ${document.supply.voltage} V.`:'Turn the bench supply on to test operation.');
+    check('supply','operation',document.supply.enabled||localSupply,'Simulated supply',localSupply?'The circuit has voltage from its own battery or solar supply.':document.supply.enabled?`The supply is on at ${document.supply.voltage} V.`:'Switch on the bench supply to try the circuit.');
   }
   if (current) {
     const failures = result.diagnostics.filter(d => d.severity !== 'info');
     for (const d of failures) check(`finding:${d.id}`, d.category, false, d.title, explainFinding(document, result, d), {component:d.component, wire:d.wire});
     const protective = failures.filter(d => d.category === 'protection');
-    if (!protective.length) check('protective-paths', 'protection', true, 'Earth path check', 'The simulator found no fault in the earth paths it checks.');
+    if (!protective.length) check('protective-paths', 'protection', true, 'Earth path check', 'The bench found no break or wrong connection in the earth paths it checked.');
   }
   if (expected) {
     checks.push(...assessConnections(document,expected));
   }
   if(current&&result.converged){const experiments=runLessonScenarios(document,result.deviceStates);for(const c of experiments){if(document.lessonId===7&&c.id==='scenario:7:0:0')c.id='switch-off';if(document.lessonId===7&&c.id==='scenario:7:1:0')c.id='switch-on';}checks.push(...experiments);}
-  else checks.push({id:'scenario:not-current',category:'objectives',status:'not-run',title:'Operating experiments',explanation:'The bench needs a reading from this wiring before it can try the controls.'});
+  else checks.push({id:'scenario:not-current',category:'objectives',status:'not-run',title:'Control checks',explanation:'Test the current wiring again so the bench can try the controls.'});
   const failed = checks.filter(c => c.status === 'fail').length, unresolved=checks.filter(c=>c.status==='unresolved').length, notRun=checks.filter(c=>c.status==='not-run').length;
   const powerNotTested=checks.some(c=>c.id==='supply'&&c.status==='not-run');
   const passed=failed===0&&unresolved===0&&!powerNotTested&&(!document.lessonId||notRun===0);
-  const summary=unresolved?'Test incomplete. Some readings are unknown.':failed?`Test failed. ${failed} ${failed===1?'check needs':'checks need'} attention.`:powerNotTested?'Still to test under power':document.lessonId&&notRun?'Some lesson checks still need to run.':document.lessonId?'Test passed':'Circuit checked. These tests found no wiring fault.';
+  const summary=unresolved?'Test incomplete. The bench couldn’t get all the readings.':failed?`Test failed. ${failed} ${failed===1?'check needs':'checks need'} attention.`:powerNotTested?'Still to test under power':document.lessonId&&notRun?'Some lesson checks still need to run.':document.lessonId?'Test passed':'Circuit checked. These tests found no wiring fault.';
   return {revision:document.revision,circuitId:document.id,passed,summary,checks};
 }

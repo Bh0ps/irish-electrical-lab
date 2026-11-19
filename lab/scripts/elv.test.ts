@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {applyEquipmentVariant,equipmentPurpose} from '../lib/components.ts';
+import {applyEquipmentVariant,connectedTerminalMissing,definitionFor,equipmentPurpose} from '../lib/components.ts';
 import {getLesson} from '../lib/lessons.ts';
 import {getCoursebookActivities,createCoursebookBuild} from '../lib/coursebook.ts';
-import {measureVoltage,simulate} from '../lib/simulation.ts';
+import {measureResistance,measureVoltage,simulate} from '../lib/simulation.ts';
 import {runLessonScenarios} from '../lib/scenarios.ts';
 import {validateCircuit} from '../lib/storage.ts';
 import {validateProgress} from '../lib/study-backup.ts';
@@ -13,6 +13,32 @@ import {electricalKey} from '../lib/simulation-identity.ts';
 
 const doc=(id:number)=>structuredClone(getLesson(id)!.circuit);
 const ep=(component:string,terminal:string)=>({component,terminal});
+test('the two-screw doorbell closes in either direction and an old three-contact push still works',()=>{
+  const d=doc(72), front=d.components.find(c=>c.id==='front')!;
+  assert.equal(front.variant,'sesame');
+  assert.deepEqual(definitionFor(front).terminals.map(t=>t.id).sort(),['COM','NO']);
+  for(const wire of d.wires)for(const end of [wire.from,wire.to]){
+    if(end.component==='front')end.terminal=end.terminal==='COM'?'NO':'COM';
+  }
+  front.params.pressed=true;
+  const ringing=simulate(d);
+  assert.equal(ringing.deviceStates.chime.call,'Front');
+  assert.ok(!('front.NC' in ringing.terminalVoltages));
+  d.supply.enabled=false;d.wires=[];d.cableRuns=[];front.params.pressed=false;
+  assert.equal(measureResistance(d,ep('front','COM'),ep('front','NO')).reason,'open');
+  front.params.pressed=true;
+  assert.ok((measureResistance(d,ep('front','COM'),ep('front','NO')).value??Infinity)<.1);
+  const legacy=applyEquipmentVariant(front,'bell-push');
+  legacy.params.pressed=false;
+  d.components=d.components.map(c=>c.id==='front'?legacy:c);
+  d.wires.push({id:'legacy-nc',from:ep('front','NC'),to:ep('back','NO'),role:'control',resistance:.01,bends:[]});
+  const restored=validateCircuit(structuredClone(d));
+  assert.equal(restored.wires[0].from.terminal,'NC');
+  assert.ok((measureResistance(restored,ep('front','COM'),ep('front','NC')).value??Infinity)<.1);
+  assert.equal(connectedTerminalMissing(restored,front),'NC');
+  restored.wires=[];
+  assert.equal(connectedTerminalMissing(restored,front),undefined);
+});
 test('inspection uses the fitted LED driver and door switch when explaining a circuit',()=>{
   const cupboard=doc(65), modules=doc(70);
   const purpose=(d:typeof cupboard,id:string)=>equipmentPurpose(d.components.find(part=>part.id===id)!);
