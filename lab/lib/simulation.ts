@@ -1,5 +1,5 @@
 import { simulatePulses } from './pulse-simulation.ts';
-import { definitionFor as definition } from './components.ts';
+import { definitionFor as definition, hasReplaceableFuse } from './components.ts';
 import { endpointKey, type CircuitDocument, type Complex, type ComponentInstance, type DeviceState, type Diagnostic, type Endpoint, type Parameters, type SimulationEvent, type SimulationResult } from './types.ts';
 
 /** Educational RMS model. Conductor/source impedances and trip timing are illustrative.
@@ -640,7 +640,7 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
       state.energized = current > 0.0001; state.level = current / rating;
       const overload = current > rating * 1.05;
       state.elapsed = overload ? (old?.elapsed || 0) + dt : 0;
-      if (!isType(item, 'rcd', 'rcd3') && (current > rating * number(p, 'instantMultiple', 5) || overload && state.elapsed >= number(p, 'delay', 0.5))) trip(item, state, 'Overcurrent trip', `${item.label} carried ${current.toFixed(2)} A before it opened. Its setting is ${rating} A.`);
+      if (!isType(item, 'rcd', 'rcd3') && (current > rating * number(p, 'instantMultiple', 5) || overload && state.elapsed >= number(p, 'delay', 0.5))) trip(item, state, hasReplaceableFuse(item.type)?'Fuse blown':'Overcurrent trip', `${item.label} carried ${current.toFixed(2)} A before it opened. Its rating is ${rating} A.`);
       if (isType(item, 'rcd', 'rcbo', 'rcd3')) {
         const names = item.type === 'rcd3' ? ['L1', 'L2', 'L3', 'N'] : ['L', 'N'];
         const imbalance = abs(names.reduce((sum, name) => add(sum, solved.currents[`${item.id}.${name}`] || c()), c()));
@@ -902,15 +902,24 @@ export function measureVoltage(result: SimulationResult, a: Endpoint, b: Endpoin
   return { value: volts, explanation: volts === 0 ? 'The two points are at the same voltage. Both can still be live.' : av.reference === 'mains' ? 'Voltage between the two probe tips.' : 'Voltage between the probes on this isolated circuit.' };
 }
 
-/** De-energized equivalent resistance, with device contacts held at their document control state.
- * Electronic converters/transformers are disconnected for an ohmmeter; active electronics are not resistors.
- */
-export function measureResistance(document: CircuitDocument, a: Endpoint, b: Endpoint): MeterReading {
-  if (document.supply.enabled) return { value: null, reason: 'supply-on', explanation: 'Turn the bench supply off before measuring resistance or continuity.' };
-  if (document.components.some(item => isType(item, 'pv', 'battery') && flag(params(item), 'on', true))) return { value: null, reason: 'supply-on', explanation: 'A battery or solar supply is still on. Switch it off before measuring resistance.' };
+export function resistanceSupplyWarning(document:CircuitDocument):string|undefined {
+  if(document.supply.enabled)return 'Turn the bench supply off before measuring resistance or continuity.';
+  if(document.components.some(item => isType(item,'pv','battery') && flag(params(item),'on',true)))
+    return 'A battery or solar supply is still on. Switch it off before measuring resistance.';
+}
+/** De-energized equivalent resistance. Electronic converters and transformers are
+ * disconnected for an ohmmeter. Protective devices retain their trip state. */
+export function measureResistance(document: CircuitDocument, a: Endpoint, b: Endpoint, deviceStates?:Record<string,DeviceState>): MeterReading {
+  const warning=resistanceSupplyWarning(document);
+  if(warning)return {value:null,reason:'supply-on',explanation:warning};
   if (endpointKey(a) === endpointKey(b)) return { value: 0, explanation: 'Both probes touch the same terminal.' };
   const passiveDocument: CircuitDocument = { ...document, supply: { ...document.supply, enabled: false }, components: document.components.filter(item => !isType(item, 'transformer', 'driver', 'dcsupply', 'vfd', 'pv', 'battery')) };
-  const states = Object.fromEntries(passiveDocument.components.map(item => [item.id, newState(item)]));
+  // Isolation removes power but leaves blown fuses and tripped breakers open.
+  // Other passive contacts follow the positions in the document.
+  const states = Object.fromEntries(passiveDocument.components.map(item => {
+    const last=deviceStates?.[item.id];
+    return [item.id,newState(item,last?.tripped?last:undefined)];
+  }));
   const net = network(passiveDocument, states, true), ak = endpointKey(a), bk = endpointKey(b);
   if (!net.nodes.has(ak) || !net.nodes.has(bk)) return { value: null, explanation: 'The bench can’t test resistance at one of these points. Try the two ends of a wire. This test leaves transformers and electronic supplies out.' };
   const union = new Union(); for (const branch of net.branches) union.join(branch.a, branch.b);

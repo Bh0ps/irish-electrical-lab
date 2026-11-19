@@ -500,9 +500,21 @@
     },
     {
       "id": "bg-851",
-      "title": "BG Electrical 851 rear photograph and dimension drawing",
+      "title": "BG Electrical 851 · front, rear and side photographs",
       "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/fused-connection-units/851-01",
-      "architecture": "Switched fused connection unit with a bottom flex outlet. The 86 mm plate and 60.3 mm fixing centres follow the drawing. The rear photo shows the input and load markings, side earth connections and two-screw cord grip. Small mouldings are reconstructed from the photograph. The model is original."
+      "architecture": "The red flag is painted on the rocker. Beside the captive carrier is a small opening notch. The rear photo shows upper N LOAD, L IN and L LOAD, a lower N IN, a two-ended metal earth strap and the cord grip. The original 86 mm plate uses the published 60.3 mm fixing pitch. Small mouldings and hidden spring details are illustrative."
+    },
+    {
+      "id": "bg-851-instructions",
+      "title": "BG NXSWFCUIL-H · terminal diagrams and captive fuse carrier",
+      "url": "https://res.cloudinary.com/lu1/fl_attachment:BG_IM_NXSWFCUIL_H/600862/Original.pdf",
+      "architecture": "The side-by-side supply and appliance diagrams identify the four marked power terminals, both earth entries and the bottom flex exit. The carrier remains attached when withdrawn. The study view keeps its wiring intact during inspection."
+    },
+    {
+      "id": "lawson-pl",
+      "title": "Lawson Type PL · BS 1362 cartridge dimensions",
+      "url": "https://www.lawson-fuses.com/app/uploads/2020/12/Type-PL-Product-Information-Sheet.pdf",
+      "architecture": "The cartridge body is ceramic with two metal end caps. The published overall length is 25.4 mm and the diameter is 6.3 mm. Its internal fuse element is enclosed."
     }
   ],
   "familySources": {
@@ -883,7 +895,9 @@
       "mk-accessory"
     ],
     "fcu:default": [
-      "bg-851"
+      "bg-851",
+      "bg-851-instructions",
+      "lawson-pl"
     ],
     "switch2:single-rocker": [
       "bg-wall-two",

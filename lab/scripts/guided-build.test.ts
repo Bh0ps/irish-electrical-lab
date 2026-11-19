@@ -134,7 +134,7 @@ test('every authored connection in all 80 lessons accepts its own isolated addit
     }
     assert.equal(document.wires.length, lesson.circuit.wires.length);
   }
-  assert.equal(checked, 1117);
+  assert.equal(checked, 1118);
 });
 
 test('guided setup isolates all represented sources without mutating equipment, examples or stored formats', () => {

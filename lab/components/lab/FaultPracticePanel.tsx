@@ -5,13 +5,18 @@ import type { MeasurementEvidence } from '../../lib/learning';
 import { measurementPoints } from '../../lib/measurement-points';
 import { faultScore, kitchenFaultChoices, lessonFaultChoices, shownVolts, type FaultStage } from '../../lib/fault-practice';
 import { worktopFaultPoints } from '../../lib/worktop-fault';
+import { heaterFeed, type HeaterReadings } from '../../lib/heater-fault';
 import { Button } from '../ui/button';
+import HeaterFlexChoice,{type FlexLanding} from './HeaterFlexChoice';
 
 interface Props {
+  flexLanding?:FlexLanding;
+  findRepair?:()=>void;
+  isolateForRepair?:{label:string;run:()=>void};
   lesson:ConfigurationLesson; doc:CircuitDocument; stage:FaultStage; worktop:boolean; scored:boolean; hints:number; clue:string;
   feedback:string; diagnosis:string; setDiagnosis:(value:string)=>void; submit:()=>void; checking:boolean; repair:()=>void;
   test:()=>void; testing:boolean; failed:boolean; openReport:()=>void; showClue:()=>void; closeTools:()=>void; openMeter:()=>void;
-  context?:ReactNode; next:()=>void; readings:{strip?:MeasurementEvidence;switchOutput?:MeasurementEvidence};
+  context?:ReactNode; next:()=>void; readings:{strip?:MeasurementEvidence;switchOutput?:MeasurementEvidence}; heater?:HeaterReadings;
   restoreSupply?:()=>void; samples:MeasurementEvidence[]; missing:string; wrongPoints:boolean; leftLit?:boolean; scoreThis:()=>void; switchOn:boolean; operateSwitch:()=>void;
 }
 
@@ -20,6 +25,14 @@ const stages:Record<FaultStage,string> = {
 };
 
 function measurePrompt(props:Props) {
+  if(props.heater){
+    if(!props.switchOn)return 'Turn the heater on at the wall.';
+    if(!props.heater.heater)return 'On the bench meter, put red on heater L and black on heater N.';
+    if(props.heater.output)return 'Check that the bench supply and wall switch are on. Take both readings again.';
+    const reverse=props.heater.heater.a?.terminal==='N',feed=heaterFeed(props.doc);
+    const target=feed?.component==='fuse'?'OUT on the separate fuse':'the L terminal on the LOAD side of the wall switch';
+    return 'Leave '+(reverse?'red':'black')+' on heater N. Move '+(reverse?'black':'red')+' to '+target+'.';
+  }
   if (!props.worktop) {
     if (props.wrongPoints && props.missing) return props.missing;
     if (props.samples.length===1) return 'One reading saved. Check a second pair of points.';
@@ -42,8 +55,8 @@ function readingValue(sample:MeasurementEvidence) {
   return number===undefined ? 'No reading' : number+' '+sample.unit+(sample.instrument?.signal?' '+sample.instrument.signal:'');
 }
 
-function FaultReadings({doc,samples,readings,worktop}:Pick<Props,'doc'|'samples'|'readings'|'worktop'>) {
-  const rows=worktop
+function FaultReadings({doc,samples,readings,worktop,heater}:Pick<Props,'doc'|'samples'|'readings'|'worktop'|'heater'>) {
+  const rows=heater?[{label:'Across the heater',sample:heater.heater},{label:heaterFeed(doc)?.component==='fuse'?'Fuse OUT to heater N':'Wall switch LOAD L to heater N',sample:heater.output}]:worktop
     ? [{label:'Across the right strip',sample:readings.strip},{label:'Right switch to − pad',sample:readings.switchOutput}]
     : samples.map(sample=>({label:sample.measuredAt ?? measurementPoints(doc,sample),sample}));
   const table=(items:typeof rows)=><dl className="fault-readings" aria-label="Your fault readings">
@@ -73,23 +86,28 @@ export function FaultPracticePanel(props:Props) {
     :stage==='retest'?props.restoreSupply?'Turn the supply back on before testing.':props.failed?'The circuit still has a fault.':'The repair is in. Does it work?'
     :'The repair passed.';
   const canAsk=stage==='measure'||stage==='diagnose';
-  const choices=worktop?kitchenFaultChoices:lessonFaultChoices(lesson.id);
+  const choices=props.heater?[
+    ['overload','The heater is drawing too much current'],
+    ['open-neutral','A break in the neutral going to the heater'],
+    ['open-live','A break in the line going to the heater'],
+  ]:worktop?kitchenFaultChoices:lessonFaultChoices(lesson.id);
   const instrumentOpen=Boolean(context);
   const hasWorktopReading=Boolean(readings.strip||readings.switchOutput);
   return <section className="active-task house-call fault-practice" data-fault-stage={stage} data-house-tools={instrumentOpen||undefined} aria-label="Fault practice">
-    <div className="task-topline">{!worktop&&<span>Fault practice</span>}<b>{stages[stage]}</b></div>
+    <div className="task-topline">{!worktop&&!props.heater&&<span>Fault practice</span>}<b>{stages[stage]}</b></div>
     <div className="house-job-heading"><h3 ref={heading} tabIndex={-1} aria-live="polite">{headingText}</h3>
       {instrumentOpen&&<Button variant="ghost" size="sm" onClick={closeTools} aria-label="Back to fault">Back</Button>}
     </div>
     {stage==='measure'&&!instrumentOpen&&!props.wrongPoints&&!props.samples.length&&(
-      worktop?props.switchOn&&props.leftLit&&<p>The left strip is on. Check the one that stays dark.</p>
+      props.heater?<p>{props.switchOn?'The switch is on, but the heater is cold. Record the volts at each end of its feed.':'The heater won’t warm up. Start with its wall switch.'}</p>
+      :worktop?props.switchOn&&props.leftLit&&<p>The left strip is on. Check the one that stays dark.</p>
       :<p>Record two meter readings before choosing the fault.</p>
     )}
-    {stage==='measure'&&worktop&&props.wrongPoints&&<p className="task-feedback attention" role="status">Reading saved. For this check, use the points named above.</p>}
+    {stage==='measure'&&(worktop||props.heater)&&props.wrongPoints&&<p className="task-feedback attention" role="status">Reading saved. For this check, use the points named above.</p>}
     {props.feedback&&stage!=='done'&&<p className="task-feedback" role="status">{props.feedback}</p>}
     {stage==='diagnose'&&!instrumentOpen&&<FaultReadings {...props}/>}
     {!instrumentOpen&&<>
-      {stage==='measure'&&<Button className="primary-button full" onClick={worktop&&!props.switchOn?props.operateSwitch:props.openMeter}>{worktop&&!props.switchOn?'Turn the right switch on':'Use the meter'}</Button>}
+      {stage==='measure'&&<Button className="primary-button full" onClick={(worktop||props.heater)&&!props.switchOn?props.operateSwitch:props.openMeter}>{props.heater?(props.switchOn?'Use the bench meter':'Turn heater switch on'):worktop&&!props.switchOn?'Turn the right switch on':'Use the meter'}</Button>}
       {stage==='diagnose'&&<>
         <label className="field-label"><span className="sr-only">Your diagnosis</span>
           <select aria-label="Your diagnosis" value={props.diagnosis} onChange={e=>props.setDiagnosis(e.target.value)}>
@@ -99,11 +117,13 @@ export function FaultPracticePanel(props:Props) {
         <Button className="primary-button full" disabled={!props.diagnosis||props.checking} onClick={props.submit}>{props.checking?'Checking…':'Check my diagnosis'}</Button>
       </>}
       {stage==='repair'&&<><p>{worktop?'The break is between the right switch and the strip.':lesson.challenge.answer}</p>
-        <Button className="primary-button full" onClick={props.repair}>Repair fault</Button></>}
+        {props.flexLanding&&!props.findRepair&&!props.isolateForRepair?<HeaterFlexChoice landing={props.flexLanding}/>:
+          <Button className="primary-button full" onClick={props.findRepair??props.isolateForRepair?.run??props.repair}>
+            {props.findRepair?'Find repair on site':props.isolateForRepair?.label??'Repair fault'}</Button>}</>}
       {stage==='retest'&&(props.restoreSupply?<Button className="primary-button full" onClick={props.restoreSupply}>Turn bench supply on</Button>:props.failed?<><Button className="primary-button full" onClick={props.openReport}>See test report</Button>
         <Button variant="ghost" disabled={props.testing} onClick={props.test}>{props.testing?'Testing…':'Test the repair'}</Button></>
         :<Button className="primary-button full" disabled={props.testing} onClick={props.test}>{props.testing?'Testing…':'Test the repair'}</Button>)}
-      {stage==='done'&&<>{worktop&&<p>The two worktop lights now switch on and off separately.</p>}
+      {stage==='done'&&<>{worktop&&<p>The two worktop lights now switch on and off separately.</p>}{props.heater&&<p>The wall switch now turns the heater on and off.</p>}
         {props.scored&&<p>Your score <b>{faultScore(props.hints)}/100</b></p>}
         <Button className="primary-button full" onClick={props.next}>Choose another job</Button>
         <Button variant="ghost" onClick={props.openReport}>See test report</Button></>}
@@ -117,6 +137,6 @@ export function FaultPracticePanel(props:Props) {
       {!props.scored&&<Button variant="ghost" onClick={props.scoreThis}>Restart for a score</Button>}
     </details>}
     {context}
-    {worktop&&!instrumentOpen&&stage==='measure'&&hasWorktopReading&&<details className="fault-help"><summary>Your saved readings</summary><FaultReadings {...props}/></details>}
+    {!instrumentOpen&&stage==='measure'&&(worktop&&hasWorktopReading||props.heater?.heater||props.heater?.output)&&<details className="fault-help"><summary>Your saved readings</summary><FaultReadings {...props}/></details>}
   </section>;
 }

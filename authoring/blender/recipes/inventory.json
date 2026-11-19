@@ -5958,7 +5958,7 @@
       "terminals": [
         {
           "id": "LIN",
-          "label": "LIN",
+          "label": "L",
           "role": "L",
           "purpose": "Line coming in from the supply. Look for IN on the back.",
           "anchor": [
@@ -5966,7 +5966,7 @@
             0.56,
             -0.10400000000000001
           ],
-          "group": "Supply",
+          "group": "IN",
           "scale": 0.42,
           "entryDirection": [
             0,
@@ -5976,7 +5976,7 @@
         },
         {
           "id": "NIN",
-          "label": "NIN",
+          "label": "N",
           "role": "N",
           "purpose": "Neutral coming in from the supply. Look for IN on the back.",
           "anchor": [
@@ -5984,7 +5984,7 @@
             0.26,
             -0.10400000000000001
           ],
-          "group": "Supply",
+          "group": "IN",
           "scale": 0.42,
           "entryDirection": [
             0,
@@ -5994,7 +5994,7 @@
         },
         {
           "id": "LOUT",
-          "label": "LOUT",
+          "label": "L",
           "role": "L",
           "purpose": "Fused line going to the appliance. Look for LOAD on the back.",
           "anchor": [
@@ -6002,7 +6002,7 @@
             0.5900000000000001,
             -0.10400000000000001
           ],
-          "group": "Load",
+          "group": "LOAD",
           "scale": 0.42,
           "entryDirection": [
             0,
@@ -6012,7 +6012,7 @@
         },
         {
           "id": "NOUT",
-          "label": "NOUT",
+          "label": "N",
           "role": "N",
           "purpose": "Neutral going to the appliance. Look for LOAD on the back.",
           "anchor": [
@@ -6020,7 +6020,7 @@
             0.56,
             -0.10400000000000001
           ],
-          "group": "Load",
+          "group": "LOAD",
           "scale": 0.42,
           "entryDirection": [
             0,
@@ -6074,37 +6074,37 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "actuator",
           "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "contacts",
-          "name": "Switching contacts",
-          "purpose": "Contacts either connect or separate their terminal pairs. Their position is linked to the simulation state, including normally open and normally closed functions."
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
         },
         {
           "id": "fuse",
-          "name": "Fuse carrier and element",
-          "purpose": "A fuse interrupts its protected path when the illustrative protection model trips. It is distinct from a switch or residual-current device."
+          "name": "Fuse and carrier",
+          "purpose": "Too much current melts the fuse element and breaks the circuit. The carrier holds the fuse."
         }
       ],
       "size": [
@@ -6116,7 +6116,7 @@
     "terminals": [
       {
         "id": "LIN",
-        "label": "LIN",
+        "label": "L",
         "role": "L",
         "purpose": "Line coming in from the supply. Look for IN on the back.",
         "anchor": [
@@ -6124,7 +6124,7 @@
           0.56,
           -0.10400000000000001
         ],
-        "group": "Supply",
+        "group": "IN",
         "scale": 0.42,
         "entryDirection": [
           0,
@@ -6134,7 +6134,7 @@
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "N",
         "role": "N",
         "purpose": "Neutral coming in from the supply. Look for IN on the back.",
         "anchor": [
@@ -6142,7 +6142,7 @@
           0.26,
           -0.10400000000000001
         ],
-        "group": "Supply",
+        "group": "IN",
         "scale": 0.42,
         "entryDirection": [
           0,
@@ -6152,7 +6152,7 @@
       },
       {
         "id": "LOUT",
-        "label": "LOUT",
+        "label": "L",
         "role": "L",
         "purpose": "Fused line going to the appliance. Look for LOAD on the back.",
         "anchor": [
@@ -6160,7 +6160,7 @@
           0.5900000000000001,
           -0.10400000000000001
         ],
-        "group": "Load",
+        "group": "LOAD",
         "scale": 0.42,
         "entryDirection": [
           0,
@@ -6170,7 +6170,7 @@
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "N",
         "role": "N",
         "purpose": "Neutral going to the appliance. Look for LOAD on the back.",
         "anchor": [
@@ -6178,7 +6178,7 @@
           0.56,
           -0.10400000000000001
         ],
-        "group": "Load",
+        "group": "LOAD",
         "scale": 0.42,
         "entryDirection": [
           0,

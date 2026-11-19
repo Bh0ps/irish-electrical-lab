@@ -32,7 +32,7 @@ export const JOBS: Record<number,Job> = {
   1:home(2,'Service intake'),2:home(2,'Consumer unit'),3:home(2,'Lighting protection'),4:work(2,'Remote board'),5:home(2,'Surge protection'),6:home(2,'Priority controls'),
   7:home(1,'Hall light'),8:shop(0,'Display lighting'),9:home(1,'Staircase'),10:shop(1,'Corridor switching'),11:home(0,'Kitchen lighting'),12:home(1,'Hall dimmer'),13:home(0,'Cabinet lighting'),
   14:home(3,'Entrance lighting'),15:shop(3,'Outside lighting'),16:home(1,'Hall controls'),17:home(0,'Kitchen sockets'),18:home(1,'Socket ring'),19:home(0,'Fused branch'),
-  20:home(0,'Appliance connection'),21:home(0,'Kitchen isolators'),22:home(0,'Cooker'),23:home(1,'Shower room'),24:home(1,'Shaver outlet'),
+  20:home(0,'Kitchen heater'),21:home(0,'Kitchen isolators'),22:home(0,'Cooker'),23:home(1,'Shower room'),24:home(1,'Shaver outlet'),
   25:plant(1,'Hot-water cylinder'),26:plant(1,'Dual immersion'),27:plant(0,'Immersion controls'),28:plant(0,'Room demand'),29:plant(1,'Two heating zones'),
   30:plant(1,'Three-port valve'),31:home(1,'Heated floor'),32:plant(0,'Manifold'),33:home(1,'Storage heater'),34:plant(3,'Outdoor heat pump'),
   35:home(1,'Ventilation'),36:home(1,'Timed extract'),37:home(1,'Humidity control'),38:plant(1,'Sump'),39:plant(1,'Booster set'),40:work(0,'Motor starter'),41:work(3,'Roller shutter'),
@@ -133,6 +133,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
       return {id:c.id,ref,room:0,position:[...kitchen.driver] as Vec3,rotation:0,scale:.1,fixture:{scale:[.1,.1,.1] as Vec3,kitchenDriver:true}};
     }
     let fixture = physicalFixture(c, !!mapped||atBackWall, cabinets,!!mapped&&(id===71||id===72));
+    if(id===20&&c.id==='fcu-switch'&&c.type==='fcu'&&fixture)fixture={...fixture,fusedHeater:true};
     if(id===36&&!c.mount&&c.id==='runon'&&c.type==='timer')fixture={scale:[.044,.052,.088],serviceBox:'timer'};
     if(id===36&&!c.mount&&c.id==='fan-cpc'&&c.type==='terminal')fixture={scale:[.024,.026,.029],serviceBox:'cpc'};
     let scale = physicalHeight(c) / Math.max(.1, COMPONENTS[c.type]?.size[1] ?? 1);

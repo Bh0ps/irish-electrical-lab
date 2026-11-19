@@ -7,6 +7,8 @@ The recipe terminal centres are the same ones used by the wire router.
 import math
 import bpy
 from mathutils import Vector
+from types import SimpleNamespace
+from bg851 import build_851
 
 def build_power_accessory(recipe, root, api):
     root['detailRevision'] = 3
@@ -48,6 +50,12 @@ def build_power_accessory(recipe, root, api):
         rings=[(1.6,3.2,-front_depth),(.65,3.7,-front_depth+.55),
                (.12,4,-front_depth+1.75),(0,4,0),(1.7,2.3,0),
                (1.9,2.2,-front_depth+2.6),(2.6,2,-front_depth+2)]
+        if not socket:
+            rings=[(8.3,3.0,-front_depth),(4.3,3.35,-front_depth+.10),
+                   (2.20,3.6,-front_depth+.54),(1.05,3.8,-front_depth+1.52),
+                   (.34,3.94,-front_depth+3.4),(.08,4,-front_depth+5.75),
+                   (0,4,0),(1.7,2.3,0),(2.2,2.00,-front_depth+3.3),
+                   (4.2,2.15,-front_depth+2)]
         if socket:
             rings=[(10,3,-7),(5,3.3,-6.91),(2.7,3.6,-6.52),
                    (1.23,3.8,-5.79),(.42,3.96,-4.8),(.10,4,-3.75),
@@ -147,6 +155,11 @@ def build_power_accessory(recipe, root, api):
     for x in (-pitch/2,pitch/2):
         eye=cyl('Rolled eye of earthing strap',(x,0,.1),4.35,1.05,strap,strap_metal)
         cut(eye,cyl('Fixing eye centre',(x,0,.1),2.55,3,strap,None))
+    if not socket:
+        return build_851(recipe,frame,body,cover,mount,ports,strap,tray,
+                         SimpleNamespace(api=api,mm=mm,box=box,cyl=cyl,cut=cut,detail=detail,part=part,
+                                         words=words,screw=screw,ribbon=ribbon,white=white,grey=grey,
+                                         raised=raised,dark=dark,steel=steel,brass=brass,red=red,blue=blue))
     if socket:
         def moulding(name,outline,back,face,parent,radius):
             # Closed extrusion of the traced rear silhouette. Its planar end
@@ -259,36 +272,6 @@ def build_power_accessory(recipe, root, api):
         ribbon('Thin visible return below the case',
                [(-26.4,-6.9,16.05),(-24.7,-7.65,16.05),(24.7,-7.65,16.05),
                 (26.4,-6.9,16.05)], [1.55,1.45,1.45,1.55],strap)
-    else:
-        contact=detail('socket-contact-system','The switch operates the line and neutral contacts. The fuse sits in the line path.',part('contacts'))
-        box('Stepped rear mechanism',(0,0,2.2),(44,52,8.2),body,grey,2)
-        box('Lower fuse chamber',(-1,-11,6.4),(28,18,6.4),body,grey,1)
-        for x,y in ((-23,19),(-2,-24)):
-            screw('Retaining screw and boss',(x,y,4.5),body,2.2)
-        ribbon('Folded earthing bridge',[(-30.15,0,1),(-23,0,1),(-20,-4,9),(19,-4,9),(23,0,1),(30.15,0,1)], [4,4,4.7,5,4,4],strap)
-        for sign in (-1,1):
-            box('Earth terminal shoulder',(24,sign*7,-.2),(9.6,10.7,5.9),body,grey,.8)
-            ribbon('Return to earth terminal',[(25.7,0,1.2),(27,sign*2.5,3.5),(27,sign*5.3,3.5)],[4,4,3.8],strap)
-        words('13 A   250 V~',(-1,-13.8,9.72),body,raised,2.8)
-        for x in (10.8,-10.8):
-            cut(tray,box('Front rocker or fuse recess',(x,0,-6),(14.6,27,21),cover,None,1.5))
-            box('Dark insert seam',(x,0,-7),(14.8,27.7,3),contact,dark,1.5)
-        rocker=api.semantic('actuator',frame,mm((-10.8,0,-12.6)),{'animation':'rotate','axis':'x','onAngle':-.1,'offAngle':.1})
-        box('Rocker paddle',(0,0,0),(13.6,25.3,2.7),rocker,white,1.2)
-        fuse=part('fuse')
-        box('Fuse carrier',(10.8,0,-12.3),(13.3,25.4,2.7),fuse,white,1.1)
-        for i,ch in enumerate('FUSE'):
-            words(ch,(10.8,8.1-5.5*i,-13.7),fuse,grey,3.5,True)
-        ceramic=cyl('Ceramic cartridge',(10.8,0,-5),2.5,18,fuse,white);ceramic.rotation_euler.x=math.pi/2
-        for y in (-9,9):
-            cap=cyl('Fuse end cap',(10.8,y,-5),2.6,3.4,fuse,brass);cap.rotation_euler.x=math.pi/2
-        grip=detail('accessory-strain-relief','The two screws secure the clamp around the outer sheath of the flex.',mount)
-        block=box('Lower flex exit',(16,-32,-.4),(19,19,8.5),grip,white,1.6)
-        bore=cyl('Cord passage',(16,-33,1.2),3.3,24,grip,None);bore.rotation_euler.x=math.pi/2;cut(block,bore)
-        bridge=box('Two-screw cord grip',(16,-29,4.3),(20.5,5.6,4),grip,grey,1)
-        for x in (8.3,23.7):screw('Cord grip screw',(x,-29,6.55),grip,2.1)
-    if not socket:
-        box('Upper bank retaining ledge',(0,19,5),(41,3,5),body,grey,.6)
     # Each port owns the whole local cage so the learner can pick the screw,
     # moulded legend or lip as well as the actual entry. Wires end at the mouth.
     for term in recipe['terminals']:
@@ -321,26 +304,4 @@ def build_power_accessory(recipe, root, api):
             else:
                 words(tid,(0,6.3,.13),cage,raised,5.55)
             continue
-        side=tid in ('PE','PE2','LOUT','NIN')
-        axis=(1,0,0) if tid!='NIN' else (-1,0,0)
-        if not side: axis=(0,1,0)
-        housing=box('Moulded terminal tower',(0,1.4,-3.8),(9.9,11.8,7.8),cage,grey,1)
-        cut(housing,box('Conductor entry bore',(0,0,-3.35),(5.9,4.9,10),cage,None,.60))
-        collar=box('Folded brass cage',(0,-.2,-4.2),(5.95,4.87,6.0),cage,brass,.38)
-        cut(collar,box('Brass tunnel',(0,0,-4),(4.9,3.9,7.8),cage,None,.32))
-        box('Captive pressure tongue',(0,1.12,-4.6),(4.8,.68,4.3),cage,steel,.2)
-        at=(axis[0]*5.1,2 if side else 7.3,-3.9)
-        entry=cyl('Driver recess',at,2.6,4.5,cage,None)
-        entry.rotation_euler=Vector(axis).to_track_quat('Z','Y').to_euler();cut(housing,entry)
-        screw('Captive slotted terminal screw',tuple(at[i]-axis[i]*.8 for i in range(3)),cage,2.1,'slot',axis)
-        if earth:
-            # Three horizontal strokes and an upright, raised in the mould.
-            for i,w in enumerate((3.1,2.1,1.1)):
-                box('Earth marking',(0,4.7-i*.55,.2),(w,.22,.18),cage,raised,.05)
-            box('Earth marking stem',(0,5.45,.2),(.24,1.4,.18),cage,raised,.05)
-        else:
-            words('N' if tid.startswith('N') else 'L',(0,4.9,.26),cage,raised,3.6)
-        if not earth:
-            box('Printed terminal colour',(3.7,2.4,.22),(1.35,3.6,.16),cage,blue if tid.startswith('N') else red,.06)
-            words('IN' if tid.endswith('IN') else 'LOAD',(-.8,-3.9,.35),cage,raised,1.85)
-    return ['individual-electrical-terminations','socket-contact-system','linked-earth-strap']+([] if socket else ['accessory-strain-relief'])
+    return ['individual-electrical-terminations','socket-contact-system','linked-earth-strap']

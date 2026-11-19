@@ -33,10 +33,11 @@ const heldInput=(keys:Set<string>):CameraInput=>({
 });
 function presetPose(props:CameraNavigationProps,camera:THREE.Camera,canvas:HTMLCanvasElement):CameraPose {
   const action=props.cameraCommand.action,selected=props.document.components.find(c=>c.id===props.selected),focus=!!selected&&['focus','focus-service-detail','rear'].includes(action);
+  const drawer=selected?.type==='fcu'&&['fuse','detail:851-cartridge','detail:851-fuse-drawer'].includes(props.selectedPart??'');
   const starter=action==='first-light'&&props.document.lessonId===7;
   const wirePoints=action==='focus-wire'&&props.selectedWire?props.routing.routes.get(props.selectedWire):undefined;
   const instrument=action==='focus-instrument'||action==='rear-instrument'?props.nodes.get('@meter'):undefined;
-  const bounds=instrument?new THREE.Box3().setFromObject(instrument,true):wirePoints?.length?new THREE.Box3().setFromPoints(wirePoints.map(p=>new THREE.Vector3(...p))):starter?sceneBounds({...props.document,components:props.document.components.filter(c=>c.id==='switch'||c.id==='light')}):focus?selectedPartBounds(selected!,action==='rear'?undefined:props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
+  const bounds=instrument?new THREE.Box3().setFromObject(instrument,true):wirePoints?.length?new THREE.Box3().setFromPoints(wirePoints.map(p=>new THREE.Vector3(...p))):starter?sceneBounds({...props.document,components:props.document.components.filter(c=>c.id==='switch'||c.id==='light')}):focus?selectedPartBounds(selected!,action==='rear'?undefined:drawer?'fuse':props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
   const target=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),perspective=camera as THREE.PerspectiveCamera,aspect=perspective.aspect||1,fov=THREE.MathUtils.degToRad(perspective.fov||43);
   const distance=instrument?Math.max(1.35,Math.max(size.y,size.x/aspect,size.z/aspect)*.66/Math.tan(fov/2)):starter||wirePoints?.length?Math.max(2.6,Math.max(size.x/aspect,size.y,size.z)*.69/Math.tan(fov/2)):Math.max(6.3,Math.max(size.x/aspect,size.z,size.y)*1.75);
   const offset=new THREE.Vector3(3.7,5.8,9).normalize().multiplyScalar(distance);
@@ -56,7 +57,7 @@ function presetPose(props:CameraNavigationProps,camera:THREE.Camera,canvas:HTMLC
     target.addScaledVector(cameraUp,framing*Math.tan(fov/2)*covered);
     offset.multiplyScalar(framing);
   }
-  else if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else offset.set(.28,.2,1);offset.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);offset.multiplyScalar(inspectionDistance(bounds,offset,aspect,fov));}
+  else if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else if(drawer)offset.set(1.80,.36,1);else offset.set(.28,.2,1);offset.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);offset.multiplyScalar(inspectionDistance(bounds,offset,aspect,fov));}
   else if(action==='rear')offset.set(0,distance*.25,-distance);
   const position=target.clone().add(offset).toArray() as Vec3,to=target.toArray() as Vec3;
   return {position,target:to,quaternion:cameraLookQuaternion(position,to)};

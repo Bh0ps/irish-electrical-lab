@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import {getLesson} from '../lib/lessons';
 import {jobSite} from '../lib/job-site';
 import {homeRoomAt,STAIR_EYE,STAIR_TOP} from '../lib/home-floorplan';
-import {SiteWalkInput,standingView,walkStick} from '../lib/site-walk';
+import {fittingZoom,SiteWalkInput,standingView,walkStick} from '../lib/site-walk';
+
+test('a close-up can be enlarged and reset with one tap or pinched within its lens limits',()=>{
+  const rig=new SiteWalkInput();rig.setZoom(2);
+  const enlarged=fittingZoom(1,rig.zoom,rig.requestedZoom);assert.equal(enlarged,2);
+  rig.consumeMotion();assert.equal(rig.requestedZoom,undefined);
+  assert.equal(fittingZoom(enlarged,9),3);assert.equal(fittingZoom(enlarged,-9),1);
+  rig.setZoom(1);assert.equal(fittingZoom(enlarged,0,rig.requestedZoom),1);
+});
 
 test('the touch stick ignores small jitter and limits diagonal travel to the walking pace',()=>{
   assert.deepEqual(walkStick(1,-2,48),[0,0]);

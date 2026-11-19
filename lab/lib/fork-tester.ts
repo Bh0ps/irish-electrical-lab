@@ -32,7 +32,7 @@ export function forkRead(doc:CircuitDocument,r:SimulationResult|undefined,input:
   if(method==='resistance'){
     if(!a||!b)return wait(a?'Put the black probe on the other end of the part.':b?'Put the red probe on the other end of the part.':'Put one probe on each end of the part.','Ω');
     if(doc.supply.enabled || doc.components.some(c=>['battery','pv'].includes(c.type)&&c.params.on!==false))return wait('Switch off the bench supply and any battery or solar supply before using Ω.','Ω');
-    const sample=ohms??(solveOhms?measureResistance(doc,a,b):undefined);
+    const sample=ohms??(solveOhms?measureResistance(doc,a,b,r.deviceStates):undefined);
     if(!sample)return wait('Measuring resistance…','Ω');
     if(sample.value===null)return (ohms ? ohms.status==='open' : 'reason' in sample && sample.reason==='open')?{status:'open',value:null,shown:'OL',unit:'Ω',explanation:'OL means open circuit here. There is no path between the probes for the tester’s current.'}:wait(sample.explanation,'Ω');
     const reading=number(sample.value,'Ω',undefined,2000,0,sample.value<.5?'The probes are joined by a path with so little resistance that the display reads 0 ohms.':'The resistance between these points is shown in ohms (Ω).');

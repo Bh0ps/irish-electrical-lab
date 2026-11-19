@@ -1,5 +1,6 @@
 import { dinPort } from './din-devices.ts';
 import {rockerBladeY} from './dc-rocker';
+import {fcuWireMouths} from './bg851';
 import {cromaTerminals} from './croma-chime';
 import type { ComponentDefinition, ComponentInstance, TerminalDefinition, Vec3 } from './types';
 
@@ -197,11 +198,16 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
     if(k==='dimmer')return make(t,[t.id==='COM'?.082:-.041,.297,-.113],[0,0,-1],.42);
     if(k==='shaveroutlet')return make(t,[t.id==='L'?.14:-.14,1,-.135],[0,0,-1],.43);
     if (k==='socket'||k==='fcu') {
-      const positions:Record<string,Vec3> = k==='socket'
+      const positions:Readonly<Record<string,Vec3>> = k==='socket'
         ? {PE:[37.5,12,-18.9],L:[26.5,12,-17.8],N:[-26.5,12,-17.8],PE2:[-37.5,12,-18.9]}
-        : {NOUT:[19,10,-10.4], LIN:[9,10,-10.4], LOUT:[-13,13,-10.4], NIN:[18,-20,-10.4], PE:[-27,7,-6], PE2:[-27,-7,-6]};
+        : fcuWireMouths;
       const point=positions[t.id];
-      if(point)return make(t,[point[0]/100,.46+point[1]/100,point[2]/100],[0,0,-1],.42);
+      if(point){
+        const placed=make(t,[point[0]/100,.46+point[1]/100,point[2]/100],[0,0,-1],.42);
+        if(k==='fcu'&&!t.id.startsWith('PE'))
+          return {...placed,label:t.id[0],group:t.id.endsWith('IN')?'IN':'LOAD'};
+        return placed;
+      }
     }
     if(k==='invictaboard')return scaled(.40,.85,-.36,[0,0,1],1);
     if(k==='led'&&f==='strip'){

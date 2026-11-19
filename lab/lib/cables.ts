@@ -130,9 +130,15 @@ export function furnishCableExamples(document:CircuitDocument):CircuitDocument {
   }
   if(!sockets&&!flex)return document;
   const fusedSpur=id===19 && document.components.some(c=>c.id==='branch-fuse'&&c.type==='fcu');
-  let next:CircuitDocument={...document,wires:[]},lead:string|undefined;
+  const applianceSwitch=flex && document.components.some(c=>c.id==='fcu-switch'&&c.type==='fcu');
+  let next:CircuitDocument={...document,wires:[]},lead:string|undefined,feed:string|undefined;
   for(const wire of document.wires){
-    if(sockets && wire.from.component.startsWith('socket-') && (wire.to.component.startsWith('socket-') || fusedSpur&&wire.to.component==='branch-fuse')){
+    if(applianceSwitch && wire.to.component==='fcu-switch'){
+      // Line and neutral leave the breaker. The earth core of the same cable
+      // starts on the earth connection at the supply.
+      next=addCableConnection(next,wire,{kind:'flat',runId:feed}).document;
+      feed=next.wires.at(-1)?.cable?.runId;
+    }else if(sockets && wire.from.component.startsWith('socket-') && (wire.to.component.startsWith('socket-') || fusedSpur&&wire.to.component==='branch-fuse')){
       next=addCableConnection(next,wire,{kind:'flat'}).document;
     }else if((flex||fusedSpur)&&wire.to.component==='fixed'){
       next=addCableConnection(next,wire,{kind:'flex',runId:lead}).document;

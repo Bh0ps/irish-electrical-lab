@@ -6,6 +6,7 @@ import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint,
 import { cableCores } from './cables.ts';
 import { cableFace, cableProfile, coreSeat, type CableFace } from './cable-form.ts';
 import {rockerProbeApproach,rockerProbeContact,rockerSleeveEndZ} from './dc-rocker';
+import {fcuProbeContact} from './bg851';
 import {bg812Contact} from './wall-rocker';
 import {CROMA_ENVELOPE,cromaLeadPath,cromaProbeContact} from './croma-chime';
 
@@ -62,6 +63,10 @@ export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
 
 export function probeContact(doc:CircuitDocument,e:Endpoint):{position:Vec3;normal:Vec3} {
   const c=doc.components.find(item=>item.id===e.component);
+  if(c?.type==='fcu'){
+    const contact=fcuProbeContact(e.terminal);
+    if(contact)return {position:localToWorld(c,mountVector(c,contact.position)),normal:rotateDirection(c.rotation,contact.normal)};
+  }
   if(c?.type==='lamp'&&lampForm(equipmentVariant(c,COMPONENTS.lamp))==='bulb'){
     const t=getComponentTerminals(c,COMPONENTS.lamp).find(t=>t.id===e.terminal);
     if(t){
@@ -380,7 +385,11 @@ function createHarness(doc:CircuitDocument,obstacles:Obstacle[]):Harness {
       const owner=doc.components.find(c=>c.id===endpoint.component)!;
       const passage=terminalPassage(owner,terminalPosition(doc,endpoint),true,endpoint.terminal);
       const anchor=passage.at(-1)!;
-      const normal=passage.length>1?rotateDirection(owner.rotation,[0,0,-1]):terminalDirection(doc,endpoint);
+      const terminalAxis=terminalDirection(doc,endpoint);
+      // A bottom-entry breaker can sit directly on the bench. Its cores bend
+      // out from underneath; the cut end of the jacket sits behind the breaker.
+      const belowBench=terminalAxis[1]<-.7&&anchor[1]+terminalAxis[1]*1.25<.65;
+      const normal=passage.length>1||belowBench?rotateDirection(owner.rotation,[0,0,-1]):terminalAxis;
       const right=rotateDirection(owner.rotation,[1,0,0]);
       let point:Vec3=add(anchor,scale(normal,1.05));
       // Leave enough exposed insulation to fan out from each sheath. Offset

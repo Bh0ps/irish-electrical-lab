@@ -14,7 +14,7 @@ import { getComponentTerminals } from '../../lib/terminal-layout';
 import { walkStep,type JobSite,type SiteItem } from '../../lib/job-site';
 import { HOME_ROOMS, STAIR_EYE, STAIR_LANDING, homeRoomAt, homeVisit, isStairStation,stairFloor,stairSwitchView } from '../../lib/home-floorplan';
 import { serviceRoomAt,serviceVisit } from '../../lib/service-floorplan';
-import {standingView,SiteWalkInput} from '../../lib/site-walk';
+import {fittingZoom,standingView,SiteWalkInput} from '../../lib/site-walk';
 import {SiteWalkPad} from './SiteWalkPad';
 import {SettledCanvas} from './SettledCanvas';
 import {previousSiteView,type SavedSitePose,type SiteFocus,type SitePose} from '../../lib/site-camera';
@@ -25,30 +25,34 @@ import {FittedWireTails,KitchenDriver,RockerEnclosure,StripChannel} from './Kitc
 import {KITCHEN_LIGHTS as kitchen,rockerPose} from '../../lib/kitchen-lighting';
 import {connectedRockerTerminals,rockerConductiveSurface} from '../../lib/dc-rocker';
 import {BathServiceBox} from './BathroomExtract';
+import {FittedHeaterFlex,HeaterSwitchBox} from './FusedHeaterSite';
+import {FCU_ROCKER,fusedPlatePose,fusedPlateView,looseHeaterCore} from '../../lib/fused-heater-site';
 import {BATH_EXTRACT as bath,outsideGrillePose} from '../../lib/bathroom-extract';
 import {CORE_COLOUR} from '../../lib/cables';
 import {BELL_CUPBOARD} from '../../lib/bell-cupboard';
 import SiteCablePeek from './SiteCablePeek';
+import HeaterFlexChoice,{flexClue,type FlexLanding} from './HeaterFlexChoice';
 import SiteMeterPads,{type SiteMeter} from './SiteMeterPads';
 import {padCamera,type SiteTestFitting} from '../../lib/site-meter';
 import { BATTEN_FILAMENT, CUPBOARD_HINGE, CUPBOARD_SWING, fixturePoint, installedTerminalPoint,TAPE_SECTION_LENGTH, TAPE_SECTIONS } from '../../lib/site-fixtures';
 
 
 interface Props {
+  retest?:{label:string;run:()=>void;disabled?:boolean};
   site:JobSite; doc:CircuitDocument; result?:SimulationResult; selected?:string; terminalId?:string; wire?:string; touch:boolean; tool:string;
-  immersive?:boolean; toolsOpen?:boolean; repairHere?:{targets:string[];label:string;run:()=>void;powerOff?:{label:string;run:()=>void}};
+  immersive?:boolean; toolsOpen?:boolean; repairHere?:{targets:string[];label:string;run:()=>void;landing?:FlexLanding;powerOff?:{label:string;run:()=>void}};
   jump:SiteFocus; pose:React.MutableRefObject<SavedSitePose|undefined>; showWallSwitch?:boolean; stairGoal?:string;
   chimeOpen:boolean; setChimeOpen:(open:boolean)=>void; testFittings:SiteTestFitting[]; meter?:SiteMeter; openMeter:(component?:string)=>void; liftProbes:(component:string)=>void;
   onPeek:(id?:string)=>void;onPlan:(wire:string)=>void;onExplore:()=>void;
   onPart:(id:string,part:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
 }
-function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,probeMode,wideRocker,bathroom,rockerOpen,chimeOpen}:{
-  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;probeMode:boolean;wideRocker:boolean;bathroom:boolean;rockerOpen:boolean;chimeOpen:boolean;
+function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace,repairOpen,probeMode,wideRocker,bathroom,rockerOpen,chimeOpen}:{
+  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:{id:string;anchor:Vec3};onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;repairOpen:boolean;probeMode:boolean;wideRocker:boolean;bathroom:boolean;rockerOpen:boolean;chimeOpen:boolean;
 }){
   const {component:c,definition:def,state}=equipment;
   const {fixture,position}=item;
   const scale=fixture?.scale??[item.scale,item.scale,item.scale] as Vec3;
-  const pose=fixture?.worktopRocker?rockerPose(position,rockerOpen):item;
+  const pose=fixture?.fusedHeater?fusedPlatePose(item,repairOpen):fixture?.worktopRocker?rockerPose(position,rockerOpen):item;
   const rotation=new THREE.Euler(fixture?.tilt??0,pose.rotation,fixture?.roll??0,'YXZ');
   const count=fixture?.tape?TAPE_SECTIONS:1;
   // The two halves share one component and two terminals. Only the magnet rides the leaf.
@@ -87,6 +91,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       e.stopPropagation();onTouchPick(e);
       const owner=semanticOwner(e.object);
       if(owner.terminal){
+        if(fixture?.fusedHeater&&!repairOpen)return;
         if(guarded&&(pressedContact.current!==owner.terminal||conductingPart(e)!==owner.terminal))return;
         if(probeMode&&fixture?.tape){
           const pad=getComponentTerminals(c,def).find(t=>t.id===owner.terminal);
@@ -96,6 +101,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       }else equipment.onPart(owner.part??'body',owner.detail);
     }}>
     {magnet}
+    {fixture?.fusedHeater&&<HeaterSwitchBox item={item} select={()=>equipment.onPart('body')}/>}
     {fixture?.bellService&&<BellCupboard part={fixture.bellService} trace={trace} bathroom={bathroom} select={()=>equipment.onPart('body')}/>}
     {fixture?.tapeProfile&&<StripChannel x={position[0]} open={trace||equipment.selected} level={illuminated?optical:0} tint={c.type==='cctstrip'?tint:new THREE.Color('#ffead0')} select={()=>equipment.onPart('cover')}/>}
     {fixture?.worktopRocker&&<RockerEnclosure origin={position} open={rockerOpen} select={()=>equipment.onPart('cover')}/>}
@@ -107,6 +113,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       {fixture?.kitchenDriver?<KitchenDriver volts={Number(c.params.outputVoltage??24)} open={trace||equipment.selected} choose={()=>equipment.onPart('body')} pick={equipment.onTerminal}/>:Array.from({length:count},(_,i)=><group key={i} position={[(i-(count-1)/2)*TAPE_SECTION_LENGTH,0,0]} scale={scale}>
         <group rotation={[0,0,mountRoll(c)]} scale={mountScale(c)}>
           <Equipment {...equipment} view={fixture?.extractor&&trace||fixture?.croma&&(chimeOpen||trace)?'open':equipment.view} onTerminal={id=>{
+            if(fixture?.fusedHeater&&!repairOpen)return;
             if(probeMode&&(i>0||(guarded&&pressedContact.current!==id)))return;
             equipment.onTerminal(id);
           }} animate={!cupboardDoor} contactPiece={cupboardDoor?'reed':undefined} />
@@ -146,6 +153,7 @@ function WireTrace({doc,site,id,openRocker}:{doc:CircuitDocument;site:JobSite;id
   </group>;
 }
 function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15,touch=false):SitePose{
+  if(item?.fixture?.fusedHeater&&close)return fusedPlateView(item,false,touch);
   if(id===36&&!close){
     // Look past the switch through the open bathroom door toward its fan and light.
     return {position:[3.28,1.29,-.78],yaw:touch?2.48:2.51,pitch:.13};
@@ -185,6 +193,10 @@ function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,hei
   if(!close&&(id===18||id===19)&&item?.id==='socket-a')
     return {position:[-4.03,1.37,-4.95],yaw:.47,pitch:-.23};
   if(close&&item?.fixture?.flushPlate)return {position:[p[0]+.115,p[1]+.075,p[2]+.365],yaw:.30,pitch:-.08};
+  if(id===20&&close&&item?.id==='fixed'){
+    const distance=touch?1.98:1.06;
+    return {position:[p[0]+.13,p[1]+.32,p[2]+distance],yaw:Math.atan2(.13,distance),pitch:-.033};
+  }
   if(close&&item?.fixture?.batten)return {position:[p[0]-.155,p[1]+.085,p[2]+.34],yaw:-.43,pitch:-.045};
   if(close&&item?.fixture?.tape&&item.fixture.tilt)return {position:[p[0]-.08,p[1]-.24,p[2]+.43],yaw:-.17,pitch:.49};
   if(!close&&id===66)return {position:[-4.24,1.30,touch?.16:-1.07],yaw:0,pitch:.01};
@@ -195,8 +207,8 @@ function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,hei
   const distance=close?Math.max(.32,Math.min(1.20,height*2.7)):item?.room===3?1.58:1.26;
   return {position:[p[0]+distance*.07,p[1]+height*.65+.025,p[2]+distance],yaw:.07,pitch:-.04};
 }
-function CameraRig({rig,walking,target,pose,jobKey,focusId,roomArrival,site,onRoom,onNear,walkTargets,wallSwitch,wallButton}:{focusId:number;roomArrival:number;site:JobSite;walkTargets:SiteItem[];onNear:(id:string|undefined)=>void;onRoom:(room:number)=>void;rig:SiteWalkInput;walking:boolean;target:SitePose;pose:Props['pose'];jobKey:string;wallSwitch?:THREE.Vector3;wallButton:React.RefObject<HTMLButtonElement|null>}){
-  const {camera,invalidate,size}=useThree();
+function CameraRig({rig,walking,opticalZoom,onMagnify,target,pose,jobKey,focusId,roomArrival,site,onRoom,onNear,walkTargets,wallSwitch,wallButton}:{opticalZoom:boolean;onMagnify:(magnified:boolean)=>void;focusId:number;roomArrival:number;site:JobSite;walkTargets:SiteItem[];onNear:(id:string|undefined)=>void;onRoom:(room:number)=>void;rig:SiteWalkInput;walking:boolean;target:SitePose;pose:Props['pose'];jobKey:string;wallSwitch?:THREE.Vector3;wallButton:React.RefObject<HTMLButtonElement|null>}){
+  const {get,invalidate,size}=useThree();
   const screenPoint=useMemo(()=>new THREE.Vector3(),[]);
   const nearby=useRef<string|undefined>(undefined);
   const roomRef=useRef(-1);const position=useRef(new THREE.Vector3()),rotation=useRef({yaw:0,pitch:0});
@@ -204,14 +216,26 @@ function CameraRig({rig,walking,target,pose,jobKey,focusId,roomArrival,site,onRo
   useLayoutEffect(()=>{roomRef.current=-1;},[jobKey]);
   const {position:[x,y,z],yaw,pitch}=target;
   useLayoutEffect(()=>{position.current.set(x,y,z);rotation.current={yaw,pitch};rig.startView();invalidate();},[x,y,z,yaw,pitch,focusId,roomArrival,jobKey,invalidate,rig]);
-  useFrame((_,dt)=>{
+  useLayoutEffect(()=>{
+    const {camera}=get();
+    camera.zoom=1;camera.updateProjectionMatrix();onMagnify(false);invalidate();
+  },[get,focusId,jobKey,opticalZoom,onMagnify,invalidate]);
+  useFrame(({camera},dt)=>{
     const p=position.current,r=rotation.current,keys=rig.keys;
     if(rig.zoom||rig.turn[0]||rig.turn[1]||walking)rig.markMoved();
     r.yaw-=rig.turn[0]*.003;r.pitch=Math.max(-1.18,Math.min(1.18,r.pitch-rig.turn[1]*.003));
     const fwd=walking?Number(keys.has('up'))-Number(keys.has('down'))+rig.stick[1]:0;
     const side=walking?Number(keys.has('right'))-Number(keys.has('left'))+rig.stick[0]:0;
     const distance=Math.min(dt,.045)*1.8/Math.max(1,Math.hypot(fwd,side));
-    const travel=distance*fwd+rig.zoom+(walking?rig.nudge[1]:0),across=side*distance+(walking?rig.nudge[0]:0);rig.consumeMotion();
+    if(opticalZoom&&(rig.zoom||rig.requestedZoom!==undefined)){
+      const zoom=fittingZoom(camera.zoom,rig.zoom,rig.requestedZoom);
+      if(zoom!==camera.zoom){
+        const changed=(zoom>1.01)!==(camera.zoom>1.01);
+        camera.zoom=zoom;camera.updateProjectionMatrix();
+        if(changed)onMagnify(zoom>1.01);
+      }
+    }
+    const travel=distance*fwd+(opticalZoom?0:rig.zoom)+(walking?rig.nudge[1]:0),across=side*distance+(walking?rig.nudge[0]:0);rig.consumeMotion();
     const dx=Math.cos(r.yaw)*across-Math.sin(r.yaw)*travel,dz=-Math.sin(r.yaw)*across-Math.cos(r.yaw)*travel;
     if(dx||dz){const next=walkStep([p.x,p.y,p.z],dx,dz,site);p.set(...next);}
     if(walking){
@@ -274,7 +298,7 @@ class SiteBoundary extends React.Component<{children:React.ReactNode;onList:()=>
   render(){return this.state.failed?<div className="site-unavailable"><b>The 3D site could not open</b><button onClick={this.props.onList}>Use equipment list</button></div>:this.props.children;}
 }
 const keyMap:Record<string,string>={KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
-export default function JobSiteView({site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList,showWallSwitch,stairGoal,onPeek,onPlan,onExplore,testFittings,meter,openMeter,liftProbes,chimeOpen,setChimeOpen,immersive=false,toolsOpen=false,repairHere}:Props){
+export default function JobSiteView({site,doc,result,selected,terminalId,wire,touch,tool,jump,pose,onPart,onTerminal,onFocus,onService,onList,showWallSwitch,stairGoal,onPeek,onPlan,onExplore,testFittings,meter,openMeter,liftProbes,chimeOpen,setChimeOpen,immersive=false,toolsOpen=false,repairHere,retest}:Props){
   const rig=useMemo(()=>new SiteWalkInput(),[]);
   const [walkStart,setWalkStart]=useState<SitePose>(),[nearby,setNearby]=useState<string>(),[looked,setLooked]=useState(false);
   const returnWalk=useRef<{job:string;room:number;pose:SitePose}|undefined>(undefined);
@@ -299,10 +323,14 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const meterTarget=meterFitting?.component.id;
   const [withdrawnAt,setWithdrawnAt]=useState<number>();
   const [openedRepair,setOpenedRepair]=useState<{job:string;focus:number;id:string}>();
+  const [missedTerminal,setMissedTerminal]=useState<{focus:number;pin:string}>();
   const roomVisit=visit?.job===jobKey&&visit.jump===jump.id?visit:undefined;
-  const repairId=immersive&&!walking&&!meter&&!lost&&!roomVisit&&jump.component&&repairHere?.targets.includes(jump.component)?jump.component:undefined;
+  const repairFocus=jump.component&&repairHere?.targets.includes(jump.component)?jump.component:undefined;
+  const repairId=!walking&&!meter&&!lost&&!roomVisit?repairFocus:undefined;
+  const repairDestination=repairHere?.targets.find(id=>site.items.some(item=>item.id===id));
   const repairFitting=repairId?testFittings.find(f=>f.item.id===repairId):undefined;
   const accessOpen=!!repairId&&!repairHere?.powerOff&&openedRepair?.job===jobKey&&openedRepair.focus===jump.id&&openedRepair.id===repairId;
+  const landing=accessOpen&&repairHere?.landing?.point.component===repairId?repairHere?.landing:undefined;
 
   const redFitting=meter?.red?.component,blackFitting=meter?.black?.component;
   const pinned=meterTarget!==undefined&&(redFitting===meterTarget||blackFitting===meterTarget);
@@ -310,6 +338,8 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const openRockers=new Set([redFitting,blackFitting,drawn,accessOpen&&repairFitting?.kind==='rocker'?repairId:undefined].filter((id):id is string=>!!id));
   const openRocker=!!meterTarget&&openRockers.has(meterTarget);
 
+  const closeView=!!jump.component&&!walking&&!roomVisit;
+  const [magnified,setMagnified]=useState(false);
   const station=jump.component??site.first;
   const stationSwitch=stair&&isStairStation(station)&&!roomVisit?station:undefined;
   useEffect(()=>{
@@ -322,9 +352,13 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
     if(roomVisit?.grille)return outsideGrillePose(touch);
     if(roomVisit){const view=site.kind==='home'?homeVisit(roomVisit.room,stair):serviceVisit(site,roomVisit.room);if(view)return view;}
     const id=station,item=site.items.find(e=>e.id===id),c=doc.components.find(c=>c.id===id);
+    if(jump.component&&item?.fixture?.worktopRocker&&c){
+      return previousSiteView(pose.current,jobKey,jump)??padCamera({kind:'rocker',item,component:c},false,touch);
+    }
     return previousSiteView(pose.current,jobKey,jump)??aim(item,doc.lessonId,!!jump.component,item&&c?COMPONENTS[c.type].size[1]*item.scale:undefined,touch);
   },[jobKey,jump,loadedKey,roomVisit,touch,station]);
-  const target=walking&&walkStart?walkStart:accessOpen&&repairFitting?padCamera(repairFitting,true,touch):meterFitting?padCamera(meterFitting,meterFitting.kind==='chime'?chimeOpen:openRocker,touch):roomTarget;
+  const fuseBox=repairId?site.items.find(i=>i.id===repairId&&i.fixture?.fusedHeater):undefined;
+  const target=walking&&walkStart?walkStart:accessOpen&&fuseBox?fusedPlateView(fuseBox,true,touch):accessOpen&&repairFitting?padCamera(repairFitting,true,touch):meterFitting?padCamera(meterFitting,meterFitting.kind==='chime'?chimeOpen:openRocker,touch):roomTarget;
   const stop=useCallback(()=>{rig.stop();pointers.current.clear();blockTap.current=true;},[rig]);
   useEffect(()=>{window.addEventListener('blur',stop);window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
     function release(e:PointerEvent){pointers.current.delete(e.pointerId);}
@@ -340,13 +374,13 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
       const wasOpen=!!previousImmersion.current;
       previousImmersion.current=key;
       stop();
-      if(immersive&&!meter){
+      if(immersive&&!meter&&!repairFocus){
         const item=site.items.find(i=>i.id===station);
         setWalkStart(standingView(site,item));setWalking(true);
       }else if(wasOpen)setWalking(false);
     });
     return()=>cancelAnimationFrame(frame);
-  },[immersive,jobKey,meter,site,station,stop]);
+  },[immersive,jobKey,meter,site,station,stop,repairFocus]);
   useEffect(()=>{
     if(toolsOpen||lost)stop();
     const hidden=()=>{if(document.hidden)stop();};
@@ -382,9 +416,12 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   const traced=doc.wires.find(w=>w.id===wire);
   const tracedIds=traced?[traced.from.component,traced.to.component]:[];
   const visible=site.items.filter(item=>fixtureMap.has(item.id));
-  const wallId=stationSwitch??'switch',rocker=site.items.find(item=>item.id===wallId),wallControl=fixtureMap.get(wallId);
-  const wallSwitch=rocker&&wallControl&&(stationSwitch?!wire:showWallSwitch&&!jump.component)&&!walking&&!lost&&(tool==='select'||tool==='inspect')
-    ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,stationSwitch?[0,.651,.067]:[0,COMPONENTS.switch.size[1]/2,.20],rocker.rotation)):undefined;
+  const heaterControl=site.items.find(i=>i.fixture?.fusedHeater&&i.id===jump.component&&!roomVisit&&!wire&&!repairId);
+  const wallId=stationSwitch??heaterControl?.id??'switch',rocker=site.items.find(item=>item.id===wallId),wallControl=fixtureMap.get(wallId);
+  const wallSwitch=rocker&&wallControl&&(heaterControl|| (stationSwitch?!wire:showWallSwitch&&!jump.component))&&!walking&&!lost&&(tool==='select'||tool==='inspect')
+    ? new THREE.Vector3(...fixturePoint(rocker.position,rocker.scale,rocker.fixture,wallControl,heaterControl?FCU_ROCKER:stationSwitch?[0,.651,.067]:[0,COMPONENTS.switch.size[1]/2,.20],rocker.rotation)):undefined;
+  const zoomButton=immersive&&closeView&&!lost&&(!toolsOpen||meter)?<button type="button" aria-label={magnified?'Reset fitting zoom':'Enlarge fitting'}
+    aria-pressed={magnified} onClick={()=>rig.setZoom(magnified?1:2)}>{magnified?'1×':'Zoom'}</button>:undefined;
   return <div className="jobsite" data-site={site.kind} data-immersive={immersive||undefined} data-walking={walking||undefined} data-tools-open={toolsOpen||undefined}>
     <div className="site-camera" ref={input} tabIndex={0} aria-label={walking?'Walk around the site. Use WASD or the movement pad.':'Installation view. Choose equipment or enter Walk.'}
       onKeyDown={e=>{if(e.key==='Escape'){stop();setWalking(false);}const key=keyMap[e.code];if(!toolsOpen&&walking&&key){e.preventDefault();rig.keys.add(key);rig.wake();}}}
@@ -408,6 +445,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
         <directionalLight castShadow={!touch} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-.0006} shadow-normalBias={.0015} position={[-2.6,2.7,1.3]} intensity={1.12} color="#fff6e7"/>
         <directionalLight position={[-4,2,1]} intensity={.27} color="#c2ddf4"/>
         <InstallationRoom site={site} economy={touch} cupboardOpen={!!fixtureMap.get('door')?.params.closed} operateCupboard={()=>{if(!blockTap.current&&!walking&&fixtureMap.has('door'))onPart('door','actuator');}}/>
+        <FittedHeaterFlex site={site} doc={doc} open={!!fuseBox&&accessOpen}/>
         <FittingTails doc={doc} site={site} red={redFitting} black={blackFitting} drawn={drawn}/>
         {visible.map(item=>{const c=fixtureMap.get(item.id)!,def=COMPONENTS[c.type];if(!def)return null;
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
@@ -415,13 +453,17 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
           const cupboardDoor=doc.lessonId===65&&c.id==='door';
           const reveal=accessOpen&&item.id===repairId||tracedIds.includes(item.id)||(item.fixture?.bellService==='protect'&&tracedIds.includes('supply'));
           return <InstalledFixture key={item.id} item={item} optical={optical} pin={t} probeMode={!!meter} chimeOpen={chimeOpen} rockerOpen={openRockers.has(item.id)} cupboardDoor={cupboardDoor} bathroom={doc.lessonId===36} wideRocker={doc.lessonId===36&&!jump.component&&!roomVisit&&!walking&&!meter&&!reveal&&['light-switch','fan-isolation'].includes(item.id)}
-            trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
+            repairOpen={accessOpen&&item.id===repairId} trace={reveal||(tool==='meter'&&(!!item.fixture?.kitchenDriver||!!item.fixture?.tapeProfile))}
             onTouchPick={e=>{lastTouchPick.current={x:e.clientX,y:e.clientY,at:performance.now()};}} equipment={{
             filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
-            connectedTerminals:connectedRockerTerminals(c,doc.wires),lowDetail:!focus,preferLowAsset:touch,view:accessOpen&&item.id===repairId?'open':'normal',showLabels:false,onModelAvailability:modelAvailability,
-            onPart:part=>{if(walking&&immersive){if(!blockTap.current&&!toolsOpen&&item.room===walkRoom)jumpTo(item.id);return;}if(item.fixture?.croma&&part==='cover'&&!blockTap.current&&!walking){if(!chimeOpen)setChimeOpen(true);return;}if(meter){if(!blockTap.current&&testFittings.some(s=>s.component.id===c.id)&&meterTarget!==c.id)onFocus(c.id);return;}if(!blockTap.current&&(!walking||(stair&&c.type==='switch2')))onPart(c.id,cupboardDoor||part==='body'&&['switch','switch2','pushbutton'].includes(c.type)?'actuator':part);},
+            connectedTerminals:connectedRockerTerminals(c,item.fixture?.fusedHeater?doc.wires.filter(w=>!looseHeaterCore(doc,w)):doc.wires),lowDetail:!focus,preferLowAsset:touch,view:accessOpen&&item.id===repairId&&!item.fixture?.fusedHeater?'open':'normal',showLabels:false,onModelAvailability:modelAvailability,
+            onPart:part=>{if(walking&&immersive){if(!blockTap.current&&!toolsOpen&&item.room===walkRoom)jumpTo(item.id);return;}if(accessOpen&&item.id===repairId&&item.fixture?.fusedHeater)return;if(item.fixture?.croma&&part==='cover'&&!blockTap.current&&!walking){if(!chimeOpen)setChimeOpen(true);return;}if(meter){if(!blockTap.current&&testFittings.some(s=>s.component.id===c.id)&&meterTarget!==c.id)onFocus(c.id);return;}if(!blockTap.current&&(!walking||(stair&&c.type==='switch2')))onPart(c.id,cupboardDoor||part==='body'&&['switch','switch2','pushbutton'].includes(c.type)?'actuator':part);},
             onTerminal:id=>{
               if(blockTap.current)return;
+              if(accessOpen&&item.id===repairId&&item.fixture?.fusedHeater){
+                if(landing&&!landing.connect({component:c.id,terminal:id}))setMissedTerminal({focus:jump.id,pin:id});
+                return;
+              }
               if(walking){if(immersive&&!toolsOpen&&item.room===walkRoom)jumpTo(item.id);return;}
               if(meter&&meterTarget!==c.id){if(testFittings.some(s=>s.component.id===c.id))onFocus(c.id);return;}
               if(meter&&(item.fixture?.worktopRocker&&!openRockers.has(c.id)||item.fixture?.croma&&!chimeOpen))return;
@@ -430,20 +472,21 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
           }}/>;
         })}
         {meter&&!walking&&testFittings.filter(f=>[meterTarget,redFitting,blackFitting].includes(f.item.id)).map(f=><SiteMeterPads key={f.item.id} fitting={f} open={f.kind==='chime'?chimeOpen:openRockers.has(f.item.id)} showLabels={f.item.id===meterTarget} meter={meter} pick={onTerminal} blocked={blockTap}/>)}
-        <WireTrace id={wire} doc={doc} site={site} openRocker={openRockers}/><CameraRig focusId={jump.id} roomArrival={roomArrival} rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom} onNear={setNearby} walkTargets={immersive?visible:[]} wallSwitch={wallSwitch} wallButton={wallButton}/></>}
+        <WireTrace id={wire} doc={doc} site={site} openRocker={accessOpen&&fuseBox?new Set([...openRockers,fuseBox.id]):openRockers}/><CameraRig opticalZoom={closeView} onMagnify={setMagnified} focusId={jump.id} roomArrival={roomArrival} rig={rig} walking={walking} target={target} pose={pose} jobKey={jobKey} site={site} onRoom={setWalkRoom} onNear={setNearby} walkTargets={immersive?visible:[]} wallSwitch={wallSwitch} wallButton={wallButton}/></>}
       </Canvas></SiteBoundary>
-      {wallSwitch&&<button ref={wallButton} type="button" className="site-wall-switch" hidden aria-label={stationSwitch==='far'?'Operate landing switch':stationSwitch?'Operate downstairs switch':'Wall switch'} aria-pressed={stationSwitch?undefined:wallControl?.params.closed===true}
-        onClick={e=>{e.stopPropagation();if(!e.detail||!blockTap.current)onPart(wallId,'actuator');}}><span>{stationSwitch==='far'?'Landing switch':stationSwitch?'Downstairs switch':'Wall switch'}</span></button>}
+      {wallSwitch&&<button ref={wallButton} type="button" className="site-wall-switch" hidden aria-label={heaterControl?'Operate heater switch':stationSwitch==='far'?'Operate landing switch':stationSwitch?'Operate downstairs switch':'Wall switch'} aria-pressed={stationSwitch?undefined:wallControl?.params.closed===true}
+        onClick={e=>{e.stopPropagation();if(!e.detail||!blockTap.current)onPart(wallId,'actuator');}}><span>{heaterControl?'Heater switch':stationSwitch==='far'?'Landing switch':stationSwitch?'Downstairs switch':'Wall switch'}</span></button>}
     </div>
     {!lost&&visible.some(item=>unavailable.has(item.id))&&<div className="site-model-error" role="status" aria-live="polite">Equipment model unavailable. <button onClick={onList}>Use equipment list</button></div>}
     {lost&&<div className="site-unavailable" role="status"><p>Graphics paused. Your circuit is saved in the workbench.</p><button onClick={()=>{setLost(false);setLoadedKey(n=>n+1);}}>Restart site</button><button onClick={onList}>Equipment list</button></div>}
     {!meter&&(!stair||immersive&&walking)&&<div className="site-location"><span className="location-dot"/>{site.building.name} <span> / </span> {site.location(walking||roomVisit?walkRoom:(selectedItem?.room??site.room))}</div>}
-    {meter&&!lost&&<div className="site-meter-heading">
+    {meter&&!lost&&<div className="site-meter-heading">{zoomButton}
       {meterFitting?.kind!=='chime'&&<label><b>Fitting</b> <select aria-label="Fitting to measure" value={meterTarget??''} onChange={e=>onFocus(e.target.value)}><option value="" disabled>Choose a fitting</option>{testFittings.map(s=><option key={s.component.id} value={s.component.id}>{s.component.label}</option>)}</select></label>}
       {meterFitting?.kind==='chime'&&<button type="button" aria-expanded={chimeOpen} title={chimeOpen&&pinned?'Lift the meter probes and close the front cover':undefined} onClick={()=>{if(chimeOpen&&pinned)liftProbes(meterFitting.component.id);setChimeOpen(!chimeOpen);}}>{chimeOpen?(pinned?'Lift and close':'Close chime cover'):'Open chime cover'}</button>}
       {meterFitting?.kind==='rocker'&&<button type="button" aria-expanded={openRocker} aria-label={openRocker&&pinned?'Lift probe and refit':undefined} onClick={()=>{if(pinned)liftProbes(meterFitting.item.id);setWithdrawnAt(openRocker?undefined:jump.id);}}>{openRocker?(pinned?'Lift and refit':'Refit panel'):'Show back of switch'}</button>}
     </div>}
-    {!lost&&!meter&&!(immersive&&walking)&&(wire||[1,2,3,9,13,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61,65,66,68,69,71,72].includes(doc.lessonId??0))&&
+    {landing&&!toolsOpen&&<p className="site-landing-prompt" role="status">{missedTerminal?.focus===jump.id?flexClue(missedTerminal.pin):'Tap the terminal for the loose brown wire, or choose it by name below.'}</p>}
+    {!landing&&!lost&&!meter&&!(immersive&&walking)&&(wire||[1,2,3,9,13,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61,65,66,68,69,71,72].includes(doc.lessonId??0))&&
       <div className={stair&&!wire?'stair-locations':undefined}>
         {stair&&!wire&&<nav className="stair-stations" aria-label="Stair switch locations">{(['near','far'] as const).map(id=>
           <button key={id} type="button" aria-pressed={walking||roomVisit?(walkRoom===STAIR_LANDING.id?'far':'near')===id:stationSwitch===id}
@@ -453,20 +496,27 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
     {!meter&&<div className="site-actions">
       {(!immersive||!walking)&&<button className={walking?'chosen':''} aria-pressed={walking} onClick={toggleWalk}><Footprints size={17}/>{walking?'Finish walk':'Walk'}</button>}
       <label className="site-jump"><LocateFixed size={17}/><span>{immersive?'Find':'Go to'}</span><select aria-label="Go to equipment" value="" onChange={e=>e.target.value.startsWith('room:')||e.target.value==='grille'?visitRoom(e.target.value):jumpTo(e.target.value)}><option value="" disabled>Choose a destination</option><optgroup label="Equipment">{visible.map(v=><option key={v.id} value={v.id}>{v.ref} · {fixtureMap.get(v.id)!.label} · {site.location(v.room)}</option>)}</optgroup>{immersive&&stair&&<optgroup label="Floors"><option value="room:1">Downstairs</option><option value={'room:'+STAIR_LANDING.id}>First-floor landing</option></optgroup>}<optgroup label="Rooms">{(site.kind==='home'?HOME_ROOMS.map(r=>r.id).concat(stair?[STAIR_LANDING.id]:[]):[0,1,2,3,4]).filter(id=>!immersive||!stair||id!==1&&id!==STAIR_LANDING.id).map(id=><option key={id} value={'room:'+id}>{site.location(id)}</option>)}{doc.lessonId===36&&<option value="grille">Outside fan grille</option>}</optgroup></select></label>
-      {selectedId&&!walking&&!repairId&&testFittings.some(s=>s.component.id===selectedId)&&<button onClick={()=>openMeter(selectedId)}>Measure</button>}
-      {repairId&&!toolsOpen&&repairHere&&<button type="button" className="site-repair" onClick={()=>{
+      {zoomButton}
+      {selectedId&&!walking&&!repairHere&&!retest&&testFittings.some(s=>s.component.id===selectedId)&&<button onClick={()=>openMeter(selectedId)}>Measure</button>}
+      {!walking&&!toolsOpen&&!lost&&!repairId&&repairDestination&&<button className="site-repair" type="button" onClick={()=>jumpTo(repairDestination)}>Find repair</button>}
+      {landing&&!toolsOpen&&<HeaterFlexChoice landing={landing}/>}
+      {repairId&&!toolsOpen&&!landing&&repairHere&&<button type="button" className="site-repair" onClick={()=>{
         if(repairHere.powerOff){setOpenedRepair(undefined);repairHere.powerOff.run();return;}
-        if(!accessOpen){setOpenedRepair({job:jobKey,focus:jump.id,id:repairId});if(repairFitting?.kind==='chime')setChimeOpen(true);return;}
+        if(!accessOpen){setMissedTerminal(undefined);setOpenedRepair({job:jobKey,focus:jump.id,id:repairId});if(repairFitting?.kind==='chime')setChimeOpen(true);return;}
         repairHere.run();
       }}>{repairHere.powerOff?.label??(accessOpen?repairHere.label:'Open fitting')}</button>}
-      {selectedId&&!walking&&!repairId&&<button aria-label="Inspect equipment on the workbench" onClick={()=>onService(selectedId)}><PanelTopOpen size={17}/><span>Inspect</span></button>}
+      {!walking&&!toolsOpen&&!lost&&retest&&<button className="site-repair" type="button" disabled={retest.disabled} onClick={retest.run}>{retest.label}</button>}
+      {selectedId&&!walking&&!repairHere&&!retest&&<button aria-label="Inspect equipment on the workbench" onClick={()=>onService(selectedId)}><PanelTopOpen size={17}/><span>Inspect</span></button>}
     </div>}
     {walking&&!meter&&!toolsOpen&&!lost&&<>
       {immersive&&touch&&!looked&&<span className="site-look-guide">Drag the room to look around.</span>}
       <SiteWalkPad move={(x,y)=>{blockTap.current=true;rig.moveThumb(x,y);}}
         release={()=>rig.liftThumb()}
         nudge={dir=>rig.step(dir)}/>
-      {immersive&&nearby&&<button className="site-approach" type="button" onClick={()=>jumpTo(nearby)}><Focus size={19}/><span>Go closer<b>{fixtureMap.get(nearby)?.label}</b></span></button>}
+      {immersive&&(retest||repairDestination||nearby)&&<button className="site-approach" type="button" disabled={retest?.disabled}
+        onClick={()=>{if(retest)retest.run();else if(repairDestination||nearby)jumpTo((repairDestination??nearby)!);}}>
+        <Focus size={19} aria-hidden="true"/><span>{retest?.label??(repairDestination?'Find repair':'Go closer')}
+        {!retest&&<b>{fixtureMap.get((repairDestination??nearby)!)?.label}</b>}</span></button>}
     </>}
 
   </div>;

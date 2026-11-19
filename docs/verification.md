@@ -1,5 +1,23 @@
 # Verification summary
 
+## 1.17.0 — The heater stays cold
+
+**Kitchen repair.** In touch Chromium and Windows WebKit at 390 × 844, the learner turned the fused switch on and placed both virtual meter probes. The heater read 0 V AC. Moving the red probe to the switch output while leaving black on heater N gave 240 V AC. A reading to earth and a wrong diagnosis both left the job unfinished. Reloading between readings preserved the probe at heater N. On the isolated plate, choosing LOAD N left the wire loose. Connecting to LOAD L, restoring power and running a new test completed the job. Reloading retained the passing report. The same job could be completed with the keyboard and terminal names.
+
+**Phone controls.** At 320 × 844 with 150% text, 390 × 844 and 844 × 390, we walked, turned, stopped, visited a fitting and changed orientation. One tap doubled its size without moving the camera or editing the circuit. Reset brought the original view back. In Chromium, two-finger pinch also changed the optical zoom. The kitchen worktop repair still gave 0 V DC at the dark strip and 24 V DC at the switch. In WebKit we could tap the actual N and L contacts on the open heater switch at 2×.
+
+**Earlier study data.** We started a scored course 20 repair in the 1.16.0 web build and resumed it under the same storage origin. The separate fuse, prior clue and switch remained in the draft. The old fuse OUT terminal still accepted the meter probe. A fresh retest earned 85/100 for that earlier challenge.
+
+**Equipment and circuit.** The BG 851 plate has six rear terminals, a switched neutral, a fuse in line and a permanent earth strap. The rear terminal positions, captive fuse drawer, flex exit and front rocker were checked against the manufacturer's photographs. The simulated 3 A cartridge remains open on the ohmmeter after isolation if it has blown. All 1,119 conductors in the 80 example circuits passed the bench clearance audit. [BG 851 product photographs and fitting sheet](https://www.bgelectrical.uk/uk/wiring-devices/800-series/fused-connection-units/851-01)
+
+**Offline use.** In a Windows WebKit touch session we downloaded the complete offline pack, closed the tab and stopped the HTTP server. A new tab opened the previously unvisited heater job, completed it, closed and restored its passing report with zero requests to the origin. The offline audit also exercised interrupted updates, retry and both workers. The 450 automated checks passed, including all 80 operating and fault scenarios.
+
+**Desktop upgrade and backup.** Windows Setup retained the Desktop and Start menu shortcuts. The corrected installer opened the existing draft, named build, bookmark, measurements and progress seeded by the 1.16 executable. Its 390 installed assets matched the build and shutdown/restart worked. A backup from Windows round-tripped through WebKit Files with the original draft, build, bookmark and progress intact. A corrupt import left the prior data in place.
+
+**Windows performance.** In Chrome on the RTX 5070 Ti, a 30-component bench with 42 wires had a median submitted-frame interval of 4.0 ms during a mouse pan. The 95th percentile was 4.5 ms. Eight electrical edits took a median 3.95 ms inside the solver and 16.60 ms for the round trip. At idle, three seconds produced zero frames and zero simulation or routing requests. These measurements were taken at 1440 × 900 with automatic graphics settings, using the final local web build `3e6813b174c7d6dd8983fba9`.
+
+**Test conditions.** The phone sessions used browser engines on Windows. Physical iPhone frame time, independent learner observations and electrician field review remain unverified.
+
 ## 1.16.0 — Full screen on site
 
 **Phone controls.** The kitchen repair ran in touch Chromium and Windows WebKit at 390 × 844, 844 × 390 and 320 × 844 with text enlarged to 150%. We used touch coordinates on the strip pads and the back of the switch, hid the Job sheet, then reopened it to record each reading. The dark strip measured 0 V DC. The switch output measured 24 V DC. A wrong diagnosis left the repair locked. After the accepted diagnosis we found the fitting in the room, turned off the bench supply, opened the fitting and repaired the wire. Turning the supply back on and running a fresh test completed the job.

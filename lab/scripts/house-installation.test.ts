@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
+import {heaterFlexRun,heaterFlexPath} from '../lib/fused-heater-site';
 import {BELL_CUPBOARD as b} from '../lib/bell-cupboard';
 import {CROMA_K1} from '../lib/croma-chime';
 import {KITCHEN_LIGHTS as kitchen,stripLead,rockerPanelCentre,rockerPose,ROCKER_BOX} from '../lib/kitchen-lighting';
@@ -204,9 +205,14 @@ test('installed runs follow the actual terminals, turn at fitted walls and remai
     for(const wire of doc.wires){
       const path=installedWireRoute(doc,site,wire)!;
       assert.deepEqual(path[0],anchor(wire.from));assert.deepEqual(path.at(-1),anchor(wire.to));
-      const [from,to]=[wire.from,wire.to].map(end=>installedEnd(doc,site,end)!);
-      const start=from.item.fixture?.worktopRocker||from.item.fixture?.croma?from.lead!.length:1;
-      const stop=to.item.fixture?.worktopRocker||to.item.fixture?.croma?path.length-to.lead!.length+1:path.length;
+      const flex=heaterFlexRun(doc);
+      if(flex&&wire.cable?.runId===flex.id){
+        const sheath=heaterFlexPath(site.items.find(i=>i.id==='fcu-switch')!,site.items.find(i=>i.id==='fixed')!,false);
+        assert.ok(sheath.every(q=>path.some(p=>p.every((v,i)=>near(v,q[i])))));continue;
+      }
+      const [from,to]=[wire.from,wire.to].map(end=>installedEnd(doc,site,end,undefined,wire)!);
+      const start=from.item.fixture?.worktopRocker||from.item.fixture?.croma||from.item.fixture?.fusedHeater?from.lead!.length:1;
+      const stop=to.item.fixture?.worktopRocker||to.item.fixture?.croma||to.item.fixture?.fusedHeater?path.length-to.lead!.length+1:path.length;
       for(let i=start;i<stop;i++)assert.equal(path[i].filter((v,k)=>!near(v,path[i-1][k])).length,1);
     }
     assert.equal(electricalKey(doc),fingerprint);

@@ -23,7 +23,14 @@ const lamp:Feature[]=[
 ];
 const earth:Feature=['linked-earth-strap','mounting','Earth strap','Follow the folded strip from one earth terminal to the other. It also touches the metal sleeves around the fixing screws.'];
 const socket:Feature[]=[earth,['socket-contact-system','pins','Socket shutters','The shutters cover the live and neutral openings when the plug is out. The metal contacts behind them grip the plug pins.','front']];
-const fusedSpur:Feature[]=[earth,['accessory-strain-relief','mounting','Cord grip','This two-screw clamp holds the outer sheath of the flex. A tug on the cable reaches the clamp before it reaches the individual wires.'],['socket-contact-system','contacts','Fused connection','The switch opens the line and neutral contacts. The replaceable fuse is in the line path to the appliance.']];
+const fusedSpur:Feature[]=[earth,
+  ['851-rocker','actuator','Rocker position','The red edge shows that the rocker is on. It can still show if the fuse has blown or the supply is off.','front'],
+  ['851-fuse-drawer','fuse','Captive fuse carrier','The small notch is beside the cover marked FUSE. In the inspection view the carrier slides out and stays attached.','front'],
+  ['851-cartridge','fuse','Cartridge fuse','The ceramic cartridge sits inside the drawer. If it blows, the appliance loses its line supply. Its appearance alone does not tell you whether it conducts.','front'],
+  ['851-in-load-markings','body','Supply and appliance terminals','IN is the supply side. LOAD goes to the appliance. Find L for line and N for neutral beside the openings.'],
+  ['accessory-strain-relief','mounting','Cord grip','The lower opening is for the whole flex. The bridge holds its outer sheath so a tug does not pull on the individual cores.'],
+  ['socket-contact-system','contacts','Double-pole switch','The switch opens both line and neutral. The separate cartridge fuse is in the line path.'],
+];
 const breaker:Feature[]=[
   ['din-latch','mounting','Rail clip','This clip hooks the breaker onto the metal rail at the back of the board.'],
   ['protection-mechanism','contacts','Trip latch','When the breaker trips, the latch lets go. The metal contacts spring apart and cut the feed.'],

@@ -359,6 +359,7 @@ export function definitionFor(item:Pick<ComponentInstance,'type'|'variant'>):Com
 
 export const COMPONENT_LIST = defs;
 export const getComponent = (type:string) => COMPONENTS[type];
+export const hasReplaceableFuse=(type:string)=>type==='fcu'||type==='fuse'||type==='plug';
 
 const variantPurpose: Record<string, string> = {
   'callchime:croma-100a':cromaDefinition.description,

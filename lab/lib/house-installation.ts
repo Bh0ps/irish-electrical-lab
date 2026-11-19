@@ -1,3 +1,4 @@
+import { FCU_BOX,heaterFlexRoute,fusedIncomingLead } from './fused-heater-site';
 import { COMPONENTS } from './components';
 import {BELL_CUPBOARD as serviceBoard,bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
 import {cromaLeadPath} from './croma-chime';
@@ -53,10 +54,13 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
   73:{call:frontPush},
   80:{push:frontPush},
 };
-export function houseFixing(id:number,c:ComponentInstance){return c.mount?undefined:houseFixings[id]?.[c.id];}
+export function houseFixing(id:number,c:ComponentInstance){if(c.mount)return;
+  if(id===20&&c.id==='fcu-switch'&&c.type==='fcu')return side(0,-2.2,FCU_BOX.originY,FCU_BOX.wallZ,-1);
+  return houseFixings[id]?.[c.id];}
 export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixture?:FixturePose):Vec3{
   let depth=COMPONENTS[c.type].size[2]*scale/2;
-  if(fixture?.worktopRocker)depth=ROCKER_BOX.depth;
+  if(fixture?.fusedHeater)depth=FCU_BOX.depth;
+  else if(fixture?.worktopRocker)depth=ROCKER_BOX.depth;
   else if(fixture?.croma)depth=0;
   else if(fixture?.hallChime)depth=-chimeEnvelope(c.type).back*fixture.scale[2];
   else if(fixture?.extractor)depth=0;
@@ -70,7 +74,7 @@ export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixtur
 }
 
 interface InstalledEnd {pin:Vec3; chase:Vec3; riser:number; item:SiteItem; component:ComponentInstance;lead?:Vec3[]}
-export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openRocker?:string|ReadonlySet<string>):InstalledEnd|undefined{
+export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openRocker?:string|ReadonlySet<string>,wire?:Wire):InstalledEnd|undefined{
   const component=doc.components.find(c=>c.id===end.component),item=site.items.find(c=>c.id===end.component);
   if(!component||!item)return;
   const terminal=getComponentTerminals(component,COMPONENTS[component.type]).find(t=>t.id===end.terminal);
@@ -88,6 +92,14 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openR
   // The rear wing and front rooms have separate routes in the ceiling void.
   const rearWing=item.room===REAR_GARDEN.id||(item.room>=4&&item.room<=7);
   const riser=site.kind==='home'&&rearWing?HOME_BACK-.04:service?service.back-.02:-2.87;
+  if(item.fixture?.fusedHeater&&wire){
+    const open=typeof openRocker==='string'?openRocker===component.id:!!openRocker?.has(component.id);
+    const lead=fusedIncomingLead(doc,item,wire,open);
+    if(lead){
+      const entry=lead[lead.length-1],behind:Vec3=[chase[0],entry[1],entry[2]];
+      return {pin:lead[0],chase:behind,riser,item,component,lead:[...lead,behind]};
+    }
+  }
   if(item.fixture?.croma){
     const lead=cromaLeadPath(end.terminal).map(p=>fixturePoint(item.position,item.scale,item.fixture,component,p,item.rotation));
     if(lead.length){
@@ -143,8 +155,11 @@ const same=(a:Vec3,b:Vec3)=>a.every((v,k)=>Math.abs(v-b[k])<.000001);
 /** One selected, actually connected core. Routes show this house's example installation.
  * Cable lengths, diagram coordinates and off-site bench bends are independent. */
 export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire,openRocker?:string|ReadonlySet<string>):Vec3[]|undefined{
-  const a=installedEnd(doc,site,wire.from,openRocker),b=installedEnd(doc,site,wire.to,openRocker);
+  const a=installedEnd(doc,site,wire.from,openRocker,wire),b=installedEnd(doc,site,wire.to,openRocker,wire);
   if(!a||!b)return;
+  const withdrawn=typeof openRocker==='string'?openRocker==='fcu-switch':!!openRocker?.has('fcu-switch');
+  const flex=heaterFlexRoute(doc,site,wire,withdrawn);
+  if(flex)return flex;
   const points:Vec3[]=[];
   function through(...corners:Vec3[]){for(const p of corners)if(!points.length||!same(points[points.length-1],p))points.push(p);}
   const assembly=(e:InstalledEnd)=>e.component.mount?.board??e.component.id;

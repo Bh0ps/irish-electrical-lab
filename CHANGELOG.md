@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.17.0 — The heater stays cold
+
+- Work the kitchen wall switch and use the bench meter to find where the heater loses its feed. Open the isolated fitting on site, land the loose line at its marked terminal, restore power and test again.
+- In a phone close-up, tap **Zoom** or pinch to read a fitting. **1×** restores the original view. After diagnosis, the next repair action is available directly from the job.
+- The switched fused unit uses one double-pole rocker, a line fuse and a continuous earth. The ohmmeter keeps a blown fuse open after you isolate the supply. Earlier saved benches keep their separate switch and fuse.
+
 ## 1.16.0 — Full screen on site
 
 - Open a job full screen on a phone. Walk with one thumb and drag to look with the other. Find a fitting, take your readings and open it for a repair. Job and Tools stay within reach when you rotate the phone.

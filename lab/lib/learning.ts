@@ -6,7 +6,7 @@ import { describeEndpoint } from './build-hints.ts';
 import { definitionFor, COMPONENTS, equipmentPurpose } from './components.ts';
 import { forkMode, forkRead, instrumentData, type InstrumentEvidence } from './fork-tester.ts';
 import { getScenario, lessonCompetency, evaluateScenarioExpectation, type ScenarioExpectation } from './scenarios.ts';
-import { measureResistance, measureVoltage } from './simulation.ts';
+import { measureResistance, measureVoltage, resistanceSupplyWarning } from './simulation.ts';
 import { endpointKey, type CircuitDocument, type ConfigurationLesson, type Endpoint, type SimulationResult, type Wire } from './types.ts';
 import type { BuildAssessment } from './assessment.ts';
 import { findConnectionWire } from './wire-connections.ts';
@@ -66,7 +66,7 @@ export function captureMeasurement(document:CircuitDocument,result:SimulationRes
       instrument=instrumentData(setup,reading);
     }
   }else if(request.mode==='resistance'&&knownEndpoint(document,request.a)&&knownEndpoint(document,request.b)){
-    const sample=measureResistance(document,request.a!,request.b!);
+    const sample=measureResistance(document,request.a!,request.b!,result?.revision===document.revision?result.deviceStates:undefined);
     value=sample.value;explanation=sample.explanation;open=sample.reason==='open';
   }
   else if(result?.revision===document.revision&&result.converged){
@@ -230,8 +230,7 @@ export function evaluateActivity(activity:LessonActivity,document:CircuitDocumen
     const wire=findConnectionWire(document.wires,a,b,activity.expectedRole);
     // The external switch alone does not isolate an available local battery/PV
     // source. Use the same source-isolation guard as the simulated ohmmeter.
-    const isolation=measureResistance(document,a,b);
-    if(isolation.reason==='supply-on')return outcome('not-run','Switch off the bench supply and any battery or solar supply before checking this wire.');
+    if(resistanceSupplyWarning(document))return outcome('not-run','Switch off the bench supply and any battery or solar supply before checking this wire.');
     return wire?outcome(wire.role===activity.expectedRole?'pass':'fail',wire.role===activity.expectedRole?activity.explanation:'The wire joins the right terminals. Check its marking against the one in this step.'):outcome('not-run','Join the two terminals shown in this step.');
   }
   if(activity.kind==='operate'){

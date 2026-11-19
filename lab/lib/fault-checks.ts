@@ -18,6 +18,7 @@ function pointName(doc:CircuitDocument,p:Endpoint) {
 // converter windings and electronic inputs out of its passive circuit.
 const voltageReferences:Partial<Record<number,[string,string,string]>>={
   13:['driver','+','Leave the driver on.'],
+  20:['fixed','N','Turn the heater switch on. Use the virtual bench meter.'],
   24:['isolation','+','Leave the shaver supply on.'],
   43:['tx','-','Hold the bell push down for both readings.'],
   47:['inverter','N','Leave the grid and inverter on, with the AC isolator closed.'],

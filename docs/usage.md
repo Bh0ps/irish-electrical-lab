@@ -6,13 +6,17 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.16.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.17.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
-On a phone, **Full screen** beside the job title opens the room. Use **Move** to walk, drag to look and choose **Go closer** to reach a fitting. **Job** keeps your place while you take readings. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
+On a phone, **Full screen** beside the job title opens the room. Use **Move** to walk, drag to look and choose **Go closer** to reach a fitting. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
 
 Open **Chapters → Quick practice** to try a working circuit. Make a prediction, or choose **I’m not sure — let me try**. Use the switch, dial or Start button on the lesson card or on the equipment itself. Compare the readings before and after. **Back to lesson** opens the full course.
 
 The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a port conflict shows a startup error. Work lives in `%APPDATA%\Irish Electrical Lab`, outside installation files, and replacement installers preserve it.
+
+## Try a kitchen repair
+
+Open **Chapters → The heater stays cold**. Work the wall switch and take two readings on the virtual bench. Once you have found the fault, choose **Find repair on site**. Switch off the simulated supply and open the fitting. The back box stays on the wall while the plate comes forward. Look for the loose wire from the heater flex. Tap its terminal or choose **Reconnect flex** to use the printed markings. Restore the supply and choose **Test the repair**.
 
 ## Read a fitting or a meter
 
