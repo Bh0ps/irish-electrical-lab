@@ -2993,18 +2993,23 @@
     "detailFamily": "socket",
     "detailFeatures": [
       "individual-electrical-terminations",
-      "socket-contact-system",
       "linked-earth-strap",
+      "socket-contact-system",
+      "851-in-load-markings",
+      "851-case-rating",
+      "851-rocker",
+      "851-fuse-drawer",
+      "851-cartridge",
       "accessory-strain-relief"
     ],
-    "sourceMeshCount": 112,
-    "meshCount": 44,
-    "triangles": 71642,
-    "lowTriangles": 34114,
+    "sourceMeshCount": 152,
+    "meshCount": 74,
+    "triangles": 60932,
+    "lowTriangles": 37130,
     "terminals": [
       {
         "id": "LIN",
-        "label": "LIN",
+        "label": "L",
         "role": "L",
         "purpose": "Line coming in from the supply. Look for IN on the back.",
         "anchor": [
@@ -3012,7 +3017,7 @@
           0.56,
           -0.10400000000000001
         ],
-        "group": "Supply",
+        "group": "IN",
         "scale": 0.42,
         "entryDirection": [
           0,
@@ -3022,7 +3027,7 @@
       },
       {
         "id": "NIN",
-        "label": "NIN",
+        "label": "N",
         "role": "N",
         "purpose": "Neutral coming in from the supply. Look for IN on the back.",
         "anchor": [
@@ -3030,7 +3035,7 @@
           0.26,
           -0.10400000000000001
         ],
-        "group": "Supply",
+        "group": "IN",
         "scale": 0.42,
         "entryDirection": [
           0,
@@ -3040,7 +3045,7 @@
       },
       {
         "id": "LOUT",
-        "label": "LOUT",
+        "label": "L",
         "role": "L",
         "purpose": "Fused line going to the appliance. Look for LOAD on the back.",
         "anchor": [
@@ -3048,7 +3053,7 @@
           0.5900000000000001,
           -0.10400000000000001
         ],
-        "group": "Load",
+        "group": "LOAD",
         "scale": 0.42,
         "entryDirection": [
           0,
@@ -3058,7 +3063,7 @@
       },
       {
         "id": "NOUT",
-        "label": "NOUT",
+        "label": "N",
         "role": "N",
         "purpose": "Neutral going to the appliance. Look for LOAD on the back.",
         "anchor": [
@@ -3066,7 +3071,7 @@
           0.56,
           -0.10400000000000001
         ],
-        "group": "Load",
+        "group": "LOAD",
         "scale": 0.42,
         "entryDirection": [
           0,
@@ -3111,8 +3116,8 @@
         ]
       }
     ],
-    "bytes": 1946848,
-    "lowBytes": 991440,
+    "bytes": 1820084,
+    "lowBytes": 1198148,
     "bespokeBlender": true
   },
   {

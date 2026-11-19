@@ -4,6 +4,7 @@ import { measureResistance, measureVoltage, simulate } from './simulation.ts';
 import type { CircuitDocument, Complex, ConfigurationLesson, Endpoint, FaultSetting, SimulationResult } from './types.ts';
 import { validateDiagnosisEvidence, type MeasurementEvidence } from './learning.ts';
 import { worktopFaultPoints, worktopFaultReadings } from './worktop-fault.ts';
+import { heaterComparisonReady, heaterFaultReadings, heaterFeed, heaterLine } from './heater-fault.ts';
 
 export type DiagnosisTarget = Pick<ConfigurationLesson['challenge'], 'fault' | 'wire' | 'component'> & {hint?:string};
 export interface FaultDiagnosisAssessment { accepted: boolean; explanation: string }
@@ -61,6 +62,17 @@ export function assessFaultDiagnosis(
       comparison=`The meter showed ${volts(switchOutput)} V at the switch and ${volts(strip)} V across the strip.`;
     }
   }
+  const feed=heaterFeed(document);
+  if(feed&&evidence&&hasEnd(feed)&&hasEnd(heaterLine)){
+    const readings=heaterFaultReadings(document,result,evidence);
+    if(heaterComparisonReady(document,readings)){
+      const volts=(sample:MeasurementEvidence)=>sample.instrument?.displayed??sample.value!.toLocaleString('en-IE',{maximumSignificantDigits:3});
+      const where=feed.component==='fuse'?'leaving the fuse':'at LOAD L';
+      const seen='You measured '+volts(readings.output!)+' V '+where+' and '+volts(readings.heater!)+' V across the heater.';
+      if(diagnosis!==fault.type)return reject(seen+' Both readings used heater N. Which wire did you check at both ends?');
+      comparison=seen;
+    }
+  }
   if (diagnosis !== fault.type) return reject(comparison ? comparison+' You left one probe on the same pad. Which wire did you check at each end?' : challenge.hint??'Where does the reading change? Check both the feed and the return.');
   try {
     const clear = repaired(document, fault);
@@ -71,7 +83,7 @@ export function assessFaultDiagnosis(
       if (current === undefined || current > 1e-6) return reject('Check the current in this wire, then put one voltage probe at each end.');
       const voltage = measureVoltage(result, wire.from, wire.to).value;
       if (voltage !== null && voltage > 1) {
-        if(comparison)return accept(comparison+' Both checks used the same − pad. There’s a break in the wire between the switch and the strip.');
+        if(comparison)return accept(comparison+(feed?' The fault is in the line between those two points.':' Both checks used the same − pad. There’s a break in the wire between the switch and the strip.'));
         return accept(`There’s a break between ${ends}. No current flows in that wire. The voltage across it is ${voltage.toLocaleString('en-IE',{maximumSignificantDigits:3})} V.`);
       }
       const brokenResistance = measureResistance(continuityDocument(document), wire.from, wire.to).value;

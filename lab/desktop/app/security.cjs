@@ -11,6 +11,8 @@ const REFERENCE_FILES = new Set([
   'https://www.tlc-direct.co.uk/Technical/DataSheets/Friedland/P814.pdf',
   'https://asset.eezybridge.com/nc/ba7b9546-29dd-40c4-87a7-885627281b87/077600.pdf',
   'https://res.cloudinary.com/lu1/fl_attachment:BG_IM_NXPSWIL_K/600854/Original.pdf',
+  'https://res.cloudinary.com/lu1/fl_attachment:BG_IM_NXSWFCUIL_H/600862/Original.pdf',
+  'https://www.lawson-fuses.com/app/uploads/2020/12/Type-PL-Product-Information-Sheet.pdf',
 ]);
 function allowedReference(value) {
   if (typeof value !== 'string' || value.length > 4096) return false;

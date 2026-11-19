@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import { getLesson, LESSONS } from '../lib/lessons.ts';
-import { measureResistance, simulate } from '../lib/simulation.ts';
+import { measureResistance, measureVoltage, simulate } from '../lib/simulation.ts';
+import { captureMeasurement } from '../lib/learning.ts';
 import { assessBuild, assessConnections, investigationReport } from '../lib/assessment.ts';
 import TestReport from '../components/lab/TestReport.tsx';
 import type { CircuitDocument, Endpoint } from '../lib/types.ts';
@@ -73,6 +74,42 @@ test('the ring feeds all three cores at socket B. A blown fuse only opens line, 
   assert.equal(old.circuit.wires.find(w=>w.id==='w17')!.from.component,'protect');
   assert.equal(assessBuild(old.circuit,simulate(old.circuit),getLesson(19)!.circuit).passed,true);
 });
+test('the heater switch has two switched poles, a permanent earth and a separately testable flex',()=>{
+  const lesson=getLesson(20)!, d=structuredClone(lesson.circuit);
+  const spur=d.components.find(c=>c.id==='fcu-switch')!;
+  assert.equal(spur.type,'fcu');assert.equal(spur.params.rating,3);
+  assert.equal(d.components.some(c=>c.type==='fuse'),false);
+  assert.deepEqual(d.cableRuns!.map(run=>[run.kind,d.wires.filter(w=>w.cable?.runId===run.id).length]),[['flat',3],['flex',3]]);
+  const pin=(terminal:string,component=spur.id)=>({component,terminal});
+  assert.ok(simulate(d).componentPower.fixed>295);
+  d.faults=[{type:'open-live',enabled:true,wire:lesson.challenge.wire}];
+  const faulty=simulate(d);
+  assert.ok((measureVoltage(faulty,pin('LOUT'),pin('N','fixed')).value??0)>235);
+  assert.ok((measureVoltage(faulty,pin('L','fixed'),pin('N','fixed')).value??Infinity)<1);
+  assert.equal(assessBuild(d,faulty,lesson.circuit).passed,false);
+  d.faults=[];d.supply.enabled=false;spur.params.closed=false;
+  for(const pair of [['LIN','LOUT'],['NIN','NOUT']])assert.equal(measureResistance(d,pin(pair[0]),pin(pair[1])).reason,'open');
+  assert.ok((measureResistance(d,pin('PE'),pin('PE2')).value??1)<.1);
+  const legacy=getLesson(20,{...d,components:d.components.map(c=>c.id===spur.id?{...c,type:'switch'}:c)})!;
+  assert.equal(legacy.challenge.wire,'w5');
+  assert.equal(legacy.circuit.wires.find(w=>w.id==='w5')!.from.component,'fuse');
+  assert.equal(assessBuild(legacy.circuit,simulate(legacy.circuit),lesson.circuit).passed,true);
+});
+
+test('a blown cartridge stays open on the ohmmeter after switching off the supply',()=>{
+  const d=structuredClone(getLesson(20)!.circuit),fitting=d.components.find(c=>c.type==='fcu')!;
+  d.faults=[{type:'overload',enabled:true,component:'fixed'}];
+  const blown=simulate(d,{},1);assert.equal(blown.deviceStates[fitting.id].tripped,true);
+  d.supply.enabled=false;d.revision++;
+  const isolated=simulate(d,blown.deviceStates);
+  for(const [side,open] of [['L',true],['N',false]] as const){
+    const pair={a:{component:fitting.id,terminal:side+'IN'},b:{component:fitting.id,terminal:side+'OUT'}};
+    const reading=captureMeasurement(d,isolated,{mode:'resistance',...pair});
+    assert.equal(reading.status,open?'open':'value');
+    if(!open)assert.ok(reading.value!==null&&reading.value<.1);
+  }
+});
+
 test('missing live or neutral stops load and reports the exact missing connection',()=>{
   for(const id of ['w4','w5']){const d=circuit();d.wires=d.wires.filter(w=>w.id!==id);assert.ok((simulate(d).componentPower.light??0)<.05);fails(d,`connection:${id}`);}
 });

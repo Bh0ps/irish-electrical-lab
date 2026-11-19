@@ -23,7 +23,7 @@ const clues: Record<number,string> = {
   17: 'Count the sockets fed by the first length of cable. How many does the last length feed?',
   18: 'Start at a socket and follow the ring back to the board in each direction.',
   19: 'Find the fuse by the heater. Follow the wire leaving it. Which fitting does it reach?',
-  20: 'Follow the feed to the appliance. Look for the part you can switch by hand and the part that can melt.',
+  20: 'Try the wall rocker. It turns the heater off and on. The fuse stays in place.',
   21: 'Switch off A. Check the volts at each outlet before moving the other switch.',
   22: 'Try the cooker switch. Compare the wires coming into it with the ones going to the cooker.',
   23: 'Leave the shower switch on. Stop the water flow and watch the heater.',

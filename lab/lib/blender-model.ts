@@ -53,6 +53,7 @@ export interface AssetPresentation {
   doors:{node:THREE.Object3D;rest:THREE.Quaternion}[];
   shields:THREE.Object3D[];
   benchStands:THREE.Object3D[];
+  fuseMarkings:{node:THREE.Object3D;amps:number}[];
   meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];pickingMaterial?:THREE.Material;cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
   terminalBatches:THREE.Mesh[];
   receptacles:{node:THREE.Object3D;terminal:string}[];
@@ -71,18 +72,19 @@ export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:strin
 }
 /** Clone transforms and selectable identity while sharing immutable mesh data. */
 export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=false):AssetPresentation{
-  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],terminalBatches:[],receptacles:[],motions:[],doors:[],shields:[],benchStands:[],probeDocks:[],owned:[],initialized:false,chamber:false};
+  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],terminalBatches:[],receptacles:[],motions:[],doors:[],shields:[],benchStands:[],fuseMarkings:[],probeDocks:[],owned:[],initialized:false,chamber:false};
   scene.userData.equipmentSource='Blender';
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
     const part=semanticOwner(node).part??'';
     const occupied=node.userData.matingBlade??node.userData.occupiedTerminal;
     if(occupied)presentation.receptacles.push({node,terminal:String(occupied)});
+    if(typeof node.userData.fuseAmps==='number')presentation.fuseMarkings.push({node,amps:node.userData.fuseAmps});
     if(node.userData.probeSide)presentation.probeDocks.push({node,red:node.userData.probeSide==='red'});
     if(node.userData.boardDoor)presentation.doors.push({node,rest:node.quaternion.clone()});
     if(node.userData.benchOnly)presentation.benchStands.push(node);
     if(node.userData.boardShield)presentation.shields.push(node);
-    if(node.userData.partId==='cover'&&Array.isArray(node.userData.restPosition))presentation.covers.push({node,position:node.position.clone(),quaternion:node.quaternion.clone()});
+    if(node.userData.captiveFcuCarrier||node.userData.partId==='cover'&&Array.isArray(node.userData.restPosition))presentation.covers.push({node,position:node.position.clone(),quaternion:node.quaternion.clone()});
     if(node.userData.animation){const axis=sourceAxis(String(node.userData.axis??'z'));const q=node.quaternion,angle=2*Math.atan2(new THREE.Vector3(q.x,q.y,q.z).dot(axis),q.w);presentation.motions.push({node,position:node.position.clone(),quaternion:node.quaternion.clone(),angle,current:angle});}
     if(!(node instanceof THREE.Mesh))return;
     node.receiveShadow=true;
@@ -119,6 +121,9 @@ export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=fal
   return presentation;
 }
 export function closedForPresentation(component:ComponentInstance,state?:DeviceState):boolean{
+  // A fused connection unit has a manual rocker and a separate cartridge.
+  // A blown fuse can interrupt the load while the rocker stays in ON.
+  if(component.type==='fcu')return component.params.closed!==false;
   if(state?.tripped)return false;
   if(component.type==='pushbutton')return Boolean(component.params.on??component.params.pressed);
   if(['switch2','intermediate','selector','changeover'].includes(component.type))return Number(component.params.position??0)===0;
@@ -131,10 +136,15 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
   for(const clip of presentation.receptacles)clip.node.visible=connectedTerminals.split(' ').includes(clip.terminal);
   for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
   for(const door of presentation.doors)door.node.quaternion.copy(door.rest).multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),component.params.doorOpen!==false||view!=='normal'?-1.69:0));
+  for(const mark of presentation.fuseMarkings)mark.node.visible=mark.amps===Number(component.params.rating??component.params.currentRating);
   for(const stand of presentation.benchStands)stand.visible=!component.mount&&view==='normal';
   for(const shield of presentation.shields)shield.visible=view==='normal'&&!component.params.frontOff;
   for(const cover of presentation.covers){
     cover.node.position.copy(cover.position);cover.node.quaternion.copy(cover.quaternion);
+    if(cover.node.userData.captiveFcuCarrier){
+      if(view==='open'||view==='exploded')cover.node.position.add(sourceVector([0,0,-.132]));
+      continue;
+    }
     if(component.mount&&COMPONENTS[component.type].model==='protection'&&!cover.node.userData.fittedDin)cover.node.position.add(sourceVector([0,0,.24]));
     if(view==='open'){
       if(cover.node.userData.leftHandChimeLid)cover.node.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),-Math.PI*.52));

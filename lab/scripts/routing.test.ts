@@ -16,8 +16,8 @@ function valid(doc:CircuitDocument) {
   for(const w of doc.wires){const path=routing.routes.get(w.id)!;assert.deepEqual(path[0],terminalPosition(doc,w.from));assert.deepEqual(path.at(-1),terminalPosition(doc,w.to));}
   return routing;
 }
-test('all 1118 wires in 80 examples have complete equipment/wire-clear routes',()=>{
-  assert.equal(LESSONS.length,80);let total=0;for(const lesson of LESSONS){valid(lesson.circuit);total+=lesson.circuit.wires.length;}assert.equal(total,1118);
+test('all 1119 wires in 80 examples have complete equipment/wire-clear routes',()=>{
+  assert.equal(LESSONS.length,80);let total=0;for(const lesson of LESSONS){valid(lesson.circuit);total+=lesson.circuit.wires.length;}assert.equal(total,1119);
 });
 test('common-bore conductors have distinct rear ports and no incidental trunk intersections',()=>{
   const doc=fixture(),routing=valid(doc);

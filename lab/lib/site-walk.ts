@@ -22,6 +22,11 @@ export function walkStick(x:number,y:number,radius:number):[number,number] {
   return [x/distance*intensity,-y/distance*intensity];
 }
 
+/** Pinching a close-up changes the lens, leaving the camera on its side of the wall. */
+export function fittingZoom(current:number,delta:number,requested?:number){
+  return Math.max(1,Math.min(3,requested??current*Math.exp(delta*2)));
+}
+
 /** Shared by DOM input and the R3F frame. Input events wake an idle scene. */
 export class SiteWalkInput {
   keys=new Set<string>();
@@ -29,6 +34,7 @@ export class SiteWalkInput {
   turn:[number,number]=[0,0];
   nudge:[number,number]=[0,0];
   zoom=0;
+  requestedZoom?:number;
   moved=false;
   thumb=false;
   wake=()=>{};
@@ -38,7 +44,8 @@ export class SiteWalkInput {
   step(dir:string){this.nudge=[dir==='left'?-.25:dir==='right'?.25:0,dir==='up'?.25:dir==='down'?-.25:0];this.wake();}
   turnBy(x:number,y:number){this.turn[0]+=x;this.turn[1]+=y;this.wake();}
   zoomBy(z:number){this.zoom+=z;this.wake();}
-  consumeMotion(){this.turn=[0,0];this.nudge=[0,0];this.zoom=0;}
+  setZoom(value:number){this.requestedZoom=value;this.wake();}
+  consumeMotion(){this.turn=[0,0];this.nudge=[0,0];this.zoom=0;this.requestedZoom=undefined;}
   markMoved(){this.moved=true;}
   startView(){this.consumeMotion();this.moved=false;}
   stop(){this.keys.clear();this.liftThumb();this.consumeMotion();}

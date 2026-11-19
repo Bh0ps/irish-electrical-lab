@@ -108,7 +108,7 @@ class Bench {
   }
 }
 
-function buildCircuit(id: number, title: string, legacyFan=false, earlierBranch=false): CircuitDocument {
+function buildCircuit(id: number, title: string, legacyFan=false, olderFittings:readonly string[]=[]): CircuitDocument {
   const b = new Bench(id, title, id >= 53 && id <= 64);
   if(id>=65){b.protectedSingle();wireElvLesson(b,id);return b.document();}
   if (id >= 7 && id <= 52) b.protectedSingle();
@@ -183,7 +183,7 @@ function buildCircuit(id: number, title: string, legacyFan=false, earlierBranch=
       b.load('socket', 'socket-a', 'Ring outlet A', b.live, 80); b.add('socket', 'socket-b', 'Ring outlet B', { watts: 100 }); b.add('socket', 'socket-c', 'Ring outlet C', { watts: 120 });
       for (const [a, c] of [['socket-a', 'socket-b'], ['socket-b', 'socket-c']]) for (const t of ['L', 'N', 'PE']) b.wire([a, t], [c, t], t as TerminalRole);
       b.wire(['socket-c', 'L'], b.live); b.wire(['socket-c', 'N'], b.neutral, 'N'); b.wire(['socket-c', 'PE'], b.earth, 'PE');
-      if (id === 19 && earlierBranch) {
+      if (id === 19 && olderFittings.includes('branch-fuse')) {
         b.add('fuse','branch-fuse','Branch fuse',{rating:3,closed:true});
         b.wire(['socket-b','L'],['branch-fuse','IN']);
         b.load('heater','fixed','Heater on the fused branch',['branch-fuse','OUT'],400);
@@ -199,7 +199,24 @@ function buildCircuit(id: number, title: string, legacyFan=false, earlierBranch=
       }
       break;
     }
-    case 20: { const x = sw('fcu-switch', 'Fused supply switch'); b.add('fuse', 'fuse', 'Appliance fuse', { rating: 3 }); b.wire(x, ['fuse', 'IN']); b.load('heater', 'fixed', 'Fixed heater', ['fuse', 'OUT'], 300); break; }
+    case 20: {
+      if (olderFittings.includes('fcu-switch')) {
+        const x = sw('fcu-switch', 'Fused supply switch');
+        b.add('fuse', 'fuse', 'Appliance fuse', { rating: 3 });
+        b.wire(x, ['fuse', 'IN']);
+        b.load('heater', 'fixed', 'Fixed heater', ['fuse', 'OUT'], 300);
+        break;
+      }
+      b.add('fcu','fcu-switch','Heater switch · 3 A fuse',{closed:true,rating:3});
+      b.add('heater','fixed','Fixed heater',{watts:300,power:300});
+      b.wire(b.live,['fcu-switch','LIN']);
+      b.wire(b.neutral,['fcu-switch','NIN'],'N');
+      b.wire(['fcu-switch','LOUT'],['fixed','L']);
+      b.wire(['fcu-switch','NOUT'],['fixed','N'],'N');
+      b.wire(['fcu-switch','PE2'],['fixed','PE'],'PE');
+      b.wire(b.earth,['fcu-switch','PE'],'PE');
+      break;
+    }
     case 21: {
       const x = sw('grid-a', 'Kitchen switch A'); const y = sw('grid-b', 'Kitchen switch B');
       b.load('socket', 'outlet-a', 'Kitchen outlet A', x, 150); b.load('socket', 'outlet-b', 'Kitchen outlet B', y, 220); break;
@@ -437,12 +454,12 @@ const SPECS: Spec[] = [
     'overload', 'The heater is off. The sockets on the ring still work.', 'The fuse has opened. Look at the trip record for the current it carried just beforehand.', 'Look at the fuse rating, then read the current it carried just before it opened. There’s no current in the heater wire now.', 'The heater drew more than the branch fuse’s 3 A rating, so the fuse opened. The ring sockets are on the other side of it.',
     ['Opening the branch fuse disconnects its appliance.', 'The sockets on the intact ring retain their supply.']],
   ['Switched fused connection unit', 'Sockets & supplies', 'Routine',
-    'A switched fused connection unit houses the switch and fuse in one fitting. On the lesson bench they sit separately so you can follow the line wire through both. For the combined fitting, look for the switched fused connection unit in Sandbox, modelled on the BG 851.',
-    'Follow the path from the switch through the fuse to appliance L. Trace N and PE separately back to the board.',
-    'Turn the local switch off and on. Leave the switch on, take the fuse out on the bench and check the appliance.',
-    'Compare switch output, fuse output and the appliance’s L terminal, each against the circuit neutral. A closed handle alone cannot confirm the whole route.',
-    'open-live', 'The local switch is on, but the appliance stays off.', 'With the heater switch on, check whether the fuse is still closed.', 'Start at the fuse output. Compare it with L at the appliance.', 'The wire from the fuse output to L at the heater is broken.',
-    ['Both the switch and the fuse must have a complete path.', 'Opening the local switch stops the appliance.']],
+    'One wall plate holds the switch and the fuse. The rocker opens line and neutral together. The fuse is only in line. The earth stays connected in both switch positions.',
+    'Follow the flex from the bottom of the wall plate to the heater. Behind the plate, IN is the feed coming in and LOAD is the pair going to the heater.',
+    'Turn the heater off at the wall, then switch it back on. Watch the watts at the heater.',
+    'On the bench, leave the rocker on. Check line to neutral at the LOAD terminals, then at the heater.',
+    'open-live', 'The wall switch is on but the heater stays cold.', 'Does the switch have voltage on its LOAD side?', 'If the LOAD pair has power, follow the flex to the heater and check there.', 'The flex has lost its line connection. Open the isolated fitting and look at LOAD L.',
+    ['The wall switch stops and starts the heater.', 'The earth stays connected with the switch off.']],
   ['Kitchen remote isolation bank', 'Sockets & supplies', 'Routine',
     'Grouped kitchen switches let you disconnect an appliance from a different position. Trace the wire as well as reading the faceplate label.',
     'All the switches share a feed. Each switch sends power to its own outlet.',
@@ -778,7 +795,7 @@ const CHALLENGE_TARGETS: Record<number, ChallengeTarget> = {
   17: { path: [['socket-b', 'L'], ['socket-c', 'L']] },
   18: { path: [['socket-c', 'L'], ['protect', 'LOUT']] },
   19: { component: 'fixed' },
-  20: { path: [['fuse', 'OUT'], ['fixed', 'L']] },
+  20: { path: [['fcu-switch', 'LOUT'], ['fixed', 'L']] },
   21: { path: [['grid-a', 'OUT'], ['outlet-a', 'L']] },
   22: { path: [['supply', 'PE'], ['appliance', 'PE']] },
   23: { path: [['local', 'LOUT'], ['flow-permission', 'COM']] },
@@ -940,10 +957,11 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
 function createLesson(spec: Spec, index: number, legacyFan=false, olderFittings:readonly string[]=[]): ConfigurationLesson {
   const id = index + 1;
   const [title, category, tag, purpose, connections, sequence, measurement, fault, briefing, firstCheck, hint, answer, checks] = spec;
-  const circuit = furnishCourseBoard(buildCircuit(id,title,legacyFan,olderFittings.includes('branch-fuse')));
+  const circuit = furnishCourseBoard(buildCircuit(id,title,legacyFan,olderFittings));
   for(const part of circuit.components)if(olderFittings.includes(part.id)){delete part.variant;if(part.type==='callchime')part.label='Two-input AC chime';}
   const extra=elvPage(id);
-  const target:ChallengeTarget = extra ? {path:extra.target} : CHALLENGE_TARGETS[id];
+  const target:ChallengeTarget = extra ? {path:extra.target} : id===20&&olderFittings.includes('fcu-switch')
+    ? {path:[['fuse','OUT'],['fixed','L']]} : CHALLENGE_TARGETS[id];
   if (!target) throw new Error(`Lesson ${id} has no exact challenge target`);
 
   const context = extra ? "A 240 V bench supply feeds the transformer or power supply. Work on its extra-low-voltage side" : id >= 53 ? 'Three-phase supply in Ireland. About 230 V from phase to neutral and 400 V between phases'
@@ -962,7 +980,7 @@ function createLesson(spec: Spec, index: number, legacyFan=false, olderFittings:
       : `Put one probe on ${red.label} and the other on ${black.label}. Read the volts between those two points.`
     : 'Set the tester to volts and choose the two points you want to compare.';
   const references = [...IRISH];
-  if(id===19&&!olderFittings.includes('branch-fuse'))references.push({title:'BG 851 · switched fused connection unit and wiring diagram',url:'https://www.bgelectrical.uk/uk/wiring-devices/800-series/fused-connection-units/851-01'});
+  if((id===19||id===20)&&!olderFittings.length)references.push({title:'BG 851 · switched fused connection unit and wiring diagram',url:'https://www.bgelectrical.uk/uk/wiring-devices/800-series/fused-connection-units/851-01'});
   if(id>=65&&id<=70)references.push({title:'MEAN WELL · constant-voltage and constant-current LED operation',url:'https://led.meanwell.com/qa.aspx'});
   if(id===66)references.push({title:'Switch Components RG1 · 24 V worktop rocker and terminal numbers',url:'https://www.switchcomp.com/switches-docs/rocker-switch/RG1-1A-DC-1-B.pdf'});
   if(id===43||id>=71&&id<=74||id===80)references.push({title:'Resideo · bell pushes, chimes and transformer ratings',url:'https://www.resideo.com/emea/en/-/media/EMEA%20Site%20Cluster/Mastersite/Documents/Sales%20Literature/Resideo_Electrical_Wholesale_Online_Catalogue_August_2020.pdf/'});
@@ -1048,9 +1066,21 @@ const earlierBranchSpec:Spec=[...lessonSpecs[18]];
 earlierBranchSpec[4]='Follow the wire from socket B through the separate fuse to the heater. In this earlier example, the heater neutral goes back to the board.';
 earlierBranchSpec[5]='Open the branch fuse. Check the heater, then try a ring socket.';
 const earlierBranch=createLesson(earlierBranchSpec,18,false,['branch-fuse']);
+const earlierAppliance=createLesson([SPECS[19][0],'Sockets & supplies','Routine',
+  'This earlier bench has the switch and fuse side by side. Both sit in the line feeding the heater.',
+  'Follow the line from the switch through the fuse to the heater. Neutral and earth return to the board.',
+  'Switch the heater off and back on. Watch its power reading.',
+  'With the switch on, compare the fuse output with L at the heater. Use the circuit neutral for both readings.',
+  'open-live','The heater stays off with the switch on.','Check the output of the separate fuse.',
+  'If the fuse output has power, follow the line to the heater.','The wire from fuse OUT to heater L is broken.',
+  ['The heater needs both the switch and fuse to conduct.','Opening the switch stops the heater.']],19,false,['fcu-switch']);
 const earlierChime=createLesson(lessonSpecs[71],71,false,['chime']);
 export function getLesson(id:number,doc?:CircuitDocument):ConfigurationLesson|undefined {
   if(id===19&&doc?.lessonId===19&&doc.components.some(c=>c.id==='branch-fuse'&&c.type==='fuse'))return earlierBranch;
+  if(id===20&&doc?.lessonId===20){
+    const wallSwitch=doc.components.find(c=>c.id==='fcu-switch');
+    if(wallSwitch?.type==='switch'||!wallSwitch&&doc.components.some(c=>c.id==='fuse'&&c.type==='fuse'))return earlierAppliance;
+  }
   if(id===36&&olderTimerFan(doc))return earlierFan;
   if(id===72&&doc?.lessonId===72&&doc.components.some(c=>c.id==='chime'&&c.type==='callchime'&&(!c.variant||c.variant==='default')))return earlierChime;
   if(id===66&&doc?.lessonId===66){

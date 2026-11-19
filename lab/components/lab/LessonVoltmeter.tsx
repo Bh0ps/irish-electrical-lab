@@ -22,7 +22,7 @@ export function LessonVoltmeter({circuit,startAt,active,red,black,display,messag
     <output aria-live="polite">{display ?? 'No reading yet'}</output>
     {adjust ? <button type="button" className="book-link" onClick={adjust.action}>{adjust.label}</button> :
       <>
-        {!fixedFitting && <label>Fitting<select value={fitting?.id??''} onChange={e=>setChosen(e.target.value)}>
+        {!fixedFitting && <label>Fitting<select aria-label="Fitting" value={fitting?.id??''} onChange={e=>setChosen(e.target.value)}>
           {fittings.map(part=><option key={part.id} value={part.id}>{part.label}</option>)}
         </select></label>}
         <div className="lesson-meter-leads" role="group" aria-label="Choose a probe">

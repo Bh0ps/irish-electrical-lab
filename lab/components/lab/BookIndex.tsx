@@ -1,4 +1,5 @@
 import { worktopFaultTitle } from '../../lib/fault-practice';
+import { heaterFaultActivity, heaterFaultTitle } from '../../lib/heater-fault';
 import { useState, useMemo } from 'react';
 import { Bookmark, Check, ChevronRight, Search, X } from 'lucide-react';
 import { CHAPTERS, completedCoursebookLesson, courseMatchesQuery, courseTitle, matchesStudyQuery } from '../../lib/coursebook';
@@ -17,8 +18,9 @@ export function BookHome({ resume, start, index }: { resume?: string; start: () 
   </section>;
 }
 
-export function BookIndex({ open, practice, quick, currentLessonId, resumeCurrent, houseCall, progress, showJobs, resumeJobId, worktopFault, savedWorktopFault }: {
+export function BookIndex({ open, practice, quick, currentLessonId, resumeCurrent, houseCall, progress, showJobs, resumeJobId, worktopFault, savedWorktopFault, heaterFault, savedHeaterFault }: {
   worktopFault:()=>void; savedWorktopFault:boolean;
+  heaterFault:()=>void; savedHeaterFault:boolean;
   open: (lessonId: number, practical: boolean) => void; practice: () => void; quick: string;
   houseCall: (lessonId:number)=>void; progress: StudyProgress; showJobs?:boolean; resumeJobId?:number;
   currentLessonId?: number; resumeCurrent?: () => void;
@@ -29,7 +31,8 @@ export function BookIndex({ open, practice, quick, currentLessonId, resumeCurren
   const matches = LESSONS.filter(lesson => courseMatchesQuery(lesson, search));
   const jobs = HOUSE_CALLS.filter(job=>matchesStudyQuery(['Jobs at Oakfield house',job.title,job.request,job.searchTerms,...job.steps.map(step=>step.instruction)].join(' '),search));
   const kitchen=matchesStudyQuery('Kitchen fault finding at Oakfield house '+worktopFaultTitle+' right worktop strip switch meter',search);
-  const jobCount=jobs.length+(kitchen?1:0);
+  const heater=matchesStudyQuery('Oakfield house '+heaterFaultTitle+' fused spur heater wall switch flex meter fault repair',search);
+  const jobCount=jobs.length+Number(kitchen)+Number(heater);
   return <div className="book-index">
     <label className="book-search"><Search size={17} aria-hidden="true"/><input aria-label="Search lessons and jobs" type="search" value={search}
       placeholder="Search lessons and jobs" onChange={event => setSearch(event.target.value)}/></label>
@@ -38,7 +41,8 @@ export function BookIndex({ open, practice, quick, currentLessonId, resumeCurren
       <summary>Jobs at Oakfield house<small>{jobCount} {jobCount===1?'job':'short jobs'}</small></summary>
       <div className="chapter-rows">{jobs.map(job=><button type="button" key={job.lesson} onClick={()=>job.lesson===resumeJobId&&resumeCurrent?resumeCurrent():houseCall(job.lesson)}>
         <span>{job.title}{resumeJobId===job.lesson&&<small className="book-saved-place"><Bookmark size={12} aria-hidden="true"/>Saved place</small>}{resumeJobId!==job.lesson&&progress.learning[job.lesson]?.activityIds.includes(houseStepId(job,job.steps.length-1))&&<small className="book-saved-place">Completed</small>}</span><ChevronRight size={16} aria-hidden="true"/>
-      </button>)}{kitchen&&<button type="button" onClick={worktopFault}><span>{worktopFaultTitle}<small>{savedWorktopFault?'Saved place':progress.learning[66]?.activityIds.includes('lesson:66:fault:worktop')?'Completed':'Fault practice'}</small></span><ChevronRight size={16} aria-hidden="true"/></button>}</div>
+      </button>)}{kitchen&&<button type="button" onClick={worktopFault}><span>{worktopFaultTitle}<small>{savedWorktopFault?'Saved place':progress.learning[66]?.activityIds.includes('lesson:66:fault:worktop')?'Completed':'Fault practice'}</small></span><ChevronRight size={16} aria-hidden="true"/></button>}
+      {heater&&<button type="button" onClick={heaterFault}><span>{heaterFaultTitle}<small>{savedHeaterFault?'Saved place':progress.learning[20]?.activityIds.includes(heaterFaultActivity)?'Completed':'Fault practice'}</small></span><ChevronRight size={16} aria-hidden="true"/></button>}</div>
     </details>}
     {CHAPTERS.map(chapter => {
       const lessons = chapter.lessons.map(id => matches.find(lesson => lesson.id === id)).filter(lesson => !!lesson);

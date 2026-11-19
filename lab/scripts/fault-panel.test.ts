@@ -55,3 +55,18 @@ test('a powered-down repair asks to restore the supply before a fresh test',()=>
   assert.doesNotMatch(html,/Test the repair|The repair passed/);
   assert.match(show({stage:'retest'}),/Test the repair/);
 });
+
+test('heater instructions follow the learner’s leads and name the fitting on this particular bench',()=>{
+  const current=getLesson(20)!,older=structuredClone(current.circuit);
+  older.components.find(c=>c.id==='fcu-switch')!.type='switch';
+  const legacy=getLesson(20,older)!;
+  const heater={...reading('load','Heater',0),a:{component:'fixed',terminal:'N'},b:{component:'fixed',terminal:'L'}};
+  const first=show({lesson:current,doc:current.circuit,heater:{},switchOn:false});
+  assert.match(first,/Turn the heater on at the wall/);
+  assert.doesNotMatch(first,/Choose the fault|Repair this wire|The flex has lost/);
+  for(const [lesson,point] of [[current,/L terminal on the LOAD side/],[legacy,/OUT on the separate fuse/]] as const){
+    const html=show({lesson,doc:lesson.circuit,heater:{heater},wrongPoints:true});
+    assert.match(html,/Leave red on heater N. Move black/);assert.match(html,point);
+    assert.match(html,/Reading saved. For this check/);
+  }
+});

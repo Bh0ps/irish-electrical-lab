@@ -31,6 +31,7 @@ export interface FixturePose {
   board?: boolean;
   bellPush?: boolean;
   flushPlate?: boolean;
+  fusedHeater?: boolean;
 }
 
 export function isStrip(c: ComponentInstance) {

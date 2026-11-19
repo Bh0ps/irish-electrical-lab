@@ -10,7 +10,7 @@ export interface LessonBookmark {
   activityId: string;
   path: 'coursebook' | 'full';
   mode: 'explore' | 'build' | 'challenges';
-  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
+  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; heater?: boolean; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
 }
 
 export function validateBookmark(value: unknown): LessonBookmark {
@@ -27,9 +27,10 @@ export function validateBookmark(value: unknown): LessonBookmark {
       [fault.accepted, fault.repaired, fault.scored].some(flag => typeof flag !== 'boolean') ||
       (fault.repaired && !fault.accepted) || (fault.completed !== undefined && (typeof fault.completed !== 'boolean' || fault.completed && !fault.repaired)) ||
       (fault.worktop !== undefined && (typeof fault.worktop !== 'boolean' || fault.worktop && circuit.lessonId !== 66)) ||
+      (fault.heater !== undefined && (typeof fault.heater !== 'boolean' || fault.heater && circuit.lessonId !== 20)) ||
       (fault.readingIds !== undefined && (!Array.isArray(fault.readingIds) || fault.readingIds.length > 30 || fault.readingIds.some(id=>typeof id!=='string'||id.length>512))) || b.mode !== 'challenges')) throw new Error('Invalid saved fault exercise.');
   if(fault?.probes){
-    if(!fault.worktop||typeof fault.probes!=='object'||Array.isArray(fault.probes))throw new Error('The saved fault probes could not be read.');
+    if(!(fault.worktop||fault.heater)||typeof fault.probes!=='object'||Array.isArray(fault.probes))throw new Error('The saved fault probes could not be read.');
     for(const point of Object.values(fault.probes)){
       const fitting=circuit.components.find(c=>c.id===point?.component);
       if(!fitting||!getComponentTerminals(fitting,COMPONENTS[fitting.type]).some(t=>t.id===point.terminal))throw new Error('A saved probe point is missing from this circuit.');
