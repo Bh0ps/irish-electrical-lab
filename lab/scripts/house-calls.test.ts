@@ -12,6 +12,7 @@ import { validateCircuit } from '../lib/storage';
 import type { CircuitDocument } from '../lib/types';
 
 for(const call of HOUSE_CALLS){
+  if(call.steps.some(s=>s.waitForFan))continue; // The timed job is exercised with the same live timer throughout in bathroom-fan.test.
   test(call.title+' uses both real circuit states and a fresh action at the named fitting',()=>{
     let doc:CircuitDocument=structuredClone(LESSONS.find(l=>l.id===call.lesson)!.circuit);
     for(const [index,step] of call.steps.entries()){
@@ -86,12 +87,14 @@ test('the board job follows the connected branch, including a board with the fee
 });
 
 test('the next house job skips demonstrated jobs and keeps an unfinished job available',()=>{
-  const [cupboard,stairs,board,bell,worktops]=HOUSE_CALLS;
+  const [cupboard,stairs,board,bell,worktops,fan]=HOUSE_CALLS;
   let progress=migrateProgress(undefined);
   assert.equal(nextHouseCall(board,progress),bell);
   progress=recordActivity(progress,bell.lesson,callActivityId(bell.lesson,bell.steps.length-1),'house-call',true);
   assert.equal(nextHouseCall(board,progress),worktops);
   progress=recordActivity(progress,worktops.lesson,callActivityId(worktops.lesson,worktops.steps.length-1),'house-call',true);
+  assert.equal(nextHouseCall(board,progress),fan);
+  progress=recordActivity(progress,fan.lesson,callActivityId(fan.lesson,fan.steps.length-1),'house-call',true);
   assert.equal(nextHouseCall(board,progress),cupboard);
   progress=recordActivity(progress,cupboard.lesson,callActivityId(cupboard.lesson,0),'house-call',true);
   assert.equal(nextHouseCall(board,progress),cupboard);

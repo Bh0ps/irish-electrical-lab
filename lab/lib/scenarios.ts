@@ -1,5 +1,5 @@
 import { describeEndpoint } from './endpoint-description.ts';
-import { LESSONS } from './lessons.ts';
+import { getLesson, LESSONS, olderTimerFan } from './lessons.ts';
 import { simulate, measureVoltage } from './simulation.ts';
 import { endpointKey, type CircuitDocument, type DeviceState, type Endpoint, type Parameters, type SimulationResult } from './types.ts';
 import type { AssessmentCheck, CheckReading } from './assessment.ts';
@@ -72,7 +72,7 @@ function authored(id:number):ScenarioStep[] {
     case 33:return [s('Let the off-peak charging period end',[p('offpeak','on',false)],[off('store'),on('day')]),s('Switch off the daytime fan',[p('release','closed',false)],[off('day')])];
     case 34:return toggled('local','unit','Turn off the local switch','Turn the local switch back on');
     case 35:return toggled('switch','fan','Turn off the fan switch','Turn the fan switch back on');
-    case 36:return [s('Turn the bathroom light on',[],[on('fan')]),s('Turn the light off and watch the fan',[p('light-switch','closed',false)],[on('fan')],2),s('Wait for the fan timer to finish',[],[off('fan')])];
+    case 36:return [s('Check the bathroom light and fan',[],[on('fan'),on('light')]),s('Turn the light off and watch the fan',[p('light-switch','closed',false)],[on('fan'),off('light')],2),s('Wait for the fan timer to finish',[],[off('fan'),off('light')]),s('Turn the light back on',[p('light-switch','closed',true)],[on('fan'),on('light')]),s('Switch off the fan isolator',[p('fan-isolation','closed',false)],[off('fan'),on('light'),state('runon','energized',false,'The fan timer loses its supply')]),s('Restore the fan isolator',[p('fan-isolation','closed',true)],[on('fan'),on('light')])];
     case 37:return [s('Set the sensor to dry and turn off the override',[p('humidity','active',false),p('override','closed',false)],[off('fan')]),s('Try the fan override',[p('override','closed',true)],[on('fan')])];
     case 38:case 39:return [s(id===38?'Raise the float':'Lower the water pressure',[],[on('pump')]),s(id===38?'Lower the float':'Raise the pressure',[p('request','active',false)],[off('pump')])];
     case 40:return starter('start','stop','starter','motor');
@@ -132,7 +132,10 @@ const SCENARIOS: LessonScenario[] = LESSONS.map(lesson => {
   }
   return {lessonId: lesson.id, title: lesson.title, competency: lessonCompetency(lesson.id), steps};
 });
-export function getScenario(id:number):LessonScenario|undefined{return SCENARIOS.find(s=>s.lessonId===id);}
+export function getScenario(id:number,doc?:CircuitDocument):LessonScenario|undefined{
+  const scenario=SCENARIOS.find(s=>s.lessonId===id);
+  return id===36&&scenario&&olderTimerFan(doc)?{...scenario,steps:scenario.steps.slice(0,3).map((step,i)=>({...step,title:['Check that the fan is running','Turn the wall switch off','Wait for the fan to stop'][i],expectations:step.expectations.slice(0,1)}))}:scenario;
+}
 const CONTROL_KEYS=new Set(['closed','on','active','demand','pressed','position','alarm','availability','level','mix','sensorValue']);
 function same(a:Endpoint,b:Endpoint){return endpointKey(a)===endpointKey(b);}
 function findWire(doc:CircuitDocument,a:Endpoint,b:Endpoint){return doc.wires.find(w=>same(w.from,a)&&same(w.to,b)||same(w.from,b)&&same(w.to,a));}
@@ -207,7 +210,7 @@ function describeReading(check: ScenarioExpectation, value: number | string | bo
 
 /** Execute authored experiments against the learner's actual topology. No source document/state is changed. */
 export function runLessonScenarios(document:CircuitDocument,previousStates:Record<string,DeviceState>={}):AssessmentCheck[]{
-  const scenario=document.lessonId&&getScenario(document.lessonId),canonical=document.lessonId&&LESSONS.find(l=>l.id===document.lessonId);
+  const scenario=document.lessonId&&getScenario(document.lessonId,document),canonical=document.lessonId&&getLesson(document.lessonId,document);
   if(!scenario||!canonical)return [{id:'scenario:unassigned',category:'objectives',status:'not-run',title:'Lesson controls',explanation:'You built this circuit in Sandbox. Open Live readings to see what it does.'}];
   if(!document.supply.enabled)return [{id:'scenario:supply-off',category:'objectives',status:'not-run',title:'Lesson controls',explanation:'Turn on the bench supply and test the circuit again.'}];
   const doc=structuredClone(document),checks:AssessmentCheck[]=[],history:SimulationResult[]=[];

@@ -25,6 +25,7 @@ open source under the [MIT license](LICENSE).
   operating behaviour, and diagnose faults with progressively revealed hints.
 - Save named builds, export circuits and migrate study progress through validated
   full backups. After installation, study and building work offline.
+- Try **Check the bathroom fan timer** to work the bathroom light and fan. Turn the light off, watch the five-second timer, then see what the fan isolator switches off.
 - Try **Meter the worktop lights** at Oakfield house. Put the probes on the LED tape and compare a dark worktop with a lit one.
 - Navigate with orbit controls or a **WASD free camera** in four training environments.
 

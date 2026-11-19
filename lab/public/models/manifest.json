@@ -10639,5 +10639,204 @@
     "bytes": 841512,
     "lowBytes": 503204,
     "bespokeBlender": true
+  },
+  {
+    "key": "isolator3_fan-isolator",
+    "galleryKey": "isolator3:fan-isolator",
+    "type": "isolator3",
+    "name": "Three-pole fan isolator",
+    "url": "/models/isolator3_fan-isolator.glb",
+    "lowUrl": "/models/isolator3_fan-isolator.low.glb",
+    "thumbnailUrl": "/models/thumbnails/isolator3_fan-isolator.png",
+    "detailRevision": 3,
+    "detailFamily": "switch",
+    "detailFeatures": [
+      "individual-electrical-terminations",
+      "moulded-fixing-grid",
+      "three-pole-switch-cassette",
+      "linked-contact-arms"
+    ],
+    "sourceMeshCount": 85,
+    "meshCount": 36,
+    "triangles": 38540,
+    "lowTriangles": 10354,
+    "terminals": [
+      {
+        "id": "L1IN",
+        "label": "L2",
+        "role": "L",
+        "purpose": "Permanent line from the supply. The rocker joins it to the matching L2 terminal in the other row when on.",
+        "anchor": [
+          -0.052000000000000005,
+          0.595,
+          -0.122
+        ],
+        "group": "Upper row \u00b7 supply",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "L2IN",
+        "label": "L1",
+        "role": "control",
+        "purpose": "Switched line from the light switch. The rocker joins it to the matching L1 terminal in the other row when on.",
+        "anchor": [
+          0.17600000000000002,
+          0.5880000000000001,
+          -0.122
+        ],
+        "group": "Upper row \u00b7 supply",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NIN",
+        "label": "N",
+        "role": "N",
+        "purpose": "Neutral from the supply. The rocker joins it to the matching N terminal in the other row when on.",
+        "anchor": [
+          -0.163,
+          0.5740000000000001,
+          -0.122
+        ],
+        "group": "Upper row \u00b7 supply",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "L1OUT",
+        "label": "L2",
+        "role": "L",
+        "purpose": "Permanent line to the fan timer. The rocker joins it to the matching L2 terminal in the other row when on.",
+        "anchor": [
+          0.004,
+          0.338,
+          -0.122
+        ],
+        "group": "Lower row \u00b7 fan",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "L2OUT",
+        "label": "L1",
+        "role": "control",
+        "purpose": "Switched line to the fan trigger. The rocker joins it to the matching L1 terminal in the other row when on.",
+        "anchor": [
+          0.12,
+          0.29900000000000004,
+          -0.122
+        ],
+        "group": "Lower row \u00b7 fan",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NOUT",
+        "label": "N",
+        "role": "N",
+        "purpose": "Neutral to the fan. The rocker joins it to the matching N terminal in the other row when on.",
+        "anchor": [
+          -0.21,
+          0.324,
+          -0.122
+        ],
+        "group": "Lower row \u00b7 fan",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "bytes": 1093908,
+    "lowBytes": 386168,
+    "bespokeBlender": true
+  },
+  {
+    "key": "fan_xf100s",
+    "galleryKey": "fan:xf100s",
+    "type": "fan",
+    "name": "Bathroom extractor \u00b7 15 W study load",
+    "url": "/models/fan_xf100s.glb",
+    "lowUrl": "/models/fan_xf100s.low.glb",
+    "thumbnailUrl": "/models/thumbnails/fan_xf100s.png",
+    "detailRevision": 3,
+    "detailFamily": "fan",
+    "detailFeatures": [
+      "individual-electrical-terminations",
+      "xf-intake",
+      "xf-base",
+      "xf-spigot",
+      "xf-impeller",
+      "terminal-clamp:L",
+      "terminal-clamp:N"
+    ],
+    "sourceMeshCount": 53,
+    "meshCount": 17,
+    "triangles": 43828,
+    "lowTriangles": 28004,
+    "terminals": [
+      {
+        "id": "L",
+        "label": "L",
+        "role": "L",
+        "purpose": "The timer feeds the fan motor here.",
+        "anchor": [
+          -0.64,
+          1.106,
+          0.122
+        ],
+        "group": "Under the front cover",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          -1,
+          0
+        ]
+      },
+      {
+        "id": "N",
+        "label": "N",
+        "role": "N",
+        "purpose": "The motor current returns to the supply through N.",
+        "anchor": [
+          -0.548,
+          1.106,
+          0.122
+        ],
+        "group": "Under the front cover",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          -1,
+          0
+        ]
+      }
+    ],
+    "bytes": 1424500,
+    "lowBytes": 1048228,
+    "bespokeBlender": true
   }
 ]

@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { COMPONENTS } from '../../lib/components';
+import { COMPONENTS, definitionFor } from '../../lib/components';
 import { CABLE_CORE_LABEL } from '../../lib/cables';
 import { describeEndpoint } from '../../lib/build-hints';
 import { getComponentTerminals } from '../../lib/terminal-layout';
@@ -132,10 +132,10 @@ export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false
 }
 
 /** Uses the real housing footprint; placement via a list must also avoid occupied positions. */
-export function nextFreePosition(doc: CircuitDocument, type: string): Vec3 {
-  const size = COMPONENTS[type].size;
+export function nextFreePosition(doc: CircuitDocument, type: string, variant?:string): Vec3 {
+  const size = definitionFor({type,variant}).size;
   const free = (x:number,z:number) => doc.components.every(c => {
-    const [w,,d] = COMPONENTS[c.type].size;
+    const [w,,d] = definitionFor(c).size;
     const cos = Math.abs(Math.cos(c.rotation)), sin = Math.abs(Math.sin(c.rotation));
     return Math.abs(x-c.position[0]) >= (size[0]+w*cos+d*sin)/2+.25 ||
       Math.abs(z-c.position[2]) >= (size[2]+d*cos+w*sin)/2+.25;
@@ -145,14 +145,14 @@ export function nextFreePosition(doc: CircuitDocument, type: string): Vec3 {
       if(Math.max(Math.abs(x),Math.abs(z))===radius && free(2*x,2*z)) return [2*x,0,2*z];
     }
   }
-  return [Math.max(0,...doc.components.map(c=>c.position[0]+Math.max(...COMPONENTS[c.type].size)))+size[0],0,0];
+  return [Math.max(0,...doc.components.map(c=>c.position[0]+Math.max(...definitionFor(c).size)))+size[0],0,0];
 }
 
 export function EquipmentList({circuit,onSelect,onOperate,operable,states,tags,selected}:{circuit:CircuitDocument;tags?:Record<string,string>;selected?:string;
   onSelect:(id:string)=>void;onOperate:(c:ComponentInstance)=>void;operable:(c:ComponentInstance)=>boolean;
   states:Record<string,string|undefined>}) {
   const [query,setQuery]=useState('');
-  const items=circuit.components.filter(c=>matches(query,c.label,COMPONENTS[c.type].name,tags?.[c.id]??''));
+  const items=circuit.components.filter(c=>matches(query,c.label,definitionFor(c).name,tags?.[c.id]??''));
   return <section aria-label="Equipment on the bench" className="equipment-list-view">
     <h2>Equipment on the bench</h2>
     <Input type="search" aria-label="Find equipment on the bench" placeholder="Find equipment" value={query} onChange={e=>setQuery(e.target.value)}/>

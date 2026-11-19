@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.12.0 — After the light goes out
+
+- A sixth Oakfield house job lets you try a bathroom extractor, its light switch and its three-pole isolator. The light works with the fan isolator off. The external timer gives the fan five seconds of run-on for practice.
+- Inspect the front grille, motor blades, duct outlet and two-terminal block on the standard Manrose XF100S. Follow the six rear terminals on the BG 815 fan isolator. Both fittings have editable Blender sources and lighter phone models.
+- Course 36 now includes a working lamp. Earlier saved fan exercises keep their original wiring and checks.
+- Meter steps give the fitting and its two printed marks together. Motor jobs name the station or belt on each Start and Stop button.
+
 ## 1.11.0 — At the worktop
 
 - Switch off one kitchen light and measure both strips in the new **Meter the worktop lights** house job. Pick each copper pad in the room or by name. The meter keeps the sign when the leads are reversed.

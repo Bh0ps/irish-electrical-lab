@@ -4,6 +4,7 @@ import {seatPosition} from './board-assembly';
 import { COMPONENTS } from './components';
 import {bellServicePart,bellServicePose} from './bell-cupboard';
 import {fittedKitchenDriver,KITCHEN_LIGHTS as kitchen} from './kitchen-lighting';
+import {BATH_EXTRACT as bath} from './bathroom-extract';
 import { houseFixing, onWall } from './house-installation';
 import { HOME_ROOMS, REAR_GARDEN, STAIR_LANDING, walkHome } from './home-floorplan';
 import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
@@ -85,7 +86,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
   const [kind,room,name]=JOBS[id]??work(1,'Custom installation');
   const base=BUILDINGS[kind];
   const rooms:[string,string,string]=[...base.rooms];
-  if(id===23||id===24||id===35||id===36||id===37)rooms[1]='Bathroom';
+  if([23,24,35,36,37].includes(id)){rooms[1]='Bathroom';rooms[2]='Service hall';}
   if(id===9)rooms[1]='Stair hall';
   if(id===10)rooms[1]='Switching corridor';
   if(id===50)rooms[2]='Cold store';
@@ -117,6 +118,12 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     const cabinets = kind === 'home' && area === 0 && [13,65,66,68,69].includes(id);
     const atBackWall = !outside && Math.abs(z - (BACK + .11)) < .0001;
     const mapped=kind==='home'?houseFixing(id,c):undefined;
+    if(id===36&&!c.mount&&c.id==='light'&&c.type==='lamp'&&c.variant==='downlight'){
+      // The bezel is 86 mm across. Its face points down into a ceiling cut-out.
+      const scale:Vec3=[.086/.556,.086/.649,.11];
+      return {id:c.id,ref,room:1,position:[bath.lightX,bath.ceiling+.014,bath.lightZ-.628*scale[1]] as Vec3,
+        rotation:0,scale:scale[1],fixture:{scale,tilt:Math.PI/2,ceilingLight:true}};
+    }
     const servicePart=bellServicePart(id,c);
     if(servicePart){
       const pose=bellServicePose(servicePart),s=pose.scale;
@@ -125,7 +132,9 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     if(cabinets&&fittedKitchenDriver(id,c.type,c.id,c.variant)&&!c.mount){
       return {id:c.id,ref,room:0,position:[...kitchen.driver] as Vec3,rotation:0,scale:.1,fixture:{scale:[.1,.1,.1] as Vec3,kitchenDriver:true}};
     }
-    const fixture = physicalFixture(c, !!mapped||atBackWall, cabinets,!!mapped&&(id===71||id===72));
+    let fixture = physicalFixture(c, !!mapped||atBackWall, cabinets,!!mapped&&(id===71||id===72));
+    if(id===36&&!c.mount&&c.id==='runon'&&c.type==='timer')fixture={scale:[.044,.052,.088],serviceBox:'timer'};
+    if(id===36&&!c.mount&&c.id==='fan-cpc'&&c.type==='terminal')fixture={scale:[.024,.026,.029],serviceBox:'cpc'};
     let scale = physicalHeight(c) / Math.max(.1, COMPONENTS[c.type]?.size[1] ?? 1);
     if (fixture) scale = fixture.scale[1];
     // Plaster face is BACK - .01. Only the flush switch faceplate projects into the room.

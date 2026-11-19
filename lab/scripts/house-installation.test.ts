@@ -4,6 +4,7 @@ import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
 import {BELL_CUPBOARD as b} from '../lib/bell-cupboard';
 import {KITCHEN_LIGHTS as kitchen,stripLead} from '../lib/kitchen-lighting';
+import {BATH_EXTRACT as bath,BATH_SHOWER,bathroomWireNote,outsideGrillePose} from '../lib/bathroom-extract';
 import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,REAR_GARDEN,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
 import {houseFixing,installedWireRoute} from '../lib/house-installation';
@@ -15,6 +16,44 @@ import type {Endpoint,Vec3} from '../lib/types';
 
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!.circuit;
 const near=(a:number,b:number)=>Math.abs(a-b)<1e-7;
+test('bathroom fittings face their own rooms and both fan cores pass through the separate rear cable inlet',()=>{
+  const doc=lesson(36),site=jobSite(doc),item=(id:string)=>site.items.find(i=>i.id===id)!;
+  const part=(id:string)=>doc.components.find(c=>c.id===id)!;
+  const fan=item('fan'),light=item('light'),iso=item('fan-isolation'),timer=item('runon'),park=item('fan-cpc');
+  assert.equal(item('protect').fixture?.bellService,'protect');
+  const branch=doc.wires.find(w=>w.from.component==='protect'&&w.to.component==='fan-fcu')!;
+  assert.ok(installedWireRoute(doc,site,branch)!.some(p=>near(p[0],b.x+bath.outgoingOffset)&&near(p[1],b.y+b.breakerSize[1]/2)&&near(p[2],b.z+b.conduitZ)));
+  assert.equal(site.location(iso.room),'Service hall');
+  for(const id of ['fan-fcu','light-switch','fan-isolation','runon']){
+    assert.equal(item(id).room,2);
+    assert.ok(item(id).position[0]>2.25);
+    assert.ok(Math.abs(item(id).position[2]-.95)>.625);
+  }
+  assert.ok(near(fan.position[2],bath.wallInside));
+  assert.equal(fan.rotation,Math.PI);
+  assert.ok(Math.hypot(BATH_SHOWER.x-bath.fanX,BATH_SHOWER.z-bath.wallInside)>4);
+  assert.ok(near(fixturePoint(fan.position,fan.scale,fan.fixture,part('fan'),[0,.88,0],fan.rotation)[1],bath.fanY));
+  assert.ok(outsideGrillePose(true).position[2]>bath.wallOutside);
+  assert.ok(bath.grilleWidth>2*bath.sleeveRadius&&bath.outletDrop>0);
+  assert.ok(light.fixture?.ceilingLight&&light.fixture.tilt===Math.PI/2);
+  for(const wire of doc.wires.filter(w=>w.to.component==='fan')){
+    const end=wire.to.terminal;
+    const grommet=fixturePoint(fan.position,fan.scale,fan.fixture,part('fan'),[end==='L'?-.615:-.575,.950,.011],fan.rotation);
+    assert.ok(installedWireRoute(doc,site,wire)!.some(p=>p.every((n,i)=>near(n,grommet[i]))));
+  }
+  assert.deepEqual(doc.wires.filter(w=>[w.from.component,w.to.component].includes('fan')).map(w=>w.to.terminal).sort(),['L','N']);
+  const parked=doc.wires.find(w=>w.to.component==='fan-cpc')!,terminus=installedWireRoute(doc,site,parked)!.at(-1)!;
+  assert.equal(park.fixture?.serviceBox,'cpc');
+  assert.ok(terminus[2]<bath.wallInside&&terminus[2]>bath.wallInside-bath.cpcSize[2]);
+  assert.ok(Math.abs(terminus[0]-bath.fanX)>.15);
+  for(const t of getComponentTerminals(part('runon'),COMPONENTS.timer)){
+    const p=installedTerminalPoint(timer,part('runon'),t);
+    assert.ok(p[0]>2.26&&p[0]<2.26+bath.timerSize[2]);
+  }
+  assert.match(bathroomWireNote(parked)!,/own connector/);
+  assert.match(bathroomWireNote({...parked,from:parked.to,to:parked.from})!,/own connector/);
+  assert.equal(bathroomWireNote({...parked,to:{component:'fan',terminal:'N'}}),undefined);
+});
 test('each worktop switch sits below its own light and the local cable enters the slotted end of that channel',()=>{
   const doc=lesson(66),site=jobSite(doc),get=(id:string)=>site.items.find(i=>i.id===id)!;
   for(const side of ['left','right']){

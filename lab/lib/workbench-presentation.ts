@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { COMPONENTS } from './components.ts';
+import { COMPONENTS, definitionFor } from './components.ts';
 import { getComponentTerminals } from './terminal-layout.ts';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3 } from './types.ts';
 
@@ -55,7 +55,7 @@ export function tracePresentationPaths(document: CircuitDocument): Map<string, S
 export const pathMatches = (categories: Set<PathFilter> | undefined, filter: PathFilter) => filter==='all' || filter!=='none' && !!categories?.has(filter);
 
 export function componentBounds(component: ComponentInstance): THREE.Box3 {
-  const size=COMPONENTS[component.type]?.size??[1,1,1];
+  const size=definitionFor(component)?.size??[1,1,1];
   const matrix=new THREE.Matrix4().compose(new THREE.Vector3(...component.position),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),component.rotation),new THREE.Vector3(1,1,1));
   return new THREE.Box3(new THREE.Vector3(-size[0]/2,0,-size[2]/2),new THREE.Vector3(size[0]/2,size[1],size[2]/2)).applyMatrix4(matrix);
 }
@@ -90,9 +90,9 @@ export function selectedPartBounds(component:ComponentInstance,part:string|undef
   if(definition&&part&&(part==='terminals'||definition.terminals.some(t=>t.id===part))){const anchors=getComponentTerminals(component,definition).filter(t=>part==='terminals'||t.id===part);const matrix=new THREE.Matrix4().makeRotationY(component.rotation);matrix.setPosition(...component.position);for(const t of anchors)semantic.expandByPoint(new THREE.Vector3(...t.anchor).applyMatrix4(matrix));if(!semantic.isEmpty())return semantic.expandByScalar(.1);}
   return componentBounds(component);
 }
-export function placementClear(document:CircuitDocument,type:string,position:Vec3):boolean {
+export function placementClear(document:CircuitDocument,type:string,position:Vec3,variant?:string):boolean {
   const definition=COMPONENTS[type];if(!definition)return false;
-  const proposed=componentBounds({id:'@ghost',type,label:'',position,rotation:0,params:{}}).expandByScalar(.08);
+  const proposed=componentBounds({id:'@ghost',type,variant,label:'',position,rotation:0,params:{}}).expandByScalar(.08);
   return !document.components.some(component=>proposed.intersectsBox(componentBounds(component)));
 }
 export const hasOperatingAnimation = (document:CircuitDocument,states?:Record<string,{energized:boolean}>) => document.components.some(c=>!!states?.[c.id]?.energized && ['fan','motor','motor3','pump','heatpump'].includes(c.type));

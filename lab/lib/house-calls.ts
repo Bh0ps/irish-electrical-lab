@@ -5,7 +5,7 @@ import type { StudyProgress } from './progress';
 import type { CircuitDocument, SimulationResult } from './types';
 
 type DoorCall='Idle'|'Front'|'Rear'|'Both';
-interface CallReading { id: string; label: string; on: boolean; dc?: boolean; emitter?:boolean; pair?:[string,string]; nominal?:number; call?:DoorCall }
+interface CallReading { id: string; label: string; on: boolean; dc?: boolean; emitter?:boolean; isolated?:boolean; pair?:[string,string]; nominal?:number; call?:DoorCall }
 export interface CallStep {
   target: string; label: string; instruction: string; changed: string;
   before: CallReading[]; after: CallReading[];
@@ -13,6 +13,7 @@ export interface CallStep {
   pressed?:boolean;
   /** Put one probe on each pad of this fitting. */
   measure?:boolean;
+  waitForFan?:boolean;
 }
 export interface HouseCall {
   lesson: number; title: string; request: string; done: string; steps: CallStep[];
@@ -24,6 +25,9 @@ const lamp = (on:boolean):CallReading => ({id:'light',label:'Stair light',on});
 const strip = (on:boolean):CallReading => ({id:'strip',label:'Cupboard strip',on,dc:true});
 const worktops=(left:boolean,right:boolean):CallReading[]=>[
   {id:'left',label:'Left strip',on:left,nominal:24,emitter:true},{id:'right',label:'Right strip',on:right,nominal:24,emitter:true},
+];
+const bathroom=(light:boolean,fan:boolean,isolated=false):CallReading[]=>[
+  {id:'light',label:'Bathroom light',on:light,emitter:true},{id:'fan',label:'Extractor',on:fan,emitter:true,isolated},
 ];
 const branches = (on:boolean):CallReading[] => [{id:'load1',label:'Lamp',on},{id:'load2',label:'Socket',on:true}];
 const chime = (call:DoorCall):CallReading[] => [
@@ -58,6 +62,13 @@ export const HOUSE_CALLS:HouseCall[] = [
     {target:'right',label:'Use the meter',measure:true,instruction:'Now measure across the lit right strip.',changed:'The right strip still has its own feed from the driver.',before:worktops(false,true),after:worktops(false,true)},
     {target:'right-switch',label:'Use the right switch',instruction:'Turn off the right worktop light.',changed:'Both strips are off.',before:worktops(false,true),after:worktops(false,false)},
     {target:'left-switch',label:'Use the left switch',instruction:'Leave the right light off. Switch the left light back on.',changed:'Only the left strip came back on.',before:worktops(false,false),after:worktops(true,false)},
+  ]},
+  {lesson:36,title:'Check the bathroom fan timer',request:'The timer in this job is set to five seconds so you can watch the fan stop.',done:'You saw the fan run on after the light went out, checked that it stopped, and switched off the fan without losing the light.',steps:[
+    {target:'light-switch',label:'Use the light switch',instruction:'Switch the bathroom light off. Watch the fan.',changed:'The light went out. The timer kept the fan running.',before:bathroom(true,true),after:bathroom(false,true)},
+    {target:'light-switch',label:'Confirm the fan stopped',waitForFan:true,instruction:'Leave the light off. Confirm when the fan stops.',changed:'The timer finished and the fan stopped.',before:bathroom(false,true),after:bathroom(false,false)},
+    {target:'light-switch',label:'Use the light switch',instruction:'Switch the bathroom light back on. Does the fan start too?',changed:'The light and fan came back on together.',before:bathroom(false,false),after:bathroom(true,true)},
+    {target:'fan-isolation',label:'Use the fan isolator',instruction:'Leave the light on. Turn the fan isolator off.',changed:'The fan stopped. The light stayed on.',before:bathroom(true,true),after:bathroom(true,false,true)},
+    {target:'fan-isolation',label:'Use the fan isolator',instruction:'Switch the fan isolator back on.',changed:'The light switch was still on, so the fan started again.',before:bathroom(true,false,true),after:bathroom(true,true)},
   ]},
 ];
 
@@ -118,14 +129,16 @@ export function callReadings(points:CallReading[],doc:CircuitDocument,result?:Si
     const call=point.call?result.deviceStates[point.id]?.call:undefined;
     const inRange=point.nominal===undefined || (value!==null && value<=point.nominal*1.1);
     const lit=point.emitter?result.deviceStates[point.id]?.energized:undefined;
-    return {label:point.label,value,powered,lit,call,matches:powered===point.on && inRange && (!point.emitter||lit===point.on) && (!point.call || call===point.call)};
+    const isolated=point.id==='fan'&&result.deviceStates['fan-isolation']?.closed===false&&result.deviceStates.runon?.energized===false&&lit===false&&(value===null||value<=1);
+    const voltageMatches=point.isolated?isolated:powered===point.on && inRange;
+    return {label:point.label,value,powered,lit,isolated,call,matches:voltageMatches && (!point.emitter||lit===point.on) && (!point.call || call===point.call)};
   });
   return readings;
 }
 
 export function verifiedCallStep(call:HouseCall,index:number,doc:CircuitDocument,result:SimulationResult|undefined,action?:CallOperation){
   const step=call.steps[index];
-  if(!step || step.measure || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==callActivityId(call.lesson,index)
+  if(!step || step.measure || step.waitForFan || !action || !doc.supply.enabled || !action.before.supply.enabled || action.activity!==callActivityId(call.lesson,index)
     || doc.lessonId!==call.lesson || doc.id!==action.before.id || doc.revision!==action.before.revision+1) return false;
   const allowed = call.breakers ? call.breakers.some(b=>b.id===action.component) : action.component===step.target;
   if(!allowed)return false;
@@ -136,6 +149,18 @@ export function verifiedCallStep(call:HouseCall,index:number,doc:CircuitDocument
   const setting=(d:CircuitDocument)=>d.components.find(c=>c.id===action.component)?.params[key];
   const before=callReadings(step.before,action.before,action.reading), after=callReadings(step.after,doc,result);
   return setting(doc)!==setting(action.before) && (step.pressed===undefined || setting(doc)===step.pressed) && !!before?.every(r=>r.matches) && !!after?.every(r=>r.matches);
+}
+
+/** The timer must continue to power the fan after a real switch-off, then reach its delay on the same unchanged circuit. */
+export function fanRunPhase(call:HouseCall,doc:CircuitDocument,result:SimulationResult|undefined,action?:CallOperation){
+  if(call.lesson!==36||doc.lessonId!==36||!action||action.component!=='light-switch'||![0,1].some(i=>action.activity===callActivityId(36,i))
+    ||action.before.id!==doc.id||action.before.revision+1!==doc.revision||!doc.supply.enabled||!result?.converged||result.revision!==doc.revision)return;
+  if(doc.components.find(c=>c.id==='light-switch')?.params.closed!==false||action.before.components.find(c=>c.id==='light-switch')?.params.closed!==true
+    ||!callReadings(call.steps[0].before,action.before,action.reading)?.every(r=>r.matches))return;
+  const timer=result.deviceStates.runon,delay=Number(doc.components.find(c=>c.id==='runon')?.params.delay);
+  if(!timer?.energized||timer.command||!Number.isFinite(delay)||delay<=0)return;
+  if(timer.closed&&timer.elapsed<delay&&callReadings(call.steps[0].after,doc,result)?.every(r=>r.matches))return 'running';
+  if(!timer.closed&&timer.elapsed>=delay&&callReadings(call.steps[1].after,doc,result)?.every(r=>r.matches))return 'stopped';
 }
 
 export function onlyCallControlsChanged(call:HouseCall,doc:CircuitDocument,original:CircuitDocument){

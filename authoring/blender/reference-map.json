@@ -3,6 +3,7 @@
   "classification": "Original representative training equipment. Each model illustrates an equipment architecture. Construction, circuit ratings and simplified interfaces are identified in the lesson. Product literature documents the features used for comparison.",
   "coordinateContract": "Recipe Y-up, +Z operating front. Each electrical ID has its own physical cable mouth and outward entry vector. Wall accessories are wired at the rear. DIN protective devices have upper and lower banks, motor boards face upward, and fronts opened for service have connection blocks behind their covers. Source and meter earth connections represent the separate protective path at the installation boundary. The valve flying lead ends in a separate connector strip. Circuit IDs stay fixed when inspecting or moving equipment.",
   "sources": [
+    {"id":"bg-815","title":"BG 815-01 · three-pole fan isolator","url":"https://www.bgelectrical.uk/uk/wiring-devices/800-series/10a-3-pole-fan-isolators/815-01","architecture":"A 10 A three-pole rocker on an 86 × 86 mm plate, overall depth 22.2 mm. The maker’s rear photograph shows staggered L1, L2 and N entries in two rows, with screws accessed separately above and below the cassette. The timer fan diagram uses L1 for switched line and L2 for permanent line."},
     {"id":"friedland-d814","title":"Friedland D814 Sesame · product photograph","url":"https://www.resideo.com/gb/en/products/security/doorbells/wired-doorbells/d814-sesame-doorbell-push-d814/","architecture":"Unlit white cap with a dark bezel on a slim white case. Outer dimensions are 55 × 24 × 18 mm in the Friedland chimes catalogue. Small mouldings are reconstructed."},
     {"id":"friedland-p814","title":"Friedland D814 · cover, fixings and rear connections","url":"https://www.tlc-direct.co.uk/Technical/DataSheets/Friedland/P814.pdf","architecture":"The manufacturer’s fitting sheet shows two wire screws behind the cartridge, two separate fixing holes, a clip-off shell and a 1–24 V, 2 A rating."},
     {"id": "hager-device-mounting", "title": "Hager device mounting · rail clip and operating fronts", "url": "https://assets.hager.com/step-content/P/HA_22836455/Document/std.lang.all/ZD0828.pdf", "architecture": "Page 4 shows the lower rail clip and the fronts of a two-module RCCB, RCBO and one-module breaker. The training cutaway illustrates the clip and separate wire and screwdriver access."},
@@ -308,6 +309,24 @@
       "architecture": "Heating cable on a mesh with a separate floor probe."
     },
     {
+      "id": "manrose-xf100s",
+      "title": "Manrose XF100S · room face, 100 mm duct and standard motor",
+      "url": "https://www.manrose.co.uk/product/xf100s-bathroom-fan-standard-100mm/",
+      "architecture": "Original fascia, fixed guard and two screw caps compared with the maker's photograph. The impeller pitch and inaccessible motor parts are educational."
+    },
+    {
+      "id": "manrose-xf100-dimensions",
+      "title": "Manrose XF100 · dimension drawing",
+      "url": "https://www.manrose.co.uk/wp-content/uploads/doc/cataloguepage/100mmfanrange.pdf",
+      "architecture": "163 mm square, 30 mm fascia and 45 mm long outlet of 98 mm diameter. Use the fitted unit's rating label on a job."
+    },
+    {
+      "id": "manrose-xf100-wiring",
+      "title": "Manrose standard extractor · fixing and two-wire block, diagram 1",
+      "url": "https://asset.eezybridge.com/nc/ba7b9546-29dd-40c4-87a7-885627281b87/077600.pdf",
+      "architecture": "Under-cover live and neutral terminals beside the motor, wall-fixing slots, cable entry and Class II construction. The standard model uses a separate timer in this lesson."
+    },
+    {
       "id": "ref-fan-default",
       "title": "Vent-Axia fan catalogue",
       "url": "https://www.vent-axia.com/sites/default/files/2024-02/vent-axia_specification_brochure..pdf",
@@ -588,6 +607,7 @@
     ]
   },
   "variantSources": {
+    "isolator3:fan-isolator":["bg-815"],
     "shaveroutlet:default":["mk-k701-shaver"],
     "gammaboard:default": [
       "gamma-entries",
@@ -723,6 +743,7 @@
     "heater:mat": [
       "ref-heater-mat"
     ],
+    "fan:xf100s": ["manrose-xf100s","manrose-xf100-dimensions","manrose-xf100-wiring"],
     "fan:default": [
       "ref-fan-default"
     ],

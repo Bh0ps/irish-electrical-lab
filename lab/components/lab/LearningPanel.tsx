@@ -226,9 +226,9 @@ export default function LearningPanel(props: Props) {
     });
     const success = evaluated.status === 'pass';
     const question = activity.kind === 'predict' || activity.kind === 'explain';
-    setFeedback(question && evaluated.status === 'fail'
-      ? tryPredictionAtLamp ? 'Try the meter across the lamp. See what changes when you open the switch.' : `Try again. ${evaluated.explanation}`
-      : question && success ? `That’s right. ${evaluated.explanation}` : evaluated.explanation);
+    setFeedback(question && tryPredictionAtLamp && evaluated.status === 'fail'
+      ? 'Leave the probes on the lamp and try the switch. Watch the volts.'
+      : evaluated.explanation);
     setAccepted(success); setCheckedState(stateKey);
     if (evaluated.status === 'pass' || evaluated.status === 'fail') props.onAttempt(activity, success);
   }

@@ -1,5 +1,6 @@
 import { Route, X } from 'lucide-react';
 import { DRAWING_INK, shortPoint } from '../../lib/installation-drawing';
+import {bathroomWireNote} from '../../lib/bathroom-extract';
 import type {JobSite} from '../../lib/job-site';
 import type {CircuitDocument} from '../../lib/types';
 import './site-cable-peek.css';
@@ -12,7 +13,9 @@ export default function SiteCablePeek({doc,site,selected,wireId,onChange,visit,p
   const kitchen=site.items.some(item=>item.fixture?.kitchenDriver);
   if(!wires.length)return null;
   // Pick the feed heading on from this fitting first. All installed wires are available in the list.
-  const suggested=wires.find(w=>w.from.component===selected&&w.role==='L')
+  const bathroom=doc.lessonId===36;
+  const timedFeed=bathroom?wires.find(w=>bathroomWireNote(w)&&[w.from,w.to].some(e=>e.component===selected)&&(selected==='fan'?w.role==='L':w.role==='control')):undefined;
+  const suggested=timedFeed??wires.find(w=>w.from.component===selected&&w.role==='L')
     ??wires.find(w=>w.to.component===selected||w.from.component===selected)??wires[0];
   if(!wire)return <button className="site-cable-toggle" aria-label={kitchen?'Follow a kitchen cable':'See cable routes behind the walls'} onClick={()=>onChange(suggested.id)}><Route size={16}/>Cables</button>;
   const target=wire.from.component===selected?wire.to:wire.from;
@@ -21,6 +24,7 @@ export default function SiteCablePeek({doc,site,selected,wireId,onChange,visit,p
   return <aside className="site-cable-peek" aria-label={kitchen?'Kitchen cable route':'Cable behind the walls'}>
     <div><strong><Route size={15}/>{kitchen?'Follow the cable':'Behind the walls'}</strong><button aria-label="Hide cable route" onClick={()=>onChange(undefined)}><X size={16}/></button></div>
     <select aria-label="Installed wire to follow" value={wire.id} onChange={e=>onChange(e.target.value)}>{wires.map(w=><option key={w.id} value={w.id}>{text(w)}</option>)}</select>
+    {bathroom&&bathroomWireNote(wire)&&<p className="bathroom-cable-note">{bathroomWireNote(wire)}</p>}
     <div><span><i style={{backgroundColor:DRAWING_INK[wire.role]}}/>{room(wire.from.component)}{room(wire.to.component)!==room(wire.from.component)&&' → '+room(wire.to.component)}</span>
       <button onClick={()=>plan(wire.id)}>Show on plan</button>
       <button onClick={()=>visit(target.component)}>Find {site.items.find(i=>i.id===target.component)?.ref}</button></div>

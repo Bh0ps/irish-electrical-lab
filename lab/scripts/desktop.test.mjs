@@ -56,10 +56,10 @@ test('packaging includes local workers and a standalone runtime with no renderer
   const config=JSON.parse(readFileSync(new URL('../desktop/electron-builder.json',import.meta.url),'utf8'));assert.equal(config.nsis.perMachine,false);assert.equal(config.nsis.allowElevation,false);assert.equal(config.nsis.createDesktopShortcut,true);assert.equal(config.nsis.deleteAppDataOnUninstall,false);assert.equal(config.extraResources[0].from,'dist/client');
   const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');assert.match(main,/sandbox: true/);assert.match(main,/contextIsolation: true/);assert.match(main,/nodeIntegration: false/);assert.match(main,/requestSingleInstanceLock/);assert.match(main,/closeAllConnections/);assert.match(CSP,/worker-src 'self' blob:/);assert.match(CSP,/(?:^|; )connect-src 'self' blob:;/, 'GLTFLoader fetches textures embedded in local models from blob URLs');
 });
-test('version 1.11.0 keeps the existing per-user identity and shortcuts for upgrades',()=>{
+test('version 1.12.0 keeps the existing per-user identity and shortcuts for upgrades',()=>{
   const metadata=JSON.parse(readFileSync(new URL('../desktop/app/package.json',import.meta.url),'utf8'));
   const config=JSON.parse(readFileSync(new URL('../desktop/electron-builder.json',import.meta.url),'utf8'));
-  assert.equal(metadata.version,'1.11.0');assert.equal(config.appId,'ie.irish-electrical-lab.desktop');assert.equal(config.productName,'Irish Electrical Lab');assert.equal(config.nsis.createStartMenuShortcut,true);assert.equal(config.nsis.shortcutName,'Irish Electrical Lab');
+  assert.equal(metadata.version,'1.12.0');assert.equal(config.appId,'ie.irish-electrical-lab.desktop');assert.equal(config.productName,'Irish Electrical Lab');assert.equal(config.nsis.createStartMenuShortcut,true);assert.equal(config.nsis.shortcutName,'Irish Electrical Lab');
   const main=readFileSync(new URL('../desktop/app/main.cjs',import.meta.url),'utf8');assert.match(main,/PROFILE_NAME = 'Irish Electrical Lab'/);assert.match(main,/app\.setPath\('userData', path\.join\(app\.getPath\('appData'\), PROFILE_NAME\)\)/);
 });
 
@@ -84,4 +84,7 @@ test('an unfinished upgrade verification cannot overwrite the learner recovery b
 test('the native reference action accepts the equipment documentation shipped with the coursebook',()=>{
   const references=JSON.parse(readFileSync(new URL('../../authoring/blender/reference-map.json',import.meta.url),'utf8'));
   for(const source of references.sources) assert.ok(allowedReference(source.url),source.title);
+  for(const url of ['https://asset.eezybridge.com/nc/ba7b9546-29dd-40c4-87a7-885627281b87/077600.pdf','https://res.cloudinary.com/lu1/fl_attachment:BG_IM_NXPSWIL_K/600854/Original.pdf']) assert.ok(allowedReference(url));
+  for(const url of ['https://asset.eezybridge.com/unrelated.pdf','https://res.cloudinary.com/other/image/upload/example.pdf']) assert.equal(allowedReference(url),false);
+  assert.equal(allowedReference('https://asset.eezybridge.com/nc/other/077600.pdf'),false);
 });

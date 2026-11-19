@@ -1,6 +1,7 @@
 import { COURSE_BOARD_ID,COURSE_BOND_ID } from './board-examples';
 import { describeEndpoint } from './endpoint-description';
 import { runLessonScenarios } from './scenarios';
+import { getLesson, olderTimerFan } from './lessons';
 import { matchLessonWires } from './wire-connections';
 import { endpointKey, type CircuitDocument, type Diagnostic, type SimulationResult, type Wire } from './types';
 
@@ -86,7 +87,7 @@ export function assessBuild(document: CircuitDocument, result: SimulationResult,
     if (!protective.length) check('protective-paths', 'protection', true, 'Earth path check', 'The bench found no break or wrong connection in the earth paths it checked.');
   }
   if (expected) {
-    checks.push(...assessConnections(document,expected));
+    checks.push(...assessConnections(document,expected.lessonId===36&&olderTimerFan(document)?getLesson(36,document)!.circuit:expected));
   }
   if(current&&result.converged){const experiments=runLessonScenarios(document,result.deviceStates);for(const c of experiments){if(document.lessonId===7&&c.id==='scenario:7:0:0')c.id='switch-off';if(document.lessonId===7&&c.id==='scenario:7:1:0')c.id='switch-on';}checks.push(...experiments);}
   else checks.push({id:'scenario:not-current',category:'objectives',status:'not-run',title:'Control checks',explanation:'Test the current wiring again so the bench can try the controls.'});

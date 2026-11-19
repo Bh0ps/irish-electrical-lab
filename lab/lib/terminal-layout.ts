@@ -10,12 +10,41 @@ export function equipmentVariant(component: Pick<ComponentInstance, 'type' | 'la
 
 /** The lid or terminal door must be opened to reach these installation contacts. */
 export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'variant'|'label'>): boolean {
+  if(component.type==='fan'&&component.variant==='xf100s')return true;
   if(component.type==='driver'&&component.variant==='constant-current')return false;
   return ['source','source3','meter','panel','rose','junction','shower','boiler','heatpump','chime','callchime','ev','vfd','plc','safetyRelay','driver','dcsupply'].includes(component.type) ||
     component.type==='heater' && /immersion/i.test(component.variant??component.label);
 }
 
 export function getComponentTerminals(component: Pick<ComponentInstance, 'type' | 'label' | 'variant' | 'params'>, definition: ComponentDefinition): TerminalDefinition[] {
+  if(component.type==='isolator3'&&component.variant==='fan-isolator'){
+    // BG 815 rear elevation, in millimetres viewed from behind the plate. The
+    // upper row faces the supply in BG's timer-fan diagram. Legacy terminal
+    // IDs describe the course's paths; the moulded lettering follows the fitting.
+    const seats:Record<string,[number,number,string,TerminalDefinition['role'],string]>={
+      L1IN:[5.2,13.5,'L2','L','Permanent line from the supply'],
+      L2IN:[-17.6,12.8,'L1','control','Switched line from the light switch'],
+      NIN:[16.3,11.4,'N','N','Neutral from the supply'],
+      L1OUT:[-.4,-12.2,'L2','L','Permanent line to the fan timer'],
+      L2OUT:[-12,-16.1,'L1','control','Switched line to the fan trigger'],
+      NOUT:[21,-13.6,'N','N','Neutral to the fan'],
+    };
+    return definition.terminals.filter(t=>Object.hasOwn(seats,t.id)).map(t=>{
+      const [rearX,y,label,role,functionName]=seats[t.id];
+      const incoming=t.id.endsWith('IN');
+      return {...t,label,role,group:incoming?'Upper row · supply':'Lower row · fan',
+        purpose:functionName+'. The rocker joins it to the matching '+label+' terminal in the other row when on.',
+        anchor:[-rearX/100,.46+y/100,-.122],entryDirection:[0,0,-1],scale:.44};
+    });
+  }
+  if(component.type==='fan'&&component.variant==='xf100s'){
+    // Diagram 1 shows two side-by-side lower entries behind the grille.
+    return definition.terminals.filter(t=>t.id==='L'||t.id==='N').map(t=>({
+      ...t,label:t.id,anchor:[t.id==='L'?-.64:-.548,1.106,.122],
+      entryDirection:[0,-1,0],scale:.55,group:'Under the front cover',
+      purpose:t.id==='L'?'The timer feeds the fan motor here.':'The motor current returns to the supply through N.'
+    }));
+  }
   if(component.type==='pushbutton'&&component.variant==='sesame'){
     // Rear wire seats beside the screw heads. Top and bottom are bench names;
     // neither screw on the actual D814 has a polarity marking.
@@ -268,6 +297,7 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
 
 /** Local direction from the equipment towards a clear inspection camera. */
 export function terminalInspectionDirection(component: Pick<ComponentInstance, 'type'|'label'|'variant'|'params'>, definition: ComponentDefinition, terminalId?: string): Vec3 {
+  if(component.type==='fan'&&component.variant==='xf100s')return [0,.06,Math.sqrt(1-.06**2)];
   const terminals=getComponentTerminals(component,definition);
   const selected=terminalId ? terminals.filter(t=>t.id===terminalId) : terminals;
   const sum:Vec3=[0,0,0];

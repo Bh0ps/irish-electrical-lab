@@ -131,8 +131,41 @@ function Elv({component:c,definition,view,authoring}:EquipmentProps){
  return <group scale={definition.size}>{parts}{type==='pwmcontrol'&&<Body id="actuator" detail="channel-adjustment" purpose="The single-channel controller adjusts brightness. The tunable model adds an independent warm and cool balance control.">
  {(v==='tunable-white'?[-.17,.17]:[0]).map(x=><group key={x} position={[x,.31,.292]} userData={{partId:'actuator',animation:x>0?'pwmMix':'pwmLevel',axis:'z'}}><Pin p={[0,0,0]} r={.092} h={.070} c={dark}/><Box p={[0,.035,.041]} s={[.016,.057,.012]} c={white}/></group>)}</Body>}</group>;
 }
+/** The lightweight fan uses the same scale, open throat and under-cover wiring side as the Blender fitting. */
+function FanShell({half,throat,depth}:{half:number;throat:number;depth:number}){
+ const geometry=geo('fan-panel'+[half,throat,depth].join(),()=>{
+   const outline=new THREE.Shape();
+   const corner=.046;
+   outline.moveTo(-half+corner,-half);outline.lineTo(half-corner,-half);outline.quadraticCurveTo(half,-half,half,-half+corner);
+   outline.lineTo(half,half-corner);outline.quadraticCurveTo(half,half,half-corner,half);
+   outline.lineTo(-half+corner,half);outline.quadraticCurveTo(-half,half,-half,half-corner);
+   outline.lineTo(-half,-half+corner);outline.quadraticCurveTo(-half,-half,-half+corner,-half);
+   const opening=new THREE.Path();opening.absarc(0,0,throat,0,Math.PI*2,true);outline.holes.push(opening);
+   return new THREE.ExtrudeGeometry(outline,{depth,bevelEnabled:false,curveSegments:32});
+ });
+ return <mesh geometry={geometry} material={mat(white)}/>;
+}
+function BathroomExtractor({view,authoring}:EquipmentProps){
+ const showCover=authoring||view!=='cutaway';
+ return <group position={[0,.88,0]}>
+   <Body id="mounting" detail="xf-base" purpose="Four fixing holes hold the fan against the wall."><FanShell half={.78} throat={.467} depth={.022}/></Body>
+   <Body detail="xf-spigot" purpose="The duct fits over this round outlet at the back."><mesh position={[0,0,-.225]} rotation={[Math.PI/2,0,0]} material={mat('#b1b6b8')} geometry={geo('xf-spigot',()=>new THREE.CylinderGeometry(.49,.49,.45,48,1,true))}/></Body>
+   <group position={[0,0,.06]} userData={{partId:'rotor',detailId:'xf-impeller',animation:'rotor',axis:'z',speed:11}}>
+     <Pin p={[0,0,0]} r={.175} h={.12} c="#a8bbc1"/>
+     {[0,1,2,3,4].map(i=><group key={i} rotation={[0,0,i*Math.PI*2/5]}><group rotation={[.26,0,.15]}><Box p={[.295,0,0]} s={[.32,.20,.015]} c="#a8bbc1"/></group></group>)}
+   </group>
+   {showCover&&<group position={view==='open'&&!authoring?[1.2,.15,.35]:view==='exploded'&&!authoring?[.5,.5,.65]:[0,0,0]}><Body id="cover" detail="xf-intake" purpose="The fixed grille keeps the turning blades behind the spokes.">
+     <group position={[0,0,.02]}><FanShell half={.815} throat={.48} depth={.25}/></group>
+     <mesh position={[0,0,.263]} material={mat(white)} geometry={geo('xf-ring',()=>new THREE.TorusGeometry(.375,.010,8,72))}/>
+     <Pin p={[0,0,.263]} r={.238} h={.045} c={white}/>
+     {[0,1,2,3].map(i=><group key={i} rotation={[0,0,i*Math.PI/2]}><Box p={[.36,0,.252]} s={[.25,.018,.052]}/></group>)}
+     {[-.69,.69].map(x=><Pin key={x} p={[x,0,.275]} r={.044} h={.012} c={white}/>)}
+   </Body></group>}
+ </group>;
+}
 export function WorkshopGeometry(props:EquipmentProps){
  const c=props.component;
+ if(c.type==='fan'&&c.variant==='xf100s')return <BathroomExtractor {...props}/>;
  if(c.type==='pushbutton'&&c.variant==='sesame')return <group>
    <Body id="cover" detail="sesame-cover" purpose="The white cover clips over the switch and hides the wall fixing screws.">
      <Box p={[0,.55,.192]} s={[.48,1.10,.216]} c={white} rad={.018}/>

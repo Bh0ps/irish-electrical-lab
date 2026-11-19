@@ -291,9 +291,11 @@ add('floatvalve','Three-point valve actuator','Heating','valve','OPEN and CLOSE 
 add('proximity','Three-wire PNP proximity sensor','Controls','sensor','This sensor detects nearby metal. With its DC supply on, the black wire goes positive when metal reaches the sensor.',['+','OUT','-'],{ratedVoltage:24,minVoltage:10,maxVoltage:30,active:false},['sensing','electronics'],[.74,1.65,.74],['DC+','control','DC-'],'Try moving the metal target in and out. The bench checks whether the sensor switches. It does not measure the distance at which a real sensor would switch.');
 // Physical forms share stable electrical terminals and differ only in presentation.
 const physicalForms:Record<string,{id:string;name:string}[]>={
+  fan:[{id:'xf100s',name:'100 mm bathroom extractor'}],
   pwmcontrol:[{id:'single-channel',name:'Single-channel PWM'},{id:'tunable-white',name:'Warm / cool controller'}],
   led:[{id:'strip',name:'Constant-voltage strip'},{id:'series-module',name:'Series downlight module'}],
   switch:[{id:'door-contact',name:'Door-operated contact'}],selector:[{id:'float-changeover',name:'Changeover float switch'}],
+  isolator3:[{id:'fan-isolator',name:'Three-pole fan isolator'}],
   pushbutton:[{id:'sesame',name:'Two-wire bell push'},{id:'bell-push',name:'Three-contact push'}], driver:[{id:'constant-current',name:'350 mA driver'}],
   terminal:[{id:'lever-connector',name:'Lever connector'},{id:'comb-busbar',name:'Insulated single-phase comb'}], fuse:[{id:'dc-fuse',name:'DC branch carrier'}],
   panel:[{id:'domestic',name:'Domestic consumer unit'},{id:'industrial',name:'Industrial cabinet'}],
@@ -304,13 +306,26 @@ const physicalForms:Record<string,{id:string;name:string}[]>={
 };
 for(const def of defs)if(physicalForms[def.type])def.variants=physicalForms[def.type];
 export const COMPONENTS: Record<string,ComponentDefinition> = Object.fromEntries(defs.map(d=>[d.type,d]));
+const xf100sDefinition:ComponentDefinition={
+  ...COMPONENTS.fan,name:'100 mm bathroom extractor',size:[1.63,1.695,.75],
+  defaults:{watts:15,nominalVoltage:230,classII:true},
+  parts:COMPONENTS.fan.parts.filter(p=>p.id!=='electronics'),
+  terminals:getComponentTerminals({type:'fan',variant:'xf100s',label:'',params:{}},COMPONENTS.fan),
+};
 const sesameDefinition:ComponentDefinition={
   ...COMPONENTS.pushbutton,
   name:'Two-wire bell push',
   terminals:getComponentTerminals({type:'pushbutton',variant:'sesame',label:'',params:{}},COMPONENTS.pushbutton),
 };
-/** Some fittings in a family have fewer contacts than the workshop changeover button. */
+const fanIsolatorDefinition:ComponentDefinition={
+  ...COMPONENTS.isolator3, name:'Three-pole fan isolator',defaults:{...COMPONENTS.isolator3.defaults,currentRating:10},
+  description:'One rocker disconnects the permanent line, switched line and neutral together. The light switch can still operate the bathroom light.',
+  size:[.86,.90,.244],terminals:getComponentTerminals({type:'isolator3',variant:'fan-isolator',label:'',params:{}},COMPONENTS.isolator3),
+};
+/** Named fittings can have their own terminal groups and mounting envelope. */
 export function definitionFor(item:Pick<ComponentInstance,'type'|'variant'>):ComponentDefinition {
+  if(item.type==='fan'&&item.variant==='xf100s')return xf100sDefinition;
+  if(item.type==='isolator3'&&item.variant==='fan-isolator')return fanIsolatorDefinition;
   return item.type==='pushbutton'&&item.variant==='sesame'?sesameDefinition:COMPONENTS[item.type];
 }
 
@@ -318,6 +333,8 @@ export const COMPONENT_LIST = defs;
 export const getComponent = (type:string) => COMPONENTS[type];
 
 const variantPurpose: Record<string, string> = {
+  'fan:xf100s':'Air comes in through the front grille and leaves through the round duct at the back. Under the cover are two motor connections, L and N. This double-insulated fan has no earth terminal. In the bathroom job a separate timer keeps it running.',
+  'isolator3:fan-isolator': fanIsolatorDefinition.description,
   'switch:door-contact': 'The door moves this switch. Try opening and closing the door and watch what happens to the circuit.',
   'selector:float-changeover': 'The water level moves the float. Its common wire (COM) switches from one output wire to the other.',
   'driver:constant-current': 'This driver adjusts its output voltage to keep the current through the LEDs steady, within its working range. Check the current rating on the driver.',
@@ -348,7 +365,13 @@ export function connectedTerminalMissing(doc:CircuitDocument,replacement:Compone
 export function applyEquipmentVariant(item:ComponentInstance,variant:string|undefined):ComponentInstance{
   if(item.variant===variant)return item;
   let params=item.params;
-  if(item.type==='driver'&&(variant==='constant-current'||item.variant==='constant-current')){
+  if(item.type==='fan'&&(variant==='xf100s'||item.variant==='xf100s')){
+    const defaults=variant==='xf100s'?xf100sDefinition.defaults:COMPONENTS.fan.defaults;
+    params={...params,...defaults};
+    if(variant!=='xf100s')delete params.classII;
+    if('ratedVoltage' in params)params.ratedVoltage=defaults.nominalVoltage;
+    if('power' in params)params.power=defaults.watts;
+  }else if(item.type==='driver'&&(variant==='constant-current'||item.variant==='constant-current')){
     params=variant==='constant-current'
       ?{...params,mode:'constant-current',outputCurrent:.35,outputVoltage:30,maxPower:15}
       :{...params,mode:'constant-voltage',outputVoltage:24,maxPower:120};
