@@ -22,7 +22,7 @@ interface Props {
   onActivityChange: (activity: LessonActivity | undefined) => void; onTarget: (activity: LessonActivity) => void;
   onAttempt: (activity: LessonActivity, success: boolean) => void; onMeasure: (activity: LessonActivity) => void;
   onBuild: () => void; onTest: () => void; onChallenge: () => void; onStudied: () => void; onReference: (url: string) => void;
-  onStageChange?: (stageId: LessonStageId) => void;
+  onStageChange?: (stageId: LessonStageId, putToolsAway: boolean) => void;
   onRecord?: () => void;
   wireAddition?: GuidedWireAddition;
   onUndoWire?: (addition: GuidedWireAddition) => boolean;
@@ -102,8 +102,11 @@ export default function LearningPanel(props: Props) {
   }, [activity, currentAccepted, onAttempt, props.document, props.evidence, props.result, stateKey]);
   const lampVoltage = bookLampVoltage(props.document, props.result);
   const lampReadingPending = !props.result || props.result.revision !== props.document.revision;
-  const switchClosed = props.document.components.find(c => c.id === 'switch')?.params.closed;
+  const wallSwitch = props.document.components.find(c => c.id === 'switch' && c.type === 'switch');
+  const switchClosed = wallSwitch && Boolean(wallSwitch.params.closed ?? COMPONENTS.switch.defaults.closed);
   const switchStep = activity?.bookStep === 'switch-on' || activity?.bookStep === 'switch-off';
+  const lampMeterStep = activity?.bookStep === 'meter-demo';
+  const tryPredictionAtLamp = course && activity?.kind === 'predict' && activities[index+1]?.bookStep === 'meter-demo';
   const startingClosed = activity?.bookStep === 'switch-off';
   const measuringDimmer = activity?.bookStep === 'dimmer';
   const dimmerLevel = Number(props.document.components.find(c => c.id === 'dimmer')?.params.level);
@@ -122,10 +125,10 @@ export default function LearningPanel(props: Props) {
       setFeedback(`Lamp power increased from ${low.watts.toFixed(1)} to ${dimmerWatts.toFixed(1)} watts.`);
     }
   },[measuringDimmer,dimmerWatts,dimmerLevel,low,props.document,dimmerGraph,stateKey,activity,onAttempt]);
-  const circuitApartFromSwitch = useMemo(() => !switchStep ? '' : electricalKey({
+  const circuitApartFromSwitch = useMemo(() => !switchStep && !lampMeterStep ? '' : electricalKey({
     ...props.document, components: props.document.components.map(c => c.id === 'switch'
       ? {...c,params:{...c.params,closed:true}} : c),
-  }), [switchStep, props.document]);
+  }), [switchStep, lampMeterStep, props.document]);
   useEffect(() => {
     if (!switchStep || lampVoltage === null || !props.document.supply.enabled) return;
     const atStart = startingClosed ? lampVoltage >= props.document.supply.voltage * .9 : lampVoltage <= 1;
@@ -150,7 +153,8 @@ export default function LearningPanel(props: Props) {
   useLayoutEffect(() => { stageChangeRef.current = onStageChange; }, [onStageChange]);
   useLayoutEffect(() => { currentDocument.current = props.document; }, [props.document]);
   useEffect(() => { onActivityChange(activity); }, [activity, onActivityChange]);
-  useEffect(() => { stageChangeRef.current?.(stageId); }, [stageId]);
+  const putToolsAway = course && (activity?.kind === 'explain' || activity?.bookStep === 'finish');
+  useEffect(() => { stageChangeRef.current?.(stageId,putToolsAway); }, [stageId,putToolsAway]);
   useEffect(() => {
     if (!guidedSession || guidedSession === seenGuidedSession.current) return;
     seenGuidedSession.current = guidedSession;
@@ -223,7 +227,7 @@ export default function LearningPanel(props: Props) {
     const success = evaluated.status === 'pass';
     const question = activity.kind === 'predict' || activity.kind === 'explain';
     setFeedback(question && evaluated.status === 'fail'
-      ? `Try again. ${evaluated.explanation}`
+      ? tryPredictionAtLamp ? 'Try the meter across the lamp. See what changes when you open the switch.' : `Try again. ${evaluated.explanation}`
       : question && success ? `That’s right. ${evaluated.explanation}` : evaluated.explanation);
     setAccepted(success); setCheckedState(stateKey);
     if (evaluated.status === 'pass' || evaluated.status === 'fail') props.onAttempt(activity, success);
@@ -246,7 +250,7 @@ export default function LearningPanel(props: Props) {
   const stepCount = course ? activities.length : stage.activities.length;
   const primaryLabel = activity.bookStep === 'finish' ? (nextLesson ? `Next: ${COURSE_PAGES[nextLesson].title}` : 'Return to the first chapter')
     : starterText || (measuringDimmer && !currentAccepted ? (low ? 'Set dimmer to 90%' : 'Set dimmer to 25%')
-    : bookReading ? (activity.bookStep === 'intro' ? 'Try the circuit' : 'Continue')
+    : bookReading ? (activity.bookStep === 'intro' ? 'Try the circuit' : lampMeterStep ? 'Try the probes yourself' : 'Continue')
     : primaryAction === 'next' ? (last ? 'Review lesson' : 'Next step')
     : primaryAction === 'build' ? 'Start guided build'
       : primaryAction === 'challenge' ? 'Start fault exercise'
@@ -319,10 +323,9 @@ export default function LearningPanel(props: Props) {
       {props.lesson.id>=65&&activity.kind==='operate'&&!!activity.expectedObservations?.length&&<ExtraLowVoltageReading lesson={props.lesson.id} activity={activity} doc={props.document} result={props.result} change={props.onPulseSetting}/>}
       {activity.bookStep === 'contact' && <ContactDiagram closed={switchClosed === true} lampLit={lampVoltage===null ? undefined : props.result?.deviceStates.light?.energized} onOperate={()=>props.onOperateComponent?.('switch')}/>}
       {measuringDimmer && <p className="meter-demo"><b>Lamp power</b><br/>25% · {low ? low.watts.toFixed(1)+' W' : 'Waiting for reading'}<br/>90% · {low && Math.abs(dimmerLevel-.9)<.001 && dimmerWatts!==undefined ? dimmerWatts.toFixed(1)+' W' : 'Waiting for reading'}</p>}
-      {activity.bookStep === 'meter-demo' && <div className="meter-demo"><p><strong>L</strong> · lamp line &nbsp; ↔ &nbsp; <strong>N</strong> · lamp neutral</p>
-        <output>{lampVoltage === null ? lampReadingPending ? 'Waiting for the meter' : 'Reading unavailable' : `${lampVoltage.toLocaleString('en-IE',{maximumFractionDigits:0})} volts (V)`}</output>
-        {!lampReadingPending && <p>{lampVoltage === null ? 'The meter can’t give a voltage here. Check where both probes are touching.' : lampVoltage <= 1 ? 'The two probe tips are at about the same voltage.' : 'This is the voltage between the two probe tips.'}</p>}
-        <details><summary>Zero, OL and an unavailable reading</summary><p>0 V means the meter sees no voltage difference between the probe tips. On the ohms setting, OL means the path is broken or the resistance is too high for the meter to read. “Reading unavailable” means the bench couldn’t work out a value.</p></details></div>}
+      {lampMeterStep && <LampMeterDemo key={circuitApartFromSwitch} volts={lampVoltage} pending={lampReadingPending}
+        switchOn={switchClosed} supplyOn={props.document.supply.enabled}
+        onOperate={() => props.onOperateComponent?.('switch')}/>}
       {connectionNotice && <div className="task-feedback success" role="status" data-guided-connection-checked>{connectionNotice}<span className="sr-only"> Next step: {activity.title}</span></div>}
       {feedback && (!wireToUndo || wireToUndo.circuitId===props.document.id && wireToUndo.revision===props.document.revision) && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
         {accepted && !currentAccepted ? 'The circuit has changed. Check this step again.' : feedback}
@@ -339,7 +342,7 @@ export default function LearningPanel(props: Props) {
       <div className="task-support-actions">
         {index > 0 && <Button onClick={() => go(index - 1)} variant="ghost" size="sm"><ArrowLeft size={14} />Back</Button>}
         {activity.bookStep !== 'finish' && <Button variant="ghost" size="sm" onClick={helpLevel === 3 ? () => setHelpLevel(0) : showHelp}><Eye size={14}/>{helpLevel === 0 ? 'Help' : helpLevel === 1 && canLocate ? 'Show me where' : helpLevel < 3 ? 'Worked example' : 'Hide help'}</Button>}
-        {activity.kind === 'predict' && !currentAccepted && <Button variant="link" size="sm" onClick={() => go(index+1)}>I’m not sure — let me try</Button>}
+        {activity.kind === 'predict' && !currentAccepted && <Button variant="link" size="sm" onClick={() => go(index+1)}>{tryPredictionAtLamp && feedback ? 'Try it on the meter' : 'I’m not sure — let me try'}</Button>}
       </div>
       {helpLevel > 0 && <p className="task-feedback" role="status">{helpLevel === 1 ? clue : helpLevel === 2 ? (targetName ? `Look for the highlighted part on ${targetName}.` : 'Look for the highlighted terminal.') : activity.explanation}</p>}
       {helpLevel > 0 && <TermsInThisStep text={activity.title + ' ' + activity.instruction}/>}
@@ -376,6 +379,30 @@ export default function LearningPanel(props: Props) {
       <details className="references"><summary>Sources and model limits</summary>{props.lesson.references.map(reference => <button type="button" key={reference.url} onClick={() => props.onReference(reference.url)}>{reference.title}</button>)}<p>The checks in this lesson apply to the circuit on your bench.</p></details>
     </details>
   </>;
+}
+
+function LampMeterDemo({volts,pending,switchOn,supplyOn,onOperate}:{
+  volts:number|null;pending:boolean;switchOn?:boolean;supplyOn:boolean;onOperate:()=>void;
+}) {
+  const [before,setBefore] = useState<{on:boolean;volts:number}>();
+  const showVolts = (value:number) => value.toLocaleString('en-IE',{maximumFractionDigits:0});
+  const compare = before && before.on !== switchOn && volts !== null;
+  function pressSwitch() {
+    if (switchOn === undefined) return;
+    if (volts !== null) setBefore({on:switchOn,volts});
+    onOperate();
+  }
+  return <div className="meter-demo lamp-meter">
+    <p className="lamp-probe-key"><span>Red probe · <strong>L</strong> (line)</span><span>Black probe · <strong>N</strong> (neutral)</span></p>
+    <div className="lamp-meter-result" aria-live="polite">
+      {switchOn !== undefined && <span>Switch {switchOn ? 'on' : 'off'}</span>}
+      <output>{volts === null ? pending ? 'Waiting for the meter' : 'Reading unavailable' : `${showVolts(volts)} volts (V)`}</output>
+      {compare && <small>Switch {before.on ? 'on' : 'off'} was {showVolts(before.volts)} V.</small>}
+    </div>
+    {switchOn !== undefined && <Button variant="outline" size="sm" onClick={pressSwitch}>Turn the switch {switchOn ? 'off' : 'on'}</Button>}
+    {!supplyOn ? <p>The bench supply is off.</p> : !pending && volts === null && <p>Check that both lamp terminals have a connection to the circuit.</p>}
+    <details><summary>What does the reading mean?</summary><p>0 V means there’s no voltage difference between these two probe tips. It doesn’t prove the fitting is safe to touch. On the ohms setting, OL means the path is broken or the resistance is too high to read. If the bench can’t work out a voltage, it shows “Reading unavailable”.</p></details>
+  </div>;
 }
 
 function ContactDiagram({closed,lampLit,onOperate}:{closed:boolean;lampLit?:boolean;onOperate:()=>void}) {

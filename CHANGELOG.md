@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.0 — At the switch
+
+- Try the hall switch with the probes on the lamp, then place the probes yourself. If you measure a different pair, the lesson tells you which terminals you picked. The meter folds away when you move on to your answer.
+- The wiring notes, questions and test reports use the names on the fittings. A missing wire names both ends. A missing earth on the hall light shows what the lamp actually did.
+- Turn over the one-way dimmer to see its two recessed wire entries, fixing lugs and rating label. The original Blender model follows the VARILIGHT HQ1A data sheet and photographs.
+- Walk to the back door to try the garden bell push. Select its wire to follow the same route on the house drawing.
+- If an offline download stops, the app keeps the files it has checked and offers Resume. A brief server error gets an automatic retry.
+
 ## 1.8.1 — At the workbench
 
 - The 80 lessons use practical fitting names and shorter instructions. The notes on a 350 mA driver describe what happens to its current. The door contact and float switch each have their own explanation.

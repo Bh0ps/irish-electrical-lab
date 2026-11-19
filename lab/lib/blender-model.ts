@@ -186,7 +186,7 @@ export function animateBlenderModel(presentation:AssetPresentation,component:Com
       moving ||= motion.node.position.distanceToSquared(destination)>1e-8;
       continue;
     }
-    const target=animation==='valvePosition'?-Math.PI*.5*Number(state?.level??0):animation==='pwmLevel'||animation==='pwmMix'?(Number(component.params[animation==='pwmMix'?'mix':'level']??.5)-.5)*-4.0:animation==='testerDial'?-THREE.MathUtils.clamp(Number(component.params.dialPosition??0),0,3)*.55:animation==='dimmer'?(THREE.MathUtils.clamp(Number(component.params.level??.65),0,1)-.5)*4:animation==='valve'?(active?Number(data.onAngle??.6):Number(data.offAngle??-.6)):closed?Number(data.onAngle??-.115):Number(data.offAngle??.115);
+    const target=animation==='valvePosition'?-Math.PI*.5*Number(state?.level??0):animation==='pwmLevel'||animation==='pwmMix'?(Number(component.params[animation==='pwmMix'?'mix':'level']??.5)-.5)*-4.0:animation==='testerDial'?-THREE.MathUtils.clamp(Number(component.params.dialPosition??0),0,3)*.55:animation==='dimmer'?((closed?THREE.MathUtils.clamp(Number(component.params.level??.65),0,1):0)-.5)*4:animation==='valve'?(active?Number(data.onAngle??.6):Number(data.offAngle??-.6)):closed?Number(data.onAngle??-.115):Number(data.offAngle??.115);
     if(immediate)motion.current=target;else motion.current=THREE.MathUtils.lerp(motion.current,target,1-Math.exp(-Math.min(dt,.05)*18));
     motion.node.quaternion.copy(motion.quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(axis,motion.current-motion.angle));
     moving ||= Math.abs(motion.current-target)>.001;

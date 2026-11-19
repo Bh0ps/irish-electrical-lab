@@ -1,9 +1,8 @@
 import { COURSE_BOARD_ID,COURSE_BOND_ID } from './board-examples';
-import { COMPONENTS } from './components';
-import { getComponentTerminals } from './terminal-layout';
+import { describeEndpoint } from './endpoint-description';
 import { runLessonScenarios } from './scenarios';
 import { matchLessonWires } from './wire-connections';
-import { endpointKey, type CircuitDocument, type SimulationResult, type Wire } from './types';
+import { endpointKey, type CircuitDocument, type Diagnostic, type SimulationResult, type Wire } from './types';
 
 export interface CheckReading { value:number; unit:'V'|'A'|'W' }
 export interface AssessmentCheck {
@@ -13,28 +12,40 @@ export interface AssessmentCheck {
 export interface BuildAssessment {
   revision: number; circuitId: string; passed: boolean; summary: string; checks: AssessmentCheck[];
 }
-function terminalName(document: CircuitDocument, key: string) {
-  const item = document.components.find(c => key.startsWith(c.id + '.'));
-  if (!item) return key;
-  const id=key.slice(item.id.length + 1), terminal=getComponentTerminals(item,COMPONENTS[item.type]).find(t=>t.id===id);
-  return `${item.label} · ${terminal?.label??id}`;
+function wireEnds(document: CircuitDocument, wire: Wire) {
+  return [wire.from, wire.to].map(end => describeEndpoint(document, end)?.label ?? endpointKey(end)).join(' to ');
 }
-function wireName(document: CircuitDocument, wire: Wire) {
-  return [terminalName(document, endpointKey(wire.from)), terminalName(document, endpointKey(wire.to))].join(' ↔ ');
+
+/** An earth-path warning and the lamp's operating state answer different questions. */
+export function explainFinding(document: CircuitDocument, result: SimulationResult, finding: Diagnostic): string {
+  if (!finding.id.startsWith('cpc:')) return finding.explanation;
+  const item = document.components.find(c => c.id === finding.component);
+  if (!item) return finding.explanation;
+  const power = result.deviceStates[item.id]?.lightOutputPower;
+  const path = 'Its earth terminal (PE) has no path back to the supply earth.';
+  if (result.revision === document.revision && result.converged && typeof power === 'number' && Number.isFinite(power)) {
+    if (power === 0) return `${item.label} is off. ${path}`;
+    const watts = power < .1 ? 'less than 0.1' : Number(power.toFixed(1));
+    return `${item.label} is drawing ${watts} W. ${path}`;
+  }
+  return `${item.label} has no path from its earth terminal (PE) back to the supply earth.`;
 }
 
 /** Exact guided-template matching is separate from electrical operating behaviour. */
 export function assessConnections(document: CircuitDocument, expected: CircuitDocument): AssessmentCheck[] {
   const checks: AssessmentCheck[] = [];
   const check = (id: string, passed: boolean, title: string, explanation: string, target: {component?: string; wire?: string} = {}) => checks.push({id, category:'objectives', status: passed ? 'pass' : 'fail', title, explanation, ...target});
-  for (const c of expected.components.filter(c=>c.id!==COURSE_BOARD_ID)) check(`equipment:${c.id}`, document.components.some(x => x.id === c.id && x.type === c.type), `${c.label}: equipment`, document.components.some(x => x.id === c.id && x.type === c.type) ? 'This fitting is on the bench.' : `Restore the required ${COMPONENTS[c.type]?.name ?? c.type}.`, {component:c.id});
+  for (const c of expected.components.filter(c=>c.id!==COURSE_BOARD_ID)) {
+    const present = document.components.some(x => x.id === c.id && x.type === c.type);
+    check(`equipment:${c.id}`, present, c.label, present ? 'On the bench.' : `This build is missing ${c.label}.`, {component:c.id});
+  }
   const { matches, extras } = matchLessonWires(document.wires, expected.wires.filter(w=>w.id!==COURSE_BOND_ID||document.components.some(c=>c.id===COURSE_BOARD_ID)));
   for (const { expected: w, actual: present } of matches) {
-    check(`connection:${w.id}`, !!present, 'Required terminal connection', present ? wireName(document, present) : `Missing: ${wireName(expected, w)}.`, {component:w.to.component, wire:present?.id});
-    if (present && present.role !== w.role) check(`identity:${present.id}`, false, 'Check the wire marking', `${wireName(document, present)} is marked ${present.role}. This step calls for ${w.role}. The two ends are in the right place.`, {wire:present.id});
+    check(`connection:${w.id}`, !!present, present ? 'Wire connected' : 'Wire missing', present ? wireEnds(document, present) : `Connect ${wireEnds(expected, w)}.`, {component:w.to.component, wire:present?.id});
+    if (present && present.role !== w.role) check(`identity:${present.id}`, false, 'Check the wire marking', `The wire from ${wireEnds(document, present)} is in the right place. It’s marked ${present.role}. The drawing calls for ${w.role}.`, {wire:present.id});
   }
-  for (const w of extras) check(`extra:${w.id}`, false, 'Extra connection in the guided circuit', `Your wire joins ${wireName(document, w)}. The lesson drawing leaves this connection out.`, {wire:w.id});
-  for (const f of document.faults.filter(f => f.enabled)) check(`fault:${f.type}:${f.wire ?? f.component}`, false, 'Study fault is still enabled', `Repair the injected ${f.type} fault before completing the build.`, {wire:f.wire, component:f.component});
+  for (const w of extras) check(`extra:${w.id}`, false, 'Extra connection', `Your wire runs from ${wireEnds(document, w)}. There’s no wire between these terminals in the lesson drawing.`, {wire:w.id});
+  for (const f of document.faults.filter(f => f.enabled)) check(`fault:${f.type}:${f.wire ?? f.component}`, false, 'Practice fault still present', 'The fault on the bench still needs a repair.', {wire:f.wire, component:f.component});
   return checks;
 }
 
@@ -70,7 +81,7 @@ export function assessBuild(document: CircuitDocument, result: SimulationResult,
   }
   if (current) {
     const failures = result.diagnostics.filter(d => d.severity !== 'info');
-    for (const d of failures) check(`finding:${d.id}`, d.category, false, d.title, d.explanation, {component:d.component, wire:d.wire});
+    for (const d of failures) check(`finding:${d.id}`, d.category, false, d.title, explainFinding(document, result, d), {component:d.component, wire:d.wire});
     const protective = failures.filter(d => d.category === 'protection');
     if (!protective.length) check('protective-paths', 'protection', true, 'Earth path check', 'The simulator found no fault in the earth paths it checks.');
   }

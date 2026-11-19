@@ -16,6 +16,7 @@ export interface FixturePose {
   tape?: boolean;
   batten?: boolean;
   board?: boolean;
+  bellPush?: boolean;
   flushPlate?: boolean;
 }
 
@@ -28,6 +29,10 @@ export function isStrip(c: ComponentInstance) {
  * No dimensions or rotations here affect the bench's electrical endpoints. */
 export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboard: boolean): FixturePose | undefined {
   if (c.mount) return;
+  if (backWall && c.variant === 'bell-push') {
+    // D723W Pushlite envelope. The model's base is at z=-.220, button face at z=.308.
+    return {scale:[.042/.880,.060/1.2825,.019/.528],bellPush:true};
+  }
   if (c.type === 'gammaboard' || c.type === 'invictaboard') return { scale: [.05, .05, .05], board:true };
   if (cupboard && c.variant === 'door-contact') {
     // Catalog body height 1.188 and width .474. Roll places the wired half on the fixed right stile.

@@ -95,6 +95,7 @@ function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15,
 }
 function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,height:number):SitePose{
   const p=item?.position??[0,1.3,-2.5];
+  if(close&&item?.fixture?.bellPush)return {position:[p[0]+.024,p[1]+.05,p[2]+.23],yaw:.10,pitch:-.08};
   if(id===24&&item?.id==='shaver')return {position:[p[0]-.09,p[1]+.098,p[2]+(close?.31:.51)],yaw:close?-.27:-.17,pitch:-.03};
   if(item?.fixture?.board){
     const distance=height*(close?1.63:2.28);
@@ -258,7 +259,7 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
     {!lost&&visible.some(item=>unavailable.has(item.id))&&<div className="site-model-error" role="status" aria-live="polite">Equipment model unavailable. <button onClick={onList}>Use equipment list</button></div>}
     {lost&&<div className="site-unavailable" role="status"><p>Graphics paused. Your circuit is saved in the workbench.</p><button onClick={()=>{setLost(false);setLoadedKey(n=>n+1);}}>Restart site</button><button onClick={onList}>Equipment list</button></div>}
     <div className="site-location"><span className="location-dot"/>{site.building.name} <span> / </span> {site.location(walking||roomVisit?walkRoom:(selectedItem?.room??site.room))}</div>
-    {!lost&&(wire||[1,2,3,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61].includes(doc.lessonId??0))&&
+    {!lost&&(wire||[1,2,3,17,18,19,20,21,22,23,35,36,37,39,40,44,45,61,71,72].includes(doc.lessonId??0))&&
       <SiteCablePeek doc={doc} site={site} selected={selectedId} wireId={wire} onChange={onPeek} visit={jumpTo} plan={onPlan}/>}
     <div className="site-actions">
       <button className={walking?'chosen':''} aria-pressed={walking} onClick={toggleWalk}><Footprints size={17}/>{walking?'Finish walk':'Walk'}</button>

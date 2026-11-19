@@ -133,6 +133,9 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
     if(port)return {...make(t,port.anchor,port.direction,.64),label:port.marking};
     // BG 824 and 851. Coordinates in millimetres from the plate centre, seen
     // from the front. The two earth entries are electrically common.
+    // HQ1A, viewed from the front. The wire sits in the brass insert
+    // below the mouth of each recessed window. Either terminal can take the feed.
+    if(k==='dimmer')return make(t,[t.id==='COM'?.082:-.041,.297,-.113],[0,0,-1],.42);
     if(k==='shaveroutlet')return make(t,[t.id==='L'?.14:-.14,1,-.135],[0,0,-1],.43);
     if (k==='socket'||k==='fcu') {
       const positions:Record<string,Vec3> = k==='socket'

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
-import {HOME_BACK,HOME_DOORS,HOME_WALLS,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
+import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,REAR_GARDEN,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
 import {houseFixing,installedWireRoute} from '../lib/house-installation';
 import {getComponentTerminals} from '../lib/terminal-layout';
@@ -81,4 +81,34 @@ test('the two-way switch rockers face separate level landings at the same local 
     assert.ok(height>1.00&&height<1.20);heights.push(height);
   }
   assert.ok(near(heights[0],heights[1]));assert.ok(runLessonScenarios(doc).every(r=>r.status==='pass'));
+});
+test('visitors press each bell from outside and both wires enter through the wall behind the push',()=>{
+  for(const [id,backId] of [[71,'rear'],[72,'back']] as const){
+    const doc=lesson(id),site=jobSite(doc);
+    assert.equal(site.location(0),'Kitchen');
+    for(const name of ['front',backId]){
+      const c=doc.components.find(c=>c.id===name)!,item=site.items.find(i=>i.id===name)!;
+      const fixing=houseFixing(id,c)!,outward=Math.cos(item.rotation);
+      assert.ok(item.fixture?.bellPush);
+      assert.equal(item.room,name==='front'?3:REAR_GARDEN.id);
+      assert.equal(outward,name==='front'?1:-1);
+      assert.ok(near(item.fixture!.scale[1]*1.2825,.060));
+      assert.ok(near(item.position[2]-outward*.220*item.fixture!.scale[2],fixing.face[2]));
+      if(name===backId){
+        assert.ok(fixing.face[2]<HOME_BACK);
+        assert.ok(GARDEN_DOOR.centre-GARDEN_DOOR.width/2-fixing.face[0]>.06);
+        assert.ok(fixing.face[0]>-3.7+2.05/2+.06);
+      }
+      const wires=doc.wires.filter(w=>w.from.component===name||w.to.component===name);
+      assert.equal(wires.length,2);
+      for(const w of wires){
+        const path=installedWireRoute(doc,site,w)!;
+        if(w.to.component===name)path.reverse();
+        assert.ok((path[1][2]-fixing.face[2])*outward<-.06);
+        assert.ok(path[2][1]>2.9);
+        if(name===backId)assert.ok(path.some(p=>near(p[2],HOME_BACK-.04)&&p[1]>2.9));
+      }
+    }
+    assert.ok(runLessonScenarios(doc).every(step=>step.status==='pass'));
+  }
 });

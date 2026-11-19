@@ -85,8 +85,8 @@ export function getCoursebookActivities(lesson: ConfigurationLesson): LessonActi
     {...key('operate:sequence:1'),title:page.title,instruction:'Turn the light back on.',bookStep:'switch-on'},
     book('contact', 'Inside the wall switch', page.idea, { bookStep:'contact',component:'switch',part:'contacts' }),
     key('predict'),
-    book('meter-demo', 'Read the lamp voltage', 'The probe tips are on the lamp’s two terminals, L and N. The meter shows the voltage between them.', {bookStep:'meter-demo',component:'light'}),
-    {...key('measure:voltage'), instruction:'Put one probe on L and the other on N at the lamp. Record your reading.', independentMeasurement:true},
+    book('meter-demo', 'Try the switch with the meter connected', 'The probes are on the lamp. Leave them there and try the switch both ways.', {bookStep:'meter-demo',component:'light'}),
+    {...key('measure:voltage'), title:'Measure the hall light yourself', instruction:'Put one probe on L and the other on N at the lamp. Record your reading.', independentMeasurement:true},
     key('explain'), finish,
   ];
   const missing = new Set(courseBuildWires(lesson).map(w => w.id));

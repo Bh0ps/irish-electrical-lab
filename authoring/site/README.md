@@ -2,6 +2,8 @@
 
 The site camera uses the same local equipment GLBs and simulation state as the workbench. A site fixing converts the magnified bench part into the installed envelope. Mounted breakers and bars inherit the scale of the board they occupy. Opening a shield, changing camera, lifting the cupboard door or selecting a diagram pin preserves the underlying circuit.
 
+The two entrance bell lessons use the same house as the socket lessons. The front push sits beside the front door. The rear push faces the garden beside a glazed door from the sitting room. Follow either wire to see it turn into the wall behind its push. The door location belongs to the training house. The original push model uses the 60 × 42 × 19 mm envelope of the D723W Pushlite as a size reference. Its working contacts come from the lab’s pushbutton model. [Honeywell Home distribution catalogue, p. 84](https://homecomfort.resideo.com/sites/Europe/en-gb/Documents/catalogue-distribution-2019.pdf)
+
 | Detail | Reference and scope |
 | --- | --- |
 | Domestic and commercial boards | The Gamma shell measures 250 × 375 × 103 mm. The Invicta shell measures 465 × 500 × 132.5 mm. Handles, hinges and an open door can extend past the shell. Both sit against the wall. [Hager SBE8101](https://assets.hager.com/step-content/P/PDS_159097253001EN/Document/std.lang.all/SBE8101_3001_en-GB.pdf) · [Hager JK104B](https://assets.hager.com/step-content/P/PDS_159865522001EN/Document/std.lang.all/JK104B_2001_en-GB.pdf) |

@@ -274,6 +274,33 @@ function ProtectionModel() {
     <Rails p={[0, .59, -.31]} width={width + .08} />
   </>;
 }
+// Lightweight outline while the Blender fitting loads. Like the full model it
+// uses the wall face as z=0 and leaves both wire windows clear at the rear.
+function RotaryDimmer() {
+  const {props}=useModel();
+  const level=props.component.params.closed===false?0:Number(props.component.params.level??.65);
+  return <>
+    <Cover custom p={[0,.46,.096]}><RB s={[.85,.85,.028]} m="white" radius={.035}/>
+      {[-.3015,.3015].map(x=><group key={x} position={[x,0,.017]}>
+        <C radius={.029} length={.009} r={[Math.PI/2,0,0]} m="steel"/>
+        <B p={[0,0,.005]} s={[.045,.005,.003]} m="dark" r={[0,0,.32]}/>
+      </group>)}
+      <Part id="actuator"><group rotation={[0,0,(level-.5)*4]}>
+        <C p={[0,0,.10]} radius={.106} length={.17} r={[Math.PI/2,0,0]} m="steel" segments={48}/>
+      </group></Part>
+      {[-1,1].map(side=><group key={side}>
+        <RB p={[side*.416,0,-.05]} s={[.018,.825,.094]} m="white"/>
+        <RB p={[0,side*.416,-.05]} s={[.825,.018,.094]} m="white"/>
+      </group>)}
+    </Cover>
+    <Part id="body">
+      <RB p={[-.016,.541,-.049]} s={[.262,.376,.212]} m="black" radius={.007}/>
+      <RB p={[-.016,.286,-.02]} s={[.262,.15,.14]} m="black" radius={.005}/>
+      <B p={[-.016,.559,-.156]} s={[.188,.326,.002]} m="green"/>
+    </Part>
+  </>;
+}
+
 function SwitchModel() {
   const { variant, internal, closed, detailed, props } = useModel();
   const moduleSide = props.component.params.gangModule;
@@ -294,7 +321,7 @@ function SwitchModel() {
       {internal && <Part id="contacts"><B p={[0, .71, .082]} s={[.235, .024, .035]} m="brass" r={[0, 0, closed ? -.15 : .24]} /><B p={[-.12, .62, .055]} s={[.045, .19, .08]} m="brass" /><B p={[.12, .76, .055]} s={[.045, .19, .08]} m="brass" /><C p={[0, .72, .087]} radius={.025} length={.033} m="steel" r={[Math.PI / 2, 0, 0]} /></Part>}
     </>;
   }
-  const knob = /dimmer|selector/.test(variant);
+  const knob = /selector/.test(variant);
   const button = /button|start|stop|push|emergency/.test(variant);
   const isolator = /isolator|changeover/.test(variant);
   return <>
@@ -302,7 +329,7 @@ function SwitchModel() {
     <Part id="contacts"><RB p={[0, .7, -.08]} s={[.57, .71, .23]} m="black" radius={.03} /></Part>
     <Cover custom p={[0, .7, .12]} s={[1.03, 1.03, .05]}>
       <FrontPlate holes={knob || button ? [] : [[0, 0, .47, .66]]} />
-      {knob ? <Part id="actuator"><C p={[0, 0, .05]} radius={.225} length={.032} m="grey" r={[Math.PI / 2, 0, 0]} /><C p={[0, 0, .094]} radius={.19} length={.098} m={/selector/.test(variant) ? 'black' : 'white'} r={[Math.PI / 2, 0, 0]} /><group name="motion:rotary" userData={{animation:/dimmer/.test(variant)?'dimmer':'rocker',axis:'z',onAngle:-.6,offAngle:.6}} rotation={[0, 0, /dimmer/.test(variant) ? (Math.max(0,Math.min(1,Number(props.component.params.level ?? .65))) - .5) * 4 : closed ? -.6 : .6]}><B p={[0, .12, .15]} s={[.017, .071, .009]} m="grey" />{detailed && Array.from({ length: 20 }, (_, i) => { const a = i * Math.PI / 10; return <B key={i} p={[Math.sin(a) * .181, Math.cos(a) * .181, .094]} s={[.01, .026, .062]} m="cream" r={[0, 0, -a]} />; })}</group><FaceLabel p={[0, -.31, .05]} text={/selector/.test(variant) ? 'A  •  B' : 'DIMMER'} /></Part> : button ? <Part id="actuator"><T p={[0, 0, .054]} radius={.205} tube={.025} m="steel" /><C p={[0, 0, .055]} radius={.183} length={.042} m="black" r={[Math.PI / 2, 0, 0]} /><group name="motion:push-cap" position={[0,0,.1]} userData={{animation:'translate',onPosition:[0,0,0],offPosition:[0,0,.035]}}><C p={[0,0,closed?0:.035]} radius={/emergency/.test(variant) ? .23 : .164} length={.10} m={/stop|emergency/.test(variant) ? 'red' : 'green'} r={[Math.PI / 2, 0, 0]} /></group><FaceLabel p={[0, -.33, .05]} text={/stop|emergency/.test(variant) ? 'STOP' : 'START'} /></Part> : <>
+      {knob ? <Part id="actuator"><C p={[0, 0, .05]} radius={.225} length={.032} m="grey" r={[Math.PI / 2, 0, 0]} /><C p={[0, 0, .094]} radius={.19} length={.098} m="black" r={[Math.PI / 2, 0, 0]} /><group name="motion:rotary" userData={{animation:'rocker',axis:'z',onAngle:-.6,offAngle:.6}} rotation={[0, 0, closed ? -.6 : .6]}><B p={[0, .12, .15]} s={[.017, .071, .009]} m="grey" />{detailed && Array.from({ length: 20 }, (_, i) => { const a = i * Math.PI / 10; return <B key={i} p={[Math.sin(a) * .181, Math.cos(a) * .181, .094]} s={[.01, .026, .062]} m="cream" r={[0, 0, -a]} />; })}</group><FaceLabel p={[0, -.31, .05]} text="A  •  B" /></Part> : button ? <Part id="actuator"><T p={[0, 0, .054]} radius={.205} tube={.025} m="steel" /><C p={[0, 0, .055]} radius={.183} length={.042} m="black" r={[Math.PI / 2, 0, 0]} /><group name="motion:push-cap" position={[0,0,.1]} userData={{animation:'translate',onPosition:[0,0,0],offPosition:[0,0,.035]}}><C p={[0,0,closed?0:.035]} radius={/emergency/.test(variant) ? .23 : .164} length={.10} m={/stop|emergency/.test(variant) ? 'red' : 'green'} r={[Math.PI / 2, 0, 0]} /></group><FaceLabel p={[0, -.33, .05]} text={/stop|emergency/.test(variant) ? 'STOP' : 'START'} /></Part> : <>
         <Rocker p={[0, 0, .025]} width={.425} red={isolator} />
         {isolator && <FaceLabel p={[0, -.4, .05]} text="ISOLATOR" />}
       </>}
@@ -741,7 +768,7 @@ function entryRotation(terminal: TerminalDefinition): Vec3 {
 
 function TerminalMountings({terminals}:{terminals:TerminalDefinition[]}) {
   const {props}=useModel();
-  if(workshopKey(props.component))return null;
+  if(workshopKey(props.component)||props.component.type==='dimmer')return null;
   const rear=terminals.filter(t=>t.entryDirection?.[2]===-1);
   const exposed=terminals.filter(t=>t.entryDirection?.[2]!==-1);
   const valve=props.definition.model==='valve';
@@ -806,7 +833,7 @@ export const ProceduralEquipment = memo(function ProceduralEquipment(props: Equi
   // connection coordinates. Model bodies are fitted to registry dimensions.
   const scale: Vec3 = [def.size[0] / 1.3, def.size[1] / 1.45, def.size[2] / .85];
   return <Context.Provider value={context}><group ref={group}>
-    {workshopKey(props.component) ? <group onClick={event=>{event.stopPropagation();props.onPart(semanticOwner(event.object).part??'body');}}><WorkshopGeometry {...props}/></group> : <group scale={scale}><Model /></group>}
+    {workshopKey(props.component) ? <group onClick={event=>{event.stopPropagation();props.onPart(semanticOwner(event.object).part??'body');}}><WorkshopGeometry {...props}/></group> : props.component.type==='dimmer'? <RotaryDimmer/> : <group scale={scale}><Model /></group>}
     <Part id="terminals"><TerminalMountings terminals={terminals} />
       {terminals.map(t => <Terminal key={t.id} terminal={t} />)}
     </Part>

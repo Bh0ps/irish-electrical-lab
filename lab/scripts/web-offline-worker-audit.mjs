@@ -10,10 +10,14 @@ export async function auditOfflineWorker({ scope, info, build }) {
   const worker = await readFile(path.join(build, 'service-worker.js'), 'utf8');
   const names = new Map();
   const attempted = [];
-  let unavailable = false, denied;
+  let unavailable = false, denied, transient;
   const fetchAsset = async (input, options) => {
     const url = typeof input === 'string' ? input : input.url;
     attempted.push(url);
+    if (url === transient) {
+      transient = undefined;
+      return new Response('', { status: 503 });
+    }
     if (unavailable || url === denied) throw new TypeError('Simulated network loss');
     return fetch(url, options);
   };
@@ -26,6 +30,7 @@ export async function auditOfflineWorker({ scope, info, build }) {
       return {
         keys: async () => [...entries.keys()].map(url => ({ url })),
         match: async url => entries.get(url)?.clone(),
+        delete: async url => entries.delete(url),
         put: async (url, response) => {
           // Buffer once so a series of Response.clone() calls cannot create a
           // chain of retained ReadableStream branches in the Node adapter.
@@ -61,21 +66,42 @@ export async function auditOfflineWorker({ scope, info, build }) {
     };
   }
 
-  const alpha = runtime(worker);
+  let alpha = runtime(worker);
   await alpha.install();
   await alpha.activate();
   assert.equal((await alpha.message('status')).status, 'available');
   assert.equal(attempted.length, info.shell.length, 'First launch must not automatically download the pack');
   const model = info.pack.find(asset => asset.path.endsWith('.low.glb'));
   const unavailableModel = info.pack.findLast(asset => asset.path.endsWith('.low.glb'));
+  const source = worker.slice(worker.indexOf('\n') + 1);
+  const firstUrl = new URL(model.path, scope).href;
+  transient = firstUrl;
   denied = new URL(unavailableModel.path, scope).href;
   assert.equal((await alpha.message('download')).status, 'error');
   const prior = await alpha.message('status');
   assert.equal(prior.status, 'available');
   assert.ok(prior.completed > 0 && prior.completed < info.pack.length, 'Failed download still keeps verified files');
+  assert.equal(attempted.filter(url => url === firstUrl).length, 2, 'A brief outage gets one automatic retry');
+  assert.equal(attempted.filter(url => url === denied).length, 2, 'A persistent problem returns control after a bounded retry');
+
+  const beforeUpdate = attempted.length;
+  alpha = runtime(`const BUILD = ${JSON.stringify({ ...info, version: 'partial-upgrade' })};\n${source}`);
+  await alpha.install();
+  await alpha.activate();
+  assert.equal(names.size, 1);
+  assert.equal(attempted.length, beforeUpdate, 'Updating a partial pack keeps matching verified files without downloading the rest');
+  assert.deepEqual({ ...await alpha.message('status') }, { ...prior });
+  const activeCache = await caches.open((await caches.keys())[0]);
+  const thumbnail = info.pack.find(asset => asset.path.endsWith('.png'));
+  const thumbnailUrl = new URL(thumbnail.path, scope).href;
+  assert.ok(await activeCache.match(thumbnailUrl));
+  await activeCache.put(thumbnailUrl, new Response('damaged partial file'));
   denied = undefined;
   assert.equal((await alpha.message('download')).status, 'ready');
-  assert.equal(attempted.filter(url => url === new URL(model.path, scope).href).length, 1, 'Retry should not re-download the verified model');
+  assert.equal(attempted.filter(url => url === firstUrl).length, 2, 'Resume skips the model already verified');
+  assert.equal(attempted.filter(url => url === thumbnailUrl).length, 2, 'Resume repairs a corrupt file before declaring the pack ready');
+  const bytes = await (await activeCache.match(thumbnailUrl)).arrayBuffer();
+  assert.equal(createHash('sha256').update(Buffer.from(bytes)).digest('hex'), thumbnail.sha256);
   unavailable = true;
   const page = await alpha.serve('./', 'navigate');
   assert.match(await page.text(), /Irish Electrical Lab/);
@@ -87,7 +113,6 @@ export async function auditOfflineWorker({ scope, info, build }) {
 
   // Same content would be reusable from release alpha. Change the index digest
   // to force the replacement to fetch, then fail that fetch or verification.
-  const source = worker.slice(worker.indexOf('\n') + 1);
   const index = info.shell.find(asset => asset.path === 'index.html');
   const altered = { ...info, version: 'failed-upgrade', shell: info.shell.map(asset => asset === index ? { ...asset, sha256: createHash('sha256').update('unavailable version').digest('hex') } : asset) };
   await assert.rejects(runtime(`const BUILD = ${JSON.stringify(altered)};\n${source}`).install());

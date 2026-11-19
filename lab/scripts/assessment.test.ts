@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import { LESSONS } from '../lib/lessons.ts';
 import { measureResistance, simulate } from '../lib/simulation.ts';
-import { assessBuild } from '../lib/assessment.ts';
+import { assessBuild, assessConnections } from '../lib/assessment.ts';
 import TestReport from '../components/lab/TestReport.tsx';
 import type { CircuitDocument, Endpoint } from '../lib/types.ts';
 
@@ -41,6 +41,26 @@ test('a bypass retains every original wire but fails the actual switch-OFF objec
 test('missing live or neutral stops load and reports the exact missing connection',()=>{
   for(const id of ['w4','w5']){const d=circuit();d.wires=d.wires.filter(w=>w.id!==id);assert.ok((simulate(d).componentPower.light??0)<.05);fails(d,`connection:${id}`);}
 });
+test('missing wires name the supply and load banks even when both terminals are marked N',()=>{
+  const d=circuit(); d.wires=d.wires.filter(w=>w.id!=='w2'&&w.id!=='w5');
+  const checks=assessConnections(d,example);
+  assert.match(checks.find(c=>c.id==='connection:w2')!.explanation,/N · Supply/);
+  assert.match(checks.find(c=>c.id==='connection:w5')!.explanation,/N · Load/);
+  assert.ok(checks.filter(c=>c.id==='connection:w2'||c.id==='connection:w5').every(c=>c.status==='fail'));
+});
+test('a missing earth reports the lamp’s actual output without inventing a reading',()=>{
+  const d=circuit();d.wires=d.wires.filter(w=>![w.from,w.to].some(e=>e.component==='light'&&e.terminal==='PE'));
+  for(const on of [true,false]){
+    d.components.find(c=>c.id==='switch')!.params.closed=on;
+    const result=simulate(d);
+    const finding=assessBuild(d,result,example).checks.find(c=>c.id==='finding:cpc:light')!;
+    assert.equal(finding.status,'fail');
+    assert.match(finding.explanation,on?/Hall light is drawing 60 W/:/Hall light is off/);
+    assert.match(finding.explanation,/earth terminal \(PE\)/);
+    const unresolved=assessBuild(d,{...result,converged:false},example).checks.find(c=>c.id==='finding:cpc:light')!;
+    assert.doesNotMatch(unresolved.explanation,/drawing|is off/);
+  }
+});
 test('missing protective conductor fails even though lamp still illuminates',()=>{
   const d=circuit();d.wires=d.wires.filter(w=>w.role!=='PE');assert.ok(simulate(d).componentPower.light>50);const a=report(d);assert.equal(a.passed,false);assert.ok(a.checks.some(c=>c.category==='protection'&&c.status==='fail'));
 });
@@ -59,7 +79,8 @@ test('supply OFF and stale results cannot claim test success',()=>{
   const a=assessBuild(enabled,result,example);assert.equal(a.passed,false);assert.ok(a.checks.some(c=>c.id==='solution'&&c.status==='unresolved'));
 });
 test('injected open-live cannot pass as intact lesson',()=>{
-  const d=circuit();d.faults=[{type:'open-live',wire:'w4',enabled:true}];const a=report(d);assert.equal(a.passed,false);assert.ok(a.checks.some(c=>c.title==='Study fault is still enabled'));
+  const d=circuit();d.faults=[{type:'open-live',wire:'w4',enabled:true}];const a=report(d);assert.equal(a.passed,false);
+  const check=a.checks.find(c=>c.id==='fault:open-live:w4')!;assert.equal(check.status,'fail');assert.doesNotMatch(check.explanation,/open-live|injected/);
 });
 test('test panel renders immediate activity, lasting verdict, actionable faults and stale warning',()=>{
   const running=renderToStaticMarkup(React.createElement(TestReport,{running:true,stale:false,onSelect:()=>{}}));assert.match(running,/Testing your circuit/);

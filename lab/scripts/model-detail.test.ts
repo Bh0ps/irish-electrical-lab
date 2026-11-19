@@ -17,6 +17,28 @@ function meshes(parent:THREE.Object3D){const result:THREE.Mesh[]=[];parent.trave
 function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)=>total+(m.geometry.index?.count??m.geometry.getAttribute('position').count)/3,0);}
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
+test('the one-way dimmer has two recessed wire entries on the rear and a separate knob on the face',async()=>{
+  const asset=manifest.find(model=>model.key==='dimmer_rotary')!;
+  for(const url of [asset.url,asset.lowUrl]){
+    const scene=await load(url);
+    scene.updateMatrixWorld(true);
+    const surface=(x:number,y:number,side:number)=>new THREE.Raycaster(
+      new THREE.Vector3(x,y,side),new THREE.Vector3(0,0,-side)).intersectObject(scene,true)[0];
+    assert.equal(semanticOwner(surface(0,.46,1).object).detail,'dimmer-knob');
+    assert.equal(semanticOwner(surface(.30,.46,1).object).part,'mounting');
+    assert.equal(semanticOwner(surface(0,.54,-1).object).detail,'dimmer-rear-case');
+    for(const terminal of asset.terminals){
+      const [x,y,z]=terminal.anchor;
+      const insert=surface(x+.020,y,-1);
+      assert.equal(semanticOwner(insert.object).terminal,terminal.id);
+      assert.match((insert.object as THREE.Mesh<THREE.BufferGeometry,THREE.Material>).material.name,/brass/i);
+      assert.ok(Math.abs(insert.point.z-z)<.001);
+      assert.ok(surface(x,y,-1).point.z-z>.040,'clear bore for the wire');
+      assert.equal(semanticOwner(surface(x,y,1).object).detail,'dimmer-plate');
+    }
+  }
+});
+
 test('the double socket exposes four recessed clamps, separate screwdriver wells and clear front shutters',async()=>{
   const asset=manifest.find(model=>model.key==='socket_default')!;
   const faceNormals:THREE.Vector3[]=[];

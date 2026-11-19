@@ -6805,20 +6805,20 @@
       "name": "Lighting dimmer",
       "group": "Lighting",
       "model": "switch",
-      "description": "Changes an equivalent series resistance in the line path; the actual load and connections determine lamp voltage and brightness.",
+      "description": "Turn the knob to brighten or dim the reading lamp.",
       "terminals": [
         {
           "id": "COM",
           "label": "COM",
           "role": "L",
-          "purpose": "Common supply contact. The dimmer changes the effective resistance between COM and OUT in this study model.",
+          "purpose": "COM is the bench name for this hole. In this lesson the feed comes in here. Either hole can take the feed on this dimmer.",
           "anchor": [
-            -0.11846153846153847,
-            0.5382413793103449,
-            -0.353529411764706
+            0.082,
+            0.297,
+            -0.113
           ],
           "group": "Connections",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -6829,14 +6829,14 @@
           "id": "OUT",
           "label": "OUT",
           "role": "L",
-          "purpose": "Switched, adjustable output to the lamp. Turn the dial to change the equivalent resistance between COM and OUT.",
+          "purpose": "OUT is the bench name for the hole used for the lamp wire. Turn the knob down and watch the lamp.",
           "anchor": [
-            0.11846153846153847,
-            0.5382413793103449,
-            -0.353529411764706
+            -0.041,
+            0.297,
+            -0.113
           ],
           "group": "Connections",
-          "scale": 1,
+          "scale": 0.42,
           "entryDirection": [
             0,
             0,
@@ -6853,54 +6853,54 @@
         {
           "id": "body",
           "name": "Housing",
-          "purpose": "The enclosure supports and separates functional parts. This original teaching model is representative equipment, not a manufacturer drawing."
+          "purpose": "The case holds the working parts in place and keeps them apart."
         },
         {
           "id": "cover",
           "name": "Removable cover",
-          "purpose": "The cover limits access to internal connections. Opening it here is a virtual inspection operation."
+          "purpose": "Lift the cover on the bench to see the connections underneath."
         },
         {
           "id": "terminals",
           "name": "Terminal clamps",
-          "purpose": "Metal clamps establish connections to individual conductors. The circuit engine connects terminal IDs, not the apparent proximity of 3D wires."
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
         },
         {
           "id": "mounting",
           "name": "Mounting and fixings",
-          "purpose": "Mounting hardware supports the equipment. Screws, rail clips and glands are modelled separately from electrical connections."
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
         },
         {
           "id": "actuator",
           "name": "Operating mechanism",
-          "purpose": "The mechanism translates a handle, button, coil or control demand into an operating state."
+          "purpose": "This part moves the contacts when you use the control."
         },
         {
           "id": "electronics",
-          "name": "Electronic control board",
-          "purpose": "This conceptual board represents an electronic interface. The model follows stated input, output and power limits rather than reconstructing proprietary firmware."
+          "name": "Control board",
+          "purpose": "The board takes signals in and controls the outputs. The bench shows what the board does at its terminals."
         }
       ],
       "size": [
-        1.1,
-        1.35,
-        0.8
+        0.85,
+        0.91,
+        0.44
       ],
-      "abstraction": "Educational series resistance: R = referenceOhms × (1/level − 1) + 0.001 Ω. Zero or switched-off settings open the path. The 960 Ω reference corresponds to 240 V / 60 W. Real electronic dimmers control waveforms; equivalent resistor losses are not their hardware heating or a compatibility prediction."
+      "abstraction": "The bench uses a resistor to dim the lamp. Its resistance in ohms is 960 × (1/level − 1) + 0.001 at the default setting, with level between 0 and 1. At zero or when switched off, the circuit opens. The 960 Ω value comes from a 60 W lamp at 240 V. A real electronic dimmer switches part of each AC cycle. Use the maker’s figures for lamp compatibility and heat."
     },
     "terminals": [
       {
         "id": "COM",
         "label": "COM",
         "role": "L",
-        "purpose": "Common supply contact. The dimmer changes the effective resistance between COM and OUT in this study model.",
+        "purpose": "COM is the bench name for this hole. In this lesson the feed comes in here. Either hole can take the feed on this dimmer.",
         "anchor": [
-          -0.11846153846153847,
-          0.5382413793103449,
-          -0.353529411764706
+          0.082,
+          0.297,
+          -0.113
         ],
         "group": "Connections",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -6911,14 +6911,14 @@
         "id": "OUT",
         "label": "OUT",
         "role": "L",
-        "purpose": "Switched, adjustable output to the lamp. Turn the dial to change the equivalent resistance between COM and OUT.",
+        "purpose": "OUT is the bench name for the hole used for the lamp wire. Turn the knob down and watch the lamp.",
         "anchor": [
-          0.11846153846153847,
-          0.5382413793103449,
-          -0.353529411764706
+          -0.041,
+          0.297,
+          -0.113
         ],
         "group": "Connections",
-        "scale": 1,
+        "scale": 0.42,
         "entryDirection": [
           0,
           0,
@@ -6926,8 +6926,8 @@
         ]
       }
     ],
-    "meshNodes": 89,
-    "vertices": 12914
+    "meshNodes": 35,
+    "vertices": 11488
   },
   {
     "key": "lamp_bulb",

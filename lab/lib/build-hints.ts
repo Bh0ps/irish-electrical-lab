@@ -1,7 +1,6 @@
-import { assessConnections, type AssessmentCheck } from './assessment';
-import { COMPONENTS } from './components';
-import { getComponentTerminals } from './terminal-layout';
-import type { CircuitDocument, Diagnostic, Endpoint, SimulationResult, TerminalRole } from './types';
+import { assessConnections, explainFinding, type AssessmentCheck } from './assessment';
+import type { CircuitDocument, Diagnostic, SimulationResult } from './types';
+export { describeEndpoint, type EndpointDescription } from './endpoint-description';
 
 export interface BuildHint {
   id: string;
@@ -22,37 +21,6 @@ export interface BuildHintInput {
   expected?: CircuitDocument;
 }
 
-export interface EndpointDescription {
-  endpoint: Endpoint;
-  equipmentName: string;
-  terminalLabel: string;
-  /** Includes its bank when two terminals carry the same printed mark. */
-  pointLabel: string;
-  role: TerminalRole;
-  purpose: string;
-  group?: string;
-  label: string;
-}
-
-/** Describe the physical endpoint being considered, without predicting a connection. */
-export function describeEndpoint(document: CircuitDocument, endpoint?: Endpoint): EndpointDescription | undefined {
-  if (!endpoint) return undefined;
-  const component = document.components.find(item => item.id === endpoint.component);
-  const definition = component && COMPONENTS[component.type];
-  if (!component || !definition) return undefined;
-  const terminals = getComponentTerminals(component, definition);
-  const terminal = terminals.find(item => item.id === endpoint.terminal);
-  if (!terminal) return undefined;
-  const sameMark = terminals.filter(t=>t.label===terminal.label);
-  const bank = terminal.group&&sameMark.filter(t=>t.group===terminal.group).length===1 ? terminal.group : terminal.id;
-  const pointLabel = sameMark.length>1 ? `${terminal.label} · ${bank}` : terminal.label;
-  return {
-    endpoint: { ...endpoint }, equipmentName: component.label, terminalLabel: terminal.label, pointLabel,
-    role: terminal.role, purpose: terminal.purpose, ...(terminal.group ? { group: terminal.group } : {}),
-    label: `${component.label} · ${pointLabel}`,
-  };
-}
-
 type Finding = Pick<AssessmentCheck, 'id' | 'category' | 'status' | 'title' | 'explanation' | 'component' | 'wire'>;
 
 /** A next inspection or measurement, never an automatic repair or inferred trip. */
@@ -67,8 +35,8 @@ export function nextCheckForFinding(finding: Finding): string {
   if (id.includes('mechanical:') || id.includes('interlock')) return 'Check which contactor is on before trying the other direction.';
   if (id.includes('neutral:')) return 'Measure across the load, then trace its return wire.';
   if (id.includes('phase:') || id.includes('windingVoltage:')) return 'Check the voltage across each winding and compare it with the motor rating.';
-  if (id.startsWith('equipment:')) return 'Find the fitting named above in Add equipment.';
-  if (id.startsWith('connection:')) return 'Choose Connect and select the two terminals named above.';
+  if (id.startsWith('equipment:')) return 'If you just removed it, choose Undo to put it back.';
+  if (id.startsWith('connection:')) return 'Choose Connect and pick those two terminals.';
   if (id.startsWith('extra:')) return 'Select the wire and compare its two ends with the lesson drawing.';
   if (id.startsWith('identity:')) return 'Compare the marking on the wire with the one in the lesson.';
   if (id.startsWith('fault:')) return 'Take a reading at the fault. Repair it and test again.';
@@ -87,12 +55,12 @@ export function findingPriority(finding: Pick<AssessmentCheck, 'category' | 'sta
   return 3;
 }
 
-function diagnosticHint(diagnostic: Diagnostic): BuildHint {
+function diagnosticHint(document: CircuitDocument, result: SimulationResult, diagnostic: Diagnostic): BuildHint {
   const category = diagnostic.category;
   const finding = { ...diagnostic, status: 'fail' as const };
   return {
     id: diagnostic.id, kind: category === 'model' ? 'unresolved' : category,
-    severity: diagnostic.severity, title: diagnostic.title, explanation: diagnostic.explanation,
+    severity: diagnostic.severity, title: diagnostic.title, explanation: explainFinding(document, result, diagnostic),
     nextCheck: nextCheckForFinding(finding),
     ...(diagnostic.component ? { component: diagnostic.component } : {}),
     ...(diagnostic.wire ? { wire: diagnostic.wire } : {}),
@@ -108,7 +76,7 @@ export function getBuildHint({ document, result, expected }: BuildHintInput): Bu
   const current = result?.revision === document.revision ? result : undefined;
   const diagnostics = current?.diagnostics.filter(item => item.severity !== 'info') ?? [];
   const diagnostic = diagnostics.slice().sort((a, b) => findingPriority({ ...a, status: 'fail' }) - findingPriority({ ...b, status: 'fail' }))[0];
-  if (diagnostic) return diagnosticHint(diagnostic);
+  if (current && diagnostic) return diagnosticHint(document, current, diagnostic);
   if (current && !current.converged) return {
     id: 'hint:unresolved', kind: 'unresolved', severity: 'error', title: 'No reading yet',
     explanation: 'The bench could not calculate a reliable reading.',

@@ -3,7 +3,7 @@ import { physicalFixture, isStrip, type FixturePose } from './site-fixtures.ts';
 import {seatPosition} from './board-assembly';
 import { COMPONENTS } from './components';
 import { houseFixing, onWall } from './house-installation';
-import { HOME_ROOMS, STAIR_LANDING, walkHome } from './home-floorplan';
+import { HOME_ROOMS, REAR_GARDEN, STAIR_LANDING, walkHome } from './home-floorplan';
 import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
 
 export type SiteKind = 'home' | 'plant' | 'shop' | 'workshop' | 'works';
@@ -55,7 +55,7 @@ function roomFor(c:ComponentInstance,id:number,room:number) {
   if([43,71,72,73,74,80].includes(id)){
     if(/transfor|dcsupply|relay|timer|fuse|driver/.test(c.type))return 2;
     if(c.id==='courtesy')return 3;
-    if(/back|rear/.test(c.id))return 0;
+    if((id===71||id===72)&&(c.id==='back'||c.id==='rear'))return REAR_GARDEN.id;
     if(/pushbutton|doorcontact/.test(c.type)||/push|reed|button|contact/.test(c.id))return 3;
     return 1;
   }
@@ -86,7 +86,6 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
   if(id===23||id===24||id===35||id===36||id===37)rooms[1]='Bathroom';
   if(id===9)rooms[1]='Stair hall';
   if(id===10)rooms[1]='Switching corridor';
-  if(id===71||id===72)rooms[0]='Back entrance';
   if(id===50)rooms[2]='Cold store';
   const building={...base,rooms};
   const all=[...(reference?.components??doc.components)];
@@ -98,7 +97,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     const ref=prefix+String(counts[prefix]=(counts[prefix]??0)+1);
     const tier=height(c),key=area+'-'+tier,index=slots.get(key)??0;slots.set(key,index+1);
     const outside=area===3,span=[0,-.54,.54,-1.08,1.08,-1.62,1.62];
-    let x=(outside?0:ROOM_CENTRES[area])+span[index%span.length], y=tier-Math.floor(index/span.length)*.24;
+    let x=(outside?0:ROOM_CENTRES[area]??0)+span[index%span.length], y=tier-Math.floor(index/span.length)*.24;
     let z=outside?FRONT+.10:BACK+.11;
     if(outside)x+=1.25;
     if(kind==='home'&&area===0&&c.type==='socket')y=1.13;
@@ -119,7 +118,6 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
       else if(c.type==='led'||c.type==='cctstrip'){y=1.44;}
 
     }
-    if([71,72].includes(id)&&/rear|back/.test(c.id)){x=-5.02;y=1.19;z=BACK+.084;}
     if(id===80&&c.id==='courtesy'){x=.99;y=2.07;z=FRONT+.11;}
     const cabinets = kind === 'home' && area === 0 && [13,65,66,68,69].includes(id);
     const atBackWall = !outside && Math.abs(z - (BACK + .11)) < .0001;
@@ -170,7 +168,7 @@ export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wi
 }
 /** Stop at the walls while allowing passage through the same openings shown on the floor plan. */
 export function walkStep(from:Vec3,dx:number,dz:number,site?:JobSite):Vec3{
-  if(site?.kind==='home')return walkHome(from,dx,dz,site.building.rooms[1]==='Bathroom',site.building.rooms[0]==='Back entrance',site.building.rooms[1]==='Stair hall');
+  if(site?.kind==='home')return walkHome(from,dx,dz,site.building.rooms[1]==='Bathroom',site.building.rooms[1]==='Stair hall');
   if(site)return walkService(from,dx,dz,site.kind);
   const radius=.16;let [x,y,z]=from;
   const clamp=(v:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,v));

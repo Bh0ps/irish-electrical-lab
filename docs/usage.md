@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Installer: `lab/release/Irish-Electrical-Lab-1.8.1-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
+Run `Irish-Electrical-Lab-1.9.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -22,7 +22,7 @@ Open **Saved readings** in either meter to see what you recorded. A fork reading
 
 ## Find equipment on a job
 
-In **Site**, use **Go to** to find a fitting. In Oakfield house you can also choose a room, such as the sitting room or bedroom. While walking, drag to look around and use WASD, the arrow keys or the direction pad to move through doors. At the stairs you can press either rocker as you walk past. **Finish walk** returns you to the usual site controls. **Inspect** opens the fitting on the workbench. You can also operate it from **Equipment list**.
+In **Site**, use **Go to** to find a fitting. In Oakfield house you can also choose a room, such as the sitting room or bedroom. While walking, drag to look around and use WASD, the arrow keys or the direction pad to move through doors. At the stairs you can press either rocker as you walk past. **Finish walk** returns you to the usual site controls. **Inspect** opens the fitting on the workbench. You can also operate it from **Equipment list**. In the two-entrance doorbell lessons, choose **Go to → Back entrance** to visit the garden door. Choose **Cables**, then **Show on plan**, to follow a wire back into the house.
 
 In **Drawing**, choose **Job drawing** for the intended connections and **My wiring** for the current build. Select an equipment tag on the location plan or a pin on the terminal sheet. Select a conductor to see both ends and whether the current build matches it. **Find** travels to the selected end. The dashed site overlay indicates which endpoints are connected. Its route is illustrative. On applicable jobs, the sheet selector also offers a board schedule or a ladder tracing the control path to a load. Drawing selections are for inspection only.
 
