@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { COMPONENTS } from '../../lib/components';
 import { CABLE_CORE_LABEL } from '../../lib/cables';
 import { describeEndpoint } from '../../lib/build-hints';
@@ -34,6 +34,17 @@ function matches(query: string, ...text: string[]) {
   return query.trim().toLowerCase().split(/\s+/).every(word => text.join(' ').toLowerCase().includes(word));
 }
 
+function focusFirstResult(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key !== 'Enter' || event.nativeEvent.isComposing || event.repeat) return;
+  const first = event.currentTarget.closest('.point-picker')?.querySelector('.point-list > :first-child');
+  const button = first instanceof HTMLButtonElement ? first :
+    first?.querySelector<HTMLButtonElement>('.point-list-terminals button') ?? first?.querySelector<HTMLButtonElement>('button');
+  if (button) {
+    event.preventDefault();
+    button.focus();
+  }
+}
+
 export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false }: {
   circuit: CircuitDocument;
   label: string;
@@ -59,7 +70,8 @@ export function TerminalPicker({ circuit, label, onPick, from, nextFitting=false
   })).filter(group => group.terminals.length > 0);
 
   return <section ref={list} tabIndex={-1} className="point-picker" aria-label={label}>
-    <Input type="search" aria-label="Search equipment and terminals" placeholder="Search equipment or terminal" value={query} onChange={event => setQuery(event.target.value)} />
+    <Input type="search" enterKeyHint="next" aria-label="Search equipment and terminals" placeholder="Search equipment or terminal" value={query}
+      onKeyDown={focusFirstResult} onChange={event => { setQuery(event.target.value); setOpenId(undefined); }} />
     {groups.length === 0 && <p role="status">{circuit.components.length?'No terminals match. Try the fitting name or a marking such as COM.':'Add a fitting to the bench to see its terminals.'}</p>}
     <div className="point-list">
       {groups.map(({ component, terminals }) => {
@@ -125,7 +137,7 @@ export function ConductorPicker({ circuit, selected, onPick }: {
   const choices=conductors.filter(({wire,from,to,core})=>matches(query,wire.role,wireNames[wire.role],from,to,core));
 
   return <section className="point-picker" aria-label="Choose a conductor">
-    <Input type="search" aria-label="Search conductors" placeholder="Search conductors" value={query} onChange={event => setQuery(event.target.value)} />
+    <Input type="search" enterKeyHint="next" aria-label="Search conductors" placeholder="Search conductors" value={query} onKeyDown={focusFirstResult} onChange={event => setQuery(event.target.value)} />
     {choices.length === 0 && <p role="status">{circuit.wires.length?'No wires match. Try a fitting name or a wire marking.':'There are no connected wires yet. Choose Connect to add one.'}</p>}
     <div className="point-list">{choices.map(({ wire, from, to,core }) =>
       <button type="button" key={wire.id} aria-pressed={wire.id === selected} onClick={() => onPick(wire.id)}>

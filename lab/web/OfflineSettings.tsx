@@ -59,12 +59,14 @@ function OfflineDownload() {
 
   const downloading = status?.status === 'downloading';
   const ready = status?.status === 'ready';
-  const size = status ? ` (about ${Math.ceil(status.bytes / 1024 ** 2)} MB)` : '';
+  const size = status ? ` (about ${Math.ceil(status.bytes / 1_000_000)} MB)` : '';
+  const appleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const homeScreen = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & {standalone?:boolean}).standalone;
   return <section className="offline-settings">
     <h3>Offline use</h3>
-    <p>Download the app, workers and simplified equipment for every course{size}. Keep the lab open until the download finishes. Full-detail models load when connected.</p>
+    {!ready&&<p>Save every course and the Sandbox equipment on this device{size}. Keep the lab open until the download finishes.</p>}
     <div aria-live="polite">
-      {ready && <p><strong>Offline ready</strong> · All courses and Sandbox are available.</p>}
+      {ready && <p><strong>Offline ready</strong> · You can open any course and build in Sandbox.</p>}
       {downloading && <p>Downloading equipment… {status.completed} of {status.total}</p>}
       {error && <p>{error}</p>}
     </div>
@@ -72,7 +74,7 @@ function OfflineDownload() {
     {!ready && <Button type="button" variant="outline" className="full" disabled={downloading || requested || (!status && !error)} onClick={download}>
       {error ? 'Retry offline download' : downloading ? 'Download in progress' : 'Download for offline use'}
     </Button>}
-    <p className="small-copy">On iPhone, use Share → Add to Home Screen, then open the icon before downloading or importing a study backup. Safari and the Home Screen app save separately.</p>
+    <details open={appleMobile&&!homeScreen&&!ready||undefined}><summary>Using the lab on iPhone</summary><p>In Safari, tap Share → Add to Home Screen. Open the new icon before downloading the courses or importing a backup. Safari and the Home Screen app keep their own saves.</p><p>The downloaded models work offline. Go online to load the extra detail on a fitting.</p></details>
   </section>;
 }
 

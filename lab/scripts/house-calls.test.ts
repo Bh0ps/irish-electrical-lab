@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HOUSE_CALLS, callActivityId, callReadings, savedCallStep, onlyCallControlsChanged, verifiedCallStep } from '../lib/house-calls';
+import { HOUSE_CALLS, callActivityId, callReadings, savedCallStep, houseJobLabels, nextHouseCall, onlyCallControlsChanged, verifiedCallStep } from '../lib/house-calls';
+import { migrateProgress, recordActivity } from '../lib/progress';
 import { getCoursebookActivities, completedCoursebookLesson } from '../lib/coursebook';
 import { LESSONS } from '../lib/lessons';
 import { simulate } from '../lib/simulation';
 import { validateBookmark } from '../lib/lesson-bookmark';
+import { validateCircuit } from '../lib/storage';
 import type { CircuitDocument } from '../lib/types';
 
 for(const call of HOUSE_CALLS){
@@ -44,4 +46,45 @@ test('chapter progress requires the practical work and allows learners to try be
     assert.equal(completedCoursebookLesson(lesson,earned.slice(1)),false);
     assert.equal(completedCoursebookLesson(lesson,activities.filter(a=>a.kind==='predict'||a.kind==='inspect').map(a=>a.id)),false);
   }
+});
+
+test('the board job follows the connected branch, including a board with the feeds exchanged',()=>{
+  const call=HOUSE_CALLS.find(c=>c.lesson===2)!;
+  const original=structuredClone(LESSONS.find(l=>l.id===2)!.circuit);
+  const circuit=houseJobLabels(original);
+  assert.ok(onlyCallControlsChanged(call,circuit,original));
+  assert.ok(onlyCallControlsChanged(call,validateCircuit(circuit),original));
+  assert.equal(circuit.components.find(c=>c.id==='load2')?.label,'Kitchen socket');
+  const named={...circuit,components:circuit.components.map(c=>c.id==='load2'?{...c,label:'Utility socket'}:c)};
+  assert.equal(houseJobLabels(named).components.find(c=>c.id==='load2')?.label,'Utility socket');
+  const exchange=(end:{component:string;terminal:string})=>end.terminal==='OUT'&&['branch1','branch2'].includes(end.component)
+    ?{...end,component:end.component==='branch1'?'branch2':'branch1'}:end;
+  const exchanged={...circuit,wires:circuit.wires.map(w=>({...w,from:exchange(w.from),to:exchange(w.to)}))};
+  assert.equal(onlyCallControlsChanged(call,exchanged,original),false);
+  const setBreaker=(doc:CircuitDocument,id:string,closed:boolean)=>({...doc,revision:doc.revision+1,components:doc.components.map(c=>c.id===id?{...c,params:{...c.params,closed}}:c)});
+  const check=(index:number,before:CircuitDocument,after:CircuitDocument,component:string)=>verifiedCallStep(call,index,after,simulate(after),{
+    component,activity:callActivityId(2,index),before,reading:simulate(before),
+  });
+  for(const [board,lighting,sockets] of [[circuit,'branch1','branch2'],[exchanged,'branch2','branch1']] as const){
+    const wrong=setBreaker(board,sockets,false);
+    assert.deepEqual(callReadings(call.steps[0].after,wrong,simulate(wrong))?.map(r=>r.powered),[true,false]);
+    assert.equal(check(0,board,wrong,sockets),false);
+    const restored=setBreaker(wrong,sockets,true);
+    assert.equal(check(0,wrong,restored,sockets),false);
+    const lampOff=setBreaker(restored,lighting,false);
+    assert.equal(check(0,restored,lampOff,lighting),true);
+    assert.equal(check(1,lampOff,setBreaker(lampOff,lighting,true),lighting),true);
+  }
+});
+
+test('the next house job skips demonstrated jobs and keeps an unfinished job available',()=>{
+  const [cupboard,stairs,board]=HOUSE_CALLS;
+  let progress=migrateProgress(undefined);
+  assert.equal(nextHouseCall(board,progress),cupboard);
+  progress=recordActivity(progress,cupboard.lesson,callActivityId(cupboard.lesson,0),'house-call',true);
+  assert.equal(nextHouseCall(board,progress),cupboard);
+  for(const job of [cupboard,stairs]){
+    progress=recordActivity(progress,job.lesson,callActivityId(job.lesson,job.steps.length-1),'house-call',true);
+  }
+  assert.equal(nextHouseCall(board,progress),undefined);
 });

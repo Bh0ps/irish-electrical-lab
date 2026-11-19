@@ -12,6 +12,7 @@ import type { Vec3 } from '../../lib/types';
 import { HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,alignWall,doorsOn,doorLeaf,wallSpans,type FloorWall } from '../../lib/home-floorplan';
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {serviceRoom} from './ServiceRooms';
+import {stairHall} from './StairHall';
 
 type Shape='box'|'cylinder'|'ball'|'cushion';
 interface Piece {shape:Shape; surface:string; p:Vec3; s:Vec3; rotation:Vec3}
@@ -65,16 +66,17 @@ function installation(site:JobSite){
   box(0,-.16,4.65,19,.22,3.8,'paving');
   const industrial=site.kind==='works'||site.kind==='workshop',home=site.kind==='home';
   const bathroom=site.building.rooms[1]==='Bathroom';
+  const stair=home&&site.building.rooms[1]==='Stair hall';
   function wallPart(wall:FloorWall,along:number,y:number,recess:number,length:number,height:number,thickness:number,material:string){
     const b=alignWall(wall,along,recess,length,thickness);box(b.x,y,b.z,b.w,height,b.d,material);
   }
   function partition(wall:FloorWall,material:string,frontRow=false){
     const depth=frontRow?-.08:0;
-    for(const [a,b] of wallSpans(wall,bathroom)){
+    for(const [a,b] of wallSpans(wall,bathroom,stair)){
       wallPart(wall,(a+b)/2,1.43,depth,b-a,2.86,frontRow?.14:.12,material);
       for(const side of [-1,1])wallPart(wall,(a+b)/2,.068,depth+side*.067,b-a,.136,.04,'white');
     }
-    for(const door of doorsOn(wall,bathroom)){
+    for(const door of doorsOn(wall,bathroom,stair)){
       wallPart(wall,door.centre,2.49,depth,door.width,.74,.14,material);
       for(const side of [-1,1])wallPart(wall,door.centre+side*door.width/2,1.06,depth,.055,2.12,.17,'white');
       wallPart(wall,door.centre,2.12,depth,door.width+.10,.07,.17,'white');
@@ -91,15 +93,22 @@ function installation(site:JobSite){
     const wood=home&&i!==2&&site.building.rooms[i]!=='Bathroom';
     if(wood){for(let k=0;k<19;k++)box(x-2.09+k*.232,-.018,0,.229,.034,5.58,k%4===0?'walnut':'oak');}
     else box(x,-.015,0,4.39,.035,5.59,(home||site.kind==='shop')?'tile':'concrete');
-    box(x,2.91,0,4.39,.06,5.59,home?'cream':'concrete');
+    if(!stair||i!==1)box(x,2.91,0,4.39,.06,5.59,home?'cream':'concrete');
     if(!home)box(x,.07,BACK+.013,4.39,.13,.035,'iron');
-    for(const edge of [BACK+.2,FRONT-.42]){box(x,2.86,edge,4.38,.10,.11,home?'white':'steel');}
+    for(const edge of [BACK+.2,FRONT-.42]){
+      if(stair&&i===1&&edge<0)continue;
+      box(x,2.86,edge,4.38,.10,.11,home?'white':'steel');
+    }
     // Entrance windows and their two solid wall sections keep the glazing at a real opening.
     if(i!==1){
       box(x,.42,FRONT,4.38,.84,.13,'wall'+i);box(x,2.58,FRONT,4.38,.56,.13,'wall'+i);
       for(const s of [-1,1])box(x+s*1.6,1.58,FRONT,1.18,1.53,.13,'wall'+i);
       box(x,1.58,FRONT,2.02,1.42,.015,'glass');frame(x,1.58,FRONT-.07,2.03,1.43);box(x,1.58,FRONT-.085,.035,1.43,.07,'white');
       box(x,.84,FRONT-.04,2.17,.05,.25,'oak');
+    } else if(stair){
+      const front={...HOME_WALLS.find(w=>w.id==='front')!,start:-2.2,end:2.2};
+      partition(front,'brick');
+      box(doorsOn(front,false,true)[0].centre,.015,FRONT+.36,.91,.025,.56,'rubber');
     } else {
       for(const s of [-1,1])box(s*1.47,1.39,FRONT,1.46,2.78,.15,home?'brick':'metal');
       box(0,2.54,FRONT,1.54,.54,.16,home?'brick':'metal');
@@ -230,10 +239,8 @@ function installation(site:JobSite){
     for(const x of [-6.05,-5.8,-5.55]){pipe(x,1.57,-2.58,.06,.22,'cream');pipe(x,1.69,-2.58,.062,.022,'oak');}
     furniture(5.6,-2.49,1.39,'white');rack(3.13,-.65);
     if(site.building.rooms[1]==='Bathroom'){furniture(1.32,-2.47,1.30,'white');sink(1.32,-2.46);frame(1.34,1.63,-2.69,.89,.70,'metal');box(1.34,1.63,-2.735,.87,.68,.02,'glass');}
-    else if(site.building.rooms[1]==='Stair hall'){
-      for(let k=0;k<8;k++){box(-1.74,(k+1)*.085,1.19-k*.29,.75,(k+1)*.17,.3,'oak');pipe(-1.37,(k+1)*.17+.4,1.19-k*.29,.018,.8,'white');}
-      add([-1.37,1.56,.18],[.055,.07,2.5],'oak','box',[.52,0,0]);
-    }else{
+    else if(stair)stairHall(add,frame);
+    else{
       // Shallow hall cupboard, moulded panels and latch. Its leaf is on the back wall.
       box(-.95,1.05,-2.715,.95,2.10,.061,'white');
       box(-.95,1.02,-2.677,.82,2.01,.040,'trim');

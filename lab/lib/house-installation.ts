@@ -1,5 +1,5 @@
 import { COMPONENTS } from './components';
-import { HOME_BACK, HOME_POINTS } from './home-floorplan';
+import { HOME_BACK, HOME_POINTS, HOME_STAIR, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
 import type { JobSite, SiteItem } from './job-site';
 import { fixturePoint, type FixturePose } from './site-fixtures';
@@ -23,7 +23,9 @@ const houseFixings:Record<number,Record<string,WallFixing>>={
   1:{meter:{room:3,face:[2.89,1.24,2.865],yaw:0},supply:{room:3,face:[3.18,.90,2.865],yaw:0},light:back(1,.42,1.84)},
   2:{load2:kitchenA},
   3:{load1:back(1,.42,1.84),load2:kitchenA},
-  9:{near:side(1,-2.2,1.17,1.95,1),far:side(1,-2.2,2.44,-.88,1)},
+  9:{near:{room:1,face:[HOME_STAIR.divider-.035,1.04,.97],yaw:-Math.PI/2},
+    far:side(STAIR_LANDING.id,HOME_STAIR.east,STAIR_TOP+1.04,.97,-1),
+    light:back(1,-1.53,STAIR_HALF+2.03)},
   17:{'socket-a':kitchenA,'socket-b':back(0,-3.18,1.12),'socket-c':side(0,-6.6,.48,-1.04,1)},
   18:ring,
   19:{...ring,'branch-fuse':rear(HOME_POINTS.study,1.04),fixed:rear(HOME_POINTS.study,.18)},
@@ -60,7 +62,7 @@ function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint):InstalledEn
   else if(service&&Math.abs(Math.sin(item.rotation))>.5)chase[0]=service.side*6.6;
   else chase[2]=fixing?fixing.face[2]-.065:service?service.back-.02:item.room===3?2.8:-2.87;
   // The rear wing and front rooms have separate routes in the ceiling void.
-  const riser=site.kind==='home'&&item.room>=4?HOME_BACK-.04:service?service.back-.02:-2.87;
+  const riser=site.kind==='home'&&item.room>=4&&item.room<=7?HOME_BACK-.04:service?service.back-.02:-2.87;
   return {pin,chase,riser,item,component};
 }
 const same=(a:Vec3,b:Vec3)=>a.every((v,k)=>Math.abs(v-b[k])<.000001);
@@ -91,7 +93,7 @@ export function installedWireRoute(doc:CircuitDocument,site:JobSite,wire:Wire):V
     through([a.chase[0],y,a.chase[2]],[a.chase[0],y,ar]);
     if(ar!==br){
       // Cross rows over a partition leading to the rear bedroom or sitting room.
-      const wing=a.item.room>=4?a:b;
+      const wing=a.riser===HOME_BACK-.04?a:b;
       const cross=site.kind!=='home'?SERVICE_AREAS[site.kind].side*6.6:wing.item.room===5?3.6:-.6;
       through([cross,y,ar],[cross,y,br]);
     }

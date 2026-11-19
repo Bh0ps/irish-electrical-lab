@@ -34,9 +34,12 @@ function searchWords(text: string) {
     .filter(Boolean).map(word => searchTerms[word] ?? word);
 }
 export function courseMatchesQuery(lesson: ConfigurationLesson, query: string): boolean {
-  if (!query.trim()) return true;
   const page = COURSE_PAGES[lesson.id];
-  const text = searchWords([lesson.id, lesson.title, lesson.category, lesson.summary, page?.title, page?.aliases, page?.situation, page?.idea, lesson.challenge.briefing].join(' '));
+  return matchesStudyQuery([lesson.id, lesson.title, lesson.category, lesson.summary, page?.title, page?.aliases, page?.situation, page?.idea, lesson.challenge.briefing].join(' '),query);
+}
+export function matchesStudyQuery(description:string,query:string):boolean{
+  if (!query.trim()) return true;
+  const text = searchWords(description);
   const phrase = query.replace(/^\s*how\s+(?:(?:do|can)\s+(?:i|we)|to)\s+(?:wire|connect|build|find)\s+/i, '');
   const words = searchWords(phrase).filter(word => !['a','an','the','of','at','is','i','my','when','after','to','in','turn'].includes(word));
   return words.length > 0 && words.every(word => text.some(term => term.startsWith(word)));

@@ -29,7 +29,7 @@ import DimmerControl from './DimmerControl';
 import { ConductorPicker, TerminalPicker, EquipmentList, nextFreePosition } from './ConnectionPicker';
 import { useCompactWorkbench } from './useCompactWorkbench';
 import { HouseCallPanel } from './HouseCallPanel';
-import { HOUSE_CALLS, callActivityId, savedCallStep, onlyCallControlsChanged, type CallOperation } from '../../lib/house-calls';
+import { HOUSE_CALLS, callActivityId, savedCallStep, onlyCallControlsChanged, houseJobLabels, nextHouseCall, type CallOperation } from '../../lib/house-calls';
 import { BookHome, BookIndex } from './BookIndex';
 import { CHAPTERS, courseTitle, createCoursebookBuild } from '../../lib/coursebook';
 import { CablePicker } from './CablePicker';
@@ -85,6 +85,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const [settingsFps,setSettingsFps]=useState(0);
   const reportBenchFps=useCallback((value:number)=>{lastBenchFps.current=value;},[]);
   const [callOperation,setCallOperation]=useState<CallOperation>();
+  const [savedCallView,setSavedCallView]=useState('');
   const [showJobs,setShowJobs]=useState(false);
   const [sessionKey,setSessionKey]=useState(0);
   const [listView,setListView]=useState(startWithList);
@@ -198,6 +199,8 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
     if (phase === 'compare') setSheetOpen(true);
   }, []);
   const currentCall=workspace==='learn'&&path==='coursebook'&&!activePractice?HOUSE_CALLS.find(call=>call.lesson===document.lessonId&&savedCallStep(call,startActivity)!==undefined):undefined;
+  const followingCall=currentCall?nextHouseCall(currentCall,progress):undefined;
+  const callView=currentCall?JSON.stringify([document.id,document.revision]):'';
   const savedCall=bookmark&&HOUSE_CALLS.find(call=>call.lesson===bookmark.circuit.lessonId&&savedCallStep(call,bookmark.activityId)!==undefined);
   const activityChanged=useCallback((activity:LessonActivity|undefined)=>{
     activityCircuit.current=docRef.current.id;
@@ -212,8 +215,13 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       mode:mode==='challenges'?'challenges':mode==='build'?'build':'explore',
       ...(challengeStarted?{fault:{hints,accepted:diagnosisAccepted,repaired:challengeRepaired,scored}}:{})};
     setBookmark(saved);
-    void writeRecord('bookmark',saved).catch(()=>setSaveStatus('Could not save the lesson position.'));
-  },[hydrated,workspace,path,activePractice,activeActivity,startActivity,currentCall,document,mode,challengeStarted,hints,diagnosisAccepted,challengeRepaired,scored]);
+    // A learner may close the app after a wrong turn as well as after a checked step.
+    let active=true;
+    void writeRecordsAtomic({bookmark:saved,draft:document})
+      .catch(()=>{if(active)setSaveStatus('Could not save the lesson position.');})
+      .then(()=>{if(active&&callView)setSavedCallView(callView);});
+    return ()=>{active=false;};
+  },[hydrated,workspace,path,activePractice,activeActivity,startActivity,currentCall,callView,document,mode,challengeStarted,hints,diagnosisAccepted,challengeRepaired,scored]);
   const lampMeterDemo=workspace==='learn'&&path!=='home'&&activeActivity?.bookStep==='meter-demo'&&document.lessonId===7;
   useEffect(()=>{
     if(!lampMeterDemo||!docRef.current.components.some(c=>c.id==='light'&&c.type==='lamp'))return;
@@ -430,7 +438,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
     const call=HOUSE_CALLS.find(c=>c.lesson===id);if(!call)return;
     const open=()=>{
       loadLesson(id);
-      const job={...clone(LESSONS.find(l=>l.id===id)!.circuit),id:uid('house'),revision:docRef.current.revision+1};
+      const job={...houseJobLabels(clone(LESSONS.find(l=>l.id===id)!.circuit)),id:uid('house'),revision:docRef.current.revision+1};
       baseline.current=fingerprintLayout(job);setDocument(job);
       setPath('coursebook');setMode('explore');setWorkspace('learn');
       setStartActivity(callActivityId(id,0));setSessionKey(k=>k+1);setCallOperation(undefined);
@@ -453,7 +461,8 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   function resumeBook(){
     if(!bookmark){openBook(7);return;}
     const restore=()=>{
-      setCallOperation(undefined);setCoursesOpen(false);loadLesson(bookmark.circuit.lessonId!);setDocument(clone(bookmark.circuit));baseline.current=fingerprintLayout(bookmark.circuit);
+      const circuit=clone(savedCall?houseJobLabels(bookmark.circuit):bookmark.circuit);
+      setCallOperation(undefined);setCoursesOpen(false);loadLesson(circuit.lessonId!);setDocument(circuit);baseline.current=fingerprintLayout(circuit);
       setPath(bookmark.path);setStartActivity(bookmark.activityId);setSessionKey(k=>k+1);setGuidedSession(undefined);setWorkspace('learn');
       if(bookmark.mode!=='explore'||bookmark.path==='full')setSurface('bench');setMode(bookmark.mode);setSheetOpen(true);setInspectorCollapsed(false);
       const f=bookmark.fault;if(f){scoredFault.current=f.scored;setScored(f.scored);setChallengeStarted(true);setHints(f.hints);
@@ -600,7 +609,13 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       onRestart={()=>{if(practiceOnlyControlChanged(activePractice,document))beginPractice(activePractice);else requestReplacement('Restart experiment',()=>beginPractice(activePractice));}}
       onExit={()=>{setPractice(undefined);setTool('select');setPanel('lesson');setCourseStage('look');setPathFilter('all');}}
       context={courseContext}/>:currentCall?<HouseCallPanel key={document.id+':call:'+sessionKey}
-      call={currentCall} document={document} result={result} operation={callOperation} start={startActivity} onActivity={activityChanged}
+      call={currentCall} document={document} result={savedCallView===callView?result:undefined} operation={callOperation} start={startActivity} onActivity={activityChanged}
+      nextJob={followingCall?{title:followingCall.title,open:()=>openHouseCall(followingCall.lesson)}:undefined}
+      startFault={()=>{
+        const begin=()=>{setPath('full');setStartActivity('lesson:'+lesson.id+':repair');setSessionKey(k=>k+1);setCallOperation(undefined);startChallenge();};
+        if(onlyCallControlsChanged(currentCall,docRef.current,lesson.circuit))begin();
+        else requestReplacement('Start fault practice',begin);
+      }}
       onCredit={async(id,next)=>{
         const saved:LessonBookmark={version:1,circuit:document,activityId:next,path:'coursebook',mode:'explore'};
         setProgress(p=>recordActivity(p,currentCall.lesson,id,'house-call',true));

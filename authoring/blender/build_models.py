@@ -565,9 +565,13 @@ def export_lod(root,path):
             bpy.data.objects.remove(obj,do_unlink=True);continue
         if obj.type!='MESH' or len(obj.data.polygons)<80:continue
         if any('legend' in m.name.lower() or 'marking' in m.name.lower() for m in obj.data.materials):continue
+        owner=next((p for p in ancestors(obj) if p.get('detailId') or p.get('terminalId') or p.get('partId')),root)
+        if owner.get('keepDistanceSurface'):
+            # Preserve the face normals where large perforated planes meet
+            # small bevels. Even planar dissolution can smear their shading.
+            continue
         if obj.data.users>1:obj.data=obj.data.copy()
         modifier=obj.modifiers.new('Distance geometry simplification','DECIMATE')
-        owner=next((p for p in ancestors(obj) if p.get('detailId') or p.get('terminalId') or p.get('partId')),root)
         if owner.get('preservePlanarLod'):
             # Collapsing large drilled faces warped the flat mouldings into
             # visible triangular ridges. Dissolve coplanar faces on these parts.

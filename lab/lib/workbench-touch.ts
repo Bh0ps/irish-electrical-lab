@@ -78,6 +78,14 @@ export class WorkbenchTouch {
     }
   }
 
+  cancel(id: number, reason: 'pointercancel' | 'lostpointercapture' = 'pointercancel'): void {
+    if (!this.contacts.has(id)) return;
+    if (reason !== 'lostpointercapture') this.contacts.delete(id);
+    this.mode = this.active ? 'blocked' : 'idle';
+    this.origin = undefined;
+    this.canMove = false;
+  }
+
   reset(): void {
     this.contacts.clear();
     this.origin = undefined;
