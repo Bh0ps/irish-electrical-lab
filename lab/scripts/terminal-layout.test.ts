@@ -17,7 +17,16 @@ test('every registry, lesson and gallery terminal has one finite physical mouth 
     const d=COMPONENTS[c.type],resolved=getComponentTerminals(c,d);
     assert.equal(resolved.length,d.terminals.length,c.id);
     assert.equal(new Set(resolved.map(t=>t.id)).size,resolved.length,c.id);
-    assert.deepEqual(resolved.map(t=>[t.id,t.role,t.purpose]),d.terminals.map(t=>[t.id,t.role,t.purpose]));
+    assert.deepEqual(resolved.map(t=>[t.id,t.role]),d.terminals.map(t=>[t.id,t.role]));
+    if(c.type==='switch' && c.variant==='door-contact') {
+      assert.match(resolved.find(t=>t.id==='COM')!.purpose,/door/);
+      assert.match(resolved.find(t=>t.id==='OUT')!.purpose,/joins COM/);
+    } else if(c.type==='selector' && c.variant==='float-changeover') {
+      assert.match(resolved.find(t=>t.id==='COM')!.purpose,/float/);
+      for(const id of ['A','B']) assert.match(resolved.find(t=>t.id===id)!.purpose,new RegExp(id+' joins COM'));
+    } else {
+      assert.deepEqual(resolved.map(t=>t.purpose),d.terminals.map(t=>t.purpose));
+    }
     for(const t of resolved){
       assert.ok(t.anchor.every(Number.isFinite),`${c.id}.${t.id} has invalid coordinates`);
       assert.ok(Math.abs(Math.hypot(...t.entryDirection!)-1)<1e-8,`${c.id}.${t.id} invalid access direction`);

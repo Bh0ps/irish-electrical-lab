@@ -126,7 +126,7 @@ function buildCircuit(id: number, title: string): CircuitDocument {
   };
   switch (id) {
     case 1: {
-      b.add('meter', 'meter', 'Meter · energy boundary'); b.add('isolator', 'main', 'Customer main isolator', { closed: true }); b.add('panel', 'board', 'Consumer unit overview');
+      b.add('meter', 'meter', 'Electricity meter'); b.add('isolator', 'main', 'Main switch', { closed: true }); b.add('panel', 'board', 'Distribution board');
       b.wire(b.live, ['meter', 'L']); b.wire(b.neutral, ['meter', 'N'], 'N'); b.wire(b.earth, ['meter', 'PE'], 'PE');
       b.wire(['meter', 'LOUT'], ['main', 'LIN']); b.wire(['meter', 'NOUT'], ['main', 'NIN'], 'N');
       b.wire(['main', 'LOUT'], ['board', 'L']); b.wire(['main', 'NOUT'], ['board', 'N'], 'N'); b.wire(['meter', 'PEOUT'], ['board', 'PE'], 'PE');
@@ -148,30 +148,30 @@ function buildCircuit(id: number, title: string): CircuitDocument {
       b.add('rcbo', 'outgoing', 'Remote final-circuit RCBO', { rating: 16, residualRating: 0.03, closed: true }); b.wire(['board', 'LOUT'], ['outgoing', 'LIN']); b.wire(['board', 'NOUT'], ['outgoing', 'NIN'], 'N'); b.neutral = ['outgoing', 'NOUT']; b.load('socket', 'load', 'Remote socket circuit', ['outgoing', 'LOUT'], 300); break;
     }
     case 5: {
-      b.protectedSingle(); b.add('spd', 'spd', 'Parallel surge-protection branch'); b.mains('spd'); lamp('load', 'Protected equipment'); break;
+      b.protectedSingle(); b.add('spd', 'spd', 'Surge protector (SPD)'); b.mains('spd'); lamp('load', 'Protected equipment'); break;
     }
     case 6: {
-      b.protectedSingle(); b.load('heater', 'priority', 'Priority demand', b.live, 800); b.add('relay', 'shed', 'Low-priority permission relay', { energized: false });
-      const c = b.powered('sensor', 'monitor', 'Demand monitor · request low-priority shed', { active: false, demand: true, threshold: 1000 }); b.coil('shed', c); b.wire(b.live, ['shed', 'COM']); b.load('heater', 'secondary', 'Lower-priority demand', ['shed', 'NC'], 600); break;
+      b.protectedSingle(); b.load('heater', 'priority', 'Priority heater', b.live, 800); b.add('relay', 'shed', 'Relay for the second heater', { energized: false });
+      const c = b.powered('sensor', 'monitor', 'Load controller', { active: false, demand: true, threshold: 1000 }); b.coil('shed', c); b.wire(b.live, ['shed', 'COM']); b.load('heater', 'secondary', 'Second heater', ['shed', 'NC'], 600); break;
     }
-    case 7: lamp('light', 'One luminaire', sw('switch', 'One-way switch')); break;
-    case 8: { const x = sw('switch', 'Shared lighting switch'); lamp('light-a', 'Parallel luminaire A', x); lamp('light-b', 'Parallel luminaire B', x); lamp('light-c', 'Parallel luminaire C', x); break; }
+    case 7: lamp('light', 'Hall light', sw('switch', 'One-way switch')); break;
+    case 8: { const x = sw('switch', 'Shared lighting switch'); lamp('light-a', 'Hall light A', x); lamp('light-b', 'Hall light B', x); lamp('light-c', 'Hall light C', x); break; }
     case 9: {
       b.add('switch2', 'near', 'Two-way switch A', { position: 0, closed: true }); b.add('switch2', 'far', 'Two-way switch B', { position: 0, closed: true });
-      b.wire(b.live, ['near', 'COM']); b.wire(['near', 'T1'], ['far', 'T1'], 'control'); b.wire(['near', 'T2'], ['far', 'T2'], 'control'); lamp('light', 'Staircase luminaire', ['far', 'COM']); break;
+      b.wire(b.live, ['near', 'COM']); b.wire(['near', 'T1'], ['far', 'T1'], 'control'); b.wire(['near', 'T2'], ['far', 'T2'], 'control'); lamp('light', 'Stairs light', ['far', 'COM']); break;
     }
     case 10: {
       b.add('switch2', 'near', 'End switch A', { position: 0 }); b.add('intermediate', 'middle', 'Intermediate crossing switch', { crossed: false, position: 0 }); b.add('switch2', 'far', 'End switch B', { position: 0 });
-      b.wire(b.live, ['near', 'COM']); b.wire(['near', 'T1'], ['middle', 'A'], 'control'); b.wire(['near', 'T2'], ['middle', 'B'], 'control'); b.wire(['middle', 'C'], ['far', 'T1'], 'control'); b.wire(['middle', 'D'], ['far', 'T2'], 'control'); lamp('light', 'Three-location luminaire', ['far', 'COM']); break;
+      b.wire(b.live, ['near', 'COM']); b.wire(['near', 'T1'], ['middle', 'A'], 'control'); b.wire(['near', 'T2'], ['middle', 'B'], 'control'); b.wire(['middle', 'C'], ['far', 'T1'], 'control'); b.wire(['middle', 'D'], ['far', 'T2'], 'control'); lamp('light', 'Corridor light', ['far', 'COM']); break;
     }
     case 11: { lamp('zone-a', 'Lighting zone A', sw('gang-a', 'Gang A')); lamp('zone-b', 'Lighting zone B', sw('gang-b', 'Gang B')); break; }
-    case 12: { const x = b.control('dimmer', 'dimmer', 'Lamp dimmer', b.live, { level: 0.65, closed: true }); lamp('light', 'Dimmable luminaire', x); break; }
+    case 12: { const x = b.control('dimmer', 'dimmer', 'Lamp dimmer', b.live, { level: 0.65, closed: true }); lamp('light', 'Reading lamp', x); break; }
     case 13: {
-      b.add('driver', 'driver', 'Isolated LED driver · 24 V output', { outputVoltage: 24 }); b.mains('driver'); b.add('led', 'led', 'Extra-low-voltage LED luminaire', { watts: 12, ratedVoltage: 24, doubleInsulated: true, classII: true }); b.wire(['driver', '+'], ['led', 'L'], 'DC+'); b.wire(['driver', '-'], ['led', 'N'], 'DC-'); break;
+      b.add('driver', 'driver', 'Isolated LED driver · 24 V output', { outputVoltage: 24 }); b.mains('driver'); b.add('led', 'led', '24 V LED light', { watts: 12, ratedVoltage: 24, doubleInsulated: true, classII: true }); b.wire(['driver', '+'], ['led', 'L'], 'DC+'); b.wire(['driver', '-'], ['led', 'N'], 'DC-'); break;
     }
-    case 14: { const x = b.powered('sensor', 'pir', 'Motion detector request', { active: true, demand: true, mode: 'pir' }); b.wire(b.live, ['pir', 'IN'], 'control'); const t = b.powered('timer', 'occupancy-hold', 'Occupancy run-on timer', { on: true, demand: true, mode: 'off-delay', delay: 4 }); b.wire(x, ['occupancy-hold', 'IN'], 'control'); lamp('light', 'Occupancy lighting', t); break; }
-    case 15: { const x = b.powered('sensor', 'photo', 'Photocell · darkness requests light', { active: true, demand: true, mode: 'photocell' }); b.wire(b.live, ['photo', 'IN'], 'control'); lamp('light', 'Dusk-to-dawn light', x); break; }
-    case 16: { const x = b.powered('smartrelay', 'smart', 'Smart relay and input interface', { on: true, active: true }); b.wire(sw('manual', 'Local wall switch'), ['smart', 'IN'], 'control'); lamp('light', 'Smart controlled lighting', x); break; }
+    case 14: { const x = b.powered('sensor', 'pir', 'Motion detector (PIR)', { active: true, demand: true, mode: 'pir' }); b.wire(b.live, ['pir', 'IN'], 'control'); const t = b.powered('timer', 'occupancy-hold', 'Hall light timer', { on: true, demand: true, mode: 'off-delay', delay: 4 }); b.wire(x, ['occupancy-hold', 'IN'], 'control'); lamp('light', 'Hall light', t); break; }
+    case 15: { const x = b.powered('sensor', 'photo', 'Daylight sensor (photocell)', { active: true, demand: true, mode: 'photocell' }); b.wire(b.live, ['photo', 'IN'], 'control'); lamp('light', 'Dusk-to-dawn light', x); break; }
+    case 16: { const x = b.powered('smartrelay', 'smart', 'Smart relay', { on: true, active: true }); b.wire(sw('manual', 'Local wall switch'), ['smart', 'IN'], 'control'); lamp('light', 'Smart controlled lighting', x); break; }
     case 17: {
       b.load('socket', 'socket-a', 'Radial outlet A', b.live, 80); b.add('socket', 'socket-b', 'Radial outlet B', { watts: 100 }); b.add('socket', 'socket-c', 'Radial outlet C', { watts: 120 });
       for (const [a, c] of [['socket-a', 'socket-b'], ['socket-b', 'socket-c']]) for (const t of ['L', 'N', 'PE']) b.wire([a, t], [c, t], t as TerminalRole); break;
@@ -180,15 +180,15 @@ function buildCircuit(id: number, title: string): CircuitDocument {
       b.load('socket', 'socket-a', 'Ring outlet A', b.live, 80); b.add('socket', 'socket-b', 'Ring outlet B', { watts: 100 }); b.add('socket', 'socket-c', 'Ring outlet C', { watts: 120 });
       for (const [a, c] of [['socket-a', 'socket-b'], ['socket-b', 'socket-c']]) for (const t of ['L', 'N', 'PE']) b.wire([a, t], [c, t], t as TerminalRole);
       b.wire(['socket-c', 'L'], b.live); b.wire(['socket-c', 'N'], b.neutral, 'N'); b.wire(['socket-c', 'PE'], b.earth, 'PE');
-      if (id === 19) { b.add('fuse', 'branch-fuse', 'Branch fuse', { rating: 3, closed: true }); b.wire(['socket-b', 'L'], ['branch-fuse', 'IN']); b.load('heater', 'fixed', 'Small fixed load on fused branch', ['branch-fuse', 'OUT'], 400); } break;
+      if (id === 19) { b.add('fuse', 'branch-fuse', 'Branch fuse', { rating: 3, closed: true }); b.wire(['socket-b', 'L'], ['branch-fuse', 'IN']); b.load('heater', 'fixed', 'Heater on the fused branch', ['branch-fuse', 'OUT'], 400); } break;
     }
-    case 20: { const x = sw('fcu-switch', 'Fused supply switch'); b.add('fuse', 'fuse', 'Appliance fuse', { rating: 3 }); b.wire(x, ['fuse', 'IN']); b.load('heater', 'fixed', 'Small fixed load', ['fuse', 'OUT'], 300); break; }
+    case 20: { const x = sw('fcu-switch', 'Fused supply switch'); b.add('fuse', 'fuse', 'Appliance fuse', { rating: 3 }); b.wire(x, ['fuse', 'IN']); b.load('heater', 'fixed', 'Fixed heater', ['fuse', 'OUT'], 300); break; }
     case 21: {
-      const x = sw('grid-a', 'Labelled appliance isolation A'); const y = sw('grid-b', 'Labelled appliance isolation B');
-      b.load('socket', 'outlet-a', 'Remote appliance outlet A', x, 150); b.load('socket', 'outlet-b', 'Remote appliance outlet B', y, 220); break;
+      const x = sw('grid-a', 'Kitchen switch A'); const y = sw('grid-b', 'Kitchen switch B');
+      b.load('socket', 'outlet-a', 'Kitchen outlet A', x, 150); b.load('socket', 'outlet-b', 'Kitchen outlet B', y, 220); break;
     }
     case 22: case 23: {
-      b.add('isolator', 'local', id === 22 ? 'Cooker local double-pole isolation' : 'Shower double-pole isolation', { closed: true }); b.wire(b.live, ['local', 'LIN']); b.wire(b.neutral, ['local', 'NIN'], 'N'); b.neutral = ['local', 'NOUT'];
+      b.add('isolator', 'local', id === 22 ? 'Double-pole cooker switch' : 'Double-pole shower switch', { closed: true }); b.wire(b.live, ['local', 'LIN']); b.wire(b.neutral, ['local', 'NIN'], 'N'); b.neutral = ['local', 'NOUT'];
       if (id === 23) { b.add('cutout', 'flow-permission', 'Water flow switch', { closed: true }); b.wire(['local', 'LOUT'], ['flow-permission', 'COM']); b.load('shower', 'appliance', 'Electric shower', ['flow-permission', 'OUT'], 1200); }
       else b.load('cooker', 'appliance', 'Cooker · reduced exercise load', ['local', 'LOUT'], 1500); break;
     }
@@ -201,53 +201,53 @@ function buildCircuit(id: number, title: string): CircuitDocument {
     }
     case 27: {
       const t = b.powered('timer', 'schedule', 'Immersion schedule timer', { on: true, active: true, delay: 0 }); b.wire(b.live, ['schedule', 'IN'], 'control');
-      b.add('junction', 'permission', 'Schedule OR boost permission'); b.wire(t, ['permission', '1'], 'control'); b.wire(sw('boost', 'Manual boost · exercise switch'), ['permission', '2'], 'control'); const x = stat('stat', 'Immersion thermostat', ['permission', '3']); b.load('heater', 'element', 'Scheduled immersion element', x, 1000); break;
+      b.add('junction', 'permission', 'Timer and boost junction'); b.wire(t, ['permission', '1'], 'control'); b.wire(sw('boost', 'Boost switch'), ['permission', '2'], 'control'); const x = stat('stat', 'Immersion thermostat', ['permission', '3']); b.load('heater', 'element', 'Scheduled immersion element', x, 1000); break;
     }
-    case 28: { const x = b.powered('timer', 'programme', 'Heating programmer', { on: true, active: true }); b.wire(b.live, ['programme', 'IN'], 'control'); const y = stat('room', 'Room thermostat', x); b.load('boiler', 'boiler', 'Packaged boiler heat-demand input', y, 100); break; }
+    case 28: { const x = b.powered('timer', 'programme', 'Heating programmer', { on: true, active: true }); b.wire(b.live, ['programme', 'IN'], 'control'); const y = stat('room', 'Room thermostat', x); b.load('boiler', 'boiler', 'Boiler heating input', y, 100); break; }
     case 29: {
-      const x = b.powered('timer', 'programme', 'Heating schedule', { on: true, active: true }); b.wire(b.live, ['programme', 'IN'], 'control'); const a = valve('heating-valve', stat('room', 'Room thermostat', x), 'Heating two-port zone valve'); const c = valve('water-valve', stat('cylinder', 'Cylinder thermostat', x), 'Hot-water two-port zone valve'); b.add('junction', 'end-bus', 'Valve end-switch OR'); b.wire(a, ['end-bus', '1'], 'control'); b.wire(c, ['end-bus', '2'], 'control'); b.load('boiler', 'boiler', 'Boiler demand after valve opens', ['end-bus', '3'], 100); break;
+      const x = b.powered('timer', 'programme', 'Heating schedule', { on: true, active: true }); b.wire(b.live, ['programme', 'IN'], 'control'); const a = valve('heating-valve', stat('room', 'Room thermostat', x), 'Heating two-port zone valve'); const c = valve('water-valve', stat('cylinder', 'Cylinder thermostat', x), 'Hot-water two-port zone valve'); b.add('junction', 'end-bus', 'Valve end-switch junction'); b.wire(a, ['end-bus', '1'], 'control'); b.wire(c, ['end-bus', '2'], 'control'); b.load('boiler', 'boiler', 'Boiler demand after valve opens', ['end-bus', '3'], 100); break;
     }
     case 30: {
-      b.add('valve3', 'mid-valve', 'Three-port mid-position valve', { delay: 1, position: 'mid' }); b.mains('mid-valve'); b.wire(stat('room', 'Heating demand thermostat'), ['mid-valve', 'CH'], 'control'); b.wire(stat('cylinder', 'Hot-water demand thermostat'), ['mid-valve', 'HW'], 'control'); b.load('boiler', 'boiler', 'Heat source enabled by valve interface', ['mid-valve', 'END'], 100); break;
+      b.add('valve3', 'mid-valve', 'Three-port mid-position valve', { delay: 1, position: 'mid' }); b.mains('mid-valve'); b.wire(stat('room', 'Room thermostat'), ['mid-valve', 'CH'], 'control'); b.wire(stat('cylinder', 'Cylinder thermostat'), ['mid-valve', 'HW'], 'control'); b.load('boiler', 'boiler', 'Boiler heating input', ['mid-valve', 'END'], 100); break;
     }
     case 31: {
-      b.add('sensor', 'probe', 'Floor-temperature probe interface', { active: true, demand: true, mode: 'temperature', sensorValue: 20, setpoint: 28 }); b.mains('probe', 'L', 'N', false); b.wire(b.live, ['probe', 'IN'], 'control'); const x = stat('room', 'Underfloor room thermostat', ['probe', 'OUT']); b.load('heater', 'mat', 'Electric underfloor mat', x, 600); break;
+      b.add('sensor', 'probe', 'Floor temperature control', { active: true, demand: true, mode: 'temperature', sensorValue: 20, setpoint: 28 }); b.mains('probe', 'L', 'N', false); b.wire(b.live, ['probe', 'IN'], 'control'); const x = stat('room', 'Underfloor room thermostat', ['probe', 'OUT']); b.load('heater', 'mat', 'Electric underfloor mat', x, 600); break;
     }
     case 32: {
-      b.add('plc', 'centre', 'Underfloor heating wiring centre', { on: true, mode: 'independent', nominalVoltage: 240 }); b.mains('centre', 'L', 'N', false); b.wire(b.live, ['centre', 'COM'], 'control'); b.wire(stat('room-a', 'Room A demand'), ['centre', 'I1'], 'control'); b.wire(stat('room-b', 'Room B demand'), ['centre', 'I2'], 'control'); const a = valve('actuator-a', ['centre', 'Q1'], 'Manifold actuator A'); const c = valve('actuator-b', ['centre', 'Q2'], 'Manifold actuator B'); b.add('junction', 'open-bus', 'Actuator-open demand'); b.wire(a, ['open-bus', '1'], 'control'); b.wire(c, ['open-bus', '2'], 'control'); b.load('pump', 'pump', 'Manifold circulation pump', ['open-bus', '3'], 90); break;
+      b.add('plc', 'centre', 'Underfloor heating wiring centre', { on: true, mode: 'independent', nominalVoltage: 240 }); b.mains('centre', 'L', 'N', false); b.wire(b.live, ['centre', 'COM'], 'control'); b.wire(stat('room-a', 'Room A demand'), ['centre', 'I1'], 'control'); b.wire(stat('room-b', 'Room B demand'), ['centre', 'I2'], 'control'); const a = valve('actuator-a', ['centre', 'Q1'], 'Manifold actuator A'); const c = valve('actuator-b', ['centre', 'Q2'], 'Manifold actuator B'); b.add('junction', 'open-bus', 'Valve end-switch junction'); b.wire(a, ['open-bus', '1'], 'control'); b.wire(c, ['open-bus', '2'], 'control'); b.load('pump', 'pump', 'Manifold circulation pump', ['open-bus', '3'], 90); break;
     }
-    case 33: { const x = b.powered('timer', 'offpeak', 'Charge-window controller', { on: true, active: true }); b.wire(b.live, ['offpeak', 'IN'], 'control'); b.load('heater', 'store', 'Storage charge element', stat('charge-stat', 'Charge thermostat', x), 900); b.load('fan', 'day', 'Daytime heat-release fan', sw('release', 'Independent daytime release'), 50); break; }
-    case 34: { b.add('isolator', 'local', 'Heat-pump supply isolation', { closed: true }); b.wire(b.live, ['local', 'LIN']); b.wire(b.neutral, ['local', 'NIN'], 'N'); b.neutral = ['local', 'NOUT']; b.add('relay', 'demand', 'Packaged demand interface'); b.coil('demand', stat('room', 'Heat request')); b.wire(['local', 'LOUT'], ['demand', 'COM']); b.load('heatpump', 'unit', 'Heat pump', ['demand', 'NO'], 1000); break; }
+    case 33: { const x = b.powered('timer', 'offpeak', 'Off-peak timer', { on: true, active: true }); b.wire(b.live, ['offpeak', 'IN'], 'control'); b.load('heater', 'store', 'Storage charge element', stat('charge-stat', 'Charge thermostat', x), 900); b.load('fan', 'day', 'Daytime heat-release fan', sw('release', 'Daytime fan switch'), 50); break; }
+    case 34: { b.add('isolator', 'local', 'Heat pump isolator', { closed: true }); b.wire(b.live, ['local', 'LIN']); b.wire(b.neutral, ['local', 'NIN'], 'N'); b.neutral = ['local', 'NOUT']; b.add('relay', 'demand', 'Heat pump control relay'); b.coil('demand', stat('room', 'Heat request')); b.wire(['local', 'LOUT'], ['demand', 'COM']); b.load('heatpump', 'unit', 'Heat pump', ['demand', 'NO'], 1000); break; }
     case 35: b.load('fan', 'fan', 'Simple switched extractor', sw('switch', 'Fan supply switch'), 35); break;
     case 36: {
-      b.add('isolator3', 'fan-isolation', 'Three-pole fan isolation · fourth pole unused', { closed: true }); b.wire(b.live, ['fan-isolation', 'L1IN']); b.wire(b.neutral, ['fan-isolation', 'NIN'], 'N'); b.wire(sw('light-switch', 'Lighting / fan trigger'), ['fan-isolation', 'L2IN'], 'control');
-      b.add('timer', 'runon', 'Fan timer with maintained supply', { on: true, demand: true, mode: 'off-delay', delay: 5 }); b.wire(['fan-isolation', 'L1OUT'], ['runon', 'L']); b.wire(['fan-isolation', 'NOUT'], ['runon', 'N'], 'N'); b.wire(['fan-isolation', 'L2OUT'], ['runon', 'IN'], 'control'); b.neutral = ['fan-isolation', 'NOUT']; b.load('fan', 'fan', 'Run-on extractor', ['runon', 'OUT'], 35); break;
+      b.add('isolator3', 'fan-isolation', 'Three-pole fan isolation · fourth pole unused', { closed: true }); b.wire(b.live, ['fan-isolation', 'L1IN']); b.wire(b.neutral, ['fan-isolation', 'NIN'], 'N'); b.wire(sw('light-switch', 'Bathroom light switch'), ['fan-isolation', 'L2IN'], 'control');
+      b.add('timer', 'runon', 'Fan timer with permanent supply', { on: true, demand: true, mode: 'off-delay', delay: 5 }); b.wire(['fan-isolation', 'L1OUT'], ['runon', 'L']); b.wire(['fan-isolation', 'NOUT'], ['runon', 'N'], 'N'); b.wire(['fan-isolation', 'L2OUT'], ['runon', 'IN'], 'control'); b.neutral = ['fan-isolation', 'NOUT']; b.load('fan', 'fan', 'Run-on extractor', ['runon', 'OUT'], 35); break;
     }
     case 37: {
-      const x = b.powered('sensor', 'humidity', 'Humidity demand', { active: true, demand: true, mode: 'humidity' }); b.wire(b.live, ['humidity', 'IN'], 'control'); b.add('junction', 'or', 'Humidity OR override'); b.wire(x, ['or', '1'], 'control'); b.wire(sw('override', 'Manual ventilation override'), ['or', '2'], 'control'); b.load('fan', 'fan', 'Humidity extractor', ['or', '3'], 35); break;
+      const x = b.powered('sensor', 'humidity', 'Humidity sensor', { active: true, demand: true, mode: 'humidity' }); b.wire(b.live, ['humidity', 'IN'], 'control'); b.add('junction', 'or', 'Fan control junction'); b.wire(x, ['or', '1'], 'control'); b.wire(sw('override', 'Manual ventilation override'), ['or', '2'], 'control'); b.load('fan', 'fan', 'Humidity extractor', ['or', '3'], 35); break;
     }
-    case 38: case 39: { const x = b.powered('sensor', 'request', id === 38 ? 'High-water float request' : 'Low-pressure pumping request', { active: true, demand: true, mode: id === 38 ? 'float' : 'pressure' }); b.wire(b.live, ['request', 'IN'], 'control'); b.contactor('pump-contactor', 'Pump switching contactor'); b.coil('pump-contactor', x); b.wire(b.live, ['pump-contactor', '1']); b.load('pump', 'pump', id === 38 ? 'Sump drainage pump' : 'Pressure booster pump', ['pump-contactor', '2'], 400); if (id === 39) { b.add('relay', 'dry-run', 'Optional dry-run permission relay', { energized: true }); b.coil('dry-run', b.live); b.wire(['pump-contactor', '2'], ['dry-run', 'COM']); const w = b.wires.find(w => w.from.component === 'pump-contactor' && w.to.component === 'pump'); if (w) w.from = endpoint(['dry-run', 'NO']); } break; }
+    case 38: case 39: { const x = b.powered('sensor', 'request', id === 38 ? 'Sump float switch' : 'Pump pressure switch', { active: true, demand: true, mode: id === 38 ? 'float' : 'pressure' }); b.wire(b.live, ['request', 'IN'], 'control'); b.contactor('pump-contactor', 'Pump contactor'); b.coil('pump-contactor', x); b.wire(b.live, ['pump-contactor', '1']); b.load('pump', 'pump', id === 38 ? 'Sump drainage pump' : 'Pressure booster pump', ['pump-contactor', '2'], 400); if (id === 39) { b.add('relay', 'dry-run', 'Dry-run relay', { energized: true }); b.coil('dry-run', b.live); b.wire(['pump-contactor', '2'], ['dry-run', 'COM']); const w = b.wires.find(w => w.from.component === 'pump-contactor' && w.to.component === 'pump'); if (w) w.from = endpoint(['dry-run', 'NO']); } break; }
     case 40: { b.contactor('starter', 'Single-phase motor contactor'); b.add('overload', 'ol', 'Motor overload', { rating: 8, closed: true }); b.wire(b.live, ['starter', '1']); b.wire(['starter', '2'], ['ol', '1']); b.load('motor', 'motor', 'Single-phase motor', ['ol', '2'], 500); b.startStop('starter', b.live, 'stop', 'start', 'ol'); break; }
     case 41: case 52: {
-      b.add('selector', 'direction', 'Up / down command selector', { position: 0 }); b.wire(b.live, ['direction', 'COM']); b.contactor('up', 'Up-direction interface'); b.contactor('down', 'Down-direction interface'); const a = b.control('cutout', 'limit-up', 'Upper travel limit · closed before endpoint', ['direction', 'A']); const c = b.control('cutout', 'limit-down', 'Lower travel limit · closed before endpoint', ['direction', 'B']); b.wire(a, ['down', '21'], 'control'); b.wire(c, ['up', '21'], 'control'); b.coil('up', ['down', '22']); b.coil('down', ['up', '22']);
-      b.wire(b.live, ['up', '1']); b.wire(b.live, ['down', '1']); b.add('junction', 'run-bus', 'Either permitted direction'); b.wire(['up', '2'], ['run-bus', '1'], 'control'); b.wire(['down', '2'], ['run-bus', '2'], 'control');
+      b.add('selector', 'direction', 'Up / down command selector', { position: 0 }); b.wire(b.live, ['direction', 'COM']); b.contactor('up', 'Up contactor'); b.contactor('down', 'Down contactor'); const a = b.control('cutout', 'limit-up', 'Upper limit switch', ['direction', 'A']); const c = b.control('cutout', 'limit-down', 'Lower limit switch', ['direction', 'B']); b.wire(a, ['down', '21'], 'control'); b.wire(c, ['up', '21'], 'control'); b.coil('up', ['down', '22']); b.coil('down', ['up', '22']);
+      b.wire(b.live, ['up', '1']); b.wire(b.live, ['down', '1']); b.add('junction', 'run-bus', 'Motor feed junction'); b.wire(['up', '2'], ['run-bus', '1'], 'control'); b.wire(['down', '2'], ['run-bus', '2'], 'control');
       let x: Node = ['run-bus', '3']; if (id === 52) x = b.control('cutout', 'beam', 'Gate safety beam contact', x, { closed: true }); b.load('motor', 'operator', id === 41 ? 'Shutter packaged motor operator' : 'Gate packaged motor operator', x, 300, { packagedDirection: true }); break;
     }
     case 42: { b.load('alarm', 'smoke', 'Smoke alarm with backup', b.live, 2, { batteryBackup: true }); b.load('alarm', 'heat', 'Heat alarm with backup', b.live, 2, { batteryBackup: true }); b.wire(['smoke', 'LINK'], ['heat', 'LINK'], 'control'); break; }
     case 43: { b.add('transformer', 'tx', 'Doorbell transformer · 12 V AC', { outputVoltage: 12 }); b.mains('tx'); b.add('pushbutton', 'push', 'Doorbell push · NO', { pressed: false }); b.wire(['tx', '+'], ['push', 'COM'], 'output'); b.add('chime', 'chime', 'Low-voltage door chime', { watts: 3, ratedVoltage: 12, doubleInsulated: true }); b.wire(['push', 'NO'], ['chime', 'L'], 'output'); b.wire(['tx', '-'], ['chime', 'N'], 'output'); break; }
-    case 44: case 45: { b.add('emergency', 'emergency', id === 44 ? 'Non-maintained emergency fitting' : 'Maintained emergency fitting', { maintained: id === 45, batteryCharge: 1, watts: 8 }); b.mains('emergency'); if (id === 45) b.wire(sw('normal-switch', 'Normal illumination switch'), ['emergency', 'SL'], 'control'); break; }
-    case 46: { b.contactor('permission', 'EVSE charge-permission interface'); const x = b.powered('sensor', 'load-control', 'Load-management permission', { active: true, demand: true, mode: 'load' }); b.wire(b.live, ['load-control', 'IN'], 'control'); b.coil('permission', x); b.wire(b.live, ['permission', '1']); b.load('ev', 'evse', 'Single-phase EVSE · packaged controls', ['permission', '2'], 1200, { packagedProtection: true }); break; }
-    case 47: { b.add('isolator', 'pv-isolator', 'Inverter AC isolation', { closed: true }); b.wire(b.live, ['pv-isolator', 'LIN']); b.wire(b.neutral, ['pv-isolator', 'NIN'], 'N'); b.add('pv', 'inverter', 'Grid-following PV inverter · AC side', { watts: 500, power: 500, generation: 500, antiIslanding: true }); b.wire(['pv-isolator', 'LOUT'], ['inverter', 'L']); b.wire(['pv-isolator', 'NOUT'], ['inverter', 'N'], 'N'); b.wire(b.earth, ['inverter', 'PE'], 'PE'); b.load('socket', 'home', 'Site demand receiving generated energy', b.live, 250); break; }
-    case 48: { b.add('battery', 'inverter', 'Battery inverter with packaged backup changeover', { watts: 300, power: 300, batteryCharge: 1, backup: true }); b.mains('inverter'); b.add('lamp', 'essential', 'Essential lighting on backup output', { watts: 60 }); b.wire(['inverter', 'BL'], ['essential', 'L']); b.wire(['inverter', 'BN'], ['essential', 'N'], 'N'); b.wire(b.earth, ['essential', 'PE'], 'PE'); b.load('socket', 'ordinary', 'Ordinary non-backup demand', b.live, 150); break; }
-    case 49: { const t = b.powered('timer', 'hours', 'Trading-hours permission', { on: true, active: true }); b.wire(b.live, ['hours', 'IN'], 'control'); const p = b.powered('sensor', 'dark', 'Photocell darkness permission', { active: true, demand: true, mode: 'photocell' }); b.wire(t, ['dark', 'IN'], 'control'); b.contactor('sign', 'Signage lighting contactor'); b.coil('sign', p); b.wire(b.live, ['sign', '1']); lamp('letters-a', 'Signage bank A', ['sign', '2']); lamp('letters-b', 'Signage bank B', ['sign', '2']); break; }
-    case 50: { const d = b.powered('timer', 'defrost-clock', 'Defrost schedule', { on: false, demand: true, active: false, delay: 0 }); b.wire(b.live, ['defrost-clock', 'IN'], 'control'); b.add('relay', 'defrost', 'Cooling / defrost interlock relay'); b.coil('defrost', d); b.wire(b.live, ['defrost', 'COM']); const c = stat('cold-stat', 'Cabinet cooling demand', ['defrost', 'NC']); b.load('motor', 'compressor', 'Refrigeration compressor', c, 250); b.load('heater', 'defrost-heat', 'Defrost heater', ['defrost', 'NO'], 300); break; }
-    case 51: { const x = b.powered('sensor', 'pressure', 'Compressor pressure demand', { active: true, demand: true, mode: 'pressure' }); b.wire(b.live, ['pressure', 'IN'], 'control'); b.contactor('compressor-k', 'Compressor contactor'); b.wire(x, ['ol', '95'], 'control'); b.coil('compressor-k', ['ol', '96']); b.wire(b.live, ['compressor-k', '1']); b.add('overload', 'ol', 'Compressor overload', { rating: 8 }); b.wire(['compressor-k', '2'], ['ol', '1']); b.load('motor', 'compressor', 'Compressor motor', ['ol', '2'], 450); b.add('relay', 'unload', 'Unloader release when stopped'); b.coil('unload', ['compressor-k', '2']); b.wire(b.live, ['unload', 'COM']); b.load('indicator', 'unloader', 'Unloader valve represented by indicator', ['unload', 'NC'], 5); break; }
+    case 44: case 45: { b.add('emergency', 'emergency', id === 44 ? 'Non-maintained emergency fitting' : 'Maintained emergency fitting', { maintained: id === 45, batteryCharge: 1, watts: 8 }); b.mains('emergency'); if (id === 45) b.wire(sw('normal-switch', 'Light switch'), ['emergency', 'SL'], 'control'); break; }
+    case 46: { b.contactor('permission', 'Car charger contactor'); const x = b.powered('sensor', 'load-control', 'Charging load controller', { active: true, demand: true, mode: 'load' }); b.wire(b.live, ['load-control', 'IN'], 'control'); b.coil('permission', x); b.wire(b.live, ['permission', '1']); b.load('ev', 'evse', 'Single-phase car charger', ['permission', '2'], 1200, { packagedProtection: true }); break; }
+    case 47: { b.add('isolator', 'pv-isolator', 'Inverter AC isolation', { closed: true }); b.wire(b.live, ['pv-isolator', 'LIN']); b.wire(b.neutral, ['pv-isolator', 'NIN'], 'N'); b.add('pv', 'inverter', 'Grid-following PV inverter · AC side', { watts: 500, power: 500, generation: 500, antiIslanding: true }); b.wire(['pv-isolator', 'LOUT'], ['inverter', 'L']); b.wire(['pv-isolator', 'NOUT'], ['inverter', 'N'], 'N'); b.wire(b.earth, ['inverter', 'PE'], 'PE'); b.load('socket', 'home', 'House socket', b.live, 250); break; }
+    case 48: { b.add('battery', 'inverter', 'Battery inverter with packaged backup changeover', { watts: 300, power: 300, batteryCharge: 1, backup: true }); b.mains('inverter'); b.add('lamp', 'essential', 'Essential lighting on backup output', { watts: 60 }); b.wire(['inverter', 'BL'], ['essential', 'L']); b.wire(['inverter', 'BN'], ['essential', 'N'], 'N'); b.wire(b.earth, ['essential', 'PE'], 'PE'); b.load('socket', 'ordinary', 'Socket on mains only', b.live, 150); break; }
+    case 49: { const t = b.powered('timer', 'hours', 'Shop time switch', { on: true, active: true }); b.wire(b.live, ['hours', 'IN'], 'control'); const p = b.powered('sensor', 'dark', 'Daylight sensor (photocell)', { active: true, demand: true, mode: 'photocell' }); b.wire(t, ['dark', 'IN'], 'control'); b.contactor('sign', 'Signage lighting contactor'); b.coil('sign', p); b.wire(b.live, ['sign', '1']); lamp('letters-a', 'Signage bank A', ['sign', '2']); lamp('letters-b', 'Signage bank B', ['sign', '2']); break; }
+    case 50: { const d = b.powered('timer', 'defrost-clock', 'Defrost schedule', { on: false, demand: true, active: false, delay: 0 }); b.wire(b.live, ['defrost-clock', 'IN'], 'control'); b.add('relay', 'defrost', 'Cooling / defrost interlock relay'); b.coil('defrost', d); b.wire(b.live, ['defrost', 'COM']); const c = stat('cold-stat', 'Fridge thermostat', ['defrost', 'NC']); b.load('motor', 'compressor', 'Refrigeration compressor', c, 250); b.load('heater', 'defrost-heat', 'Defrost heater', ['defrost', 'NO'], 300); break; }
+    case 51: { const x = b.powered('sensor', 'pressure', 'Compressor pressure switch', { active: true, demand: true, mode: 'pressure' }); b.wire(b.live, ['pressure', 'IN'], 'control'); b.contactor('compressor-k', 'Compressor contactor'); b.wire(x, ['ol', '95'], 'control'); b.coil('compressor-k', ['ol', '96']); b.wire(b.live, ['compressor-k', '1']); b.add('overload', 'ol', 'Compressor overload', { rating: 8 }); b.wire(['compressor-k', '2'], ['ol', '1']); b.load('motor', 'compressor', 'Compressor motor', ['ol', '2'], 450); b.add('relay', 'unload', 'Unloader relay'); b.coil('unload', ['compressor-k', '2']); b.wire(b.live, ['unload', 'COM']); b.load('indicator', 'unloader', 'Unloader valve indicator', ['unload', 'NC'], 5); break; }
     case 53: { const loads = ['lamp', 'socket', 'heater']; for (let i = 0; i < 3; i++) b.load(loads[i], `phase-load${i + 1}`, `Phase ${i + 1} to neutral demand`, b.phases[i], [60, 200, 500][i]); break; }
     case 54: { b.add('isolator3', 'socket-isolation', 'Industrial socket linked isolation', { closed: true }); b.phases.forEach((p, i) => b.wire(p, ['socket-isolation', `L${i + 1}IN`], `L${i + 1}` as TerminalRole)); b.wire(b.neutral, ['socket-isolation', 'NIN'], 'N'); b.add('socket3', 'socket', 'Five-contact industrial outlet', { watts: 300 }); ['L1', 'L2', 'L3'].forEach(p => b.wire(['socket-isolation', `${p}OUT`], ['socket', p], p as TerminalRole)); b.wire(['socket-isolation', 'NOUT'], ['socket', 'N'], 'N'); b.wire(b.earth, ['socket', 'PE'], 'PE'); break; }
     case 55: { const o = threeStarter('starter', 'DOL three-phase contactor'); b.live = b.phases[0]; b.startStop('starter', b.live, 'stop', 'start', o); break; }
     case 56: {
       b.live = b.phases[0]; b.contactor('forward', 'Forward contactor · mechanical pair', { mechanicallyInterlockedWith: 'reverse' }); b.contactor('reverse', 'Reverse contactor · mechanical pair', { mechanicallyInterlockedWith: 'forward' }); const f = b.powerThrough('forward'); const r = b.powerThrough('reverse', [b.phases[2], b.phases[1], b.phases[0]]); b.add('overload', 'ol', 'Common motor overload', { rating: 8 }); const o = b.powerThrough('ol', f); r.forEach((n, i) => b.wire(n, ['ol', String(1 + i * 2)], `L${i + 1}` as TerminalRole)); b.motor3('motor', 'Reversible externally star-linked motor', o);
-      b.contactor('run-permit', 'Maintained run permission'); b.startStop('run-permit', b.live, 'stop', 'start', 'ol'); b.add('selector', 'direction', 'Forward / reverse request', { position: 0 }); b.wire(['run-permit', '14'], ['direction', 'COM'], 'control'); b.wire(['direction', 'A'], ['reverse', '21'], 'control'); b.wire(['direction', 'B'], ['forward', '21'], 'control'); b.coil('forward', ['reverse', '22']); b.coil('reverse', ['forward', '22']); break;
+      b.contactor('run-permit', 'Run contactor'); b.startStop('run-permit', b.live, 'stop', 'start', 'ol'); b.add('selector', 'direction', 'Forward / reverse selector', { position: 0 }); b.wire(['run-permit', '14'], ['direction', 'COM'], 'control'); b.wire(['direction', 'A'], ['reverse', '21'], 'control'); b.wire(['direction', 'B'], ['forward', '21'], 'control'); b.coil('forward', ['reverse', '22']); b.coil('reverse', ['forward', '22']); break;
     }
     case 57: {
       b.live = b.phases[0]; b.contactor('main', 'Main motor contactor'); b.contactor('star', 'Star contactor · mechanical pair', { mechanicallyInterlockedWith: 'delta' }); b.contactor('delta', 'Delta contactor · mechanical pair', { mechanicallyInterlockedWith: 'star' }); const main = b.powerThrough('main'); b.motor3('motor', 'Six-terminal motor · 400 V delta / 690 V star', main, false); const motor = b.components.find(c => c.id === 'motor'); if (motor) motor.params.windingVoltage = 400;
@@ -255,7 +255,7 @@ function buildCircuit(id: number, title: string): CircuitDocument {
       [['U2', 'V1'], ['V2', 'W1'], ['W2', 'U1']].forEach(([a, c], i) => { b.wire(['motor', a], ['delta', String(1 + i * 2)], 'output'); b.wire(['delta', String(2 + i * 2)], ['motor', c], 'output'); });
       b.add('timer', 'transition', 'Star-delta timer', { on: true, demand: true, delay: 4 }); b.wire(['main', '14'], ['transition', 'L']); b.wire(b.neutral, ['transition', 'N'], 'N'); b.wire(['main', '14'], ['transition', 'IN'], 'control'); b.add('relay', 'time-contact', 'Transition changeover contact'); b.coil('time-contact', ['transition', 'OUT']); b.wire(['main', '14'], ['time-contact', 'COM'], 'control'); b.wire(['time-contact', 'NC'], ['delta', '21'], 'control'); b.coil('star', ['delta', '22']); b.wire(['time-contact', 'NO'], ['star', '21'], 'control'); b.coil('delta', ['star', '22']); break;
     }
-    case 58: { b.add('vfd', 'drive', 'Variable-frequency drive · packaged power stage', { frequency: 35, speed: 0.7, run: true }); ['L1', 'L2', 'L3'].forEach((t, i) => b.wire(b.phases[i], ['drive', t], t as TerminalRole)); b.wire(b.earth, ['drive', 'PE'], 'PE'); const x = b.control('switch', 'run', 'Drive run permission · dry contact', ['drive', 'COM']); b.wire(x, ['drive', 'RUN'], 'control'); b.motor3('motor', 'Motor fed by the drive', [['drive', 'U'], ['drive', 'V'], ['drive', 'W']]); break; }
+    case 58: { b.add('vfd', 'drive', 'Variable-frequency drive (VFD)', { frequency: 35, speed: 0.7, run: true }); ['L1', 'L2', 'L3'].forEach((t, i) => b.wire(b.phases[i], ['drive', t], t as TerminalRole)); b.wire(b.earth, ['drive', 'PE'], 'PE'); const x = b.control('switch', 'run', 'Drive run permission · dry contact', ['drive', 'COM']); b.wire(x, ['drive', 'RUN'], 'control'); b.motor3('motor', 'Motor fed by the drive', [['drive', 'U'], ['drive', 'V'], ['drive', 'W']]); break; }
     case 59: { b.live = b.phases[0]; b.contactor('stage-a', 'Heater stage A'); b.contactor('stage-b', 'Heater stage B'); const cut = b.control('cutout', 'safety', 'Independent high-temperature safety limit'); b.coil('stage-a', stat('demand-a', 'Stage A temperature demand', cut)); b.coil('stage-b', stat('demand-b', 'Stage B temperature demand', cut)); for (const [k, n] of [['stage-a', 1], ['stage-b', 2]] as const) b.powerThrough(k).forEach((p, i) => b.load('heater', `h${n}-${i}`, `Stage ${n} phase ${i + 1} element`, p, 250)); break; }
     case 60: { const o = threeStarter('starter', 'Two-station motor contactor'); b.live = b.phases[0]; b.startStop('starter', b.live, 'stop-a', 'start-a', o); b.add('pushbutton', 'stop-b', 'Remote stop · NC', { pressed: false }); b.add('pushbutton', 'start-b', 'Remote start · NO', { pressed: false }); const w = b.wires.find(w => w.from.component === 'stop-a' && w.from.terminal === 'NC'); if (w) w.from = endpoint(['stop-b', 'NC']); b.wire(['stop-a', 'NC'], ['stop-b', 'COM'], 'control'); b.wire(['start-a', 'COM'], ['start-b', 'COM'], 'control'); b.wire(['start-b', 'NO'], ['starter', 'A1'], 'control'); break; }
     case 61: { b.live = b.phases[0]; const a = threeStarter('downstream', 'Downstream conveyor starter', 'motor-a'); const c = threeStarter('upstream', 'Upstream conveyor starter', 'motor-b'); b.startStop('downstream', b.live, 'stop-a', 'start-a', a); b.startStop('upstream', ['downstream', '14'], 'stop-b', 'start-b', c); break; }
@@ -284,14 +284,14 @@ const SPECS: Spec[] = [
     'The lamp and socket have separate breakers. Both get line and neutral through the same RCCB. Their earth wires follow a separate path.',
     'Start with both loads on. Switch off MCB 1 and compare the lamp with the socket. Then close it and try the shared RCCB.',
     'Compare the voltage across each load with MCB 1 off. A current reading on the RCCB feed includes both branches that are running.',
-    'earth-fault', 'A fault on one circuit has tripped the shared device. Both loads are off.', 'Look for the protective device common to the lamp and socket. Check its trip indication.', 'Current is leaking to earth at the lamp load. The shared RCCB detects the imbalance and opens, cutting power to both branches.',
+    'earth-fault', 'A fault on one circuit has tripped the shared device. Both loads are off.', 'Find the device that feeds both breakers. Does it show a trip?', 'Current is leaking to earth at the lamp load. The shared RCCB detects the imbalance and opens, cutting power to both branches.',
     ['Opening the lamp breaker leaves the socket on.', 'Opening the shared RCCB cuts power to both loads.']],
   ['Individual RCBO circuits', 'Distribution', 'Routine',
     'Each RCBO checks its own circuit for excess current and leakage. Identify the outgoing neutral as well as the outgoing line.',
     'Trace each load from LOUT and back to NOUT on the same RCBO. The two outgoing neutrals have separate routes through the board.',
     'Switch off the first RCBO. Check both loads, then switch it back on.',
     'Read line to neutral at each load with the first RCBO off. Keeping the same probe pair on each load makes the two readings comparable.',
-    'earth-fault', 'The first branch has tripped. Check whether the socket beside it has lost power too.', 'Check both RCBO indications and trace the neutral from the affected load.', 'The first load has an earth fault. Its own RCBO trips. The other load still has line and neutral through its separate RCBO.',
+    'earth-fault', 'The first branch has tripped. Check whether the socket beside it has lost power too.', 'Look at both RCBOs. Follow the neutral from the lamp back to its breaker.', 'The first load has an earth fault. Its own RCBO trips. The other load still has line and neutral through its separate RCBO.',
     ['The first RCBO can disconnect its load while the second stays on.', 'Each load returns through its own RCBO neutral.']],
   ['Submain and remote distribution board', 'Distribution', 'Routine',
     'A protected cable, the submain, supplies the remote board. Its local main switch and outgoing RCBO serve different parts of the circuit.',
@@ -304,14 +304,14 @@ const SPECS: Spec[] = [
     'An SPD gives a surge a path at the board. The ordinary lamp current takes a different path.',
     'Follow the SPD connections to line, neutral and protective earth. Follow the lamp separately from line to neutral.',
     'Run the lamp. Compare its current with the SPD branch. Try the study fault and check the earth finding as well as the light.',
-    'Normal current in the SPD branch is negligible here. The simulator shows the connections under steady supply and does not reproduce a surge waveform.',
+    'With the supply steady, the SPD takes almost no current. This bench lets you check the wiring. It cannot create a surge.',
     'missing-earth', 'The lamp works, but the test reports a problem at the surge protector.', 'Trace the SPD’s earth terminal back towards the supply.', 'The earth wire to the SPD is open. Repairing it restores the protective path. The lamp can work in either state because it has its own line and neutral.',
     ['The SPD is connected across the supply.', 'The lamp can still work with the SPD earth open.']],
   ['Priority load shedding', 'Distribution', 'Equipment dependent',
     'Some supplies use a priority controller so two large loads don’t have to run together. Here the controller disconnects one of two heaters.',
     'The priority heater has a direct feed. The other gets its feed through the relay’s normally closed contact, marked NC. The demand monitor drives the coil.',
-    'Run both heaters, then call for shedding at the monitor. Watch the lower-priority heater and restore the original setting.',
-    'Compare total current with both heaters running and with only the priority heater running. The difference is the contribution of the switched branch.',
+    'Run both heaters. Use the load controller to cut off the second heater. Watch the first one.',
+    'Read the supply current with both heaters on. Switch off the second heater and check how much the reading falls.',
     'wrong-control', 'Ask the monitor to shed the lower-priority heater. Both heaters stay on.', 'Compare voltage at the monitor output with voltage across the relay coil.', 'The lead from monitor OUT to relay A1 is open. The coil cannot pull in, so its normally closed contact keeps the second heater supplied.',
     ['The priority heater stays on during shedding.', 'Total power drops when the second heater switches off.']],
   ['One-way lighting', 'Lighting', 'Routine',
@@ -319,7 +319,7 @@ const SPECS: Spec[] = [
     'At the switch, line enters COM and leaves at the switched output. Follow that wire to L on the lamp. Lamp N goes back to neutral. PE is the protective earth.',
     'Flick the switch both ways. Open its inspection view and watch when the contacts touch. The earth connection stays in place as the rocker moves.',
     'With the lamp on, compare L and N at the lamp. Then measure across the switch itself. A closed contact has very little voltage across it. An open switch can have nearly the full supply across it.',
-    'open-live', 'The switch is on but the lamp is dark.', 'Check where voltage is present at the switch, then at lamp L. For a continuity check, isolate the simulated supply first.', 'There’s a break between the switch output and lamp L. The closed switch has a feed, but it can’t supply the lamp through that broken wire.',
+    'open-live', 'The switch is on but the lamp is dark.', 'Check where voltage is present at the switch, then at lamp L. Switch off the bench supply before checking continuity.', 'There’s a break between the switch output and lamp L. The closed switch has a feed, but it can’t supply the lamp through that broken wire.',
     ['Opening the switch turns the lamp off.', 'Closing the switch restores voltage across the lamp.']],
   ['Parallel lighting bank', 'Lighting', 'Routine',
     'One switch supplies a group of lamps. Each lamp has its own complete line-to-neutral path through the group.',
@@ -492,7 +492,7 @@ const SPECS: Spec[] = [
   ['Water underfloor wiring centre and actuators', 'Heating', 'Equipment dependent',
     'Each room has its own actuator on the manifold. An actuator opens a valve for that loop. The circulating pump is shared.',
     'Trace the two room signals into separate wiring-centre inputs. Each output drives its own actuator, and the open-valve feedback calls the pump.',
-    'Let both rooms call, then satisfy A while B is still calling. Finally remove B’s call and watch the pump after the actuators travel.',
+    'Call for heat in both rooms. Turn down the thermostat in room A, then in room B. Watch the pump as each valve closes.',
     'Compare each actuator’s supply and open feedback. Check the pump voltage while one room calls, then again after both calls finish.',
     'wrong-control', 'Room A calls but its actuator stays closed. Room B may still operate the pump.', 'Compare the signal leaving room A’s thermostat with input I1 at the wiring centre.', 'The wire from the room A thermostat to I1 is open. B still has its own signal and can run the shared pump.',
     ['Each thermostat can call its own actuator.', 'The pump can still run for B after A stops calling.']],
@@ -534,8 +534,8 @@ const SPECS: Spec[] = [
   ['Float-controlled sump pump', 'Ventilation & motors', 'Equipment dependent',
     'The float controls a contactor coil. The contactor then carries the pump’s operating current.',
     'Trace the float output to A1 on the pump contactor. Its main contact switches the line feeding the pump.',
-    'Raise the water-level request, then lower it. Look at the contactor and pump together.',
-    'Check coil voltage at A1–A2 and pump voltage at L–N. A float indication by itself doesn’t establish that the coil got power.',
+    'Lift the float, then lower it. Look at the contactor and pump together.',
+    'Check coil voltage at A1–A2 and pump voltage at L–N. The float can move even if the coil has lost its feed.',
     'wrong-control', 'The float indicates high water, but the pump remains stopped.', 'Compare the float output with the voltage across the contactor coil.', 'The wire from the float output to coil A1 is open. The float calls but the contactor cannot switch on the pump.',
     ['High water can start the pump.', 'Removing the water-level call stops it.']],
   ['Booster pump and pressure switch', 'Ventilation & motors', 'Equipment dependent',
@@ -588,9 +588,9 @@ const SPECS: Spec[] = [
     'wrong-control', 'The permanent mains feed is present, but the normal light switch cannot light the fitting.', 'Compare the switch output with SL at the fitting.', 'The wire from the lighting switch output to SL is open. The monitored permanent supply remains intact, so the unit stays out of emergency mode.',
     ['SL controls the normal light.', 'Loss of the permanent feed can start emergency operation.']],
   ['EV charger and load control', 'Safety & energy', 'Equipment dependent',
-    'The charging load is switched by a contactor in this example. Some real chargers adjust current using an electronic control instead. The product’s interface matters.',
+    'The charging load is switched by a contactor in this example. Some real chargers adjust current using an electronic control instead. Check how the charger takes a signal from its controller.',
     'Follow the load controller output to A1 on the contactor. The contactor’s main pole is in the line wire supplying the charger.',
-    'Allow charging and check the load. Withdraw the request while leaving the site supply on. Compare both sides of the contactor.',
+    'Allow charging and check the load. Pause charging and leave the building supply on. Compare both sides of the contactor.',
     'Read from the incoming line to neutral, then from charger L to N. Here the incoming side stays at mains voltage when the contactor opens and the charger loses its feed.',
     'wrong-control', 'The site has power and the controller calls for charging, but the car load stays off.', 'Compare controller OUT with the voltage across A1–A2 at the charge contactor.', 'The wire from controller OUT to A1 is open. The contactor cannot pull in, so its main contact leaves the charger without a live feed.',
     ['Removing the request stops charging.', 'The incoming side of the contactor still has its supply.']],
@@ -599,7 +599,7 @@ const SPECS: Spec[] = [
     'The inverter connects on the AC side through its own isolator. The house load shares the grid connection but does not pass through the inverter isolator.',
     'Compare grid power with solar output and without it, keeping the load the same. Then remove the grid and check the grid-following inverter’s response.',
     'Read signed power at the grid connection. The change includes both the house demand and the inverter contribution. This circuit represents the AC side of the inverter.',
-    'open-live', 'The house load works, but the grid no longer sees the inverter’s contribution.', 'Check the AC path from the inverter isolator to the inverter itself.', 'The line from the isolator output to the inverter is open. The house load remains connected to the grid but the inverter can no longer deliver power through that branch.',
+    'open-live', 'The house load works, but the grid meter shows no power coming from the inverter.', 'Check the AC path from the inverter isolator to the inverter itself.', 'The line from the isolator output to the inverter is open. The house load remains connected to the grid but the inverter can no longer deliver power through that branch.',
     ['Opening the inverter isolator removes its AC contribution.', 'At the same house load, changing solar output changes grid power.']],
   ['Battery inverter and essential-load backup', 'Safety & energy', 'Advanced',
     'The inverter has an ordinary grid input and a separate backup output for essential loads. Loss of grid does not give every load a battery supply.',
@@ -702,8 +702,8 @@ const SPECS: Spec[] = [
   ['Duty/standby pumps and high-level assist', 'Industrial', 'Equipment dependent',
     'Either pump can be the duty pump. The normal level signal calls that pump. A separate high-level float calls for help from the other pump too.',
     'Trace the normal float through the duty selector to one starter. Follow the assist contactor to the other request paths. Each motor has its own protected power circuit.',
-    'With assist off, try duty A and duty B. Raise the high-level float and compare the number of running pumps.',
-    'Read the two coil voltages for normal demand and again at high level. Assist can hide a fault in an individual duty path.',
+    'Keep the high-level float down. Select pump A, then pump B. Lift the float and count how many pumps are running.',
+    'Check each pump coil with the float down, then up. If a pump runs only with the float up, follow the wire from the duty selector.',
     'wrong-control', 'Normal level calls for pump A, but A stays off. B can run when selected. Leave high-level assist off while checking.', 'Trace the A output of the duty selector to the first pump’s request junction.', 'The wire from duty A to its request junction is open. B still has its own route. The assist path can still supply A and conceal that missing duty feed.',
     ['The selector chooses the first pump at normal level.', 'High-level assist can call both pumps.']],
   ['PLC inputs and motor starter', 'Industrial', 'Equipment dependent',
@@ -711,7 +711,7 @@ const SPECS: Spec[] = [
     'Follow the input signals to I1 and I2, the output common to its supply, and Q1 to the starter coil. The overload-status indication has its own channel.',
     'Start with both input conditions present. Remove one, then compare the motor and the independent status indication.',
     'Check the control supply, both input voltages, output COM and the coil circuit. Power at the PLC electronics alone cannot show that Q1 has a supply to switch.',
-    'wrong-control', 'The PLC is on and the two field conditions are present, but the motor never gets a run command.', 'Compare the signal leaving the presence sensor with I1 at the controller.', 'The wire from the presence sensor output to PLC I1 is open. The two-input AND condition never becomes true, so the starter remains off.',
+    'wrong-control', 'The PLC is on and both sensors are on, but the motor never gets a run command.', 'Compare the signal leaving the presence sensor with I1 at the controller.', 'The wire from the presence sensor output to PLC I1 is open. The two-input AND condition never becomes true, so the starter remains off.',
     ['The motor command requires both inputs.', 'An independent status output can remain on after the motor stops.']],
   ['Safety relay and contactor feedback', 'Industrial', 'Advanced',
     'A safety relay checks its input channels, feedback and reset before permitting a new start. This exercise models those signals, not a machine safety rating.',
@@ -719,7 +719,7 @@ const SPECS: Spec[] = [
     'Begin stopped. Reset, then start. Break a safety channel and restore it. Reset again and check that the motor waits for Start.',
     'Compare the safety relay’s armed state with the motor coil state. When the contactor is released, check the feedback path used before resetting the relay.',
     'wrong-control', 'The machine is stopped and both safety inputs are healthy. Pressing Reset does not arm the relay.', 'Check the feedback from the starter’s released auxiliary contact at terminal FB.', 'The wire from starter terminal 22 to feedback input FB is open. The relay cannot confirm a released contactor before arming. Check this in the stopped, unarmed state.',
-    ['A broken safety channel removes the run permission.', 'Reset permits a new start without commanding motion.']],
+    ['Opening either safety input stops the motor.', 'After Reset the motor still waits for Start.']],
 ];
 
 interface ChallengeTarget {
@@ -804,7 +804,12 @@ function challengeTarget(circuit: CircuitDocument, target: ChallengeTarget): { w
 }
 
 function roleExplanation(circuit: CircuitDocument): string {
-  if(circuit.supply.phase==='three')return 'L1, L2 and L3 are the three phases. Measure between two phases for a phase-to-phase load, or between a phase and neutral for a single-phase load.';
+  if (circuit.lessonId && circuit.lessonId >= 65) {
+    if (circuit.lessonId === 80) return 'Follow the two bell wires back to the AC transformer. The light has its own positive and negative wires back to the DC supply.';
+    if (circuit.lessonId === 71 || circuit.lessonId === 72) return 'The bell runs from a separate AC winding. Put one probe on each end of that winding to read its voltage.';
+    return 'Find the + and − on the DC supply. Follow the feed to the fitting and its return to the same supply.';
+  }
+  if (circuit.supply.phase === 'three') return 'L1, L2 and L3 are the three phases. Look at which two points feed the part you want to measure. A heater may be connected between phases, or from one phase to neutral.';
   return 'Line feeds the load. Neutral carries the normal return current. Earth gives fault current a separate way back to the supply.';
 }
 
@@ -865,10 +870,10 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
   const extra=elvPage(id);
   const target:ChallengeTarget = extra ? {path:extra.target} : CHALLENGE_TARGETS[id];
   if (!target) throw new Error(`Lesson ${id} has no exact challenge target`);
-  const deviceNames = circuit.components.filter(c => c.id !== 'supply').map(c => c.label).join(', ');
-  const context = extra ? "Extra-low-voltage secondary · 240 V single-phase study input" : id >= 53 ? 'Industrial · Republic of Ireland · 400 V three phase / approximately 230 V phase-neutral'
-    : id >= 49 ? 'Single-phase commercial equipment · Republic of Ireland · 240 V study setting'
-    : 'Domestic / light commercial · Republic of Ireland · 240 V study setting';
+
+  const context = extra ? "A 240 V bench supply feeds the transformer or power supply. Work on its extra-low-voltage side" : id >= 53 ? 'Three-phase supply in Ireland. About 230 V from phase to neutral and 400 V between phases'
+    : id >= 49 ? 'Single-phase equipment for a business in Ireland. The bench supply is 240 V'
+    : 'Homes and small businesses in Ireland. The bench supply is 240 V';
   const caveat = tag === 'Equipment dependent' || tag === 'Advanced'
     ? 'Real units vary. Check the diagram supplied with yours for its terminal markings and controls.'
     : tag === 'Existing' ? 'You may come across this arrangement in an older installation. Design rules for new work can differ.'
@@ -915,25 +920,25 @@ function createLesson(spec: Spec, index: number): ConfigurationLesson {
     summary: COURSE_PAGES[id].situation,
     sections: [
       ...(id === 7 ? [{title:'Why the lamp can light with a wiring fault',beginner:'The lamp can still light with its earth disconnected. That is why testing the switch alone will miss a fault.',apprentice:'An extra link from outgoing neutral to earth can send some return current around the RCBO. With the lamp on, that can trip it. With the switch off, the wiring test still finds the link. Test circuit tries both switch positions and leaves your switch where you put it.'}] : []),
-      { title: 'Purpose and component roles', beginner: COURSE_PAGES[id].idea, apprentice: purpose + ' ' + caveat },
-      { title: 'Connections and conductor paths', beginner: connections, apprentice: roleExplanation(circuit)+' Open Drawing and choose My wiring. Select any wire to read the two terminal markings.' },
-      { title: 'Operating sequence and control logic', beginner: sequence, apprentice: checks.join(' ') },
-      { title: 'Measurements and model limits', beginner: measurement, apprentice: measurement+' For voltage, put one probe on each side of the part. For current, select one wire. The meter uses your wiring and the current switch positions.' },
-      {title:'Calculations and expected readings',...(extra?{beginner:ELV_WORKED[id],apprentice:ELV_WORKED[id]+' '+extra.connection+' '+extra.reading+' Compare the actual secondary terminals under load. Driver voltage and secondary winding voltage follow different models. Across a conductor, ΔV = I × Z. For DC, Z is its resistance. Cable resistance and load ratings are illustrative.'}:calculationNotes(circuit,fault))},
-      ...(comparison[id]?[{title:'Compare with the actual equipment',beginner:comparison[id],apprentice:'Open the maker’s diagram below. Compare its supply, controls and output terminals with the ones on your bench.'}]:[]),
-      { title: 'Fault-finding challenge', beginner: briefing, apprentice: hint },
-      { title: 'Irish context and real-work boundary', beginner: context+'. '+caveat, apprentice: 'The nominal Irish supply is 230/400 V at 50 Hz. Domestic lessons start at 240 V. I.S. 10101 sets the rules for installations in Ireland. Restricted electrical work must be carried out by a Registered Electrical Contractor. The lab checks the example wiring. Real installations need inspection and testing on site.' },
+      { title: 'What the parts do', beginner: COURSE_PAGES[id].idea, apprentice: purpose + ' ' + caveat },
+      { title: 'Follow the wires', beginner: connections, apprentice: roleExplanation(circuit)+' Open Drawing and choose My wiring. Select any wire to read the two terminal markings.' },
+      { title: 'Try the controls', beginner: sequence, apprentice: checks.join(' ') },
+      { title: 'Where to put the probes', beginner: measurement, apprentice: 'To measure voltage, use two probes. To measure current with the fork, select one wire. Leave the controls where they are while you take the reading.' },
+      {title:'Work out the readings',...(extra?{beginner:ELV_WORKED[id],apprentice:extra.connection+' A wire loses a little voltage as it carries current. The voltage drop is ΔV = I × Z. On a DC circuit, Z is the wire’s resistance. Use the wire and load values on this bench.'}:calculationNotes(circuit,fault))},
+      ...(comparison[id]?[{title:'On the real fitting',beginner:comparison[id],apprentice:'Open the maker’s diagram below. Compare its supply, controls and output terminals with the ones on your bench.'}]:[]),
+      { title: 'Find the fault', beginner: briefing, apprentice: hint },
+      { title: 'On a job in Ireland', beginner: context+'. '+caveat, apprentice: 'The nominal Irish supply is 230/400 V at 50 Hz. Domestic lessons start at 240 V. I.S. 10101 is the Irish wiring standard. Restricted electrical work must be carried out by a Registered Electrical Contractor. The lab checks the example wiring. Real installations need inspection and testing on site.' },
     ],
     steps: [
       'Find the supply. Read the terminal markings on its wiring side.',
-      `Find the fittings on the bench: ${deviceNames}.`,
+      'Pick a fitting. Choose Show terminals and read the letters beside the wires.',
       `Try it with the power on. ${sequence}`,
       `${measurement}`,
       ...checks,
       `Start fault practice. ${briefing}`,
       'Repair the fault, reset anything that tripped and test the circuit again.',
     ],
-    objectives: [...checks, 'Trace the return wire and the earth wire. Read the markings at each end.'],
+    objectives: [...checks, extra ? 'Follow the two wires at the fitting back to its supply. Read the markings at each end.' : 'Trace the return wire and the earth wire. Read the markings at each end.'],
     challenge: { title: `Diagnose: ${title}`, briefing, fault, hint, answer, ...challengeTarget(circuit, target) }, references, circuit,
   };
 }

@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import type { ComponentInstance, DeviceState } from './types';
 import type { EquipmentView } from './Equipment';
 import { COMPONENTS } from './components';
+import { attachTerminalBatches } from './terminal-render-batches';
+export { disposeBlenderTerminalBatches } from './terminal-render-batches';
 
 const lampTypes=new Set(['lamp','led','emergency','cctstrip']);
 const diffuserOff=new THREE.Color('#aeb6ad'),diffuserOn=new THREE.Color('#fff6e9');
@@ -50,7 +52,8 @@ export interface AssetPresentation {
   doors:{node:THREE.Object3D;rest:THREE.Quaternion}[];
   shields:THREE.Object3D[];
   benchStands:THREE.Object3D[];
-  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
+  meshes:{node:THREE.Mesh;part:string;material:THREE.Material|THREE.Material[];pickingMaterial?:THREE.Material;cutaway?:THREE.Material;light?:THREE.MeshStandardMaterial;indicator?:boolean;contactFlag?:boolean;lampOutput?:boolean;filament?:boolean;coverAssembly?:boolean;serviceChamber?:boolean;conceptualInternal?:boolean}[];
+  terminalBatches:THREE.Mesh[];
   motions:{node:THREE.Object3D;position:THREE.Vector3;quaternion:THREE.Quaternion;angle:number;current:number}[];
   owned:THREE.Material[];
   initialized:boolean;
@@ -65,8 +68,8 @@ export function semanticOwner(node:THREE.Object3D):{part?:string;terminal?:strin
   return {part,detail};
 }
 /** Clone transforms and selectable identity while sharing immutable mesh data. */
-export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
-  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],motions:[],doors:[],shields:[],benchStands:[],probeDocks:[],owned:[],initialized:false,chamber:false};
+export function prepareBlenderModel(source:THREE.Group,batchDistantTerminals=false):AssetPresentation{
+  const scene=source.clone(true),presentation:AssetPresentation={scene,covers:[],meshes:[],terminalBatches:[],motions:[],doors:[],shields:[],benchStands:[],probeDocks:[],owned:[],initialized:false,chamber:false};
   scene.userData.equipmentSource='Blender';
   let componentType='',componentVariant='';scene.traverse(node=>{if(node.userData.galleryKey)[componentType,componentVariant]=String(node.userData.galleryKey).split(':');});
   scene.traverse(node=>{
@@ -107,6 +110,7 @@ export function prepareBlenderModel(source:THREE.Group):AssetPresentation{
     node.castShadow=castsEquipmentShadow(entry.material,!!entry.lampOutput,!!node.userData.lampEnvelope);
     presentation.meshes.push(entry);
   });
+  if(batchDistantTerminals)attachTerminalBatches(source,presentation);
   return presentation;
 }
 export function closedForPresentation(component:ComponentInstance,state?:DeviceState):boolean{
@@ -117,6 +121,8 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
   return state?.closed??component.params.closed!==false;
 }
 export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet'):void{
+  const batch=view==='normal'&&!contactPiece;
+  for(const mesh of presentation.terminalBatches)mesh.visible=batch;
   for(const dock of presentation.probeDocks)dock.node.visible=!(dock.red?component.params.redOut:component.params.blackOut);
   for(const door of presentation.doors)door.node.quaternion.copy(door.rest).multiply(new THREE.Quaternion().setFromAxisAngle(sourceAxis('y'),component.params.doorOpen!==false||view!=='normal'?-1.69:0));
   for(const stand of presentation.benchStands)stand.visible=!component.mount&&view==='normal';
@@ -137,8 +143,8 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
     if(component.variant==='door-contact' && contactPiece){
       mesh.node.visible &&= (mesh.part==='actuator')===(contactPiece==='magnet');
     }
-    mesh.node.material=view==='cutaway'&&mesh.cutaway?mesh.cutaway:mesh.light??mesh.material;
-    mesh.node.castShadow=castsEquipmentShadow(mesh.node.material,!!mesh.lampOutput,!!mesh.node.userData.lampEnvelope);
+    mesh.node.material=batch&&mesh.pickingMaterial?mesh.pickingMaterial:view==='cutaway'&&mesh.cutaway?mesh.cutaway:mesh.light??mesh.material;
+    mesh.node.castShadow=!(batch&&mesh.pickingMaterial)&&castsEquipmentShadow(mesh.node.material,!!mesh.lampOutput,!!mesh.node.userData.lampEnvelope);
     if(mesh.light){
       if(mesh.contactFlag){mesh.light.color.set(closedForPresentation(component,state)?'#b33529':'#417f49');}
       else if(mesh.lampOutput){

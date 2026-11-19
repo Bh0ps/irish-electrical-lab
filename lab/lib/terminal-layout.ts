@@ -150,8 +150,18 @@ export function getComponentTerminals(component: Pick<ComponentInstance, 'type' 
     if(k==='callchime')return scaled((ids.indexOf(t.id)-1.5)*.19,.21,-.095,[0,0,1],.68);
     if(k==='terminal'&&f==='comb-busbar')return scaled((ids.indexOf(t.id)-1.5)*.24,.84,.02,[0,1,0],.65);
     if(k==='terminal'&&f==='lever-connector')return scaled((ids.indexOf(t.id)-1.5)*.24,.15,-.025,[0,-.55,.835],.65);
-    if(k==='selector'&&f==='float-changeover')return scaled((ids.indexOf(t.id)-1)*.085,.052,-.12,[0,-.5,-.866],.52);
-    if(k==='switch'&&f==='door-contact')return scaled(-.20+(t.id==='COM'?-.075:.075),.18,-.25,[0,0,-1],.58);
+    if(k==='selector'&&f==='float-changeover'){
+      const port=scaled((ids.indexOf(t.id)-1)*.085,.052,-.12,[0,-.5,-.866],.52);
+      const purpose=t.id==='COM'?'COM is the common wire. The float connects it to A or B as it moves.'
+        :t.id==='A'?'A joins COM in the first float position.':'B joins COM in the second float position.';
+      return {...port,purpose};
+    }
+    if(k==='switch'&&f==='door-contact'){
+      const port=scaled(-.20+(t.id==='COM'?-.075:.075),.18,-.25,[0,0,-1],.58);
+      const purpose=t.id==='COM'?'The feed comes into COM. Move the door and watch the contact open or close.'
+        :'When the door contact closes, this terminal joins COM and passes the feed on.';
+      return {...port,purpose};
+    }
     if(k==='pushbutton'&&f==='bell-push')return scaled((ids.indexOf(t.id)-1)*.18,.43,-.28,[0,0,-1],.65);
     if(k==='driver'&&f==='constant-current'){const ac=['L','N','PE'].includes(t.id),i=(ac?['L','N','PE']:['+','-']).indexOf(t.id);return scaled(ac?-.47:.47,.25+i*.21,-.02,[ac?-1:1,0,0],.66);}
     if(k==='fuse'&&f==='dc-fuse')return scaled(0,t.id==='IN'?.085:.84,-.09,t.id==='IN'?[0,-.55,.835]:[0,1,0],.71);

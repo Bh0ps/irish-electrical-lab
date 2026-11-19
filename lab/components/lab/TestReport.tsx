@@ -2,7 +2,7 @@
 import type { BuildAssessment, AssessmentCheck } from '../../lib/assessment';
 import { findingPriority, nextCheckForFinding } from '../../lib/build-hints';
 
-const statusLabel = { pass: 'PASS', fail: 'FAIL', 'not-run': 'NOT RUN', unresolved: 'UNRESOLVED' };
+const statusLabel = { pass: 'PASS', fail: 'FAIL', 'not-run': 'NOT RUN', unresolved: 'No result' };
 
 function sampleChecks(passed: AssessmentCheck[]) {
   // These are the two voltage checks at the lamp, with the same probe points.
@@ -41,7 +41,6 @@ export default function TestReport({assessment, running, stale, onSelect, record
       </div>)}</dl> : examples.map(check=><p key={check.id}><strong>{check.title}</strong><br/>{check.explanation}</p>)}
       <small>The test tried these settings on a copy of your circuit.</small>
     </section>}
-    {!stale && !first && !examples.length && <p>Open All checks to see what the bench tested.</p>}
     {(!setup || stale) && <details className="all-test-checks"><summary>{stale?'Previous result':'All checks'} ({assessment.checks.length})</summary>
       <p className="small-copy">{passed.length} passed checks{recordedAt?' · '+new Date(recordedAt).toLocaleString('en-IE'):''}</p>
       {[...findings,...passed].map(check=><div key={check.id} className={'finding '+(check.status==='fail'?'warning':'info')}>

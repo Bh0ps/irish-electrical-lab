@@ -6,13 +6,19 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Installer: `lab/release/Irish-Electrical-Lab-1.8.0-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
+Installer: `lab/release/Irish-Electrical-Lab-1.8.1-Setup.exe`. It includes Electron, both workers and the assets for offline use. Optional references open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
 Open **Chapters → Quick practice** for an experiment on a working example. Pick a prediction, operate the real control, and compare the readings. **Back to lesson** takes you to the full course.
 
 The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a port conflict shows a startup error. Work lives in `%APPDATA%\Irish Electrical Lab`, outside installation files, and replacement installers preserve it.
+
+## Read a fitting or a meter
+
+Choose **Show terminals** to see the marks on a fitting. In the one-way lighting lesson the breaker has two terminals marked **N**. **Supply** identifies the incoming neutral and **Load** identifies the outgoing neutral. On the stair switches, look for **COM**, **L1** and **L2** on the back.
+
+Open **Saved readings** in either meter to see what you recorded. A fork reading shows the number on the tester. For a voltage reading it also shows the earth reference you used. A reading from before a circuit edit is marked **Earlier reading**. Expand **Where it was measured** to see the saved points.
 
 ## Find equipment on a job
 

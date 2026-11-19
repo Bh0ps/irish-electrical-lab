@@ -65,7 +65,7 @@ const definitions: readonly ExperimentDefinition[] = [
     question: 'The lamp is lit. What will the meter read across it when you switch it off?',
     instruction: 'Turn the wall switch off. Watch the lamp and the voltage across it.',
     target: 'switch', trace: 'L', targetKeys: ['closed'], answer: 'near-zero',
-    options: [{ id: 'mains', label: 'Close to supply voltage' }, { id: 'near-zero', label: 'Close to zero volts' }],
+    options: [{ id: 'mains', label: 'About the same as the supply' }, { id: 'near-zero', label: 'Close to zero volts' }],
     explanation: 'With the switch open, current stops flowing through the lamp. Its two terminals are now at almost the same voltage.',
     nextCheck: 'Leave the supply on and check that the wall switch is off.',
     action: params => params.closed === false,
@@ -79,14 +79,14 @@ const definitions: readonly ExperimentDefinition[] = [
     instruction: 'Flick switch A once. Leave B where it is and look at which connecting wire is live.',
     target: 'near', trace: 'control', targetKeys: ['position'], answer: 'off',
     options: [{ id: 'off', label: 'It goes out' }, { id: 'on', label: 'It stays on' }],
-    explanation: 'A now connects to T2, but B is still on T1. The two switches no longer make a complete path through the lamp.',
+    explanation: 'On the back of switch A, the feed now goes to L2. Switch B is still on L1. That leaves a break in the path to the lamp.',
     nextCheck: 'Check that B is still in its original position.',
     action: params => params.position === 1,
     before: result => drawingPower(result, 'light') && liveTraveller(result) === 'T1',
     after: result => isOff(result, 'light') && liveTraveller(result) === 'T2',
     read: result => {
       const traveller = liveTraveller(result);
-      return [reading('Lamp L–N', voltage(result, 'light'), 'V'), traveller ? { label: 'Live at switch A', value: traveller } : null];
+      return [reading('Lamp L–N', voltage(result, 'light'), 'V'), traveller ? { label: 'Live at switch A', value: traveller === 'T1' ? 'L1' : 'L2' } : null];
     },
   },
   {
@@ -110,9 +110,9 @@ const definitions: readonly ExperimentDefinition[] = [
   {
     id: 'pir-run-on', lessonId: 14, title: 'When motion stops',
     question: 'Someone leaves the hall. When will the light go out?',
-    instruction: 'Switch off motion at the detector and leave it off. Watch the light for the next few seconds.',
+    instruction: 'Set the detector to no movement. Watch how long the light stays on.',
     target: 'pir', trace: 'control', targetKeys: ['on', 'active', 'demand'], answer: 'delay', sequence: 'run-on',
-    options: [{ id: 'instant', label: 'The lamp goes out immediately' }, { id: 'never', label: 'The lamp stays on until reset' }, { id: 'delay', label: 'The lamp stays on briefly, then goes out' }],
+    options: [{ id: 'instant', label: 'Straight away' }, { id: 'never', label: 'When someone resets it' }, { id: 'delay', label: 'After a short delay' }],
     explanation: 'When movement stops, the timer keeps its contact closed for a few more seconds. The light goes out when the contact opens.',
     nextCheck: 'Check that the detector no longer senses movement and the timer still has its supply.',
     action: params => params.active === false,
@@ -121,25 +121,25 @@ const definitions: readonly ExperimentDefinition[] = [
     read: result => [reading('Lamp L–N', voltage(result, 'light'), 'V')],
   },
   {
-    id: 'independent-branches', lessonId: 2, title: 'Which branch loses power?',
-    question: 'You switch off the first circuit breaker, MCB 1. Which circuits will lose power?',
+    id: 'independent-branches', lessonId: 2, title: 'What goes off with the breaker?',
+    question: 'The first breaker is marked MCB 1. What do you think will go off when you open it?',
     instruction: 'Switch off MCB 1. Leave the other breaker on and compare the readings.',
     target: 'branch1', trace: 'L', targetKeys: ['closed'], answer: 'first',
     options: [{ id: 'both', label: 'Both circuits' }, { id: 'first', label: 'Circuit 1 only' }, { id: 'second', label: 'Circuit 2 only' }],
-    explanation: 'MCB 1 opens the lamp circuit. The second breaker still feeds its socket through the shared residual-current device.',
-    nextCheck: 'Check that MCB 1 is open, while MCB 2 and the shared RCCB are still closed.',
+    explanation: 'MCB 1 cuts the feed to the lamp. The socket stays on because it has its own breaker.',
+    nextCheck: 'Check the handles. MCB 1 should be off. MCB 2 and the shared trip switch marked RCCB should both be on.',
     action: params => params.closed === false,
     before: result => drawingPower(result, 'load1') && drawingPower(result, 'load2'),
     after: result => isOff(result, 'load1') && drawingPower(result, 'load2'),
-    read: result => [reading('Circuit 1 L–N', voltage(result, 'load1'), 'V'), reading('Circuit 2 L–N', voltage(result, 'load2'), 'V')],
+    read: result => [reading('Lamp L–N', voltage(result, 'load1'), 'V'), reading('Socket L–N', voltage(result, 'load2'), 'V')],
   },
   {
     id: 'starter-hold', lessonId: 55, title: 'What happens after Start?',
-    question: 'You give Start a quick press. Will the starter contactor stay closed after you let go?',
+    question: 'Give Start a quick press. What do you think the motor will do when you let go?',
     instruction: 'Press and release the green Start button. Look at the motor and the coil reading.',
     target: 'start', trace: 'control', targetKeys: ['pressed'], answer: 'holds', sequence: 'press-release',
-    options: [{ id: 'drops', label: 'It opens as soon as I release Start' }, { id: 'holds', label: 'It stays closed after I release Start' }],
-    explanation: 'Start energises the coil and closes its holding contact. That contact keeps the coil supplied after your finger leaves the button.',
+    options: [{ id: 'drops', label: 'It stops' }, { id: 'holds', label: 'It keeps running' }],
+    explanation: 'Pressing Start pulls in the contactor. A small switch on it keeps power on the coil when you let go. That switch is called the holding contact.',
     nextCheck: 'Check the coil and its holding contact. You can hold Start in the equipment controls, then release it once the motor runs.',
     action: params => params.pressed === false,
     before: result => isOff(result, 'motor') && result.deviceStates.starter?.closed === false,
@@ -230,7 +230,7 @@ export function prepareQuickPractice(experiment: QuickPracticeExperiment, circui
   const authored = createQuickPracticeCircuit(experiment, circuit.id);
   const graph = experimentKey(experiment, circuit);
   if (!circuit.supply.enabled || circuit.lessonId !== experiment.lessonId || !target || graph !== experimentKey(experiment, authored)) {
-    return { status: 'unresolved', message: 'This circuit differs from the practice setup. Restart the experiment to restore the example.' };
+    return { status: 'unresolved', message: 'This circuit has changed. Restart the experiment to get the original wiring back.' };
   }
   const startingControl = authored.components.find(component => component.id === experiment.target)!.params;
   if (!isReady(result, circuit) || !experiment.before(result, circuit) || experiment.targetKeys.some(key => target.params[key] !== startingControl[key])) {
@@ -253,7 +253,7 @@ export type QuickPracticeObservation =
 export function observeQuickPractice(experiment: QuickPracticeExperiment, baseline: QuickPracticeBaseline, sequence: PracticeSequence, circuit: CircuitDocument, result?: SimulationResult): QuickPracticeObservation {
   const waiting = (message: string): QuickPracticeObservation => ({ status: 'waiting', message, sequence });
   const unresolved = (message: string): QuickPracticeObservation => ({ status: 'unresolved', message, sequence });
-  if (circuit.id !== baseline.circuitId || experimentKey(experiment, circuit) !== baseline.graph) return unresolved('The circuit or another control changed. Restart to compare the same starting circuit.');
+  if (circuit.id !== baseline.circuitId || experimentKey(experiment, circuit) !== baseline.graph) return unresolved('Something else on the bench changed as well. Restart and try just the control in this step.');
   const control = circuit.components.find(component => component.id === experiment.target);
   if (!control || circuit.revision <= baseline.revision) return waiting('');
 
@@ -284,6 +284,6 @@ export function observeQuickPractice(experiment: QuickPracticeExperiment, baseli
   }
 
   const readings = readAll(experiment, result);
-  if (!readings || !experiment.after(result, baseline.readings)) return unresolved(`The readings don’t yet show the expected change. ${experiment.nextCheck}`);
+  if (!readings || !experiment.after(result, baseline.readings)) return unresolved(`The readings haven’t changed as expected. ${experiment.nextCheck}`);
   return { status: 'complete', sequence, readings, revision: circuit.revision };
 }

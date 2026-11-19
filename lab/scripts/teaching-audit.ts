@@ -12,7 +12,7 @@ import { simulate } from '../lib/simulation.ts';
 const errors:string[]=[];
 const details=LESSONS.map(lesson=>{
   const activities=getLessonActivities(lesson),scenario=getScenario(lesson.id)!;
-  const expectedSections=['Purpose and component roles','Connections and conductor paths','Operating sequence and control logic','Measurements and model limits','Calculations and expected readings','Fault-finding challenge','Irish context and real-work boundary'];
+  const expectedSections=['What the parts do','Follow the wires','Try the controls','Where to put the probes','Work out the readings','Find the fault','On a job in Ireland'];
   for(const title of expectedSections){const section=lesson.sections.find(s=>s.title===title);if(!section?.beginner.trim()||!section.apprentice.trim())errors.push(`${lesson.id}: missing ${title}`);}
   for(const component of lesson.circuit.components)for(const terminal of COMPONENTS[component.type].terminals)if(!terminal.purpose.trim()||terminal.purpose.includes('function depends on the contact map'))errors.push(`${lesson.id}: generic purpose ${component.type}.${terminal.id}`);
   const covered=new Set(activities.filter(a=>a.id.includes('operate:sequence:')).map(a=>Number(a.id.split(':').at(-1))));

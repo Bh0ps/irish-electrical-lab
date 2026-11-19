@@ -543,10 +543,14 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
       set(state, 'closed', requested && !state.tripped); state.details = `Temperature ${number(p, 'temperature', 18)}°C; setpoint ${number(p, 'setpoint', 21)}°C; contact ${state.closed ? 'closed' : 'open'}.`;
     } else if(item.type==='pwmcontrol'||item.type==='proximity'){
       const v=getV(item,'+','-');
-      const available=!!v&&v.re>=number(p,'minVoltage',5)&&v.re<=number(p,'maxVoltage',36)&&solved.frequencies?.[terminal(item,'+')]===0;
+      const frequency=solved.frequencies?.[terminal(item,'+')];
+      const available=!!v&&v.re>=number(p,'minVoltage',5)&&v.re<=number(p,'maxVoltage',36)&&frequency===0;
       set(state,'energized',available&&flag(p,'on',true));
       state.closed=state.energized&&(item.type==='proximity'?flag(p,'active'):flag(p,'pulseW')||flag(p,'pulseC'));
-      state.details=item.type==='proximity'?(state.closed?'Target detected. The positive output is on.':'Output open. Check the sensor supply and the position of the target.'):'Pulse controller supplied at '+(v?.re??0).toFixed(1)+' V DC.';
+      if(item.type==='proximity') state.details=state.closed?'Target detected. The positive output is on.':'Output open. Check the sensor supply and the position of the target.';
+      else if(!v||frequency===undefined) state.details='The controller has no supply reading. Check both the + and − connections.';
+      else if(frequency!==0) state.details=`${abs(v).toFixed(1)} V AC across + and −. The controller needs a DC supply.`;
+      else state.details=`${v.re.toFixed(1)} V DC across + and −. ${available ? (state.energized ? 'The controller is on.' : 'The controller is switched off.') : 'Check the supply voltage and polarity.'}`;
     } else if(item.type==='cctstrip'){
       let total=0;
       for(const channel of ['W','C']){
@@ -556,6 +560,7 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
         state[channel==='W'?'warmWatts':'coolWatts']=watts;total+=watts;
       }
       state.lightOutputPower=total;state.energized=total>.02;
+      state.details=`The warm LEDs draw ${Number(state.warmWatts).toFixed(1)} W and the cool LEDs draw ${Number(state.coolWatts).toFixed(1)} W.`;
     } else if(item.type==='led'){
       const reversed=!!supplyV&&supplyV.re<-.02&&solved.frequencies?.[terminal(item,'L')]===0;
       set(state,'reverseBlocked',reversed);
@@ -693,14 +698,17 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
           }
         }
       }
-      state.details = `${active ? 'Enabled' : 'Supply missing or too low'}; ${outP.toFixed(1)} W output; ${state.currentLimited ? 'output limit active' : 'within its output rating'}.`;
+      const supplyStatus = active ? 'Output enabled.' : isEnergySource ? 'Output off.' : 'Supply missing or too low.';
+      const driveStatus = state.closed ? 'Drive supplied and enabled to run.' : 'Drive supplied with its output stopped.';
+      state.details = `${item.type === 'vfd' && active ? driveStatus : supplyStatus} Output ${outP.toFixed(1)} W. ${state.currentLimited ? 'The output limit is active.' : 'Within the output rating.'}`;
     } else if (item.type === 'transformer') {
       state.energized = powered; state.level = abs(getV(item, '+', '-')); state.details = `${supplyMagnitude.toFixed(1)} V primary / ${state.level.toFixed(1)} V secondary.`;
     } else if (item.type === 'plc') {
       const threshold = number(p, 'controlVoltage', nominal) * 0.5, i1 = abs(getV(item, 'I1', 'N')) > threshold, i2 = abs(getV(item, 'I2', 'N')) > threshold;
       const mode = String(p.mode || 'and');
       set(state, 'closed', powered && (mode === 'or' ? i1 || i2 : mode === 'independent' ? i1 : mode === 'latch' ? i1 || !!old?.closed && !i2 : i1 && i2));
-      set(state, 'output2', powered && i2); state.energized = powered; state.details = `Inputs ${Number(i1)}/${Number(i2)}; ${mode} logic; outputs use actual COM wiring.`;
+      set(state, 'output2', powered && i2); state.energized = powered;
+      state.details = `I1 is ${i1 ? 'on' : 'off'} and I2 is ${i2 ? 'on' : 'off'}. In ${mode === 'and' || mode === 'or' ? mode.toUpperCase() : mode} mode, COM–Q1 is ${state.closed ? 'closed' : 'open'} and COM–Q2 is ${state.output2 ? 'closed' : 'open'}.`;
     } else if (item.type === 'safetyRelay') {
       const threshold = number(p, 'controlVoltage', nominal) * 0.5;
       const high = (name: string) => abs(getV(item, name, 'N')) > threshold;
@@ -709,7 +717,7 @@ function evaluate(document: CircuitDocument, solved: Solved, net: Network, state
       // Feedback is a pre-start check. A correctly operated contactor opens its NC feedback.
       const close = channelsSafe && (!!state.closed || fb && (String(p.mode) === 'auto' || resetEdge));
       set(state, 'closed', close); state.energized = powered; state.resetHigh = reset; state.resetRequested = false;
-      state.details = `Channels ${s1 ? 'closed' : 'open'}/${s2 ? 'closed' : 'open'}; feedback ${fb ? 'present' : 'absent'}; ${close ? 'output enabled' : 'output inhibited'}.`;
+      state.details = `S1 is ${s1 ? 'on' : 'off'} and S2 is ${s2 ? 'on' : 'off'}, with feedback ${fb ? 'present' : 'absent'} at FB. The contact from COM to OUT is ${close ? 'closed' : 'open'}.`;
     } else if (item.type === 'emergency') {
       const batteryAvailable = flag(p, 'battery', true) && number(p, 'batteryCharge', 1) > 0;
       const wiredSL = document.wires.some(w => w.from.component === item.id && w.from.terminal === 'SL' || w.to.component === item.id && w.to.terminal === 'SL');

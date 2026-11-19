@@ -273,15 +273,15 @@ export default function LearningPanel(props: Props) {
   const visibleSections = props.lesson.sections.filter(section => !props.challengeStarted || props.diagnosisAccepted || !section.title.toLowerCase().includes('fault'));
   const targetName = props.document.components.find(component => component.id === activity.component)?.label;
   const canLocate = Boolean(targetName || activity.endpoints?.length);
-  const clue = activity.kind === 'connect' ? 'Find the first piece of equipment, then the marking beside its terminal. The named list works too.'
-    : activity.measurement?.mode === 'current' ? 'Choose one conductor. The current reading tells you how much is flowing in that wire.'
-    : activity.measurement?.mode === 'resistance' ? 'Turn off every simulated source, including any battery supply. Put the probes at opposite ends of the wire.'
+  const clue = activity.kind === 'connect' ? 'Find the first fitting. Look for the letters beside the terminal, or choose that marking from the list.'
+    : activity.measurement?.mode === 'current' ? 'Choose one wire. The meter shows how many amps are flowing through it.'
+    : activity.measurement?.mode === 'resistance' ? 'Switch off all supplies on the bench, including batteries. Put one probe on each end of the wire.'
     : activity.measurement?.mode === 'voltage' ? 'Choose a terminal for each probe. The number on the meter is the voltage between those two points.'
     : switchStep ? 'Press the white wall switch below the lamp, or use the on/off button here.'
     : activity.kind === 'predict' ? 'You can try the circuit first if you’re unsure.'
     : activity.kind === 'explain' ? 'Think back to which control you moved and what changed on the bench.'
-    : activity.kind === 'repair' ? 'Start with the symptom in the fault report. Use the meter to narrow down where the change happens.'
-    : activity.kind === 'retest' ? 'Run the test again after the repair. An earlier report describes the earlier circuit.'
+    : activity.kind === 'repair' ? 'Read the fault report. Use the meter to check the fitting that stopped working.'
+    : activity.kind === 'retest' ? 'Run Test circuit again to check your repair.'
     : targetName ? `Look for ${targetName} in the equipment list.`
     : 'Use the equipment list to find a part by its name.';
   const showHelp = () => {
@@ -313,7 +313,7 @@ export default function LearningPanel(props: Props) {
         <ul aria-label="Terminals to connect">{ends.map(end=><li key={end!.endpoint.component+'.'+end!.endpoint.terminal}><b>{end!.pointLabel}</b><span>{end!.equipmentName}</span></li>)}</ul>
         {stepWire.resistance>.1&&<p>This length of wire adds {stepWire.resistance} Ω.</p>}
       </div>:!question && !switchStep && <p className="task-instruction">{activity.instruction}</p>}
-      {switchStep && !currentAccepted && !props.document.supply.enabled && <p className="task-feedback attention" role="status">Turn on the simulated supply to try the lamp.</p>}
+      {switchStep && !currentAccepted && !props.document.supply.enabled && <p className="task-feedback attention" role="status">Switch the bench supply on to try the lamp.</p>}
       {switchStep && !currentAccepted && props.document.supply.enabled && lampVoltage === null && <p className="task-feedback" role="status">{lampReadingPending ? 'Waiting for a reading across the lamp.' : 'The meter can’t get a reading across the lamp. Test the circuit and check its line and neutral.'}</p>}
       {!!activity.options?.length && <div className="prediction-options" role="group" aria-labelledby="current-task-title">{activity.options.map(option => <button type="button" key={option.id} aria-pressed={answer === option.id} className={answer === option.id ? 'chosen' : ''} onClick={() => { if (answer !== option.id) { setAnswer(option.id); setAccepted(false); setFeedback(''); } }}>{option.label}</button>)}</div>}
       {props.lesson.id>=65&&activity.kind==='operate'&&!!activity.expectedObservations?.length&&<ExtraLowVoltageReading lesson={props.lesson.id} activity={activity} doc={props.document} result={props.result} change={props.onPulseSetting}/>}
@@ -321,8 +321,8 @@ export default function LearningPanel(props: Props) {
       {measuringDimmer && <p className="meter-demo"><b>Lamp power</b><br/>25% · {low ? low.watts.toFixed(1)+' W' : 'Waiting for reading'}<br/>90% · {low && Math.abs(dimmerLevel-.9)<.001 && dimmerWatts!==undefined ? dimmerWatts.toFixed(1)+' W' : 'Waiting for reading'}</p>}
       {activity.bookStep === 'meter-demo' && <div className="meter-demo"><p><strong>L</strong> · lamp line &nbsp; ↔ &nbsp; <strong>N</strong> · lamp neutral</p>
         <output>{lampVoltage === null ? lampReadingPending ? 'Waiting for the meter' : 'Reading unavailable' : `${lampVoltage.toLocaleString('en-IE',{maximumFractionDigits:0})} volts (V)`}</output>
-        {!lampReadingPending && <p>{lampVoltage === null ? 'The circuit has no settled voltage between these points. Check the connections.' : lampVoltage <= 1 ? 'The two probe tips are at about the same voltage.' : 'This is the voltage between the two probe tips.'}</p>}
-        <details><summary>Zero, OL and an unavailable reading</summary><p>Zero volts means the meter found no voltage difference between the probes. On a resistance range, OL can mean a broken path or a resistance above the meter’s range. If the bench cannot get a reading, it shows Reading unavailable.</p></details></div>}
+        {!lampReadingPending && <p>{lampVoltage === null ? 'The meter can’t give a voltage here. Check where both probes are touching.' : lampVoltage <= 1 ? 'The two probe tips are at about the same voltage.' : 'This is the voltage between the two probe tips.'}</p>}
+        <details><summary>Zero, OL and an unavailable reading</summary><p>0 V means the meter sees no voltage difference between the probe tips. On the ohms setting, OL means the path is broken or the resistance is too high for the meter to read. “Reading unavailable” means the bench couldn’t work out a value.</p></details></div>}
       {connectionNotice && <div className="task-feedback success" role="status" data-guided-connection-checked>{connectionNotice}<span className="sr-only"> Next step: {activity.title}</span></div>}
       {feedback && (!wireToUndo || wireToUndo.circuitId===props.document.id && wireToUndo.revision===props.document.revision) && <div className={`task-feedback ${currentAccepted ? 'success' : 'attention'}`} role="status">
         {accepted && !currentAccepted ? 'The circuit has changed. Check this step again.' : feedback}
@@ -348,7 +348,7 @@ export default function LearningPanel(props: Props) {
     </section>
     <details className="lesson-more-detail">
       <summary>More detail</summary>
-      <p className="small-copy">{stage.description}{course?'':' You can revisit any stage.'}</p>
+      <p className="small-copy">{stage.description}{course?'':' You can go back to any step.'}</p>
       {!course && !last && <Button variant="outline" size="sm" onClick={() => go(index + 1)}><ArrowRight size={14}/>Skip to the next step</Button>}
       {(currentAccepted || props.depth === 'apprentice' && !props.challengeStarted) && <details className="task-explanation"><summary><Lightbulb size={14} />Why this matters</summary><p>{activity.explanation}</p></details>}
       {(activity.kind === 'retest' || activity.kind === 'operate') && <Button variant="outline" size="sm" onClick={props.onTest}><Power size={14}/>Test the controls again</Button>}
@@ -371,9 +371,9 @@ export default function LearningPanel(props: Props) {
       <div className="lesson-secondary-actions">
         {!course && <Button onClick={props.onBuild} variant="outline" className="full"><Cable size={14}/>Start a new guided build</Button>}
         <Button onClick={props.onStudied} variant="outline" className="full"><CheckCircle2 size={14}/>Mark reading as studied</Button>
-        <p className="small-copy">The lab saves what you have read, built and repaired separately.</p>
+        <p className="small-copy">Your progress keeps track of reading, builds and repairs separately.</p>
       </div>
-      <details className="references"><summary>Sources and model limits</summary>{props.lesson.references.map(reference => <button type="button" key={reference.url} onClick={() => props.onReference(reference.url)}>{reference.title}</button>)}<p>This learning model does not certify a real installation.</p></details>
+      <details className="references"><summary>Sources and model limits</summary>{props.lesson.references.map(reference => <button type="button" key={reference.url} onClick={() => props.onReference(reference.url)}>{reference.title}</button>)}<p>The checks in this lesson apply to the circuit on your bench.</p></details>
     </details>
   </>;
 }
