@@ -16,6 +16,8 @@ import { HOME_ROOMS, STAIR_EYE, STAIR_LANDING, homeRoomAt, homeVisit, stairFloor
 import { serviceRoomAt,serviceVisit } from '../../lib/service-floorplan';
 import type { CircuitDocument,ComponentInstance,Endpoint,SimulationResult,Vec3 } from '../../lib/types';
 import InstallationRoom from './InstallationRoom';
+import BellCupboard from './BellCupboard';
+import {BELL_CUPBOARD} from '../../lib/bell-cupboard';
 import SiteCablePeek from './SiteCablePeek';
 import { BATTEN_FILAMENT, CUPBOARD_HINGE, CUPBOARD_SWING, fixturePoint, TAPE_SECTION_LENGTH, TAPE_SECTIONS } from '../../lib/site-fixtures';
 
@@ -27,8 +29,8 @@ interface Props {
   onPeek:(id?:string)=>void;onPlan:(wire:string)=>void;onExplore:()=>void;
   onPart:(id:string,part:string)=>void;onTerminal:(endpoint:Endpoint)=>void;onFocus:(id:string)=>void;onService:(id:string)=>void;onList:()=>void;
 }
-function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick}:{
-  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:Vec3;onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;
+function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPick,trace}:{
+  item:SiteItem;equipment:EquipmentProps;cupboardDoor:boolean;optical:number;pin?:Vec3;onTouchPick:(event:ThreeEvent<PointerEvent>)=>void;trace:boolean;
 }){
   const {component:c,definition:def,state}=equipment;
   const {fixture,position}=item;
@@ -61,6 +63,7 @@ function InstalledFixture({item, equipment, cupboardDoor, optical, pin,onTouchPi
       if(owner.terminal)equipment.onTerminal(owner.terminal);else equipment.onPart(owner.part??'body',owner.detail);
     }}>
     {magnet}
+    {fixture?.bellService&&<BellCupboard part={fixture.bellService} trace={trace} select={()=>equipment.onPart('body')}/>}
     <group position={position} rotation={rotation}>
       {Array.from({length:count},(_,i)=><group key={i} position={[(i-(count-1)/2)*TAPE_SECTION_LENGTH,0,0]} scale={scale}>
         <group rotation={[0,0,mountRoll(c)]} scale={mountScale(c)}>
@@ -88,13 +91,19 @@ function WireTrace({doc,site,id}:{doc:CircuitDocument;site:JobSite;id?:string}){
 }
 function aim(item:SiteItem|undefined,id:number|undefined,close=false,height=.15,touch=false):SitePose{
   if(id===9&&!close&&item?.id==='near')return {position:[-1.86,STAIR_EYE,2.40],yaw:-.31,pitch:touch?-.12:.01};
-  const pose=frontView(item,id,close,height);
+  const pose=frontView(item,id,close,height,touch);
   if(!item?.rotation)return pose;
   const [x,y,z]=item.position,dx=pose.position[0]-x,dz=pose.position[2]-z,angle=item.rotation;
   return {position:[x+dx*Math.cos(angle)+dz*Math.sin(angle),pose.position[1],z+dz*Math.cos(angle)-dx*Math.sin(angle)],yaw:pose.yaw+angle,pitch:pose.pitch};
 }
-function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,height:number):SitePose{
+function frontView(item:SiteItem|undefined,id:number|undefined,close:boolean,height:number,touch:boolean):SitePose{
   const p=item?.position??[0,1.3,-2.5];
+  if(item?.fixture?.bellService){
+    const b=BELL_CUPBOARD,d=touch?.99:.64;
+    if(close&&item.fixture.bellService==='protect')return {position:[b.x-.008,b.y+.032,b.z+.32],yaw:.07,pitch:-.12};
+    return {position:[b.x+.15+d*.13,b.y+.14,b.z+d],yaw:.13,pitch:-.14};
+  }
+  if(close&&item?.fixture?.hallChime)return {position:[p[0]-.11,p[1]+.13,p[2]+.39],yaw:-.27,pitch:-.13};
   if(close&&item?.fixture?.bellPush)return {position:[p[0]+.024,p[1]+.05,p[2]+.23],yaw:.10,pitch:-.08};
   if(id===24&&item?.id==='shaver')return {position:[p[0]-.09,p[1]+.098,p[2]+(close?.31:.51)],yaw:close?-.27:-.17,pitch:-.03};
   if(item?.fixture?.board){
@@ -212,6 +221,8 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
   }
   const fixtureMap=new Map(doc.components.map(c=>[c.id,c]));
   const selectedItem=site.items.find(s=>s.id===selectedId);
+  const traced=doc.wires.find(w=>w.id===wire);
+  const tracedIds=traced?[traced.from.component,traced.to.component]:[];
   const visible=site.items.filter(item=>fixtureMap.has(item.id));
   const rocker=site.items.find(item=>item.id==='switch'),wallControl=fixtureMap.get('switch');
   const wallSwitch=rocker&&wallControl&&showWallSwitch&&!walking&&!lost&&!jump.component&&(tool==='select'||tool==='inspect')
@@ -243,7 +254,8 @@ export default function JobSiteView({site,doc,result,selected,terminalId,wire,to
           const optical=Math.min(1,Math.max(0,Number(result?.deviceStates[c.id]?.lightOutputPower??result?.componentPower[c.id]??0)/Math.max(1,Number(c.params.watts??def.defaults.watts??60))));
           const focus=item.id===selectedId;const t=focus?getComponentTerminals(c,def).find(t=>t.id===terminalId):undefined;
           const cupboardDoor=doc.lessonId===65&&c.id==='door';
-          return <InstalledFixture key={item.id} item={item} optical={optical} pin={t?.anchor} cupboardDoor={cupboardDoor}
+          const reveal=tracedIds.includes(item.id)||(item.fixture?.bellService==='protect'&&tracedIds.includes('supply'));
+          return <InstalledFixture key={item.id} item={item} optical={optical} pin={t?.anchor} cupboardDoor={cupboardDoor} trace={reveal}
             onTouchPick={e=>{lastTouchPick.current={x:e.clientX,y:e.clientY,at:performance.now()};}} equipment={{
             filledWays:filledWays(c,doc.components),component:c,definition:def,state:result?.deviceStates[c.id],selected:focus,
             lowDetail:!focus,preferLowAsset:touch,view:'normal',showLabels:false,onModelAvailability:modelAvailability,

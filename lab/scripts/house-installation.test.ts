@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LESSONS} from '../lib/lessons';
 import {COMPONENTS} from '../lib/components';
+import {BELL_CUPBOARD as b} from '../lib/bell-cupboard';
 import {GARDEN_DOOR,HOME_BACK,HOME_DOORS,HOME_WALLS,REAR_GARDEN,STAIR_TOP,stairFloor} from '../lib/home-floorplan';
 import {jobSite} from '../lib/job-site';
 import {houseFixing,installedWireRoute} from '../lib/house-installation';
@@ -13,6 +14,27 @@ import type {Endpoint,Vec3} from '../lib/types';
 
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!.circuit;
 const near=(a:number,b:number)=>Math.abs(a-b)<1e-7;
+test('the bell transformer supply cores share the side conduit and the chime circuit leaves at its own top entry',()=>{
+  for(const id of [71,72]){
+    const doc=lesson(id),site=jobSite(doc),before=electricalKey(doc);
+    for(const wire of doc.wires){
+      const nearTx=wire.from.component==='tx'||wire.to.component==='tx';
+      const txTerminal=wire.from.component==='tx'?wire.from.terminal:wire.to.terminal;
+      const isPrimary=nearTx&&['L','N','PE'].includes(txTerminal);
+      const route=installedWireRoute(doc,site,wire)!;
+      if(isPrimary){
+        for(const x of [b.x+b.breakerSize[0]/2,b.x+b.transformerOffset-b.transformerSize[0]/2]){
+          assert.ok(route.some(p=>near(p[0],x)&&near(p[1],b.y+b.conduitY)&&near(p[2],b.z+b.conduitZ)),wire.id);
+        }
+        assert.ok(route.every(p=>p[1]<b.y+.09));
+      }else if(nearTx){
+        assert.ok(route.some(p=>near(p[0],b.x+b.transformerOffset+b.secondaryX)&&near(p[1],b.y+b.transformerSize[1]/2)&&near(p[2],b.z+b.conduitZ)));
+        assert.ok(route.some(p=>near(p[0],b.x+b.transformerOffset+b.secondaryX)&&p[1]>2.9));
+      }else if(wire.from.component==='supply')assert.ok(route.every(p=>Math.abs(p[0]-b.x)<.055&&Math.abs(p[1]-b.y)<.09));
+    }
+    assert.equal(electricalKey(doc),before);
+  }
+});
 test('socket plates sit on the correct face with clear wall above and rear pins behind it',()=>{
   for(const id of [17,18,19,21]){
     const doc=lesson(id),site=jobSite(doc);
@@ -92,8 +114,9 @@ test('visitors press each bell from outside and both wires enter through the wal
       assert.ok(item.fixture?.bellPush);
       assert.equal(item.room,name==='front'?3:REAR_GARDEN.id);
       assert.equal(outward,name==='front'?1:-1);
-      assert.ok(near(item.fixture!.scale[1]*1.2825,.060));
-      assert.ok(near(item.position[2]-outward*.220*item.fixture!.scale[2],fixing.face[2]));
+      assert.equal(c.variant,'sesame');
+      assert.ok(near(item.fixture!.scale[1]*1.10,.055));
+      assert.ok(near(item.position[2],fixing.face[2]));
       if(name===backId){
         assert.ok(fixing.face[2]<HOME_BACK);
         assert.ok(GARDEN_DOOR.centre-GARDEN_DOOR.width/2-fixing.face[0]>.06);

@@ -20,7 +20,7 @@ export function wireElvLesson(b:Bench,id:number) {
   const plus:Point=['driver','+'],minus:Point=['driver','-'];
   const lamp=(name:string,label:string,watts=12,voltage=24,variant='strip')=>add('led',name,label,{ratedVoltage:voltage,watts},variant);
   const contact=(name:string,label:string,from:Point=plus,closed=true,variant?:string)=>{add('switch',name,label,{closed},variant);link(from,[name,'COM']);};
-  const push=(name:string,label:string,from:Point,role:TerminalRole='control')=>{add('pushbutton',name,label,{pressed:false},'bell-push');link(from,[name,'COM'],role);};
+  const push=(name:string,label:string,from:Point,role:TerminalRole='control')=>{add('pushbutton',name,label,{pressed:false},id===74?'bell-push':'sesame');link(from,[name,'COM'],role);};
   const relay=(name:string,voltage:number)=>add('relay',name,'Changeover relay',{ratedVoltage:voltage,coilWatts:1.2});
   const tx=()=>supply('tx','12 V AC bell transformer',12,'transformer');
   const ac1:Point=['tx','+'],ac2:Point=['tx','-'];

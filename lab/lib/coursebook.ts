@@ -101,7 +101,7 @@ export function getCoursebookActivities(lesson: ConfigurationLesson): LessonActi
       kind:'operate',component:'dimmer',part:'actuator',bookStep:'dimmer',
     })] : operating),
     ...(measure ? [{...measure, independentMeasurement:true}] : []),
-    ...(chapterFor(lesson.id).practical === lesson.id ? [{...key('retest'),title:'Test the complete build',instruction:'Test your connections and the full operating sequence on this circuit.'}] : []),
+    ...(chapterFor(lesson.id).practical === lesson.id ? [{...key('retest'),title:'Test the complete build',instruction:'Choose Test circuit. It checks your wiring and tries the controls.'}] : []),
     key('explain'), finish,
   ];
 }

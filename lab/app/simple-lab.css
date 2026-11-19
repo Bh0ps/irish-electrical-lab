@@ -152,6 +152,17 @@
 .lesson-stage-outline button { display: flex; align-items: center; justify-content: space-between; text-align: left; width: 100%; border: 0; padding: 7px 8px; border-radius: 4px; font-size: 12px; background: #f5f8fb; margin-top: 4px; }
 .course-tool-context { background: #f5f8fb; padding: 12px; border: 1px solid #d9e3ec; border-radius: 7px; margin: 10px 0; }
 .course-tool-context > .context-heading { margin-bottom: 9px; font-size: 13px; }
+.house-call[data-house-tools] .house-job-heading { display:flex; align-items:center; gap:.5rem; padding:.35rem 0; background:white; }
+.house-call[data-house-tools] .house-job-heading > h3 { flex:1; min-width:0; margin:0; }
+.house-call[data-house-tools] .house-job-heading > button { flex:none; }
+.mobile-lab .learn-column:has(.house-call[data-house-tools]) .phone-sheet-heading,
+.mobile-lab .house-call[data-house-tools] .task-topline { display:none; }
+.mobile-lab .house-call[data-house-tools] .house-job-heading { position:sticky; top:0; z-index:4; border-bottom:1px solid #d9e3dc; }
+@media (max-width: 350px) {
+  .mobile-lab .house-call[data-house-tools] .house-job-heading { display:grid; gap:0; }
+  .mobile-lab .house-call[data-house-tools] .house-job-heading > button { justify-self:end; }
+}
+
 .simple-lab .essential-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
 .simple-lab .essential-actions button { font-size: 12px; height: 32px; padding: 5px 9px; }
 .simple-lab .equipment-purpose { color: #506b80; }

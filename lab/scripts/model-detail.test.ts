@@ -17,6 +17,23 @@ function meshes(parent:THREE.Object3D){const result:THREE.Mesh[]=[];parent.trave
 function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)=>total+(m.geometry.index?.count??m.geometry.getAttribute('position').count)/3,0);}
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
+test('the Sesame has two rear wire screws, a plain cover and a separate push cap at both detail levels',async()=>{
+  const asset=manifest.find(model=>model.key==='pushbutton_sesame')!;
+  for(const url of [asset.url,asset.lowUrl]){
+    const scene=await load(url);
+    scene.updateMatrixWorld(true);
+    const surface=(x:number,y:number,side:number)=>semanticOwner(new THREE.Raycaster(
+      new THREE.Vector3(x,y,side),new THREE.Vector3(0,0,-side)).intersectObject(scene,true)[0].object);
+    assert.equal(surface(0,.55,1).detail,'sesame-plunger');
+    assert.deepEqual(asset.terminals.map(t=>t.id).sort(),['COM','NO']);
+    for(const terminal of asset.terminals){
+      const [x,y]=terminal.anchor;
+      assert.equal(surface(x-.02,y,-1).terminal,terminal.id);
+      assert.equal(surface(x,y,1).detail,'sesame-cover');
+    }
+  }
+});
+
 test('the one-way dimmer has two recessed wire entries on the rear and a separate knob on the face',async()=>{
   const asset=manifest.find(model=>model.key==='dimmer_rotary')!;
   for(const url of [asset.url,asset.lowUrl]){
@@ -110,7 +127,7 @@ test('the wall switch case screws and the retained rose knockout can be identifi
 });
 
 test('all catalogue variants have actual family construction, original sources and local rendered icons',async()=>{
-  assert.equal(manifest.length,109);const families=new Set<string>(),report:unknown[]=[];
+  assert.equal(manifest.length,110);const families=new Set<string>(),report:unknown[]=[];
   for(const asset of manifest){
     assert.equal(asset.detailRevision,3,asset.key);families.add(asset.detailFamily);
     assert.ok(asset.sourceMeshCount>asset.meshCount,asset.key+' original source keeps separately editable details');

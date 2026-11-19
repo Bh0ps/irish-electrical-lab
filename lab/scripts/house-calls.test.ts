@@ -19,7 +19,7 @@ for(const call of HOUSE_CALLS){
       const action={component:step.target,activity:id,before:doc,reading};
       const after={...doc,revision:doc.revision+1,components:doc.components.map(c=>{
         if(c.id!==step.target)return c;
-        const p={...c.params};if(c.type==='switch2')p.position=Number(p.position)===0?1:0;else p.closed=!p.closed;
+        const p={...c.params};if(c.type==='switch2')p.position=Number(p.position)===0?1:0;else if(c.type==='pushbutton')p.pressed=!p.pressed;else p.closed=!p.closed;
         return {...c,params:p};
       })};
       assert.ok(onlyCallControlsChanged(call,after,doc));
@@ -78,8 +78,10 @@ test('the board job follows the connected branch, including a board with the fee
 });
 
 test('the next house job skips demonstrated jobs and keeps an unfinished job available',()=>{
-  const [cupboard,stairs,board]=HOUSE_CALLS;
+  const [cupboard,stairs,board,bell]=HOUSE_CALLS;
   let progress=migrateProgress(undefined);
+  assert.equal(nextHouseCall(board,progress),bell);
+  progress=recordActivity(progress,bell.lesson,callActivityId(bell.lesson,bell.steps.length-1),'house-call',true);
   assert.equal(nextHouseCall(board,progress),cupboard);
   progress=recordActivity(progress,cupboard.lesson,callActivityId(cupboard.lesson,0),'house-call',true);
   assert.equal(nextHouseCall(board,progress),cupboard);
@@ -87,4 +89,34 @@ test('the next house job skips demonstrated jobs and keeps an unfinished job ava
     progress=recordActivity(progress,job.lesson,callActivityId(job.lesson,job.steps.length-1),'house-call',true);
   }
   assert.equal(nextHouseCall(board,progress),undefined);
+});
+
+test('the doorbell job watches each chime input and its live supply during a hold and after release',()=>{
+  const call=HOUSE_CALLS.find(c=>c.lesson===72)!;
+  const job=structuredClone(LESSONS.find(l=>l.id===72)!.circuit);
+  function change(doc:CircuitDocument,target:string,pressed:boolean){
+    return {...doc,revision:doc.revision+1,components:doc.components.map(c=>c.id===target?{...c,params:{...c.params,pressed}}:c)};
+  }
+  function attempt(index:number,before:CircuitDocument,after:CircuitDocument,component:string){
+    return verifiedCallStep(call,index,after,simulate(after),{component,activity:callActivityId(72,index),before,reading:simulate(before)});
+  }
+  const front=change(job,'front',true),both=change(front,'back',true),rear=change(job,'back',true),idle=change(front,'front',false);
+  const values=(d:CircuitDocument)=>callReadings(call.steps[0].before,d,simulate(d))!.map(r=>Math.round(r.value!));
+  assert.deepEqual(values(job),[12,0,0]);assert.deepEqual(values(front),[12,12,0]);assert.deepEqual(values(idle),[12,0,0]);assert.deepEqual(values(both),[12,12,12]);
+  assert.equal(attempt(0,job,rear,'back'),false);assert.equal(attempt(1,front,both,'back'),false);
+  assert.equal(attempt(0,rear,change(rear,'front',true),'front'),false);
+  const damaged={...job,wires:job.wires.filter(w=>!(w.to.component==='chime'&&w.to.terminal==='FRONT'))};
+  assert.equal(attempt(0,damaged,change(damaged,'front',true),'front'),false);
+  const brokenFrontHeld=change(damaged,'front',true);
+  assert.equal(attempt(2,brokenFrontHeld,change(brokenFrontHeld,'back',true),'back'),false);
+  const cross={...job,wires:job.wires.map(w=>w.to.component==='chime'&&['FRONT','REAR'].includes(w.to.terminal)?{...w,to:{...w.to,terminal:w.to.terminal==='FRONT'?'REAR':'FRONT'}}:w)};
+  assert.equal(attempt(0,cross,change(cross,'front',true),'front'),false);
+  const unpowered={...job,wires:job.wires.filter(w=>!(w.to.component==='chime'&&w.to.terminal==='AC1'))};
+  assert.equal(attempt(3,change(unpowered,'back',true),change(change(unpowered,'back',true),'back',false),'back'),false);
+  const wrongVoltage={...job,components:job.components.map(c=>c.id==='tx'?{...c,params:{...c.params,outputVoltage:24}}:c)};
+  assert.equal(attempt(0,wrongVoltage,change(wrongVoltage,'front',true),'front'),false);
+  assert.equal(verifiedCallStep(call,0,front,simulate(front)),false);
+  const saved=validateBookmark({version:1,circuit:front,activityId:callActivityId(72,1),path:'coursebook',mode:'explore'});
+  assert.equal(saved.circuit.components.find(c=>c.id==='front')?.params.pressed,true);
+  assert.ok(attempt(1,saved.circuit,change(saved.circuit,'front',false),'front'));
 });

@@ -16,6 +16,16 @@ export function enclosedTerminals(component: Pick<ComponentInstance,'type'|'vari
 }
 
 export function getComponentTerminals(component: Pick<ComponentInstance, 'type' | 'label' | 'variant' | 'params'>, definition: ComponentDefinition): TerminalDefinition[] {
+  if(component.type==='pushbutton'&&component.variant==='sesame'){
+    // Rear wire seats beside the screw heads. Top and bottom are bench names;
+    // neither screw on the actual D814 has a polarity marking.
+    return definition.terminals.filter(t=>t.id==='COM'||t.id==='NO').map(t=>{
+      const top=t.id==='COM';
+      return {...t,label:top?'Top screw':'Bottom screw',group:'Rear contacts',role:'control',
+        anchor:[.035,top?.80:.30,.054],entryDirection:[0,0,-1],scale:.44,
+        purpose:'Either wire can go here. Press the button and the top and bottom screws are connected.'};
+    });
+  }
   const sx=definition.size[0]/1.3, sy=definition.size[1]/1.45, sz=definition.size[2]/.85;
   const placements=new Map<string,{anchor:Vec3;group:string}>();
   const variant=equipmentVariant(component,definition);

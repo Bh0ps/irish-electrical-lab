@@ -8,7 +8,7 @@ import { activityCheckKey, getActivityStage, getLessonPrimaryAction, getStagePro
 import type { LearningRecord } from '../../lib/progress';
 import type { CircuitDocument, ConfigurationLesson, SimulationResult } from '../../lib/types';
 import type { BuildAssessment } from '../../lib/assessment';
-import { COMPONENTS } from '../../lib/components';
+import { COMPONENTS, definitionFor } from '../../lib/components';
 import { evaluateGuidedWireAddition, type GuidedWireAddition } from '../../lib/guided-build';
 import { bookLampVoltage, chapterFor, getCoursebookActivities, nextCourseId } from '../../lib/coursebook';
 import { COURSE_PAGES } from '../../lib/coursebook-content';
@@ -219,7 +219,7 @@ export default function LearningPanel(props: Props) {
     const deliberate = props.manualInspection;
     const inspected = deliberate ? [`${deliberate.component}.${deliberate.part}`] : [];
     const selectedEquipment = props.document.components.find(component => component.id === deliberate?.component);
-    if (selectedEquipment && COMPONENTS[selectedEquipment.type]?.terminals.some(terminal => terminal.id === deliberate?.part)) inspected.push(`${selectedEquipment.id}.terminals`);
+    if (selectedEquipment && definitionFor(selectedEquipment).terminals.some(terminal => terminal.id === deliberate?.part)) inspected.push(`${selectedEquipment.id}.terminals`);
     const evaluated = evaluateActivity(activity, props.document, props.result, props.evidence, answer, {
       inspected, assessment: props.assessment, challengeStarted: props.challengeStarted,
       diagnosisAccepted: props.diagnosisAccepted, repairVerified: props.challengeRepaired,
@@ -254,7 +254,7 @@ export default function LearningPanel(props: Props) {
     : primaryAction === 'next' ? (last ? 'Review lesson' : 'Next step')
     : primaryAction === 'build' ? 'Start guided build'
       : primaryAction === 'challenge' ? 'Start fault exercise'
-        : primaryAction === 'test' ? 'Run operating tests'
+        : primaryAction === 'test' ? 'Test circuit'
           : primaryAction === 'record' ? 'Record reading'
           : activity.kind === 'predict' || activity.kind === 'explain' ? 'Check answer'
             : activity.kind === 'measure' ? 'Check recorded reading'
@@ -316,7 +316,7 @@ export default function LearningPanel(props: Props) {
         <p>With all supplies off, join these two terminals.</p>
         <ul aria-label="Terminals to connect">{ends.map(end=><li key={end!.endpoint.component+'.'+end!.endpoint.terminal}><b>{end!.pointLabel}</b><span>{end!.equipmentName}</span></li>)}</ul>
         {stepWire.resistance>.1&&<p>This length of wire adds {stepWire.resistance} Ω.</p>}
-      </div>:!question && !switchStep && <p className="task-instruction">{activity.instruction}</p>}
+      </div>:!question && !switchStep && activity.instruction !== taskTitle+'.' && <p className="task-instruction">{activity.instruction}</p>}
       {switchStep && !currentAccepted && !props.document.supply.enabled && <p className="task-feedback attention" role="status">Switch the bench supply on to try the lamp.</p>}
       {switchStep && !currentAccepted && props.document.supply.enabled && lampVoltage === null && <p className="task-feedback" role="status">{lampReadingPending ? 'Waiting for a reading across the lamp.' : 'The meter can’t get a reading across the lamp. Test the circuit and check its line and neutral.'}</p>}
       {!!activity.options?.length && <div className="prediction-options" role="group" aria-labelledby="current-task-title">{activity.options.map(option => <button type="button" key={option.id} aria-pressed={answer === option.id} className={answer === option.id ? 'chosen' : ''} onClick={() => { if (answer !== option.id) { setAnswer(option.id); setAccepted(false); setFeedback(''); } }}>{option.label}</button>)}</div>}
@@ -345,7 +345,7 @@ export default function LearningPanel(props: Props) {
         {activity.kind === 'predict' && !currentAccepted && <Button variant="link" size="sm" onClick={() => go(index+1)}>{tryPredictionAtLamp && feedback ? 'Try it on the meter' : 'I’m not sure — let me try'}</Button>}
       </div>
       {helpLevel > 0 && <p className="task-feedback" role="status">{helpLevel === 1 ? clue : helpLevel === 2 ? (targetName ? `Look for the highlighted part on ${targetName}.` : 'Look for the highlighted terminal.') : activity.explanation}</p>}
-      {helpLevel > 0 && <TermsInThisStep text={activity.title + ' ' + activity.instruction}/>}
+      {helpLevel > 0 && <TermsInThisStep text={[activity.title, activity.instruction, ...(activity.options ?? []).map(option=>option.label), feedback, helpLevel === 3 ? activity.explanation : ''].join(' ')}/>}
       {props.context && course && activity.bookStep && <div className="lesson-context">{props.context}</div>}
       {savedAchievement && !currentAccepted && <p className="task-saved-progress">You’ve done this before. Check it on this circuit to continue.</p>}
     </section>
@@ -353,7 +353,7 @@ export default function LearningPanel(props: Props) {
       <summary>More detail</summary>
       <p className="small-copy">{stage.description}{course?'':' You can go back to any step.'}</p>
       {!course && !last && <Button variant="outline" size="sm" onClick={() => go(index + 1)}><ArrowRight size={14}/>Skip to the next step</Button>}
-      {(currentAccepted || props.depth === 'apprentice' && !props.challengeStarted) && <details className="task-explanation"><summary><Lightbulb size={14} />Why this matters</summary><p>{activity.explanation}</p></details>}
+      {(currentAccepted || props.depth === 'apprentice' && !props.challengeStarted) && <details className="task-explanation"><summary><Lightbulb size={14} />What happened?</summary><p>{activity.explanation}</p></details>}
       {(activity.kind === 'retest' || activity.kind === 'operate') && <Button variant="outline" size="sm" onClick={props.onTest}><Power size={14}/>Test the controls again</Button>}
       {!course && <details className="activity-outline"><summary>All steps · {completed} of {activities.length} completed before</summary>
         {stages.map(candidate => <details className="lesson-stage-outline" key={candidate.id}>
@@ -368,13 +368,12 @@ export default function LearningPanel(props: Props) {
         <p>{props.lesson.summary}</p><span className="context-tag">{props.lesson.tag}</span>
         {visibleSections.map(section => <details className="lesson-section" key={section.title}>
           <summary>{section.title}</summary><p>{section.beginner}</p>
-          <details className="apprentice-detail"><summary>Apprentice explanation</summary><p className="apprentice-copy">{section.apprentice}</p></details>
+          <details className="apprentice-detail"><summary>How it works</summary><p className="apprentice-copy">{section.apprentice}</p></details>
         </details>)}
       </details>
       <div className="lesson-secondary-actions">
         {!course && <Button onClick={props.onBuild} variant="outline" className="full"><Cable size={14}/>Start a new guided build</Button>}
-        <Button onClick={props.onStudied} variant="outline" className="full"><CheckCircle2 size={14}/>Mark reading as studied</Button>
-        <p className="small-copy">Your progress keeps track of reading, builds and repairs separately.</p>
+        <Button onClick={props.onStudied} variant="outline" className="full"><CheckCircle2 size={14}/>Mark as read</Button>
       </div>
       <details className="references"><summary>Sources and model limits</summary>{props.lesson.references.map(reference => <button type="button" key={reference.url} onClick={() => props.onReference(reference.url)}>{reference.title}</button>)}<p>The checks in this lesson apply to the circuit on your bench.</p></details>
     </details>
@@ -424,7 +423,7 @@ function ExtraLowVoltageReading({lesson,activity,doc,result,change}:{lesson:numb
     const watts=(v:number)=>v.toLocaleString('en-IE',{maximumFractionDigits:1})+' W';
     const tape=fresh?.deviceStates.tape;
     return <div className="pulse-experiment">
-      <label>{knob==='level'?'Brightness':'Cool channel share'} · {percent}%
+      <label>{knob==='level'?'Brightness':'Cool LEDs in the mix'} · {percent}%
         <input aria-label={knob==='level'?'Practice brightness':'Practice cool channel share'} type="range" min="0" max="100" step="1" value={percent} onChange={e=>change?.(item.id,knob,Number(e.target.value)/100)}/>
       </label>
       <output>{!fresh?'Waiting for the circuit':knob==='level'?'Strip power · '+watts(fresh.componentPower.strip??0):tape?'Warm · '+watts(Number(tape.warmWatts))+'   Cool · '+watts(Number(tape.coolWatts)):'Strip unavailable'}</output>

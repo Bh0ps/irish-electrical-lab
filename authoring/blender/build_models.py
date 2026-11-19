@@ -16,6 +16,7 @@ from lighting_backs import add_lighting_back
 from din_protection import build_din_protection
 from power_accessories import build_power_accessory
 from rotary_dimmer import build_rotary_dimmer
+from sesame_push import build_sesame_push
 from shaver_face import build_shaver_face
 from png_metadata import strip_text_metadata
 from portable_source import clear_browser_locations
@@ -606,6 +607,8 @@ def main():
             features=build_shaver_face(recipe,root,api)
         elif recipe['component']['type'] in ('mcb','mcb3','rcd','rcd3','rcbo'):
             features=build_din_protection(recipe,root,api)
+        elif recipe['galleryKey'] == 'pushbutton:sesame':
+            features=build_sesame_push(recipe,root,api)
         elif recipe['galleryKey'] == 'dimmer:rotary':
             features=build_rotary_dimmer(recipe,root,api)
         elif recipe['component']['type'] in ('fcu','socket'):

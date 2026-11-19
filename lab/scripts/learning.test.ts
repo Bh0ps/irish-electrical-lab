@@ -11,6 +11,20 @@ import type { CircuitDocument } from '../lib/types.ts';
 const lesson=(id:number)=>LESSONS.find(l=>l.id===id)!;
 const copy=(id=7)=>structuredClone(lesson(id).circuit);
 const failed=(checks:ReturnType<typeof runLessonScenarios>)=>checks.filter(c=>c.status!=='pass');
+test('every operating step gives feedback, including steps that set up the next reading',()=>{
+  for(const course of LESSONS)for(const step of getLessonActivities(course).filter(a=>a.kind==='operate')){
+    assert.match(step.explanation,/\p{L}/u,step.id);
+  }
+});
+test('checking a switch uses the live lamp reading when the switch moves but the lamp stays dark',()=>{
+  const d=copy(7), activity=getLessonActivities(lesson(7)).find(a=>a.id==='lesson:7:operate:sequence:1')!;
+  const feed=d.wires.find(w=>(w.from.component==='light'&&w.from.terminal==='L')||(w.to.component==='light'&&w.to.terminal==='L'))!;
+  d.wires=d.wires.filter(w=>w.id!==feed.id);
+  const reading=evaluateActivity(activity,d,simulate(d));
+  assert.equal(reading.status,'not-run');
+  assert.match(reading.explanation,/Hall light.*0 W.*Test circuit/i);
+  assert.doesNotMatch(evaluateActivity(activity,{...d,revision:d.revision+1},simulate(d)).explanation,/0 W/);
+});
 test('guided wiring distinguishes both N markings on the breaker and names the actual fitting',()=>{
   const activities=getLessonActivities(lesson(7));
   const neutralSteps=activities.filter(a=>a.kind==='connect'&&a.endpoints?.some(e=>e.component==='protect'&&['NIN','NOUT'].includes(e.terminal)));

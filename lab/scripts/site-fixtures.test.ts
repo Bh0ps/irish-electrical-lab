@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {LESSONS} from '../lib/lessons.ts';
 import {BACK,jobSite} from '../lib/job-site.ts';
+import {BELL_CUPBOARD} from '../lib/bell-cupboard';
 import {BATTEN_FILAMENT, fixturePoint, TAPE_SECTION_LENGTH, TAPE_SECTIONS} from '../lib/site-fixtures.ts';
 import {terminalSheet} from '../lib/installation-drawing.ts';
 import {simulate,measureVoltage} from '../lib/simulation.ts';
@@ -23,6 +24,28 @@ async function model(name:string){
 function near(value:number,expected:number,tolerance:number){
   assert.ok(Math.abs(value-expected)<tolerance, value+' differs from '+expected);
 }
+
+test('both hall chimes sit on the plaster and the transformer fits inside its closed box at either detail level',async()=>{
+  for(const [id,name,width,height,depth] of [[71,'bell',.116,.116,.051],[72,'chime',.191,.163,.051]] as const){
+    const doc=lesson(id),site=jobSite(doc),item=site.items.find(i=>i.id===name)!;
+    const c=doc.components.find(c=>c.id===name)!,tx=site.items.find(i=>i.id==='tx')!;
+    for(const suffix of ['','.low']){
+      const rendered=await model(c.type+'_default'+suffix);
+      rendered.scale.set(...item.fixture!.scale);rendered.position.set(...item.position);
+      const bounds=new THREE.Box3().setFromObject(rendered),size=bounds.getSize(new THREE.Vector3());
+      const tolerance=suffix==='.low'?.0015:.0002;
+      near(size.x,width,tolerance);near(size.y,height,tolerance);near(size.z,depth,tolerance);
+      near(bounds.min.z,BACK-.01,.001);
+      const windings=await model('transformer_default'+suffix);
+      windings.position.set(...tx.position);windings.scale.setScalar(tx.scale);
+      const windingBox=new THREE.Box3().setFromObject(windings),b=BELL_CUPBOARD;
+      const [w,h,d]=b.transformerSize,cx=b.x+b.transformerOffset;
+      assert.ok(windingBox.min.x>cx-w/2&&windingBox.max.x<cx+w/2);
+      assert.ok(windingBox.min.y>b.y-h/2&&windingBox.max.y<b.y+h/2);
+      assert.ok(windingBox.min.z>b.z&&windingBox.max.z<b.z+d);
+    }
+  }
+});
 
 test('installed boards use the product envelopes with their rail-mounted devices at the same scale',()=>{
   for(const [id,width,height,depth] of [[2,.250,.375,.103],[53,.465,.500,.1325]]){

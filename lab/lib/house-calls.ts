@@ -3,19 +3,28 @@ import { validateCircuit } from './storage';
 import type { StudyProgress } from './progress';
 import type { CircuitDocument, SimulationResult } from './types';
 
-interface CallReading { id: string; label: string; on: boolean; dc?: boolean }
+type DoorCall='Idle'|'Front'|'Rear'|'Both';
+interface CallReading { id: string; label: string; on: boolean; dc?: boolean; pair?:[string,string]; nominal?:number; call?:DoorCall }
 export interface CallStep {
   target: string; label: string; instruction: string; changed: string;
   before: CallReading[]; after: CallReading[];
+  /** The learner deliberately holds or lets go of a momentary control. */
+  pressed?:boolean;
 }
 export interface HouseCall {
   lesson: number; title: string; request: string; done: string; steps: CallStep[];
   breakers?: readonly { id:string; label:string }[];
+  bellPushes?:readonly { id:string; door:string }[];
 }
 
 const lamp = (on:boolean):CallReading => ({id:'light',label:'Stair light',on});
 const strip = (on:boolean):CallReading => ({id:'strip',label:'Cupboard strip',on,dc:true});
 const branches = (on:boolean):CallReading[] => [{id:'load1',label:'Lamp',on},{id:'load2',label:'Socket',on:true}];
+const chime = (call:DoorCall):CallReading[] => [
+  {id:'chime',label:'Chime supply · AC1 to AC2',pair:['AC1','AC2'],nominal:12,on:true,call},
+  {id:'chime',label:'Front · FRONT to AC2',pair:['FRONT','AC2'],nominal:12,on:call==='Front'||call==='Both'},
+  {id:'chime',label:'Back · REAR to AC2',pair:['REAR','AC2'],nominal:12,on:call==='Rear'||call==='Both'},
+];
 
 export const HOUSE_CALLS:HouseCall[] = [
   {lesson:65,title:'Check the cupboard light',request:'The cupboard light should come on when you reach for the shelf.',done:'The strip went out with the door shut and lit again when you opened it.',steps:[
@@ -30,6 +39,13 @@ export const HOUSE_CALLS:HouseCall[] = [
     {target:'branch1',label:'Choose a breaker',instruction:'Which breaker turns off the lamp and leaves the socket on?',changed:'The lamp went out. The socket still has power.',before:branches(true),after:branches(false)},
     {target:'branch1',label:'Restore the lighting breaker',instruction:'Switch the lamp back on at the board. Check both readings.',changed:'The lamp and the socket have power again.',before:branches(false),after:branches(true)},
   ]},
+  {lesson:72,title:'Check both doorbell buttons',request:'One chime serves both doors. In this job, press once to hold a button down and again to let go.',done:'The chime showed the right door for each button and cleared when you let go.',
+    bellPushes:[{id:'front',door:'front'},{id:'back',door:'back'}],steps:[
+      {target:'front',pressed:true,label:'Hold front button',instruction:'Hold the front doorbell button. Watch the chime.',changed:'The chime picked up the front-door call.',before:chime('Idle'),after:chime('Front')},
+      {target:'front',pressed:false,label:'Let go of front button',instruction:'Let go of the front button. Does the call clear?',changed:'The front call cleared. The chime still has its own supply.',before:chime('Front'),after:chime('Idle')},
+      {target:'back',pressed:true,label:'Hold back button',instruction:'Now ring from the back door. Which call shows?',changed:'The back button put voltage on the terminal marked REAR.',before:chime('Idle'),after:chime('Rear')},
+      {target:'back',pressed:false,label:'Let go of back button',instruction:'Let go of the back button and check the chime again.',changed:'The back call cleared.',before:chime('Rear'),after:chime('Idle')},
+    ]},
 ];
 
 export const callActivityId = (id:number,step:number) => 'book:'+id+':call-'+step;
@@ -57,10 +73,13 @@ export interface CallOperation { component:string; activity:string; before:Circu
 export function callReadings(points:CallReading[],doc:CircuitDocument,result?:SimulationResult) {
   if(!result?.converged || result.revision!==doc.revision) return;
   const readings=points.map(point=>{
-    const value=measureVoltage(result,{component:point.id,terminal:'L'},{component:point.id,terminal:'N'}).value;
-    const threshold=point.dc?24:doc.supply.voltage;
+    const [a,b]=point.pair??['L','N'];
+    const value=measureVoltage(result,{component:point.id,terminal:a},{component:point.id,terminal:b}).value;
+    const threshold=point.nominal??(point.dc?24:doc.supply.voltage);
     const powered=value===null||!Number.isFinite(value)?undefined:value>=threshold*.9?true:value<=1?false:undefined;
-    return {label:point.label,value,powered,matches:powered===point.on};
+    const call=point.call?result.deviceStates[point.id]?.call:undefined;
+    const inRange=point.nominal===undefined || (value!==null && value<=point.nominal*1.1);
+    return {label:point.label,value,powered,call,matches:powered===point.on && inRange && (!point.call || call===point.call)};
   });
   return readings;
 }
@@ -71,10 +90,13 @@ export function verifiedCallStep(call:HouseCall,index:number,doc:CircuitDocument
     || doc.lessonId!==call.lesson || doc.id!==action.before.id || doc.revision!==action.before.revision+1) return false;
   const allowed = call.breakers ? call.breakers.some(b=>b.id===action.component) : action.component===step.target;
   if(!allowed)return false;
-  const key=doc.components.find(c=>c.id===action.component)?.type==='switch2'?'position':'closed';
+  // Each entrance must work on its own, including when a broken input hides a held button.
+  if(call.bellPushes?.some(push=>push.id!==step.target && [action.before,doc].some(d=>d.components.find(c=>c.id===push.id)?.params.pressed)))return false;
+  const type=doc.components.find(c=>c.id===action.component)?.type;
+  const key=type==='pushbutton'?'pressed':type==='switch2'?'position':'closed';
   const setting=(d:CircuitDocument)=>d.components.find(c=>c.id===action.component)?.params[key];
   const before=callReadings(step.before,action.before,action.reading), after=callReadings(step.after,doc,result);
-  return setting(doc)!==setting(action.before) && !!before?.every(r=>r.matches) && !!after?.every(r=>r.matches);
+  return setting(doc)!==setting(action.before) && (step.pressed===undefined || setting(doc)===step.pressed) && !!before?.every(r=>r.matches) && !!after?.every(r=>r.matches);
 }
 
 export function onlyCallControlsChanged(call:HouseCall,doc:CircuitDocument,original:CircuitDocument){
@@ -85,7 +107,7 @@ export function onlyCallControlsChanged(call:HouseCall,doc:CircuitDocument,origi
     return JSON.stringify({...normal,id:original.id,revision:0,components:normal.components.map(c=>{
       if(!targets.has(c.id))return c;
       const params={...c.params};
-      delete params[c.type==='switch2'?'position':'closed'];
+      delete params[c.type==='pushbutton'?'pressed':c.type==='switch2'?'position':'closed'];
       return {...c,params};
     })});
   }

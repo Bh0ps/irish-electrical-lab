@@ -8,6 +8,7 @@ import {getComponentTerminals} from '../../lib/terminal-layout';
 import {type JobSite,drawingKind,BACK} from '../../lib/job-site';
 import {GARDEN_DOOR,HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,HOME_STAIR,REAR_GARDEN,STAIR_FOOT,STAIR_LANDING,alignWall,doorLeaf,doorsOn,wallSpans} from '../../lib/home-floorplan';
 import {ServicePlan,serviceSpaces} from './ServicePlan';
+import BellCupboardDrawing,{insideBellCupboard} from './BellCupboardDrawing';
 import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {installedWireRoute} from '../../lib/house-installation';
 import {DRAWING_INK,terminalSheet,shortPoint,matchConnection,ladderPaths} from '../../lib/installation-drawing';
@@ -37,7 +38,7 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
 }){
   const [version,setVersion]=useState<'job'|'actual'>(lesson?'job':'actual'),[page,setPage]=useState<Page>(lesson?initialPage:'wiring');
   const [zoom,setZoom]=useState(1),[wireId,setWireId]=useState<string>(),[which,setWhich]=useState('');
-  const [planArea,setPlanArea]=useState<'selected'|'whole'|number>(()=>typeof window!=='undefined'&&window.matchMedia('(max-width:760px), (max-height:550px) and (pointer:coarse)').matches?'selected':'whole');
+  const [planArea,setPlanArea]=useState<'selected'|'whole'|'bell'|number>(()=>typeof window!=='undefined'&&window.matchMedia('(max-width:760px), (max-height:550px) and (pointer:coarse)').matches?'selected':'whole');
   const docForSheet=version==='job'&&lesson?lesson.circuit:doc;
   const sheet=useMemo(()=>terminalSheet(docForSheet,site),[docForSheet,site]);
   const diagram=useRef<HTMLDivElement>(null);
@@ -45,10 +46,10 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
   useEffect(()=>{
     if(!openLocation||!planTrace||lastTrace.current===planTrace.sequence)return;
     lastTrace.current=planTrace.sequence;
-    if(!doc.wires.some(w=>w.id===planTrace.wire))return;
-    setPage('plan');setVersion('actual');setWireId(planTrace.wire);setPlanArea('whole');setZoom(1);
+    const selectedRun=doc.wires.find(w=>w.id===planTrace.wire);if(!selectedRun)return;
+    setPage('plan');setVersion('actual');setWireId(planTrace.wire);setPlanArea(insideBellCupboard(site,selectedRun)?'bell':'whole');setZoom(1);
     diagram.current?.scrollTo({top:0,left:0});
-  },[openLocation,planTrace,doc.wires]);
+  },[openLocation,planTrace,doc.wires,site]);
   const curWire=docForSheet.wires.find(w=>w.id===wireId);
   const floorRoute=useMemo(()=>curWire?installedWireRoute(docForSheet,site,curWire):undefined,[curWire,site,docForSheet]);
   const reference=(id:string)=>site.items.find(item=>item.id===id)?.ref??id;
@@ -69,7 +70,8 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
   const annex=site.kind==='home'?undefined:SERVICE_AREAS[site.kind];
   const left=Math.min(-6.6,annex?.left??-6.6),right=Math.max(6.6,annex?.right??6.6),back=Math.min(-2.8,annex?.back??-2.8);
   const x=(n:number)=>42+(n-left)*41, y=(n:number)=>24+(n-(house?HOME_BACK:back))*41;
-  const areaId=planArea==='selected'?(curWire?'whole':site.items.find(i=>i.id===selected)?.room??site.room):planArea;
+  const cupboardWire=insideBellCupboard(site,curWire);
+  const areaId=planArea==='bell'&&!cupboardWire?'whole':planArea==='selected'?(curWire?'whole':site.items.find(i=>i.id===selected)?.room??site.room):planArea;
   const planRoom=areaId!=='whole'?rooms.find(r=>r.id===areaId):undefined;
   const showGarden=house&&(site.items.some(i=>i.room===REAR_GARDEN.id)||planRoom?.id===REAR_GARDEN.id);
   const planTop=showGarden?Math.floor(y(REAR_GARDEN.back)-12):0;
@@ -95,8 +97,8 @@ export default function JobDrawing({doc,lesson,site,selected,part,highlight,goTo
     </div>
     <div ref={diagram} className="drawing-paper" tabIndex={0} aria-label="Scrollable drawing">
       <div className="drawing-title"><div className="drawing-legendhead"><b>{site.name}</b><span>{page==='plan'?'Location plan':page==='wiring'?'Terminal connections':page==='ladder'?'Control ladder':'Board schedule'} · {lesson?'EL-'+String(lesson.id).padStart(3,'0'):'CUSTOM'} · {version==='job'?'Design':'As wired'}</span></div>
-      {page==='plan'&&<label className="house-plan-area"><span className="sr-only">Area on plan</span><select aria-label="Area on plan" value={areaId} onChange={e=>{setPlanArea(e.target.value==='whole'?'whole':Number(e.target.value));reset();}}><option value="whole">{house?'Whole house':'Whole site'}</option>{rooms.map(r=><option key={r.id} value={r.id}>{site.location(r.id)}</option>)}</select></label>}</div>
-      {page==='plan'?<svg className="electrical-sheet floor-sheet" role="group" aria-label="Installation floor plan" viewBox={planBox} style={{width:Math.max(100,zoom*100)+'%',minWidth:340*zoom}}>
+      {page==='plan'&&<label className="house-plan-area"><span className="sr-only">Area on plan</span><select aria-label="Area on plan" value={areaId} onChange={e=>{setPlanArea(e.target.value==='whole'||e.target.value==='bell'?e.target.value:Number(e.target.value));reset();}}><option value="whole">{house?'Whole house':'Whole site'}</option>{cupboardWire&&<option value="bell">Cupboard detail</option>}{rooms.map(r=><option key={r.id} value={r.id}>{site.location(r.id)}</option>)}</select></label>}</div>
+      {page==='plan'&&areaId==='bell'&&curWire&&floorRoute?<BellCupboardDrawing doc={docForSheet} site={site} wire={curWire} route={floorRoute} zoom={zoom} find={goto}/>:page==='plan'?<svg className="electrical-sheet floor-sheet" role="group" aria-label="Installation floor plan" viewBox={planBox} style={{width:Math.max(100,zoom*100)+'%',minWidth:340*zoom}}>
         <defs><pattern id="site-hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 6L6 0" stroke="#b6c3b9" fill="none" strokeWidth=".5"/></pattern></defs>
         {house?<g data-oakfield-plan>
           {HOME_ROOMS.filter(r=>r.id!==3&&(r.id!==REAR_GARDEN.id||showGarden)).map(r=><rect key={r.id} x={x(r.left)} y={y(r.back)} width={(r.right-r.left)*41} height={(r.front-r.back)*41} fill={r.id===REAR_GARDEN.id?'#e0e8d8':r.id===6||r.id===1?'#f2f0de':'#f8f8ea'}/>)}

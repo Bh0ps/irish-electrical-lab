@@ -22,7 +22,7 @@ interface ExperimentDefinition {
   options: readonly { id: string; label: string }[];
   answer: string;
   explanation: string;
-  nextCheck: string;
+  nextCheck: string; reflectionHint:string;
   initial?: Parameters;
   targetKeys: readonly string[];
   action: (params: Parameters) => boolean;
@@ -67,7 +67,7 @@ const definitions: readonly ExperimentDefinition[] = [
     target: 'switch', trace: 'L', targetKeys: ['closed'], answer: 'near-zero',
     options: [{ id: 'mains', label: 'About the same as the supply' }, { id: 'near-zero', label: 'Close to zero volts' }],
     explanation: 'With the switch open, current stops flowing through the lamp. Its two terminals are now at almost the same voltage.',
-    nextCheck: 'Leave the supply on and check that the wall switch is off.',
+    nextCheck: 'Leave the supply on and check that the wall switch is off.', reflectionHint:'Picture the switch with the lamp off. Are its two metal contacts touching?',
     action: params => params.closed === false,
     before: (result, document) => (voltage(result, 'light') ?? 0) >= document.supply.voltage * .9,
     after: result => { const value = voltage(result, 'light'); return value !== null && value <= 1; },
@@ -80,7 +80,7 @@ const definitions: readonly ExperimentDefinition[] = [
     target: 'near', trace: 'control', targetKeys: ['position'], answer: 'off',
     options: [{ id: 'off', label: 'It goes out' }, { id: 'on', label: 'It stays on' }],
     explanation: 'On the back of switch A, the feed now goes to L2. Switch B is still on L1. That leaves a break in the path to the lamp.',
-    nextCheck: 'Check that B is still in its original position.',
+    nextCheck: 'Check that B is still where you left it.', reflectionHint:'Think back to which rocker you moved. The wires behind the other switch stayed put.',
     action: params => params.position === 1,
     before: result => drawingPower(result, 'light') && liveTraveller(result) === 'T1',
     after: result => isOff(result, 'light') && liveTraveller(result) === 'T2',
@@ -95,8 +95,8 @@ const definitions: readonly ExperimentDefinition[] = [
     instruction: 'Turn the dimmer down to 30% or less. Leave its switch on.',
     target: 'dimmer', trace: 'L', initial: { level: .8, closed: true }, targetKeys: ['level'], answer: 'lower',
     options: [{ id: 'same', label: 'It stays about the same' }, { id: 'lower', label: 'It falls' }, { id: 'higher', label: 'It rises' }],
-    explanation: 'This lab dimmer adds resistance as you turn it down. Less current flows through the lamp, so its watt reading falls.',
-    nextCheck: 'Check the dimmer is on and its setting is 30% or less.',
+    explanation: 'Turning down this bench dimmer adds resistance. Less current flows through the lamp and it uses fewer watts.',
+    nextCheck: 'Check the dimmer is on and set to 30% or less.', reflectionHint:'Look at the unit beside Lamp power. W stands for watts.',
     action: params => typeof params.level === 'number' && params.level >= 0 && params.level <= .3,
     before: result => drawingPower(result, 'light'),
     after: (result, before) => {
@@ -114,7 +114,7 @@ const definitions: readonly ExperimentDefinition[] = [
     target: 'pir', trace: 'control', targetKeys: ['on', 'active', 'demand'], answer: 'delay', sequence: 'run-on',
     options: [{ id: 'instant', label: 'Straight away' }, { id: 'never', label: 'When someone resets it' }, { id: 'delay', label: 'After a short delay' }],
     explanation: 'When movement stops, the timer keeps its contact closed for a few more seconds. The light goes out when the contact opens.',
-    nextCheck: 'Check that the detector no longer senses movement and the timer still has its supply.',
+    nextCheck: 'Check that the detector shows no movement and the timer still has power.', reflectionHint:'Movement had stopped, but the lamp stayed on. Which part was still counting down?',
     action: params => params.active === false,
     before: result => drawingPower(result, 'light') && result.deviceStates['occupancy-hold']?.command === true,
     after: result => isOff(result, 'light') && isOn(result, 'occupancy-hold') && result.deviceStates['occupancy-hold']?.closed === false,
@@ -122,12 +122,12 @@ const definitions: readonly ExperimentDefinition[] = [
   },
   {
     id: 'independent-branches', lessonId: 2, title: 'What goes off with the breaker?',
-    question: 'The first breaker is marked MCB 1. What do you think will go off when you open it?',
+    question: 'The lamp and socket both have power. Which will go off when you switch off MCB 1?',
     instruction: 'Switch off MCB 1. Leave the other breaker on and compare the readings.',
     target: 'branch1', trace: 'L', targetKeys: ['closed'], answer: 'first',
-    options: [{ id: 'both', label: 'Both circuits' }, { id: 'first', label: 'Circuit 1 only' }, { id: 'second', label: 'Circuit 2 only' }],
+    options: [{ id: 'both', label: 'Both the lamp and the socket' }, { id: 'first', label: 'Only the lamp' }, { id: 'second', label: 'Only the socket' }],
     explanation: 'MCB 1 cuts the feed to the lamp. The socket stays on because it has its own breaker.',
-    nextCheck: 'Check the handles. MCB 1 should be off. MCB 2 and the shared trip switch marked RCCB should both be on.',
+    nextCheck: 'Check the three handles. MCB 1 should be off. MCB 2 and the shared trip switch marked RCCB should be on.', reflectionHint:'The socket still has power. Follow its feed back to the board and look at its breaker.',
     action: params => params.closed === false,
     before: result => drawingPower(result, 'load1') && drawingPower(result, 'load2'),
     after: result => isOff(result, 'load1') && drawingPower(result, 'load2'),
@@ -140,7 +140,7 @@ const definitions: readonly ExperimentDefinition[] = [
     target: 'start', trace: 'control', targetKeys: ['pressed'], answer: 'holds', sequence: 'press-release',
     options: [{ id: 'drops', label: 'It stops' }, { id: 'holds', label: 'It keeps running' }],
     explanation: 'Pressing Start pulls in the contactor. A small switch on it keeps power on the coil when you let go. That switch is called the holding contact.',
-    nextCheck: 'Check the coil and its holding contact. You can hold Start in the equipment controls, then release it once the motor runs.',
+    nextCheck: 'Hold Start in the equipment controls. Check for voltage between A1 and A2 on the coil, then let go.', reflectionHint:'The Start button opens again when you let go. Which other contact can still feed the coil?',
     action: params => params.pressed === false,
     before: result => isOff(result, 'motor') && result.deviceStates.starter?.closed === false,
     after: result => isOn(result, 'motor') && result.deviceStates.starter?.closed === true,
@@ -234,7 +234,7 @@ export function prepareQuickPractice(experiment: QuickPracticeExperiment, circui
   }
   const startingControl = authored.components.find(component => component.id === experiment.target)!.params;
   if (!isReady(result, circuit) || !experiment.before(result, circuit) || experiment.targetKeys.some(key => target.params[key] !== startingControl[key])) {
-    return { status: 'unresolved', message: 'The circuit isn’t at its starting setting. Restart the experiment, then try the control.' };
+    return { status: 'unresolved', message: 'Restart to put the controls back where they were at the start.' };
   }
   const readings = readAll(experiment, result);
   if (!readings) return { status: 'unresolved', message: 'The meter couldn’t get a starting reading. Restart to check the example again.' };
@@ -284,6 +284,6 @@ export function observeQuickPractice(experiment: QuickPracticeExperiment, baseli
   }
 
   const readings = readAll(experiment, result);
-  if (!readings || !experiment.after(result, baseline.readings)) return unresolved(`The readings haven’t changed as expected. ${experiment.nextCheck}`);
+  if (!readings || !experiment.after(result, baseline.readings)) return unresolved(`The meter hasn’t shown that change. ${experiment.nextCheck}`);
   return { status: 'complete', sequence, readings, revision: circuit.revision };
 }

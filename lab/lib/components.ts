@@ -1,5 +1,5 @@
-import { dinDimensions } from './din-devices.ts';
-import type { ComponentDefinition, ComponentInstance, TerminalDefinition, TerminalRole, Parameters, Vec3 } from './types';
+import { dinDimensions, dinForm } from './din-devices.ts';
+import type { CircuitDocument, ComponentDefinition, ComponentInstance, TerminalDefinition, TerminalRole, Parameters, Vec3 } from './types';
 import { getComponentTerminals } from './terminal-layout.ts';
 
 const purpose: Record<string, string> = {
@@ -64,12 +64,47 @@ const handToolParts: Record<string,Record<string,[string,string]>> = {
   crimper:{body:['Crimper grips','Squeeze the handles to close the jaws around the sleeve.'],actuator:['Crimping dies','The shaped jaws squeeze the metal sleeve onto the strands of wire.'],mechanism:['Ratchet and pivot','The ratchet holds the handles as you squeeze. In this exercise, choose a sleeve that fits the wire.']},
   torquedriver:{body:['Insulated handle','Turn the handle to tighten the screw.'],actuator:['Torque adjustment','Set the driver to the torque marked for this terminal. Torque tells you how much turning force to use.'],mechanism:['Insulated shaft and steel tip','The tip fits the terminal screw. When you reach the setting, the driver releases.']},
 };
+const equipmentParts: Record<string,Record<string,[string,string]>> = {
+  chime: {
+    coil: ['Chime coil','Current in the coil pulls a small metal striker towards one of the bars.'],
+    actuator: ['Striker and spring','The striker taps the bar. The spring brings it back when the button is released.'],
+  },
+  transformer: {
+    winding: ['Primary and secondary windings','The mains feeds the first coil, called the primary. The second coil supplies the bell or shaver circuit. The two coils have no wire joining them.'],
+  },
+  dimmer: {
+    actuator: ['Dimmer knob','Turn the knob down and watch the lamp. You can check how much its power drops in watts.'],
+  },
+  multimeter: {
+    actuator: ['Meter dial','Choose volts to compare two terminals. Choose ohms to check resistance with the simulated supplies off.'],
+  },
+  clamp: {
+    sensing: ['Clamp jaws','The jaws sense the magnetic field around a wire. With the supply and return together, their fields can cancel.'],
+    actuator: ['Jaw trigger','Squeeze the trigger to open the jaws. The current reading is for the wire inside them.'],
+  },
+  floatvalve: {
+    mechanism: ['Valve drive','The drive moves the valve towards open or closed. With both direction wires off, the valve stays where it is.'],
+  },
+};
 const defs: ComponentDefinition[] = [];
 /** Terminal explanations describe this model's actual branch/contact map.
  * Device IDs stay stable; numbered labels are not a universal manufacturer map. */
 function explainTerminal(type:string,t:TerminalDefinition):void {
   const id=t.id;
   const set=(text:string)=>{t.purpose=text;};
+  const breaker=dinForm(type);
+  if(breaker){
+    const top=breaker.upper.includes(id);
+    const index=(top?breaker.upper:breaker.lower).indexOf(id);
+    if(index>=0){
+      const mark=(top?breaker.upperMark:breaker.lowerMark)[index];
+      const other=(top?breaker.lowerMark:breaker.upperMark)[index];
+      const conductor=id.startsWith('N')?'neutral':/^L[123]/.test(id)?'phase '+id[1]:'line';
+      return set(top
+        ? 'Top '+mark+' takes the '+conductor+' feed in this circuit. With the handle on, it connects to the bottom terminal marked '+other+'.'
+        : 'Bottom '+mark+' carries '+conductor+' out to the circuit. Switching off breaks its connection to the top terminal marked '+other+'.');
+    }
+  }
   if(type==='shaveroutlet')return set('This is one end of the isolated shaver load. Measure across the two secondary contacts to read the outlet voltage.');
   if(type==='rose') {
     if(id.startsWith('LOOP'))return set('These three LOOP holes share one brass block. The feed stays on here when you switch the lamp off.');
@@ -85,6 +120,11 @@ function explainTerminal(type:string,t:TerminalDefinition):void {
   if(type==='switch')return set(id==='COM'?'Common terminal. The feed comes in here in the lighting lesson. The rocker joins COM to L1.':'In the lighting lesson this wire goes to the lamp. Switching off breaks its connection to COM.');
   if(type==='dimmer')return set(id==='COM'?'COM is the bench name for this hole. In this lesson the feed comes in here. Either hole can take the feed on this dimmer.':'OUT is the bench name for the hole used for the lamp wire. Turn the knob down and watch the lamp.');
   if(type==='switch2')return set(id==='COM'?'Common contact. The rocker connects COM to either L1 or L2.':`Strapper terminal marked ${id==='T1'?'L1':'L2'}. The drawing calls this wire ${id}. Follow it to the other switch.`);
+  if(type==='intermediate'){
+    const straight:Record<string,string>={A:'C',B:'D',C:'A',D:'B'};
+    const crossed:Record<string,string>={A:'D',B:'C',C:'B',D:'A'};
+    return set('Follow '+id+' through this switch. In the straight position it joins '+straight[id]+'. Flick the rocker and it joins '+crossed[id]+'. The letters tell the four holes apart on the bench.');
+  }
   if((type==='meter'||type==='source'||type==='source3')&&(id==='PE'||id==='PEOUT'))return set('Supply earth. The earth connection runs alongside the meter.');
   if(id==='PE'||id==='PEOUT')return set(`${id==='PEOUT'?'Outgoing earth connection':'Earth connection'} for the fitting. The earth path stays connected when the switch opens.`);
   if(['transformer','driver','dcsupply'].includes(type)&&['+','-'].includes(id)){
@@ -137,7 +177,11 @@ function explainTerminal(type:string,t:TerminalDefinition):void {
   if(type==='proximity')return set(({'+':'Brown supplies power to the sensor. It goes to DC positive.','-':'Blue returns to the negative terminal of the DC supply.','OUT':'Black is the output. When the powered sensor sees metal, it connects this wire to positive. That is what PNP means here.'} as Record<string,string>)[id]);
   if(type==='pwmcontrol'||type==='cctstrip')return set(id==='+'?'Shared positive DC connection.':id==='-'?'This wire goes back to the negative side of the DC supply.':(id==='W'?'W is the return for the warm LEDs, or for the single strip.':'C is the return for the cool LEDs.')+' The controller switches this wire on and off to set the brightness.');
   if(type==='floatvalve')return set(id==='COM'?'Common return for both direction inputs.':'On this bench, a supply across '+id+' and COM tells the valve to '+(id==='OPEN'?'open.':'close.'));
-  if(type==='callchime')return set(id.startsWith('AC')?'Power for the chime. Measure between AC1 and AC2.':'The door button feeds this terminal when pressed. Measure from here to AC2.');
+  if(type==='callchime'){
+    if(id==='AC1')return set('One wire from the bell transformer comes here. Put the other probe on AC2 to check the AC supply, even with both buttons released.');
+    if(id==='AC2')return set('This wire goes back to the transformer. Leave one probe here to check the supply at AC1 or a button at FRONT or REAR.');
+    return set('Hold the '+(id==='FRONT'?'front':'back')+' door button and measure from '+id+' to AC2. If its wire and the supply are sound, you should see the bell supply voltage.');
+  }
   if (id==='IN' || id==='OUT') {
     const other = id==='IN'?'OUT':'IN';
     return set(type==='cable' ? 'One end of the wire in the cutaway. Follow it to '+other+'. The other cores in this sample are for display.'
@@ -153,9 +197,12 @@ function explainTerminal(type:string,t:TerminalDefinition):void {
 }
 function add(type: string, name: string, group: string, model: string, description: string, ids: string[], defaults: Parameters = {}, parts: string[] = [], size: Vec3 = [1.1,1.35,.8], roles?: TerminalRole[], abstraction?: string) {
   const terminals=ports(ids,roles);
-  if(['switch','switch2','intermediate','dimmer'].includes(type))terminals.forEach(t=>{t.role='L';t.purpose=t.id==='COM'?'Common line-contact connection. The switch links this terminal to the selected output; it is not a neutral connection.':type==='switch2'?'Traveller connection selected by the common contact. T1/T2 are alternative switch paths, not separate supply phases.':type==='intermediate'?'Strapper connection. The switch either joins the two pairs straight through or crosses them over.':'Controlled line output. Its potential follows the actual contact or dimmer state.';});
+  if(['switch','switch2','intermediate','dimmer'].includes(type))terminals.forEach(t=>{t.role='L';});
   terminals.forEach(t=>explainTerminal(type,t));
-  const definition:ComponentDefinition={ type,name,group,model,description,terminals,defaults,parts:['body','cover','terminals','mounting',...parts,...(['rcbo','rcd','rcd3'].includes(type)?['test']:[])].map(id=>({id,name:partText[id]?.[0]??id,purpose:partText[id]?.[1]??'Selectable functional part.'})),size,abstraction };
+  const definition:ComponentDefinition={ type,name,group,model,description,terminals,defaults,parts:['body','cover','terminals','mounting',...parts,...(['rcbo','rcd','rcd3'].includes(type)?['test']:[])].map(id=>{
+    const [name,purpose]=equipmentParts[type]?.[id]??partText[id]??[id,''];
+    return {id,name,purpose};
+  }),size,abstraction };
   if(handToolParts[type])definition.parts=Object.entries(handToolParts[type]).map(([id,[name,purpose]])=>({id,name,purpose}));
   definition.terminals=getComponentTerminals({type,label:name,params:defaults},definition);
   defs.push(definition);
@@ -224,7 +271,7 @@ add('vfd','Variable-frequency drive','Industrial','vfd','The drive changes the f
 add('plc','PLC and I/O module','Industrial','plc','This controller reads signals from the switches and sensors. Its program decides which outputs turn on.',['L','N','I1','I2','COM','Q1','Q2'],{mode:'and',on:true,nominalVoltage:24},['electronics','display'],[1.6,1.4,.9]);
 add('safetyRelay','Safety relay','Industrial','plc','This relay checks both safety inputs and the contactor feedback before it allows a reset. The motor still needs a separate Start command.',['L','N','S1','S2','RESET','FB','COM','OUT'],{on:true,nominalVoltage:24},['electronics','contacts'],[1.4,1.4,.9],undefined,'You can try the stops, reset and feedback on the bench. A working result here does not give a real machine a safety rating.');
 add('alarm','Interlinked alarm','Safety','alarm','The alarm has a mains supply and a backup battery. Its LINK terminal can pass an alarm signal to the other unit.', ['L','N','PE','LINK'],{watts:2,nominalVoltage:240,battery:true,alarm:false},['sensing','battery','electronics'],[1.1,.7,1.1]);
-add('chime','Doorbell chime','Safety','alarm','A low-voltage sounder controlled by a separate pushbutton.',['L','N'],{watts:3,nominalVoltage:12},['coil','actuator'],[1,.9,.8],['output','output']);
+add('chime','Doorbell chime','Safety','alarm','The chime sounds when there is power across its two screws. In the bell circuit, pressing a door button completes that path.',['L','N'],{watts:3,nominalVoltage:12},['coil','actuator'],[1,.9,.8],['output','output']);
 add('emergency','Emergency luminaire','Safety','lamp','This fitting watches its permanent mains supply. If the supply fails, the battery lights the lamp.',['L','N','PE','SL'],{watts:8,nominalVoltage:240,battery:true,maintained:false},['emitter','battery','electronics'],[1.6,.9,.7]);
 add('ev','EV charging equipment','Energy','charger','The charger draws power when the load controller allows charging. Try pausing it and check the current.',load,{watts:1800,nominalVoltage:240,on:true},['electronics','display'],[1.3,1.8,.8],undefined,'This exercise covers the charging current and when the controller pauses it. Real chargers have their own protection and vehicle checks.');
 add('pv','PV grid inverter','Energy','inverter','The inverter feeds solar power into the AC circuit. When the panels produce less, the supply has to make up the difference.', ['L','N','PE','+','-'],{generation:600,on:true,efficiency:.95,availability:1},['electronics','display'],[1.4,1.7,.8],undefined,'This inverter needs the grid supply before it can feed power back. You can try a loss of supply on the bench.');
@@ -239,7 +286,7 @@ add('crimper','Ferrule crimper','Instruments','instrument','A ferrule is a small
 add('torquedriver','Adjustable torque screwdriver','Instruments','instrument','Set the driver to the torque given for that terminal. It releases when you reach the setting.',[],{},['actuator','mechanism'],[.24,1.24,.24]);
 add('pwmcontrol','Low-voltage pulse controller','Lighting','controller','The controller switches the LED strip on and off quickly. The longer each pulse stays on, the brighter the strip looks.',['+','-','W','C'],{level:.5,mix:.5,on:true},['actuator','electronics'],[1.15,.6,.55],['DC+','DC-','control','control'],'The bench works out average power and current from how long each pulse stays on. It does not show the individual pulses on a meter.');
 add('cctstrip','Warm / cool tape','Lighting','lamp','The warm and cool LEDs share a positive connection. Each has its own return wire, so you can change the mix.',['+','W','C'],{ratedVoltage:24,channelWatts:12},['emitter','electronics'],[2.1,.9,.32],['DC+','control','control'],'Compare the power of the two LED channels to see which is brighter. The bench does not give a colour temperature or a light level in lux.');
-add('callchime','Two-input AC door chime','Safety','alarm','One input is for the front door and one for the back. Press a button and check which call the chime shows.',['AC1','AC2','FRONT','REAR'],{ratedVoltage:12},['electronics','actuator'],[1.1,.95,.6],['output','output','control','control']);
+add('callchime','Two-input AC door chime','Safety','alarm','The chime has a supply of its own. The front and back buttons each have a separate wire, so you can tell which door is calling.',['AC1','AC2','FRONT','REAR'],{ratedVoltage:12},['electronics','actuator'],[1.1,.95,.6],['output','output','control','control']);
 add('floatvalve','Three-point valve actuator','Heating','valve','OPEN and CLOSE move the valve in opposite directions. Switch both off and it holds its position.',['COM','OPEN','CLOSE'],{ratedVoltage:24,travel:4},['actuator','mechanism'],[1.15,1.25,.8],['DC-','control','control'],'The valve moves faster on the bench so you can see the result. If OPEN and CLOSE both have power, it stays still.');
 add('proximity','Three-wire PNP proximity sensor','Controls','sensor','This sensor detects nearby metal. With its DC supply on, the black wire goes positive when metal reaches the sensor.',['+','OUT','-'],{ratedVoltage:24,minVoltage:10,maxVoltage:30,active:false},['sensing','electronics'],[.74,1.65,.74],['DC+','control','DC-'],'Try moving the metal target in and out. The bench checks whether the sensor switches. It does not measure the distance at which a real sensor would switch.');
 // Physical forms share stable electrical terminals and differ only in presentation.
@@ -247,7 +294,7 @@ const physicalForms:Record<string,{id:string;name:string}[]>={
   pwmcontrol:[{id:'single-channel',name:'Single-channel PWM'},{id:'tunable-white',name:'Warm / cool controller'}],
   led:[{id:'strip',name:'Constant-voltage strip'},{id:'series-module',name:'Series downlight module'}],
   switch:[{id:'door-contact',name:'Door-operated contact'}],selector:[{id:'float-changeover',name:'Changeover float switch'}],
-  pushbutton:[{id:'bell-push',name:'Doorbell push'}], driver:[{id:'constant-current',name:'350 mA driver'}],
+  pushbutton:[{id:'sesame',name:'Two-wire bell push'},{id:'bell-push',name:'Three-contact push'}], driver:[{id:'constant-current',name:'350 mA driver'}],
   terminal:[{id:'lever-connector',name:'Lever connector'},{id:'comb-busbar',name:'Insulated single-phase comb'}], fuse:[{id:'dc-fuse',name:'DC branch carrier'}],
   panel:[{id:'domestic',name:'Domestic consumer unit'},{id:'industrial',name:'Industrial cabinet'}],
   lamp:[{id:'bulb',name:'B22 bulb and holder'},{id:'downlight',name:'Recessed downlight'},{id:'batten',name:'Linear batten'}],
@@ -257,6 +304,16 @@ const physicalForms:Record<string,{id:string;name:string}[]>={
 };
 for(const def of defs)if(physicalForms[def.type])def.variants=physicalForms[def.type];
 export const COMPONENTS: Record<string,ComponentDefinition> = Object.fromEntries(defs.map(d=>[d.type,d]));
+const sesameDefinition:ComponentDefinition={
+  ...COMPONENTS.pushbutton,
+  name:'Two-wire bell push',
+  terminals:getComponentTerminals({type:'pushbutton',variant:'sesame',label:'',params:{}},COMPONENTS.pushbutton),
+};
+/** Some fittings in a family have fewer contacts than the workshop changeover button. */
+export function definitionFor(item:Pick<ComponentInstance,'type'|'variant'>):ComponentDefinition {
+  return item.type==='pushbutton'&&item.variant==='sesame'?sesameDefinition:COMPONENTS[item.type];
+}
+
 export const COMPONENT_LIST = defs;
 export const getComponent = (type:string) => COMPONENTS[type];
 
@@ -267,6 +324,7 @@ const variantPurpose: Record<string, string> = {
   'led:series-module': 'These LEDs are wired one after the other. The same current flows through every module in a complete string.',
   'terminal:comb-busbar': 'The metal teeth are joined inside the insulated strip. It carries the same feed to each breaker clipped onto it.',
   'terminal:lever-connector': 'Lift a lever to open that clamp. The wire entries share one metal link inside the connector.',
+  'pushbutton:sesame': 'Hold the button to ring the bell. Let go and the two contacts spring apart. The two screw terminals on the back are interchangeable.',
   'pushbutton:bell-push': 'Press the button to join COM to NO. Let go and the spring opens the contact again.',
 };
 
@@ -274,6 +332,15 @@ export function equipmentPurpose(component: Pick<ComponentInstance, 'type' | 'va
   // Older saved drivers can have the current setting without an explicit model variant.
   if (component.type === 'driver' && component.params.mode === 'constant-current') return variantPurpose['driver:constant-current'];
   return variantPurpose[component.type + ':' + component.variant] ?? COMPONENTS[component.type].description;
+}
+
+export function connectedTerminalMissing(doc:CircuitDocument,replacement:ComponentInstance):string|undefined {
+  const available=definitionFor(replacement).terminals;
+  for (const link of [...doc.wires,...(doc.cableRuns??[])]) {
+    for(const end of [link.from,link.to]){
+      if(end.component===replacement.id&&!available.some(t=>t.id===end.terminal))return end.terminal;
+    }
+  }
 }
 
 /** Changing the actual material also selects its declared electrical specification.

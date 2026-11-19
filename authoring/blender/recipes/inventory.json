@@ -23173,5 +23173,179 @@
     ],
     "meshNodes": 81,
     "vertices": 24027
+  },
+  {
+    "key": "pushbutton_sesame",
+    "file": "pushbutton_sesame.json",
+    "galleryKey": "pushbutton:sesame",
+    "name": "Doorbell push",
+    "component": {
+      "id": "gallery-91",
+      "type": "pushbutton",
+      "label": "Doorbell push",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "pressed": false
+      },
+      "variant": "sesame"
+    },
+    "definition": {
+      "type": "pushbutton",
+      "name": "Momentary control button",
+      "group": "Controls",
+      "model": "switch",
+      "description": "The contacts change when you press the button and spring back when you let go.",
+      "terminals": [
+        {
+          "id": "COM",
+          "label": "COM",
+          "role": "control",
+          "purpose": "Common terminal. Moving the contact joins COM to either NC or NO.",
+          "anchor": [
+            0,
+            0.8361724137931035,
+            -0.353529411764706
+          ],
+          "group": "Common",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "NO",
+          "label": "NO",
+          "role": "N",
+          "purpose": "Normally open. NO joins COM while you hold the button down.",
+          "anchor": [
+            -0.10576923076923077,
+            0.40789655172413797,
+            -0.353529411764706
+          ],
+          "group": "Auxiliary contacts",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "NC",
+          "label": "NC",
+          "role": "N",
+          "purpose": "Normally closed. NC joins COM at rest. It opens while you hold the button down.",
+          "anchor": [
+            0.10576923076923077,
+            0.40789655172413797,
+            -0.353529411764706
+          ],
+          "group": "Auxiliary contacts",
+          "scale": 1,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "pressed": false
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The case holds the working parts in place and keeps them apart."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "Lift the cover on the bench to see the connections underneath."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "This part moves the contacts when you use the control."
+        },
+        {
+          "id": "contacts",
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
+        }
+      ],
+      "size": [
+        1.1,
+        1.35,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "sesame",
+          "name": "Two-wire bell push"
+        },
+        {
+          "id": "bell-push",
+          "name": "Three-contact push"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "Top screw",
+        "role": "control",
+        "purpose": "Either wire can go here. Press the button and the top and bottom screws are connected.",
+        "anchor": [
+          0.035,
+          0.8,
+          0.054
+        ],
+        "group": "Rear contacts",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "NO",
+        "label": "Bottom screw",
+        "role": "control",
+        "purpose": "Either wire can go here. Press the button and the top and bottom screws are connected.",
+        "anchor": [
+          0.035,
+          0.3,
+          0.054
+        ],
+        "group": "Rear contacts",
+        "scale": 0.44,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 26,
+    "vertices": 3124
   }
 ]

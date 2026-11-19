@@ -81,6 +81,11 @@
 .call-breakers button{display:flex;justify-content:space-between;width:100%;min-height:44px;height:auto;white-space:normal}
 .call-breaker-choice .task-feedback{margin-block:.2rem 0}
 .call-breakers button span{font-size:.85em;font-weight:400}
+.call-chime { display:flex; align-items:baseline; gap:.75rem; margin:.75rem 0 .3rem; }
+.call-chime strong { font-size:1.15em; }
+.call-bell-readings { margin:0 0 .8rem; }
+.call-bell-readings summary { width:fit-content; padding:.35rem 0; cursor:pointer; }
+.call-bell-buttons button { justify-content:center; }
 .house-call h3,.house-call button{scroll-margin-block:3rem .5rem}
 .house-call h3:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .installation-lab .learn-column .house-call :is(p,button,dd){font-size:.9375rem;line-height:1.45}

@@ -25,7 +25,7 @@ test('compact reports show one relevant finding first while retaining every verd
 test('protection precedes operation and lesson matching when the model is resolved', () => {
   const html = render([check('extra:wire-1', 'objectives', 'fail'), check('light-off', 'operation', 'fail'), check('finding:neutralEarth:load', 'protection', 'fail')]);
   const firstCard = html.slice(html.indexOf('aria-label="First test finding"'), html.indexOf('<details'));
-  assert.match(firstCard, /finding:neutralEarth:load/); assert.match(firstCard, /simulated supply off/); assert.doesNotMatch(firstCard, /light-off/);
+  assert.match(firstCard, /finding:neutralEarth:load/); assert.match(firstCard, /switch off the bench supply/i); assert.doesNotMatch(firstCard, /light-off/);
 });
 
 test('historical reports remain readable but cannot target missing geometry as current findings', () => {

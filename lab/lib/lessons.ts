@@ -43,10 +43,10 @@ class Bench {
   constructor(public id: number, public name: string, public three = false) {
     this.add(three ? 'source3' : 'source', 'supply', three ? '400 V three-phase / 230 V phase-neutral' : '240 V study supply · Ireland nominal 230 V', {}, [-5, 0, 0]);
   }
-  add(type: string, id: string, label: string, params: Parameters = {}, position?: [number, number, number]): string {
+  add(type: string, id: string, label: string, params: Parameters = {}, position?: [number, number, number], variant?:string): string {
     const i = this.components.length - 1;
     const p: [number, number, number] = position ?? [-2 + (i % 4) * 2.2, 0, -2.3 + Math.floor(i / 4) * 2.15];
-    this.components.push({ id, type, label, position: p, rotation: 0, params });
+    this.components.push({ id, type, label, position: p, rotation: 0, params, ...(variant?{variant}:{}) });
     return id;
   }
   wire(a: Node, b: Node, role: TerminalRole = 'L'): void {
@@ -236,7 +236,7 @@ function buildCircuit(id: number, title: string): CircuitDocument {
       let x: Node = ['run-bus', '3']; if (id === 52) x = b.control('cutout', 'beam', 'Gate safety beam contact', x, { closed: true }); b.load('motor', 'operator', id === 41 ? 'Shutter packaged motor operator' : 'Gate packaged motor operator', x, 300, { packagedDirection: true }); break;
     }
     case 42: { b.load('alarm', 'smoke', 'Smoke alarm with backup', b.live, 2, { batteryBackup: true }); b.load('alarm', 'heat', 'Heat alarm with backup', b.live, 2, { batteryBackup: true }); b.wire(['smoke', 'LINK'], ['heat', 'LINK'], 'control'); break; }
-    case 43: { b.add('transformer', 'tx', 'Doorbell transformer · 12 V AC', { outputVoltage: 12 }); b.mains('tx'); b.add('pushbutton', 'push', 'Doorbell push · NO', { pressed: false }); b.wire(['tx', '+'], ['push', 'COM'], 'output'); b.add('chime', 'chime', 'Low-voltage door chime', { watts: 3, ratedVoltage: 12, doubleInsulated: true }); b.wire(['push', 'NO'], ['chime', 'L'], 'output'); b.wire(['tx', '-'], ['chime', 'N'], 'output'); break; }
+    case 43: { b.add('transformer', 'tx', 'Doorbell transformer · 12 V AC', { outputVoltage: 12 }); b.mains('tx'); b.add('pushbutton', 'push', 'Doorbell push', { pressed: false }, undefined, 'sesame'); b.wire(['tx', '+'], ['push', 'COM'], 'output'); b.add('chime', 'chime', 'Low-voltage door chime', { watts: 3, ratedVoltage: 12, doubleInsulated: true }); b.wire(['push', 'NO'], ['chime', 'L'], 'output'); b.wire(['tx', '-'], ['chime', 'N'], 'output'); break; }
     case 44: case 45: { b.add('emergency', 'emergency', id === 44 ? 'Non-maintained emergency fitting' : 'Maintained emergency fitting', { maintained: id === 45, batteryCharge: 1, watts: 8 }); b.mains('emergency'); if (id === 45) b.wire(sw('normal-switch', 'Light switch'), ['emergency', 'SL'], 'control'); break; }
     case 46: { b.contactor('permission', 'Car charger contactor'); const x = b.powered('sensor', 'load-control', 'Charging load controller', { active: true, demand: true, mode: 'load' }); b.wire(b.live, ['load-control', 'IN'], 'control'); b.coil('permission', x); b.wire(b.live, ['permission', '1']); b.load('ev', 'evse', 'Single-phase car charger', ['permission', '2'], 1200, { packagedProtection: true }); break; }
     case 47: { b.add('isolator', 'pv-isolator', 'Inverter AC isolation', { closed: true }); b.wire(b.live, ['pv-isolator', 'LIN']); b.wire(b.neutral, ['pv-isolator', 'NIN'], 'N'); b.add('pv', 'inverter', 'Grid-following PV inverter · AC side', { watts: 500, power: 500, generation: 500, antiIslanding: true }); b.wire(['pv-isolator', 'LOUT'], ['inverter', 'L']); b.wire(['pv-isolator', 'NOUT'], ['inverter', 'N'], 'N'); b.wire(b.earth, ['inverter', 'PE'], 'PE'); b.load('socket', 'home', 'House socket', b.live, 250); break; }
@@ -573,7 +573,7 @@ const SPECS: Spec[] = [
     'On the output side, follow one winding terminal through the push and chime to the other winding terminal.',
     'Press and release the push. To take a stable reading at the chime, use the option to hold the push, then release it.',
     'Put the tester on V. Measure across the transformer output, then across the chime while you hold the push. Both readings are AC.',
-    'open-live', 'The transformer has output voltage, but the push does not ring the chime.', 'Check whether the transformer output reaches COM at the door push.', 'The wire from the transformer secondary to the push is open. The fault is on the bell side, even though the transformer still has mains input.',
+    'open-live', 'The transformer has output voltage, but the push does not ring the chime.', 'Follow the wire from the transformer to the back of the button. Does the feed reach that screw?', 'The wire from the transformer secondary to the push is open. The fault is on the bell side, even though the transformer still has mains input.',
     ['The closed push supplies the chime.', 'Releasing it opens the bell circuit.']],
   ['Non-maintained emergency luminaire', 'Safety & energy', 'Routine',
     'A non-maintained emergency light normally waits on standby. Its integral battery lights it when its monitored mains feed fails.',

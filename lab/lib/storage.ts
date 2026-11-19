@@ -1,7 +1,7 @@
 import { lessonIdLimit } from './elv-coursebook.ts';
 import type { CableCore, CableRun, CircuitDocument, ComponentInstance, Endpoint, FaultSetting, Parameters, TerminalRole, Vec3, Wire } from './types.ts';
 import { cableCores, isSheathKind, markedRole } from './cables.ts';
-import { COMPONENTS } from './components.ts';
+import { definitionFor, COMPONENTS } from './components.ts';
 import { mountError, normalizeBoardMounts } from './board-assembly.ts';
 export interface Progress { lessons: number[]; builds: number[]; faults: number[]; scores: Record<string,number> }
 export const EMPTY_PROGRESS: Progress = { lessons:[], builds:[], faults:[], scores:{} };
@@ -111,7 +111,7 @@ export function validateCircuit(value:unknown):CircuitDocument {
   }
   const endpoint=(value:unknown,path:string):Endpoint=>{
     const e=object(value,path),component=identity(e.component,`${path}.component`),terminal=text(e.terminal,`${path}.terminal`,128),owner=byId.get(component);
-    if(!owner||!COMPONENTS[owner.type].terminals.some(t=>t.id===terminal))return invalid(path,'references a missing component or terminal.');
+    if(!owner||!definitionFor(owner).terminals.some(t=>t.id===terminal))return invalid(path,'references a missing component or terminal.');
     return {component,terminal};
   };
   const runIds=new Set<string>(), occupiedCores=new Set<string>();

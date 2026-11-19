@@ -120,6 +120,18 @@ function Elv({component:c,definition,view,authoring}:EquipmentProps){
 }
 export function WorkshopGeometry(props:EquipmentProps){
  const c=props.component;
+ if(c.type==='pushbutton'&&c.variant==='sesame')return <group>
+   <Body id="cover" detail="sesame-cover" purpose="The white cover clips over the switch and hides the wall fixing screws.">
+     <Box p={[0,.55,.192]} s={[.48,1.10,.216]} c={white} rad={.018}/>
+   </Body>
+   <Body detail="sesame-base" purpose="The two holes at the ends hold the base against the door surround.">
+     <Box p={[0,.55,.084]} s={[.45,1.066,.04]} c={white}/>
+     <Pin p={[0,.55,.303]} r={.178} h={.026} c={dark}/>
+   </Body>
+   <group userData={{partId:'actuator',animation:'translate',offPosition:[0,0,0],onPosition:[0,0,-.035]}} position={[0,0,c.params.pressed?-.035:0]}>
+     <Pin p={[0,.55,.33]} r={.139} h={.060} c={white}/>
+   </group>
+ </group>;
  if(WORKSHOP_TOOLS.includes(c.type))return <ToolGeometry type={c.type} dialPosition={Number(c.params.dialPosition??0)} held={!!c.params.held} redOut={!!c.params.redOut} blackOut={!!c.params.blackOut}/>;
  return c.type==='gammaboard'||c.type==='invictaboard'?<Board {...props}/>:<Elv {...props}/>;
 }

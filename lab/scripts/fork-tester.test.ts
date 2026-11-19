@@ -89,8 +89,11 @@ test('continuity distinguishes short, open, overrange, unresolved and active sou
   assert.equal(short.shown,'0');assert.equal(short.beeps,true);
   d.components.find(c=>c.type==='switch')!.params.closed=false;
   d.wires=d.wires.filter(w=>w.from.component!=='switch'&&w.to.component!=='switch');d.revision++;
-  const o=simulate(d);assert.equal(forkRead(d,o,method,undefined,true).status,'open');
+  const o=simulate(d),open=forkRead(d,o,method,undefined,true);
+  assert.equal(open.status,'open');assert.equal(open.shown,'OL');assert.match(open.explanation,/no path/i);
   for(const n of [39,40,2000,2001]){const x=forkRead(d,o,method,{value:n,explanation:''});assert.equal(x.status,n>2000?'overrange':'value');assert.equal(x.beeps,n>2000?undefined:n<40);}
+  const high=forkRead(d,o,method,{value:2001,explanation:''});
+  assert.equal(high.shown,'OL');assert.match(high.explanation,/above 2,000 Ω/);
   assert.equal(forkRead(d,r,method).status,'unresolved');
 });
 test('a failed calculation gives the learner a next check while a stale result waits for an update',()=>{

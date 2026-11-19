@@ -1,7 +1,8 @@
 import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Vec3 } from './types';
-import { physicalFixture, isStrip, type FixturePose } from './site-fixtures.ts';
+import { fixturePoint, physicalFixture, isStrip, type FixturePose } from './site-fixtures.ts';
 import {seatPosition} from './board-assembly';
 import { COMPONENTS } from './components';
+import {bellServicePart,bellServicePose} from './bell-cupboard';
 import { houseFixing, onWall } from './house-installation';
 import { HOME_ROOMS, REAR_GARDEN, STAIR_LANDING, walkHome } from './home-floorplan';
 import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
@@ -122,7 +123,12 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     const cabinets = kind === 'home' && area === 0 && [13,65,66,68,69].includes(id);
     const atBackWall = !outside && Math.abs(z - (BACK + .11)) < .0001;
     const mapped=kind==='home'?houseFixing(id,c):undefined;
-    const fixture = physicalFixture(c, !!mapped||atBackWall, cabinets);
+    const servicePart=bellServicePart(id,c);
+    if(servicePart){
+      const pose=bellServicePose(servicePart),s=pose.scale;
+      return {id:c.id,ref,room:2,position:pose.position,rotation:0,scale:s,fixture:{scale:[s,s,s] as Vec3,bellService:servicePart}};
+    }
+    const fixture = physicalFixture(c, !!mapped||atBackWall, cabinets,!!mapped&&(id===71||id===72));
     let scale = physicalHeight(c) / Math.max(.1, COMPONENTS[c.type]?.size[1] ?? 1);
     if (fixture) scale = fixture.scale[1];
     // Plaster face is BACK - .01. Only the flush switch faceplate projects into the room.
@@ -154,7 +160,10 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     const board=installed.get(c.mount.board)??all.find(e=>e.id===c.mount!.board);
     const parent=items.find(e=>e.id===board?.id);if(!parent||!board)continue;
     const local=seatPosition({...board,position:[0,0,0],rotation:0},c,c.mount);
-    item.room=parent.room;item.position=local.map((v,k)=>parent.position[k]+v*parent.scale) as Vec3;item.scale=parent.scale;
+    item.room=parent.room;
+    item.position=fixturePoint(parent.position,parent.scale,parent.fixture,board,local,parent.rotation);
+    item.rotation=parent.rotation;
+    item.scale=parent.scale;
   }
   const load=(id===24?all.find(c=>c.type==='shaveroutlet'):undefined)??all.find(c=>['gammaboard','invictaboard'].includes(c.type))
     ??(id===3?all.find(c=>c.type==='rcbo'):id===5?all.find(c=>c.type==='spd'):undefined)

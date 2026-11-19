@@ -1,6 +1,7 @@
 import { equipmentAssetKey } from './equipment-assets.ts';
 import { COMPONENTS } from './components.ts';
 import { mountVector } from './board-assembly.ts';
+import {chimeEnvelope,type BellServicePart} from './bell-cupboard';
 import type { ComponentInstance, Vec3 } from './types.ts';
 
 export const CUPBOARD_HINGE: Vec3 = [-5.035, 1.92, -2.34];
@@ -11,6 +12,8 @@ export const BATTEN_FILAMENT: Vec3 = [0, .80971, .43571];
 
 export interface FixturePose {
   scale: Vec3;
+  bellService?:BellServicePart;
+  hallChime?:boolean;
   tilt?: number;
   roll?: number;
   tape?: boolean;
@@ -27,8 +30,16 @@ export function isStrip(c: ComponentInstance) {
 /** Full and economy GLBs share these authored component-space dimensions.
  * Actual mounting envelopes and published references are in authoring/site/README.md.
  * No dimensions or rotations here affect the bench's electrical endpoints. */
-export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboard: boolean): FixturePose | undefined {
+export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboard: boolean, doorbellHall=false): FixturePose | undefined {
   if (c.mount) return;
+  if(doorbellHall&&(c.type==='chime'||c.type==='callchime')){
+    const {size,model}=chimeEnvelope(c.type);
+    return {scale:size.map((dimension,i)=>dimension/model[i]) as Vec3,hallChime:true};
+  }
+  if (backWall && c.variant === 'sesame' && c.type==='pushbutton') {
+    // The small D814 is magnified twenty times on the bench. Its base rests at z=0.
+    return {scale:[.05,.05,.05],bellPush:true};
+  }
   if (backWall && c.variant === 'bell-push') {
     // D723W Pushlite envelope. The model's base is at z=-.220, button face at z=.308.
     return {scale:[.042/.880,.060/1.2825,.019/.528],bellPush:true};

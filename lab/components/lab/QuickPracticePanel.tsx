@@ -93,7 +93,7 @@ export default function QuickPracticePanel(props: Props) {
     </>}
     {message && <p className={`task-feedback ${statusClass}`} role="status">{message}</p>}
     {comparison && baseline && <div className="practice-result">
-      {comparison.revision !== document.revision && <p className="small-copy">These readings are from your completed comparison.</p>}
+      {comparison.revision !== document.revision && <p className="small-copy">You’ve changed the circuit since taking these readings.</p>}
       <table className="practice-comparison">
         <caption className="sr-only">Readings from your experiment</caption>
         <thead><tr><th scope="col">Reading</th><th scope="col">Before</th>{comparison.sequence.during && <th scope="col">Run-on</th>}<th scope="col">After</th></tr></thead>
@@ -113,7 +113,7 @@ export default function QuickPracticePanel(props: Props) {
           if (reflection === option) return;
           setReflection(option); props.onReflection?.(option === reflectionQuestion.right);
         }}>{option}</button>)}</div>
-      {reflection && <p role="status">{reflection === reflectionQuestion.right ? 'That explains the readings.' : 'Look at what changed between Before and After, then try again.'}</p>}
+      {reflection && <p role="status">{reflection === reflectionQuestion.right ? 'That’s right.' : experiment.reflectionHint}</p>}
     </div>}
     <div className="task-support-actions">
       <Button variant="ghost" size="sm" onClick={props.onExit}><ArrowLeft size={14} />Back to lesson</Button>

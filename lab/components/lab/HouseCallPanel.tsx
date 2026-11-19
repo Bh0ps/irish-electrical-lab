@@ -1,10 +1,11 @@
-import { useEffect,useLayoutEffect,useMemo,useRef,useState, type MouseEvent } from 'react';
+import { useEffect,useLayoutEffect,useMemo,useRef,useState, type MouseEvent, type ReactNode } from 'react';
 import { Button } from '../ui/button';
 import type { LessonActivity } from '../../lib/learning';
 import type { CircuitDocument, SimulationResult } from '../../lib/types';
 import { callActivityId, callReadings, savedCallStep, verifiedCallStep, type CallOperation, type HouseCall } from '../../lib/house-calls';
 
 interface Props {
+  context?:ReactNode; closeTools:()=>void;
   call:HouseCall; document:CircuitDocument; result?:SimulationResult; operation?:CallOperation;
   start?:string; onActivity:(activity:LessonActivity)=>void; onCredit:(id:string,next:string)=>Promise<void>;
   operate:(id:string)=>void; locate:(id:string)=>void; restart:()=>void; choose:()=>void; undo:()=>void;
@@ -18,6 +19,19 @@ export function HouseCallPanel(props:Props){
   const heading=useRef<HTMLHeadingElement>(null);
   const keyboardControl=useRef<HTMLButtonElement|null>(null);
   const previousStep=useRef(index);
+  const toolsOpen=Boolean(props.context);
+  const hadTools=useRef(toolsOpen);
+  useLayoutEffect(()=>{
+    if(hadTools.current !== toolsOpen){
+      const sheet=heading.current?.closest('.learn-column');
+      if(sheet)sheet.scrollTop=0;
+    }
+    if(hadTools.current && !toolsOpen){
+      heading.current?.focus({preventScroll:true});
+      heading.current?.scrollIntoView({block:'nearest',behavior:'instant'});
+    }
+    hadTools.current=toolsOpen;
+  },[toolsOpen]);
   const step=call.steps[index];
   const activity=useMemo<LessonActivity>(()=>({
     id:callActivityId(call.lesson,index),kind:'operate',title:call.title,
@@ -25,22 +39,37 @@ export function HouseCallPanel(props:Props){
     component:step&&call.breakers?'course-enclosure':step?.target,competency:'house-call',part:step&&!call.breakers?'actuator':undefined,
   }),[call,index,step]);
   useEffect(()=>onActivity(activity),[onActivity,activity]);
+  const verified=verifiedCallStep(call,index,doc,result,operation);
   useEffect(()=>{
-    if(!step || !verifiedCallStep(call,index,doc,result,operation) || credited.current===activity.id)return;
+    if(!step || !verified || credited.current===activity.id)return;
     credited.current=activity.id;
     void onCredit(activity.id,callActivityId(call.lesson,index+1)).then(()=>{
       setObservation(step.changed);
     });
-  },[activity.id,call,index,doc,result,operation,step,onCredit]);
+  },[activity.id,call,index,verified,step,onCredit]);
   const readings=callReadings(step?.before??call.steps[call.steps.length-1].after,doc,result);
   const ready=readings?.every(r=>r.matches) && doc.supply.enabled;
   const wasTried=step && operation?.activity===activity.id && operation.component===step.target && operation.before.id===doc.id && operation.before.revision+1===doc.revision;
   const recentAction=operation?.activity===activity.id && operation.before.id===doc.id && operation.before.revision+1===doc.revision ? operation : undefined;
   const usedCandidate=call.breakers?.some(b=>b.id===recentAction?.component);
-  const otherControl=step && recentAction && recentAction.component!==step.target && !usedCandidate
+  const otherPush=call.bellPushes?.find(push=>push.id!==step?.target && doc.components.find(c=>c.id===push.id)?.params.pressed);
+  const targetDoor=call.bellPushes?.find(push=>push.id===step?.target)?.door;
+  const usedBell=call.bellPushes?.some(push=>push.id===recentAction?.component);
+  const otherControl=step && recentAction && recentAction.component!==step.target && !usedCandidate && !usedBell
     ? doc.components.find(c=>c.id===recentAction.component)?.label : undefined;
-  const wrongState=step && readings && !ready && !verifiedCallStep(call,index,doc,result,operation);
+  const wrongState=step && readings && !ready && !verified;
   const [lamp,socket]=readings??[];
+  const chimeStatus=!lamp || lamp.powered===undefined || typeof lamp.call!=='string' ? 'No reading'
+    : !lamp.powered ? 'No supply' : ({Idle:'No call',Front:'Front door',Rear:'Back door',Both:'Both doors'} as Record<string,string>)[lamp.call]??'No reading';
+  let bellFeedback='';
+  const targetWasUsed=step && wasTried && step.pressed===Boolean(doc.components.find(c=>c.id===step.target)?.params.pressed);
+  if(step && call.bellPushes && !otherControl && readings && (wrongState || targetWasUsed || otherPush) && !verified){
+    if(!doc.supply.enabled)bellFeedback='Switch the bench supply on to try the buttons.';
+    else if(lamp?.powered!==true || (lamp.value??0)>12*1.1)bellFeedback='Check the chime supply between AC1 and AC2. It should be about 12 V AC.';
+    else if(otherPush)bellFeedback='Let go of the '+otherPush.door+' button, then try the '+targetDoor+' button.';
+    else if(targetWasUsed && lamp.call!==step.after[0].call)bellFeedback='Look at the '+targetDoor+' input under “See the voltages”. Does its voltage change when you press the button?';
+    else bellFeedback=step.pressed?'Let go of the '+targetDoor+' button, then try it again.':'Hold the '+targetDoor+' button first. Then let it go and watch the chime.';
+  }
   let boardFeedback='';
   if(call.breakers && step && doc.supply.enabled && !otherControl && socket?.powered===false){
     if(lamp?.powered===true)boardFeedback='The lamp is still on. Put the socket breaker back on.';
@@ -60,6 +89,7 @@ export function HouseCallPanel(props:Props){
   useLayoutEffect(()=>{
     const changed=previousStep.current!==index;
     previousStep.current=index;
+    if(changed)heading.current?.closest('.learn-column')?.scrollTo({top:0,behavior:'instant'});
     const button=keyboardControl.current;
     if(!button)return;
     const focused=globalThis.document.activeElement;
@@ -69,7 +99,6 @@ export function HouseCallPanel(props:Props){
     }
     if(changed){
       heading.current?.focus({preventScroll:true});
-      heading.current?.scrollIntoView({block:'nearest',behavior:'instant'});
       keyboardControl.current=null;
     }else if(result?.revision===doc.revision){
       const controls=button.closest('.call-breaker-choice');
@@ -85,17 +114,24 @@ export function HouseCallPanel(props:Props){
       else if(box.bottom>bottom)sheet.scrollTop+=box.bottom-bottom;
     }
   },[index,doc.revision,result?.revision,boardFeedback]);
-  return <section className="active-task house-call" data-house-call={call.lesson} data-call-step={index} aria-label="House call">
+  return <section className="active-task house-call" data-house-tools={toolsOpen||undefined} data-house-call={call.lesson} data-call-step={index} aria-label="House call">
     <div className="task-topline"><span>Oakfield house</span><b>{step?'Check '+(index+1)+' of '+call.steps.length:'Job complete'}</b></div>
-    <h3 ref={heading} tabIndex={-1} aria-live="polite">{step?step.instruction:'What you checked'}</h3>
+    <div className="house-job-heading"><h3 ref={heading} tabIndex={-1} aria-live="polite">{step?step.instruction:'What you checked'}</h3>
+      {toolsOpen&&<Button variant="ghost" size="sm" onClick={props.closeTools}>Back to job</Button>}
+    </div>
+    {props.context ?? <>
     {!index&&<p>{call.request}</p>}
-    {observation&&step&&<p className="task-feedback success" role="status">{observation}</p>}
+    {observation&&step&&!bellFeedback&&<p className="task-feedback success" role="status">{observation}</p>}
     {!step&&<p className="task-instruction">{call.done}</p>}
-    <dl className="call-readings" aria-label="Voltage across each fitting">{(readings??(step??call.steps[call.steps.length-1]).after.map(p=>({label:p.label,value:null}))).map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.value===null?(result?.revision===doc.revision?'No reading':'Waiting…'):r.value.toLocaleString('en-IE',{maximumFractionDigits:1})+' V'}</dd></div>)}</dl>
+    {call.bellPushes && <p className="call-chime" role="status">Chime <strong>{readings?chimeStatus:result?.revision===doc.revision?'No reading':'Waiting…'}</strong></p>}
+    {call.bellPushes?<details className="call-bell-readings"><summary>See the voltages</summary>{voltageReadings()}</details>:voltageReadings()}
     {otherControl&&<div className="task-feedback attention" role="status"><p>You used {otherControl}. Try the fitting named in the job.</p><Button variant="outline" size="sm" onClick={props.undo}>Undo that change</Button></div>}
     {unresolved&&<p className="task-feedback attention" role="status">The lab couldn’t get a reading. Check the wiring at the fitting, or open Help to start this job again.</p>}
-    {wrongState&&!otherControl&&!boardFeedback&&!unresolved&&<p className="task-feedback attention" role="status">{!doc.supply.enabled?'The supply is off. Switch it on to try the job.':wasTried?'The readings didn’t change as expected. Try the control again to return to the starting position.':'Return the controls to their starting positions, or start this job again.'}</p>}
-    {step?<>{call.breakers?<div className="call-breakers" role="group" aria-label="Breakers on the board">{call.breakers.map(b=>{
+    {(bellFeedback||wrongState)&&!otherControl&&!boardFeedback&&!unresolved&&<p className="task-feedback attention" role="status">{bellFeedback||(!doc.supply.enabled?'The supply is off. Switch it on to try the job.':wasTried?'The readings didn’t change as expected. Try the control again to return to the starting position.':'Return the controls to their starting positions, or start this job again.')}</p>}
+    {step?<>{call.bellPushes?<div className="call-breakers call-bell-buttons" role="group" aria-label="Doorbell buttons">{call.bellPushes.map(push=>{
+      const fitting=doc.components.find(c=>c.id===push.id),held=Boolean(fitting?.params.pressed);
+      return <div className="call-breaker-choice" key={push.id}><Button variant="outline" disabled={!fitting} aria-pressed={held} aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,push.id)}>{held?'Let go of ':'Hold '}{push.door} button</Button></div>;
+    })}</div>:call.breakers?<div className="call-breakers" role="group" aria-label="Breakers on the board">{call.breakers.map(b=>{
         const fitting=doc.components.find(c=>c.id===b.id);
         const position=result?.revision===doc.revision && result.deviceStates[b.id]?.tripped?'Tripped':fitting?.params.closed?'On':'Off';
         const hint=feedbackBreaker===b.id?boardFeedback:'';
@@ -103,7 +139,12 @@ export function HouseCallPanel(props:Props){
           {hint&&<p id="call-board-feedback" className="task-feedback attention" role="status">{hint}</p>}</div>;
       })}</div>:<Button className="primary-button full" aria-disabled={!readings||undefined} onClick={e=>operateFromButton(e,step.target)}>{step.label}</Button>}
       <div className="task-support-actions"><Button variant="ghost" onClick={()=>props.locate(call.breakers?'course-enclosure':step.target)}>{call.breakers?'Show the board':'Show me where'}</Button></div>
-      <details className="lesson-more-detail"><summary>Help</summary><p>Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.</p><Button variant="outline" onClick={props.restart}>Start this job again</Button></details>
+      <details className="lesson-more-detail"><summary>Help</summary><p>{call.bellPushes?'Choose a button once to hold it down. Choose it again to let go. You can use the buttons here, at the doors or in the equipment list. The chime marks the back door REAR.':'Try the fitting in the room or use the button above. The numbers show the voltage across the fitting in the lab.'}</p><Button variant="outline" onClick={props.restart}>Start this job again</Button></details>
     </>:<><Button className="primary-button full" onClick={props.nextJob?.open??props.startFault}>{props.nextJob?'Next job · '+props.nextJob.title:'Try a fault on this circuit'}</Button><Button variant="ghost" onClick={props.choose}>Choose another job</Button></>}
+    </>}
   </section>;
+  function voltageReadings(){
+    const points=readings??(step??call.steps[call.steps.length-1]).after.map(p=>({label:p.label,value:null}));
+    return <dl className="call-readings" aria-label={call.bellPushes?'Voltage at the chime':'Voltage across each fitting'}>{points.map(r=><div key={r.label}><dt>{r.label}</dt><dd>{r.value===null?(result?.revision===doc.revision?'No reading':'Waiting…'):r.value.toLocaleString('en-IE',{maximumFractionDigits:1})+' V'}</dd></div>)}</dl>;
+  }
 }
