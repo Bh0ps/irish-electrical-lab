@@ -86,52 +86,48 @@ export function currentEvidence(document:CircuitDocument,result:SimulationResult
     const key=identity(e);if(seen.has(key))return false;seen.add(key);return true;
   });
 }
-export function validateDiagnosisEvidence(document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[],target:{wire?:string;component?:string}):{accepted:boolean;explanation:string}{
-  const readings=currentEvidence(document,result,evidence),wire=document.wires.find(w=>w.id===target.wire);
-  const pair=(e:MeasurementEvidence)=>e.instrument?.method!=='fork-voltage'&&!!wire&&(eq(e.a,wire.from)&&eq(e.b,wire.to)||eq(e.a,wire.to)&&eq(e.b,wire.from));
-  const relevant=readings.some(e=>target.wire?(e.mode==='current'&&e.wire===target.wire||pair(e)):(e.a?.component===target.component||e.b?.component===target.component||document.wires.find(w=>w.id===e.wire)&&[document.wires.find(w=>w.id===e.wire)!.from.component,document.wires.find(w=>w.id===e.wire)!.to.component].includes(target.component??'')));
+/** A lead can stay on one reference while the other probes each side of a
+ * suspect wire. Matching the actual third terminal matters on isolated supplies. */
+function comparedWireEnds(wire:Wire,readings:MeasurementEvidence[]):boolean {
+  const ends=[wire.from,wire.to];
+  const atEnd=ends.map(end=>{
+    const points=new Map<string,number>();
+    for(const sample of readings){
+      if(sample.mode!=='voltage'||sample.value===null||sample.assisted!==false||
+        sample.instrument&&sample.instrument.method!=='probe-voltage')continue;
+      const reference=eq(end,sample.a)?sample.b:eq(end,sample.b)?sample.a:undefined;
+      if(reference&&!ends.some(point=>eq(point,reference)))points.set(endpointKey(reference),Math.abs(sample.value));
+    }
+    return points;
+  });
+  // A difference of more than a volt is visible on the whole-volt T6.
+  // Compare magnitudes so reversing one pair of DC probes cannot invent a drop.
+  for(const [reference,first] of atEnd[0]){
+    const second=atEnd[1].get(reference);
+    if(second!==undefined&&Math.abs(first-second)>1)return true;
+  }
+  return false;
+}
+
+export function validateDiagnosisEvidence(document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[],target:{wire?:string;component?:string},readings=currentEvidence(document,result,evidence)):{accepted:boolean;explanation:string}{
   if(readings.length<2)return {accepted:false,explanation:'Record two different readings on the circuit as it is now.'};
-  if(!relevant)return {accepted:false,explanation:'Take one reading on the wire or fitting you think is faulty.'};
-  return {accepted:true,explanation:'You’ve taken the readings. Choose the fault you think they point to.'};
+  const wire=document.wires.find(w=>w.id===target.wire);
+  const relevant=wire?readings.some(sample=>
+    sample.mode==='current'&&sample.wire===wire.id ||
+    sample.instrument?.method!=='fork-voltage'&&(eq(sample.a,wire.from)&&eq(sample.b,wire.to)||eq(sample.a,wire.to)&&eq(sample.b,wire.from)))
+    ||comparedWireEnds(wire,currentEvidence(document,result,evidence.filter(sample=>sample?.assisted===false&&sample.mode==='voltage')))
+    :!!target.component&&!target.wire&&readings.some(sample=>{
+      const branch=document.wires.find(w=>w.id===sample.wire);
+      return [sample.a,sample.b,branch?.from,branch?.to].some(point=>point?.component===target.component);
+    });
+  return relevant
+    ? {accepted:true,explanation:'You’ve taken the readings. Choose the fault you think they point to.'}
+    : {accepted:false,explanation:wire?'Put a probe at each end of the wire. Or leave one probe in place and touch the other to each end in turn.':'Take a reading on the fitting you think is faulty.'};
 }
 export const wireMarking: Record<Wire['role'], string> = {
   L:'line (L)', N:'neutral (N)', PE:'earth (PE)', L1:'phase L1', L2:'phase L2', L3:'phase L3',
   control:'control', output:'output', 'DC+':'positive (+)', 'DC-':'negative (−)',
 };
-
-function operateLanguage(lesson:ConfigurationLesson,component:string,params:Record<string,string|number|boolean>):string {
-  const item=lesson.circuit.components.find(c=>c.id===component);
-  const name=item?.label.split(' · ')[0]??component;
-  return Object.entries(params).map(([key,value])=>{
-    if(item?.variant==='door-contact'&&key==='closed')return (value?'Open ':'Close ')+(lesson.id===65?'the cupboard':'the door');
-    if(item?.type==='proximity'&&key==='active')return value?'Bring metal near the sensor':'Move the metal away';
-    if(key==='mix')return 'Set the cool LEDs to '+Math.round(Number(value)*100)+'% of the mix';
-    if(key==='closed' && item?.type==='thermostat')return `Turn ${name} ${value?'up':'down'}`;
-    if(key==='closed' && ['switch','isolator','isolator3','mcb','mcb3','rcbo','rcd'].includes(item?.type??''))return `Turn ${name} ${value?'on':'off'}`;
-    if(key==='closed')return `${value?'Close':'Open'} ${name}`;
-    if(key==='pressed')return `${value?'Press':'Release'} ${name}`;
-    if(key==='position')return `Move ${name} to its ${value===0?'first':value===1?'second':'selected'} position`;
-    if(key==='active'||key==='demand'){
-      if(item?.type==='thermostat')return (value?'Call for heat at ':'End the call for heat at ')+name;
-      if(item?.type==='sensor') {
-        switch(item.params.mode) {
-          case 'pir': return (value?'Move in front of ':'Move away from ')+name;
-          case 'float': return (value?'Raise ':'Lower ')+name;
-          case 'pressure': return value?'Lower the pressure at the switch':'Raise the pressure to the switch-off point';
-          case 'humidity': return value?'Set the humidity sensor to damp':'Set the humidity sensor to dry';
-          case 'photocell': return value?'Set the daylight sensor to dark':'Set the daylight sensor to daylight';
-        }
-      }
-      return `Turn ${name} ${value?'on':'off'}`;
-    }
-    if(key==='on')return `Turn ${name} ${value?'on':'off'}`;
-    if(key==='level')return `Set ${name} to ${Math.round(Number(value)*100)}%`;
-    if(key==='sensorValue')return `Set the reading on ${name} to ${value}${item?.params.mode==='temperature'?' °C':''}`;
-    if(key==='alarm')return `${value?'Trigger':'Clear'} the alarm on ${name}`;
-    if(key==='availability')return `${Number(value)===0?'Shade the panels':'Change the sunlight level'} at ${name}`;
-    return `Change the setting on ${name} to ${value}`;
-  }).join('. ')+'.';
-}
 
 function predictionOrder(lessonId: number, answer: string, options: NonNullable<LessonActivity['options']>) {
   const correct = options.find(option => option.id === answer)!;
@@ -186,11 +182,19 @@ export function getLessonActivities(lesson:ConfigurationLesson):LessonActivity[]
     const target=step.patches[0]?.component??('component'in(observed.expectations[0]??{})?(observed.expectations[0] as {component:string}).component:source?.id);
     const comparison=observed.expectations.some(e=>e.kind==='total-power'||e.kind==='power'&&e.relative);
     const buttonName=(id:string)=>lesson.circuit.components.find(c=>c.id===id)?.label.split(' · ')[0]??id;
-    let instruction=pulse&&target?`Press ${buttonName(target)}, then let go.${lesson.id===57?' Watch for the change from star to delta.':''}`:step.patches.map(p=>p.params.pressed===true?`Hold ${buttonName(p.component)} down.`:operateLanguage(lesson,p.component,p.params)).join(' ');
-    if(step.supplyEnabled!==undefined)instruction+=` ${step.supplyEnabled?'Turn on':'Turn off'} the mains supply in the lab.`;
-    if(step.openSignal)instruction+=` Turn off all sources and open the signal wire from ${displayPoint(step.openSignal.a)} to ${displayPoint(step.openSignal.b)}, then turn the supply back on.`;
-    if(!instruction.trim())instruction=step.title+'.';
-    instruction+=comparison?' Choose Test circuit to compare the two settings.':'';
+    // Use the same named action as the drawing and the test report. Only add
+    // words when the learner needs another detail, such as which button to hold.
+    let instruction = step.instruction ?? step.title + '.';
+    if (pulse && target) {
+      instruction = `Press ${buttonName(target)}, then let go.`;
+      if (lesson.id === 57) instruction += ' Watch the star contactor drop out and the delta contactor pull in.';
+    } else if (step.patches[0]?.params.pressed === true && !step.instruction) {
+      instruction = `Keep ${buttonName(step.patches[0].component)} pressed while you check this step.`;
+    }
+    if (step.openSignal) {
+      instruction = `Switch off all supplies. Disconnect the wire between ${displayPoint(step.openSignal.a)} and ${displayPoint(step.openSignal.b)}. Switch the supply back on.`;
+    }
+    if (comparison) instruction += ' Choose Test circuit to compare the two settings.';
     activities.push({...base(`operate:sequence:${index}`,'operate',step.title,instruction.trim(),observed.expectations.length ? observed.expectations.map(e=>e.title).join('. ')+'.' : 'Now try the next setting.'),component:target,expectedControls:structuredClone(controls),expectedParams:controls.find(p=>p.component===target)?.params,expectedSupplyEnabled:step.supplyEnabled,expectedSignalOpen:step.openSignal&&structuredClone(step.openSignal),expectedObservations:structuredClone(observed.expectations),scenarioStep:outcomeIndex});
     if(pulse)index++;
   }
@@ -260,7 +264,7 @@ export function evaluateActivity(activity:LessonActivity,document:CircuitDocumen
   if(activity.kind==='measure'){
     const target=activity.measurement;
     if(!target)return outcome('unresolved','The bench has no meter setup for this step.');
-    const readings=currentEvidence(document,result,evidence).filter(e=>e.mode===target.mode&&(!activity.independentMeasurement||e.assisted===false));
+    const readings=currentEvidence(document,result,evidence.filter(e=>e?.mode===target.mode&&(!activity.independentMeasurement||e.assisted===false)));
     const saved=(reading:MeasurementEvidence)=>{
       if(reading.status==='open')return outcome('pass','You recorded OL. There was no path between the probes.');
       const shown=reading.instrument?.displayed??reading.value?.toLocaleString('en-IE',{maximumSignificantDigits:4});

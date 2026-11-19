@@ -2,7 +2,7 @@ import { simulate } from './simulation';
 import { assessBuild } from './assessment';
 import { forkRead, type ForkSetup } from './fork-tester';
 import { assessFaultDiagnosis } from './fault-diagnosis';
-import { captureMeasurement, needsSimulationTick } from './learning';
+import { captureMeasurement, currentEvidence, validateDiagnosisEvidence, needsSimulationTick } from './learning';
 import type { CircuitDocument, DeviceState, Endpoint } from './types';
 let states:Record<string,DeviceState>={};let circuitId='';
 self.onmessage=(event:MessageEvent)=>{
@@ -14,6 +14,13 @@ self.onmessage=(event:MessageEvent)=>{
       const result=simulate(doc,states,0);
       const reading=forkRead(doc,result,m.setup as ForkSetup,undefined,true);
       self.postMessage({kind:'instrument-preview',key:m.key,circuitId:doc.id,revision:doc.revision,reading});return;
+    }
+    if(m.kind==='fault-evidence'){
+      const result=simulate(doc,states,0);
+      const samples=currentEvidence(doc,result,m.evidence);
+      const report=validateDiagnosisEvidence(doc,result,m.evidence,m.challenge,samples);
+      self.postMessage({kind:'fault-evidence',key:m.key,circuitId:doc.id,revision:doc.revision,electricalGeneration:m.electricalGeneration,
+        ...report,sampleIds:samples.map(sample=>sample.id)});return;
     }
     if(m.kind==='measure'){
       const result=simulate(doc,states,0);

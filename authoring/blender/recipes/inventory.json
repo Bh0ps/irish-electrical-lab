@@ -23859,5 +23859,161 @@
     ],
     "meshNodes": 56,
     "vertices": 8731
+  },
+  {
+    "key": "switch_dc-rocker",
+    "file": "switch_dc-rocker.json",
+    "galleryKey": "switch:dc-rocker",
+    "name": "left worktop switch",
+    "component": {
+      "id": "gallery-102",
+      "type": "switch",
+      "label": "left worktop switch",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": 0,
+      "params": {
+        "closed": true
+      },
+      "variant": "dc-rocker"
+    },
+    "definition": {
+      "type": "switch",
+      "name": "One-way switch",
+      "group": "Lighting",
+      "model": "switch",
+      "description": "The rocker joins two contacts to turn the lamp on. Flick it back and the contacts open.",
+      "terminals": [
+        {
+          "id": "COM",
+          "label": "COM",
+          "role": "L",
+          "purpose": "Common terminal. The feed comes in here in the lighting lesson. The rocker joins COM to L1.",
+          "anchor": [
+            0,
+            0.766,
+            -0.14
+          ],
+          "group": "Common",
+          "scale": 0.58,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "id": "OUT",
+          "label": "L1",
+          "role": "L",
+          "purpose": "In the lighting lesson this wire goes to the lamp. Switching off breaks its connection to COM.",
+          "anchor": [
+            -0.058,
+            0.516,
+            -0.14
+          ],
+          "group": "Switched line",
+          "scale": 0.58,
+          "entryDirection": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "defaults": {
+        "closed": true
+      },
+      "parts": [
+        {
+          "id": "body",
+          "name": "Housing",
+          "purpose": "The case holds the working parts in place and keeps them apart."
+        },
+        {
+          "id": "cover",
+          "name": "Removable cover",
+          "purpose": "Lift the cover on the bench to see the connections underneath."
+        },
+        {
+          "id": "terminals",
+          "name": "Terminal clamps",
+          "purpose": "A clamp holds the bare end of a wire against the metal terminal."
+        },
+        {
+          "id": "mounting",
+          "name": "Mounting and fixings",
+          "purpose": "These keep the fitting in place. Look for the screws or clips that hold it."
+        },
+        {
+          "id": "actuator",
+          "name": "Operating mechanism",
+          "purpose": "This part moves the contacts when you use the control."
+        },
+        {
+          "id": "contacts",
+          "name": "Contacts",
+          "purpose": "These metal faces touch to carry current. Moving them apart opens the switch."
+        }
+      ],
+      "size": [
+        1.1,
+        1.35,
+        0.8
+      ],
+      "variants": [
+        {
+          "id": "door-contact",
+          "name": "Door-operated contact"
+        },
+        {
+          "id": "dc-rocker",
+          "name": "DC panel rocker for cabinet lights"
+        }
+      ]
+    },
+    "terminals": [
+      {
+        "id": "COM",
+        "label": "2",
+        "role": "DC+",
+        "purpose": "In this circuit the driver’s positive wire goes to blade 2. The rocker joins it to blade 1.",
+        "anchor": [
+          0,
+          0.48,
+          -0.7725
+        ],
+        "group": "Centre blade · from driver",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      },
+      {
+        "id": "OUT",
+        "label": "1",
+        "role": "DC+",
+        "purpose": "Blade 1 carries the switched positive wire to the strip. The negative wire returns directly to the driver.",
+        "anchor": [
+          0,
+          0.7125,
+          -0.7725
+        ],
+        "group": "Outer blade · to strip",
+        "scale": 0.55,
+        "entryDirection": [
+          0,
+          0,
+          -1
+        ]
+      }
+    ],
+    "meshNodes": 58,
+    "vertices": 15725
   }
 ]

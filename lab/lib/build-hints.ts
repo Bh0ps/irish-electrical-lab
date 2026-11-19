@@ -30,8 +30,8 @@ export function nextCheckForFinding(finding: Finding): string {
   if (finding.status === 'unresolved' || finding.category === 'model') return 'Check the supply and the fittings shown on the bench. Then choose Test circuit again.';
   if (id.includes('neutralEarth:')) return 'Switch off the bench supply. Follow the neutral and earth wires to find where they meet.';
   if (id.includes('cpc:')) return 'Follow the wire from the earth terminal (PE) back to the supply earth.';
-  if (id.includes('polarity:')) return 'Trace L back to line and N back to neutral.';
-  if (id.includes('tripped:')) return 'Look at the trip reading. Fix the cause before you reset the device and test again.';
+  if (id.includes('polarity:')) return 'Follow the wire on L back to the line supply. Then do the same for N and neutral.';
+  if (id.includes('tripped:')) return 'Look at the reading saved just before it tripped. Fix the fault, reset it and test again.';
   if (id.includes('mechanical:') || id.includes('interlock')) return 'Check which contactor is pulled in. Its partner must stay open.';
   if (id.includes('neutral:')) return 'Put the probes on L and N at the fitting, then follow N back to the supply.';
   if (id.includes('phase:') || id.includes('windingVoltage:')) return 'Check the voltage across each winding and compare it with the motor rating.';

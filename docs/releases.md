@@ -6,12 +6,12 @@ instructions, Blender models and scripts.
 
 ## Install
 
-1. Download `Irish-Electrical-Lab-1.12.0-Setup.exe` from the project's GitHub release.
+1. Download `Irish-Electrical-Lab-1.13.0-Setup.exe` from the project's GitHub release.
 2. To check your download, compare the result of this PowerShell command with
-   the installer entry in `Irish-Electrical-Lab-1.12.0-SHA256.txt`.
+   the installer entry in `Irish-Electrical-Lab-1.13.0-SHA256.txt`.
 
    ```powershell
-   Get-FileHash .\Irish-Electrical-Lab-1.12.0-Setup.exe -Algorithm SHA256
+   Get-FileHash .\Irish-Electrical-Lab-1.13.0-Setup.exe -Algorithm SHA256
    ```
 
 3. Run the installer for your Windows account and open **Irish Electrical Lab**

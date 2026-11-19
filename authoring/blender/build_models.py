@@ -16,6 +16,7 @@ from lighting_backs import add_lighting_back
 from din_protection import build_din_protection
 from power_accessories import build_power_accessory
 from fan_isolator import build_fan_isolator
+from dc_rocker import build_dc_rocker
 from rotary_dimmer import build_rotary_dimmer
 from sesame_push import build_sesame_push
 from white_tape import build_white_tape
@@ -606,7 +607,9 @@ def main():
         recipe=json.loads((HERE/'recipes'/entry['file']).read_text());root=reconstruct(recipe);authored_first_fixture(recipe,root);authored_library_variants(recipe,root)
         api=SimpleNamespace(**{name:globals()[name] for name in ('empty','material','box','cyl','torus','semantic','ancestors','setmesh','boolean_difference','label')})
         workshop=any(o.get('detailId') for o in root.children_recursive) or recipe['component']['type'] in ('forktester','stripper','crimper','torquedriver')
-        if recipe['galleryKey']=='isolator3:fan-isolator':
+        if recipe['galleryKey']=='switch:dc-rocker':
+            features=build_dc_rocker(recipe,root,api)
+        elif recipe['galleryKey']=='isolator3:fan-isolator':
             features=build_fan_isolator(recipe,root,api)
         elif recipe['component']['type'] == 'shaveroutlet':
             features=build_shaver_face(recipe,root,api)

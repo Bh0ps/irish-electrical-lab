@@ -166,7 +166,7 @@ test('the wall switch case screws and the retained rose knockout can be identifi
 });
 
 test('all catalogue variants have actual family construction, original sources and local rendered icons',async()=>{
-  assert.equal(manifest.length,112);const families=new Set<string>(),report:unknown[]=[];
+  assert.equal(manifest.length,113);const families=new Set<string>(),report:unknown[]=[];
   for(const asset of manifest){
     assert.equal(asset.detailRevision,3,asset.key);families.add(asset.detailFamily);
     assert.ok(asset.sourceMeshCount>asset.meshCount,asset.key+' original source keeps separately editable details');

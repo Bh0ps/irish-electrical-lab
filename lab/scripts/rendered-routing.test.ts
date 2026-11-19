@@ -145,7 +145,7 @@ interface FixtureGeometry { groups:Map<string,Box3>; triangles:MeasuredTriangle[
 const modelKey=(c:ComponentInstance)=>c.variant?c.type+':'+c.variant:c.type;
 async function measuredFixtures(low=false) {
   const byType=new Map<string,FixtureGeometry>(),loader=new GLTFLoader();
-  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo','fan:xf100s','isolator3:fan-isolator']){
+  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo','fan:xf100s','isolator3:fan-isolator','switch:dc-rocker']){
     const named=type.includes(':'),stem=named?type.replace(':','_'):type+'_default';
     const bytes=readFileSync(new URL('../public/models/'+stem+(low?'.low':'')+'.glb',import.meta.url));
     const {scene}=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');

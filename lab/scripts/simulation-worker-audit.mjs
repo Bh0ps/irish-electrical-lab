@@ -120,6 +120,13 @@ try {
   const targetWire=broken.wires.find(w=>w.id===fixture.challenge.wire);
   const evidence=capture(broken,initialBroken.result,[{mode:'voltage',a:targetWire.from,b:targetWire.to},{mode:'current',wire:targetWire.id}]);
   const diagnose=values=>waitFor('diagnosis',{kind:'diagnose',requestId:++nextRequest,document:broken,diagnosis:'open-live',observations:999,challenge:fixture.challenge,evidence:values,dt:0});
+  const queryEvidence=values=>waitFor('fault-evidence',{kind:'fault-evidence',key:'audit-fault-readings',electricalGeneration:9,document:broken,challenge:fixture.challenge,evidence:values});
+  const verified=(await queryEvidence(evidence)).message;
+  assert.equal(verified.accepted,true);assert.equal(verified.key,'audit-fault-readings');
+  assert.equal(verified.electricalGeneration,9);assert.equal(verified.circuitId,broken.id);assert.equal(verified.revision,broken.revision);
+  assert.deepEqual(new Set(verified.sampleIds),new Set(evidence.map(sample=>sample.id)));
+  const unverified=(await queryEvidence(evidence.map(sample=>({...sample,revision:broken.revision-1})))).message;
+  assert.equal(unverified.accepted,false);assert.deepEqual(unverified.sampleIds,[]);
   const noEvidence=await diagnose([]);assert.equal(noEvidence.message.accepted,false,'Probe-click count cannot replace actual evidence');
   const staleEvidence=await diagnose(evidence.map(e=>({...e,revision:e.revision-1})));assert.equal(staleEvidence.message.accepted,false,'Stale measurement records cannot establish a diagnosis');
   const wrongEvidence=capture(broken,initialBroken.result,[{mode:'voltage',a:{component:'supply',terminal:'L'},b:{component:'supply',terminal:'N'}},{mode:'voltage',a:{component:'supply',terminal:'L'},b:{component:'supply',terminal:'PE'}}]);

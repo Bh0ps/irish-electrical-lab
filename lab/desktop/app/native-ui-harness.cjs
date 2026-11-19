@@ -12,10 +12,10 @@ function rendererHarness(){
   const openCourse=async(id,title)=>{
     if(!document.querySelector('.book-index')){
       if(!document.querySelector('.lab-shell.learn')){click('Learn');await sleep(100);}
-      if(!document.querySelector('.book-index'))click('Courses');
+      if(!document.querySelector('.book-index'))click('Chapters');
     }
     await until(()=>document.querySelector('.book-index input'),'chapter index search');
-    input('Search configurations',title);
+    input('Search lessons and jobs',title);
     const card=await until(()=>{
       const result=document.querySelector('.book-index button[data-course-id="'+id+'"]');
       return visible(result)&&result;

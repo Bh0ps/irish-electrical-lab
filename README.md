@@ -16,7 +16,7 @@ open source under the [MIT license](LICENSE).
   and a comparison of live simulated readings.
 - Walk through domestic, shop and industrial installations. Select a device by its drawing reference, follow a wire between terminals, or open it on the workbench.
 - Explore working extra-low-voltage systems including LED strips, bell pushes, DC sensors and isolated relay interfaces. Practise using a fork tester or preparing a connector in optional tool exercises.
-- Inspect **110 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
+- Inspect **113 original equipment variants**, including removable board fronts, individually mounted protective devices and separately connected cable cores.
 - Build freely with up to **80 components and 300 wires**, with individual terminal
   connections, undo/redo, selectable wires and editable equipment parameters.
 - Operate switches, timers, contactors, dimmers and motors. Correct guided wires
@@ -26,6 +26,7 @@ open source under the [MIT license](LICENSE).
 - Save named builds, export circuits and migrate study progress through validated
   full backups. After installation, study and building work offline.
 - Try **Check the bathroom fan timer** to work the bathroom light and fan. Turn the light off, watch the five-second timer, then see what the fan isolator switches off.
+- Try **One worktop stays dark**. Both switches are on, but only the left strip lights. Use the meter to find the break, repair it and test both lights.
 - Try **Meter the worktop lights** at Oakfield house. Put the probes on the LED tape and compare a dark worktop with a lit one.
 - Navigate with orbit controls or a **WASD free camera** in four training environments.
 

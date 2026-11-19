@@ -2,7 +2,8 @@ import { equipmentAssetKey } from './equipment-assets.ts';
 import { COMPONENTS } from './components.ts';
 import { mountVector } from './board-assembly.ts';
 import {chimeEnvelope,type BellServicePart} from './bell-cupboard';
-import {driverContact} from './kitchen-lighting';
+import {driverContact,ROCKER_BOX} from './kitchen-lighting';
+import {rockerWireEntry} from './dc-rocker';
 import type {SiteItem} from './job-site';
 import type { ComponentInstance, TerminalDefinition, Vec3 } from './types.ts';
 
@@ -17,6 +18,7 @@ export interface FixturePose {
   bellService?:BellServicePart;
   hallChime?:boolean;
   kitchenDriver?:boolean;
+  worktopRocker?:boolean;
   extractor?:boolean;
   serviceBox?:'timer'|'cpc';
   ceilingLight?:boolean;
@@ -39,6 +41,10 @@ export function isStrip(c: ComponentInstance) {
  * No dimensions or rotations here affect the bench's electrical endpoints. */
 export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboard: boolean, doorbellHall=false): FixturePose | undefined {
   if (c.mount) return;
+  if(backWall&&cupboard&&c.type==='switch'&&c.variant==='dc-rocker'){
+    const s=ROCKER_BOX.modelScale;
+    return {scale:[s,s,s],worktopRocker:true};
+  }
   if(backWall&&c.type==='fan'&&c.variant==='xf100s')return {scale:[.1,.1,.1],extractor:true};
   if(backWall&&c.type==='isolator3'&&c.variant==='fan-isolator')return {scale:[.1,.1,.1],flushPlate:true};
   if(doorbellHall&&(c.type==='chime'||c.type==='callchime')){
@@ -82,6 +88,7 @@ export function installedTerminalPoint(item:SiteItem,component:ComponentInstance
     const local=driverContact(terminal.id);
     return item.position.map((n,i)=>n+local[i]) as Vec3;
   }
+  if(item.fixture?.worktopRocker)return fixturePoint(item.position,item.scale,item.fixture,component,rockerWireEntry(terminal.id),item.rotation);
   return fixturePoint(item.position,item.scale,item.fixture,component,terminal.anchor,item.rotation);
 }
 

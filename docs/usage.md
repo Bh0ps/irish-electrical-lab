@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.12.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.13.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 For iPhone, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -30,9 +30,11 @@ In **Drawing**, choose **Job drawing** for the intended connections and **My wir
 
 Open **Chapters → Jobs at Oakfield house**, or search for a job by name. In the cupboard job, shut the door, watch the strip go dark, then open the door again. Use the fitting in the room or its named control. Both operate the same circuit.
 
-In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. Once you have done all six, you can try an unscored fault on the same circuit.
+In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. The index also offers the kitchen fault job whenever you’re ready to try it.
 
 In **Meter the worktop lights**, turn off the left light and leave the right one lit. Open **Measure**, choose a strip and touch its two copper pads with the red and black probes. You can also pick the same points by name. Record each reading, then put the lights the other way round. If you move a probe to the wrong strip, you can move it again without starting over.
+
+In **One worktop stays dark**, both switches are on. Put the red probe on the right strip’s + pad and black on its − pad. Record the reading. Leave black there and move red to the wire leaving the right switch. On the new rocker, that’s tab **1**. Record it and compare the two readings. If you prefer, choose the same points by name in **Equipment list**. After the repair, choose **Test the repair** to try both lights. **Continue learning** brings you back if you close halfway through.
 
 In **Check the bathroom fan timer**, switch the bathroom light off. Watch the fan keep running, then stop five seconds later. Try the fan isolator with the light on. The light has a separate feed and stays lit. Choose **Go to → Outside fan grille** to see where the air leaves the house.
 
@@ -113,7 +115,7 @@ Replacing changed work offers **Save and continue**, **Discard and continue**, o
 
 Use **Show terminals** to turn the workbench to the wiring side. On the updated switches, lamp holder, rose, socket and fused connection unit, select a detail or look under **Recognise this fitting** to find out what it does. On the double socket, for example, the pressed metal strap joins the two earth terminals. On the ceiling rose, the permanent loop terminals stay separate from the switched feed to the lamp. The shaver lesson shows the transformer separately on the bench so you can measure its input and output.
 
-There are 110 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
+There are 113 original equipment variants. The manufacturer references in the inspector show which devices informed each fitting. For photograph-based reconstructions, published dimensions establish the outer size and fixing centres. Small mouldings and internal parts are interpretations. Editable assemblies and the original source references are in `authoring/blender`. Ratings and electrical behaviour are defined separately in `lab/lib/components.ts` and `lab/lib/simulation.ts`.
 
 The environments use locally generated albedo, roughness and normal textures with local reflections. Contact shading, restrained emitter bloom and antialiasing run while frames are needed; **More → Graphics and supply settings → Graphics quality** selects automatic, high or economy settings. Each lamp's dynamic light follows its actual emitting power. Available dynamic-light slots are bounded for performance; all lamps retain their own power-driven surface brightness. Optical output is an illustrative proxy, not a lighting-design calculation.
 

@@ -862,7 +862,7 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
   const converter=circuit.components.find(c=>['transformer','driver','dcsupply','vfd','pv','battery'].includes(c.type));
   let conversion='';
   if(converter){const p={...Registry.COMPONENTS[converter.type].defaults,...converter.params};
-    if(converter.type==='transformer')conversion=` For ${converter.label}, the output winding is rated ${p.outputVoltage} V with ${p.ratedVoltage??p.nominalVoltage??240} V on the input winding. The turns ratio gives Vsecondary / Vprimary ≈ Nsecondary / Nprimary. Put the probes on SEC 1 and SEC 2. This winding supplies AC. The output varies with the input voltage and the losses in the winding.`;
+    if(converter.type==='transformer')conversion=` On ${converter.label}, the output winding is rated ${p.outputVoltage} V with ${p.ratedVoltage??p.nominalVoltage??240} V on the input winding. The turns ratio gives Vsecondary / Vprimary ≈ Nsecondary / Nprimary. Put the probes on SEC 1 and SEC 2. This winding supplies AC. The output varies with the input voltage and the losses in the winding.`;
     else if(['driver','dcsupply'].includes(converter.type))conversion=` ${converter.label} keeps its output close to ${p.outputVoltage} V DC within its current and power limits. Input power is roughly output power divided by efficiency, plus the power used on standby.`;
     else if(converter.type==='vfd')conversion=' The drive sends three-phase power to the motor on U, V and W. Measure between two of those terminals. The bench calculates the main AC voltage at the chosen frequency. It leaves out the fast switching pulses, starting torque and cable effects.';
     else if(converter.type==='pv')conversion=' Subtract the solar output from the power used by the loads. A positive result means the house is taking power from the grid. A negative result means power is going back to the grid. This inverter stops exporting when the mains fails.';
@@ -884,10 +884,11 @@ function calculationNotes(circuit:CircuitDocument,fault:string):{beginner:string
 
 }
 
-function createLesson(spec: Spec, index: number, legacyFan=false): ConfigurationLesson {
+function createLesson(spec: Spec, index: number, legacyFan=false, olderWorktopSwitches:readonly string[]=[]): ConfigurationLesson {
   const id = index + 1;
   const [title, category, tag, purpose, connections, sequence, measurement, fault, briefing, hint, answer, checks] = spec;
   const circuit = furnishCourseBoard(buildCircuit(id, title,legacyFan));
+  for(const part of circuit.components)if(olderWorktopSwitches.includes(part.id))delete part.variant;
   const extra=elvPage(id);
   const target:ChallengeTarget = extra ? {path:extra.target} : CHALLENGE_TARGETS[id];
   if (!target) throw new Error(`Lesson ${id} has no exact challenge target`);
@@ -896,9 +897,9 @@ function createLesson(spec: Spec, index: number, legacyFan=false): Configuration
     : id >= 49 ? 'Single-phase equipment for a business in Ireland. The bench supply is 240 V'
     : 'Homes and small businesses in Ireland. The bench supply is 240 V';
   const caveat = tag === 'Equipment dependent' || tag === 'Advanced'
-    ? 'Real units vary. Check the diagram supplied with yours for its terminal markings and controls.'
-    : tag === 'Existing' ? 'You may come across this arrangement in an older installation. Design rules for new work can differ.'
-    : 'Use the product diagram when identifying terminals on real equipment.';
+    ? 'Check the drawing that comes with the fitting. Another model can have different terminals.'
+    : tag === 'Existing' ? 'You may find this wiring in an older building. The rules for new work can differ.'
+    : 'On a real fitting, check the markings against its wiring diagram.';
   const probePair=lessonProbePoints(id,circuit);
   const red=probePair&&describeEndpoint(circuit,probePair.a);
   const black=probePair&&describeEndpoint(circuit,probePair.b);
@@ -909,6 +910,7 @@ function createLesson(spec: Spec, index: number, legacyFan=false): Configuration
     : 'Set the tester to volts and choose the two points you want to compare.';
   const references = [...IRISH];
   if(id>=65&&id<=70)references.push({title:'MEAN WELL · constant-voltage and constant-current LED operation',url:'https://led.meanwell.com/qa.aspx'});
+  if(id===66)references.push({title:'Switch Components RG1 · 24 V worktop rocker and terminal numbers',url:'https://www.switchcomp.com/switches-docs/rocker-switch/RG1-1A-DC-1-B.pdf'});
   if(id===43||id>=71&&id<=74||id===80)references.push({title:'Resideo · bell pushes, chimes and transformer ratings',url:'https://www.resideo.com/emea/en/-/media/EMEA%20Site%20Cluster/Mastersite/Documents/Sales%20Literature/Resideo_Electrical_Wholesale_Online_Catalogue_August_2020.pdf/'});
   if([74,75,80].includes(id))references.push({title:'Finder · relay coils and separate changeover contacts',url:'https://cdn.findernet.com/app/uploads/ZDPENXX4052.pdf'});
   if(id===76)references.push({title:'Belimo · 24 V three-point ball-valve actuator and real travel time',url:'https://www.belimo.com/mam/general-documents/datasheets/en-gb/belimo_LR24A-LA_datasheet_en-gb.pdf'});
@@ -939,6 +941,7 @@ function createLesson(spec: Spec, index: number, legacyFan=false): Configuration
   const comparison:Partial<Record<number,string>>={
     ...(id===36&&!legacyFan?{36:'This standard XF100S has two supply terminals. The timer is a separate part on the bench. The spare earth wire is parked in a connector beside the fan.'}:{}),
     12:'This 60 W filament lamp suits the HQ1A dimmer. The real dimmer switches during each AC cycle. The bench uses a resistor to show how the lamp power changes.',
+    66:olderWorktopSwitches.length===2 ? 'This older bench uses wall switches for the two lights. Follow the markings on their backs. For a real 24 V DC strip, the switch needs a suitable DC rating. The current kitchen example uses a DC-rated rocker.' : olderWorktopSwitches.length ? 'Follow the markings on each switch. In this example the older wall switch and the RG1 rocker have different markings. Each switches the positive wire feeding its own strip.' : 'On the back of each RG1 rocker, find the two metal tabs. In this kitchen the 24 V feed goes to tab 2. The wire to the strip leaves from tab 1. The switch will work with those two wires swapped.',
     13:'A transformer changes AC voltage through its windings. The driver here gives the LEDs a steady DC output. Check the output marked on the unit.',
     14:'On a real PIR, the motion detector and timer can be in one fitting. Here you can try them separately. Stop the movement and watch how long the timer keeps the light on.',
     15:'The photocell switches the light when it gets dark. Check the maker’s diagram for the supply and switched output. The daylight setting and delay vary between products.',
@@ -979,9 +982,25 @@ function createLesson(spec: Spec, index: number, legacyFan=false): Configuration
   };
 }
 
-export const LESSONS: ConfigurationLesson[] = [...SPECS,...ELV_PAGES.map((p):Spec=>[p.title,'Extra-low voltage','Equipment dependent',p.situation,p.connection,p.procedure,p.reading,'open-wire',p.symptom,p.hint,p.answer,[p.idea,p.reading]])].map((spec,index)=>createLesson(spec,index));
+const lessonSpecs:Spec[]=[...SPECS,...ELV_PAGES.map((p):Spec=>[p.title,'Extra-low voltage','Equipment dependent',p.situation,p.connection,p.procedure,p.reading,'open-wire',p.symptom,p.hint,p.answer,[p.idea,p.reading]])];
+export const LESSONS:ConfigurationLesson[]=lessonSpecs.map((spec,index)=>createLesson(spec,index));
 const earlierFan=createLesson([SPECS[35][0],'Ventilation & motors','Routine','In this earlier example, the wall switch triggers the fan timer.','Follow the permanent feed and the separate switched wire to timer IN.','Turn the switch off and wait for the fan to stop.','Measure the fan between L and N.','wrong-control','The timer has mains power, but the wall switch won’t start the fan.','Follow the switched wire to the isolator, then to timer IN.','The switched wire into the fan isolator is open.',['The fan runs on after switch-off.','The fan stops after five seconds.']],35,true);
-export const getLesson = (id: number,doc?:CircuitDocument): ConfigurationLesson | undefined => id===36&&olderTimerFan(doc)?earlierFan:LESSONS.find(lesson => lesson.id === id);
+// Earlier kitchen saves used wall plates. Keep their printed terminal names in
+// guided tasks as well as on the bench, without changing the learner's wiring.
+const earlierKitchens=new Map<string,ConfigurationLesson>();
+export function getLesson(id:number,doc?:CircuitDocument):ConfigurationLesson|undefined {
+  if(id===36&&olderTimerFan(doc))return earlierFan;
+  if(id===66&&doc?.lessonId===66){
+    const older=['left-switch','right-switch'].filter(id=>doc.components.some(part=>part.id===id&&part.type==='switch'&&!part.variant));
+    if(older.length){
+      const key=older.join(',');
+      let saved=earlierKitchens.get(key);
+      if(!saved){saved=createLesson(lessonSpecs[65],65,false,older);earlierKitchens.set(key,saved);}
+      return saved;
+    }
+  }
+  return LESSONS.find(lesson=>lesson.id===id);
+}
 
 /** Structural validation is callable by integration checks; it has no runtime side effects. */
 export function validateLessons(): string[] {

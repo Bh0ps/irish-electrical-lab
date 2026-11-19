@@ -3,6 +3,8 @@
   "classification": "Original representative training equipment. Each model illustrates an equipment architecture. Construction, circuit ratings and simplified interfaces are identified in the lesson. Product literature documents the features used for comparison.",
   "coordinateContract": "Recipe Y-up, +Z operating front. Each electrical ID has its own physical cable mouth and outward entry vector. Wall accessories are wired at the rear. DIN protective devices have upper and lower banks, motor boards face upward, and fronts opened for service have connection blocks behind their covers. Source and meter earth connections represent the separate protective path at the installation boundary. The valve flying lead ends in a separate connector strip. Circuit IDs stay fixed when inspecting or moving equipment.",
   "sources": [
+    {"id":"rg1-panel","title":"Switch Components RG1-1A-DC-1-B · two-pin panel rocker","url":"https://www.switchcomp.com/switches/rocker-switch/RG1-1A-DC-1-B","architecture":"Manufacturer photographs document the unlit black rocker, two pairs of ribbed spring catches, numbered moulding and two pierced blades. The study fitting clips into a small worktop switch panel."},
+    {"id":"rg1-drawing","title":"RG1-1A-DC-1-B · dimensions and circuit, rev B","url":"https://www.switchcomp.com/switches-docs/rocker-switch/RG1-1A-DC-1-B.pdf","architecture":"The current rating in the electrical specification is 10 A at 28 V DC. Numbered 1 and 2 blades are 6.35 mm wide and separated by 9.3 mm. Position 3 has no terminal. A 0.75 to 3 mm panel takes a 27.6 by 13.0 mm cutout."},
     {"id":"bg-815","title":"BG 815-01 · three-pole fan isolator","url":"https://www.bgelectrical.uk/uk/wiring-devices/800-series/10a-3-pole-fan-isolators/815-01","architecture":"A 10 A three-pole rocker on an 86 × 86 mm plate, overall depth 22.2 mm. The maker’s rear photograph shows staggered L1, L2 and N entries in two rows, with screws accessed separately above and below the cassette. The timer fan diagram uses L1 for switched line and L2 for permanent line."},
     {"id":"friedland-d814","title":"Friedland D814 Sesame · product photograph","url":"https://www.resideo.com/gb/en/products/security/doorbells/wired-doorbells/d814-sesame-doorbell-push-d814/","architecture":"Unlit white cap with a dark bezel on a slim white case. Outer dimensions are 55 × 24 × 18 mm in the Friedland chimes catalogue. Small mouldings are reconstructed."},
     {"id":"friedland-p814","title":"Friedland D814 · cover, fixings and rear connections","url":"https://www.tlc-direct.co.uk/Technical/DataSheets/Friedland/P814.pdf","architecture":"The manufacturer’s fitting sheet shows two wire screws behind the cartridge, two separate fixing holes, a clip-off shell and a 1–24 V, 2 A rating."},
@@ -607,6 +609,7 @@
     ]
   },
   "variantSources": {
+    "switch:dc-rocker":["rg1-panel","rg1-drawing"],
     "isolator3:fan-isolator":["bg-815"],
     "shaveroutlet:default":["mk-k701-shaver"],
     "gammaboard:default": [

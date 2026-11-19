@@ -2,7 +2,7 @@
 import {useEffect,useMemo} from 'react';
 import * as THREE from 'three';
 import type {ThreeEvent} from '@react-three/fiber';
-import {driverContact,KITCHEN_LIGHTS as k} from '../../lib/kitchen-lighting';
+import {driverContact,KITCHEN_LIGHTS as k,ROCKER_BOX,rockerPanelCentre} from '../../lib/kitchen-lighting';
 import type {Vec3} from '../../lib/types';
 
 const alloy='#b9bfc0',dark='#42494a',plastic='#e1e2dc';
@@ -28,7 +28,50 @@ function Label({at,w,h,line,sub='',inverse=false}:{at:Vec3;w:number;h:number;lin
 }
 function Cord({points,r,colour}:{points:Vec3[];r:number;colour:string}){
   const curve=useMemo(()=>new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),[points]);
-  return <mesh castShadow><tubeGeometry args={[curve,16,r,8,false]}/><meshStandardMaterial color={colour} roughness={.76}/></mesh>;
+  return <mesh castShadow raycast={()=>{}}><tubeGeometry args={[curve,Math.max(24,points.length*8),r,8,false]}/><meshStandardMaterial color={colour} roughness={.76}/></mesh>;
+}
+
+function SwitchPlate({width,height,depth,front}:{width:number;height:number;depth:number;front:boolean}){
+  const shape=useMemo(()=>{
+    const outline=new THREE.Shape(),a=width/2,b=height/2,r=.002;
+    outline.moveTo(-a+r,-b);outline.lineTo(a-r,-b);outline.quadraticCurveTo(a,-b,a,-b+r);
+    outline.lineTo(a,b-r);outline.quadraticCurveTo(a,b,a-r,b);outline.lineTo(-a+r,b);
+    outline.quadraticCurveTo(-a,b,-a,b-r);outline.lineTo(-a,-b+r);outline.quadraticCurveTo(-a,-b,-a+r,-b);
+    if(front){
+      const cut=new THREE.Path(),x=ROCKER_BOX.cutWidth/2,y=ROCKER_BOX.cutHeight/2;
+      cut.moveTo(-x,-y);cut.lineTo(-x,y);cut.lineTo(x,y);cut.lineTo(x,-y);cut.closePath();outline.holes.push(cut);
+      for(const hand of [-1,1]){const hole=new THREE.Path();hole.absarc(hand*(a-.006),hand*(b-.006),.0015,0,2*Math.PI,true);outline.holes.push(hole);}
+    }else{const hole=new THREE.Path();hole.absarc(-.012,-.015,.0041,0,2*Math.PI,true);outline.holes.push(hole);}
+    return outline;
+  },[width,height,front]);
+  return <mesh castShadow receiveShadow position={[0,0,-depth]}><extrudeGeometry args={[shape,{depth,bevelEnabled:false,curveSegments:8}]}/><meshStandardMaterial color={front?'#dedfd7':plastic} roughness={.52}/></mesh>;
+}
+
+/** The lid and rocker withdraw together. The open aperture has no solid face
+ * across it; the two wired blade terminals can only be reached from behind. */
+export function RockerEnclosure({origin,open,select}:{origin:Vec3;open:boolean;select:()=>void}){
+  const b=ROCKER_BOX,w=b.width,h=b.height,d=b.depth,t=b.wall;
+  const screwSpots=[[w/2-.006,h/2-.006],[-w/2+.006,-h/2+.006]];
+  return <group userData={{partId:'cover'}} onClick={e=>{e.stopPropagation();if((e.nativeEvent as PointerEvent).pointerType!=='touch')select();}}>
+    <group position={rockerPanelCentre(origin,false)}>
+      <group position={[0,0,-d+t]}><SwitchPlate width={w} height={h} depth={t} front={false}/></group>
+      {[-1,1].map(i=><group key={i}>
+        <Block at={[i*(w-t)/2,0,-d/2]} size={[t,h,d]} colour={plastic}/>
+        <Block at={[0,i*(h-t)/2,-d/2]} size={[w-2*t,t,d]} colour={plastic}/>
+      </group>)}
+      {screwSpots.map(([x,y])=><group key={x} position={[x,y,-d/2]} rotation={[Math.PI/2,0,0]}>
+        <mesh><cylinderGeometry args={[.0036,.0047,d-.003,14]}/><meshStandardMaterial color={plastic}/></mesh>
+        <mesh position={[0,(d-.003)/2+.0001,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.0013,.0022,16]}/><meshStandardMaterial side={THREE.DoubleSide} color="#9c895c" metalness={.48}/></mesh>
+      </group>)}
+      <mesh position={[-.012,-.015,-d+t+.0002]}><ringGeometry args={[.0031,.006,20]}/><meshStandardMaterial color="#515554" side={THREE.DoubleSide}/></mesh>
+    </group>
+    <group position={rockerPanelCentre(origin,open)} rotation={[0,open?b.rearYaw:0,0]}>
+      <SwitchPlate width={w} height={h} depth={b.panel} front/>
+      {screwSpots.map(([x,y])=><group key={x} position={[x,y,open?0:.00025]} rotation={[Math.PI/2,0,0]}>
+        {open?<mesh rotation={[-Math.PI/2,0,0]} position={[0,-b.panel-.0001,0]}><ringGeometry args={[.0015,.0027,12]}/><meshStandardMaterial side={THREE.DoubleSide} color="#b2b6af"/></mesh>:<Screw at={[0,0,0]} r={.0027}/>}
+      </group>)}
+    </group>
+  </group>;
 }
 const cores:Record<string,string>={L:'#694029',N:'#306aab',PE:'#7e9a41','+':'#ae3433','-':'#303435'};
 
@@ -101,8 +144,8 @@ export function StripChannel({x,open,level,tint,select}:{x:number;open:boolean;l
   </group>;
 }
 
-export function FittedWireTails({tails}:{tails:{points:Vec3[];colour:string;id:string;radius?:number;stripe?:string}[]}){
-  return <group>{tails.map(tail=><group key={tail.id}>{tail.points.slice(1).map((p,i)=>{
+export function FittedWireTails({tails}:{tails:{points:Vec3[];colour:string;id:string;radius?:number;stripe?:string;flexible?:boolean}[]}){
+  return <group>{tails.map(tail=>tail.flexible?<Cord key={tail.id} points={tail.points} r={tail.radius??.0008} colour={tail.colour}/>:<group key={tail.id}>{tail.points.slice(1).map((p,i)=>{
     const a=new THREE.Vector3(...tail.points[i]),v=new THREE.Vector3(...p).sub(a),mid=a.addScaledVector(v,.5);
     const radius=tail.radius??.0008,length=v.length();
     if(length<.000001)return null;
