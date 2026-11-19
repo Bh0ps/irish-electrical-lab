@@ -1181,12 +1181,13 @@
       "protection-mechanism",
       "din-latch",
       "installation-details",
-      "bench-rail-support"
+      "bench-rail-support",
+      "din-paddle"
     ],
-    "sourceMeshCount": 91,
-    "meshCount": 30,
-    "triangles": 29573,
-    "lowTriangles": 5773,
+    "sourceMeshCount": 93,
+    "meshCount": 33,
+    "triangles": 31631,
+    "lowTriangles": 9075,
     "terminals": [
       {
         "id": "IN",
@@ -1225,8 +1226,8 @@
         ]
       }
     ],
-    "bytes": 907680,
-    "lowBytes": 233864,
+    "bytes": 1015988,
+    "lowBytes": 382352,
     "bespokeBlender": true
   },
   {
@@ -1445,12 +1446,15 @@
       "din-latch",
       "installation-details",
       "bench-rail-support",
-      "contact-indicator"
+      "contact-indicator",
+      "din-paddle",
+      "residual-trip-window",
+      "rccb-test-key"
     ],
-    "sourceMeshCount": 130,
-    "meshCount": 44,
-    "triangles": 37367,
-    "lowTriangles": 7145,
+    "sourceMeshCount": 132,
+    "meshCount": 47,
+    "triangles": 41083,
+    "lowTriangles": 14297,
     "terminals": [
       {
         "id": "LIN",
@@ -1525,8 +1529,8 @@
         ]
       }
     ],
-    "bytes": 1199040,
-    "lowBytes": 296964,
+    "bytes": 1316884,
+    "lowBytes": 514272,
     "bespokeBlender": true
   },
   {

@@ -17,6 +17,8 @@
     {"id": "hager-nbn116a", "title": "Hager NBN116A · one-pole breaker", "url": "https://hager.com/ie/catalogue/products/nbn116a-mcb-1p-10ka-15ka-b-16a-1m", "architecture": "Front photograph, single grey lever, one pair of screw terminals and a 17.5 × 83 × 70 mm body."},
     {"id": "hager-nbn316a", "title": "Hager NBN316A · three-pole breaker", "url": "https://hager.com/ie/catalogue/products/nbn316a-mcb-3p-10ka-15ka-b-16a-3m", "architecture": "Three linked poles and a single 52.5 × 83 × 70 mm assembly."},
     {"id": "hager-cda240u", "title": "Hager CDA240U · two-pole RCCB", "url": "https://hager.com/ie/catalogue/products/cda240u-rccb-2p-40a-30ma-a", "architecture": "One lever, a separate test button and terminals numbered 1 and 3 at the top, 2 and 4 below. Body 35 × 83 × 70 mm."},
+    {"id": "hager-residual-indications", "title": "Hager protection specifications · RCCB operating and trip indications", "url": "https://assets.hager.com/step-content/P/HA_79103069/Document/std.lang.all/Technical%20Specifications%20SG.pdf", "architecture": "The two-pole CDA face has a separate mechanical contact-position window and residual-trip window. Red and green show closed and open contacts. A yellow trip indication distinguishes a differential trip from manual switch-off."},
+    {"id": "hager-nbn-position", "title": "Hager commercial catalogue · NBN operating indication", "url": "https://assets.sc.hager.com/uk/-/media/project/hagerdeep/united-kingdom/hager/b2b-uk/products/catalogues-and-brochures/pdf_brochures-and-docs/product-catalogues/2021/hager-commercial-distribution-catalogue.pdf", "architecture": "The NBN operating toggle has green indication in the OFF position. In the product photograph the raised grey paddle exposes the I mark below it. Paddle profiles, lock eyes and hidden pivots are original estimates from the external views."},
     {"id": "hager-cda440u", "title": "Hager CDA440U · four-pole RCCB", "url": "https://hager.com/ie/catalogue/products/cda440u-rccb-4p-40a-30ma-a", "architecture": "One operating lever for four poles. The neutral pair on this model is on the right. Body 70 × 83 × 70 mm."},
     {"id": "hager-ada516d", "title": "Hager ADA516D · RCBO", "url": "https://hager.com/ie/catalogue/products/ada516d-rcbo-1p-n-10ka-b-16a-30ma-a", "architecture": "Two-module RCBO. Neutral is on the right, with the test button below the handle. Body 35 × 83 × 68 mm."},
     {"id":"mk-k701-shaver","title":"MK Electric Logic Plus K701WHI · shaver supply unit","url":"https://buildings.honeywell.com/gb/en/products/by-category/electrical-and-wiring/wiring-devices/sockets/shaver-sockets/logic-plus-shaver-socket","architecture":"Original model of the 86 × 146 mm output face with 120.6 mm fixing centres and interlocked 115 V and 230 V positions. The lesson connects the isolated 230 V pair. The internal study tags are separated from the transformer to make measurements possible."},
@@ -873,9 +875,9 @@
     "terminal:default": [
       "phoenix-clamp"
     ],
-    "mcb:default": ["hager-nbn116a", "hager-device-mounting"],
+    "mcb:default": ["hager-nbn116a", "hager-device-mounting", "hager-nbn-position"],
     "mcb3:default": ["hager-nbn316a", "hager-device-mounting"],
-    "rcd:default": ["hager-cda240u", "hager-device-mounting"],
+    "rcd:default": ["hager-cda240u", "hager-device-mounting", "hager-residual-indications"],
     "rcbo:default": ["hager-ada516d", "hager-device-mounting"],
     "rcd3:default": ["hager-cda440u", "hager-device-mounting"],
     "spd:default": [

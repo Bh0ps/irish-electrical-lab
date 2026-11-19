@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.19.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.20.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 On a phone, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting, or tap **Find** and search for its name or room. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. **Put meter away** returns to the site. In the two-door bell job the hall chime gives a short caption and a sound for each new call. The two sounds are examples chosen for this lab. You can turn them off in Settings or Site tools. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -19,6 +19,8 @@ The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a po
 Open **Chapters → The heater stays cold**. Work the wall switch and take two readings on the virtual bench. Once you have found the fault, choose **Find repair on site**. Switch off the simulated supply and open the fitting. The back box stays on the wall while the plate comes forward. Look for the loose wire from the heater flex. Tap its terminal or choose **Reconnect flex** to use the printed markings. Restore the supply. Switch the heater off, check its watts, then switch it back on. Choose **Test the repair** once you’ve seen it draw power again. This room stays at 18 °C so you can also try the heater’s manual temperature setting.
 
 ## Read a fitting or a meter
+
+On the Oakfield board the numbered breakers show **I** for on and **O** for off. The wider shared RCCB has a separate **T** test button. In this model, its upper window shows red when the contacts are closed and green when they are open. The separate lower window turns yellow after a residual-current trip. The two outgoing breakers and their shared feed are the arrangement chosen for this lesson. [Hager NBN116A breaker](https://hager.com/ie/catalogue/products/nbn116a-mcb-1p-10ka-15ka-b-16a-1m) · [Hager CDA240U RCCB](https://hager.com/ie/catalogue/products/cda240u-rccb-2p-40a-30ma-a)
 
 Choose **Show terminals** to see the marks on a fitting. In the one-way lighting lesson the breaker has two terminals marked **N**. **Supply** identifies the incoming neutral and **Load** identifies the outgoing neutral. On the stair switches, look for **COM**, **L1** and **L2** on the back.
 
@@ -38,6 +40,8 @@ In **Site**, use **Go to** to find a fitting. In Oakfield house you can also cho
 
 In **Drawing**, choose **Job drawing** for the intended connections and **My wiring** for the current build. Select an equipment tag on the location plan or a pin on the terminal sheet. Select a conductor to see both ends and whether the current build matches it. **Find** travels to the selected end. The dashed site overlay indicates which endpoints are connected. Its route is illustrative. On applicable jobs, the sheet selector also offers a board schedule or a ladder tracing the control path to a load. Drawing selections are for inspection only.
 
+In full screen, choose **Find → Room map**. The arrow shows where you’re standing and facing. In a close-up a dot marks the fitting in view. Tap a room on the plan, or choose it under **Room on map**. **Go to** puts you in that room. Under **Fittings here**, choose an item to see it up close. [See the Oakfield room map](images/oakfield-room-map.png).
+
 ## Try a house job
 
 In **Try both stair switches**, turn the light off downstairs. Read the volts at L1 and L2 and choose which wire still has the feed. Upstairs, work out which wire the landing switch is using. Flip it and watch the lamp. The two wires between the switches are called *strappers*. The last display may say **No reading** when an unused wire has no connection to the supply. That’s different from measuring 0 V.
@@ -46,7 +50,11 @@ Use **Downstairs** and **Landing** to go straight to either rocker. The lesson b
 
 Open **Chapters → Jobs at Oakfield house**, or search for a job by name. In the cupboard job, shut the door, watch the strip go dark, then open the door again. Use the fitting in the room or its named control. Both operate the same circuit.
 
-In **Find the lighting breaker**, choose either breaker. Watch the lamp and the kitchen socket readings. If the lamp stays lit and the socket loses power, put that breaker back on and try the other one. The job finishes when you find the lamp circuit and restore it. **Next job** takes you to a house job you still have to finish. The index also offers the kitchen fault job whenever you’re ready to try it.
+Open **Find the lighting breaker** to try the consumer unit, the board in the utility cupboard. There are two numbered breakers. Try one and look at the hall lamp and kitchen socket readings. If the socket loses power while the lamp stays on, put that breaker back on and try the other. Use the levers in the 3D room or the labelled controls beside the readings.
+
+The last check uses the shared switch marked **RCCB**. Turn its lever off. Both loads stop drawing current, so both read **0 A**. Put the lever back on and check their voltage again. The separate **T** button tests the trip. If you use it, reset the lever before carrying on. All these checks take place on the simulated board.
+
+Already finished the earlier lighting-only job? **Continue learning** opens your saved place. Choose **Try the socket and shared switch** to do the extra checks. **Next job** opens another unfinished house job.
 
 In **Meter the worktop lights**, turn off the left light and leave the right one lit. Open **Measure**, choose a strip and touch its two copper pads with the red and black probes. You can also pick the same points by name. Record each reading, then put the lights the other way round. If you move a probe to the wrong strip, you can move it again without starting over.
 

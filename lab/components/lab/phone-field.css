@@ -53,5 +53,40 @@
 .site-destination-list small {color:#496054}
 .site-destination-list p button {display:block;min-height:44px;text-decoration:underline}
 .field-signal {min-width:0;flex:1;color:#f4ffed;font-weight:600;font-size:.9rem;line-height:1.2;overflow-wrap:anywhere;padding-block:.25rem}
+@media (max-width:365px) {
+  .field-bar:has(.field-signal:not(:empty)) {flex-wrap:wrap}
+  .field-bar:has(.field-signal:not(:empty)) button:first-child {margin-inline-end:auto}
+  .field-bar .field-signal:not(:empty) {order:1;flex:0 0 100%;padding:.15rem .35rem .35rem}
+}
 .field-signal:empty,.door-call-caption:empty {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0;pointer-events:none}
 .door-call-caption {position:absolute;z-index:4;top:4.3rem;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 20px);padding:.55rem .9rem;border-radius:8px;background:#18392ef5;color:#fff;text-align:center;line-height:1.3;pointer-events:none}
+.site-finder .site-finder-heading {display:flex;flex-flow:row wrap;align-items:center;justify-content:space-between;gap:.2rem .6rem}
+.site-finder-mode button {display:inline-flex;align-items:center;gap:.35rem;min-height:44px;padding:0 .45rem;color:#214c3a;text-decoration:underline;text-underline-offset:.18em;cursor:pointer}
+.site-finder-map[data-slot=dialog-content] {grid-template-rows:auto minmax(0,1fr)}
+.site-map-content {min-height:0;overflow:auto;overscroll-behavior:contain}
+.site-room-plan {padding:6px;background:#e8ede3;border-radius:8px}
+.site-room-plan svg {display:block;width:100%;height:clamp(180px,39dvh,320px)}
+.site-room-plan [role=button] {cursor:pointer}
+.site-room-plan [role=button] rect {fill:#faf9ed;stroke:#b6c5ae;stroke-width:.045}
+.site-room-plan [role=button][aria-pressed=true] rect {fill:#c6dfc1}
+.site-room-plan svg g[role=button]:focus {outline:0!important;box-shadow:none!important}
+.site-room-plan svg g[role=button]:focus-visible rect {stroke:#1b5d9f;stroke-width:2px;vector-effect:non-scaling-stroke}
+.site-room-plan text {font-size:.61px;fill:#213f33;font-weight:650;pointer-events:none}
+.site-map-marker {fill:#154f81;stroke:white;stroke-width:.095;stroke-linejoin:round}
+.map-location {display:flex;align-items:center;gap:.35rem;font-size:.9rem;color:#243f35;padding:.3rem .5rem;margin:0}
+.map-fitting-key {margin-inline-start:auto;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap;font-size:.85em}
+.map-fitting-key::before {content:'';width:.55em;height:.55em;border-radius:50%;background:#a84d14}
+.site-room-actions {display:flex;flex-direction:column;gap:.55rem;padding:.7rem 0 .1rem}
+.site-room-actions label {display:flex;flex-direction:column;gap:.2rem;font-size:.9rem}
+.site-room-actions select,.site-room-actions button {min-height:44px;font:inherit;white-space:normal}
+.site-room-actions select {padding-inline:.45rem;background:white;border:1px solid #96a99a;border-radius:6px;font-size:max(1rem,16px)}
+.site-room-actions .room-visit {display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.45rem;border-radius:6px;background:#244d38;color:white;cursor:pointer}
+.site-room-actions section {padding:.35rem 0}
+.site-room-actions section h3 {font-size:.92rem;margin:0;color:#496252}
+.site-room-actions section button {width:100%;display:block;padding:.45rem .2rem;text-align:start;border-bottom:1px solid #d3decd;cursor:pointer}
+@media (orientation:landscape) and (max-height:550px) {
+  .site-finder-map[data-slot=dialog-content] {width:min(52rem,calc(100vw - max(22px,env(safe-area-inset-left)) - env(safe-area-inset-right,0px)))}
+  .site-map-content {display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px}
+  .site-room-plan {align-self:start}.site-room-plan svg {height:clamp(130px,47dvh,240px)}
+  .site-room-actions {padding-top:0}
+}

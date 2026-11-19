@@ -15,6 +15,7 @@ import {SERVICE_AREAS} from '../../lib/service-floorplan';
 import {serviceRoom} from './ServiceRooms';
 import {stairHall} from './StairHall';
 import {frontDoorway,doorbellGrounds} from './DoorstepExterior';
+import {cupboardJoinery} from './CupboardJoinery';
 import {BathroomFabric,bathFurniture} from './BathroomExtract';
 import {BATH_KITCHEN_COUNTER,BATH_RACK} from '../../lib/bathroom-extract';
 
@@ -147,6 +148,7 @@ function installation(site:JobSite){
     for(const z of [start,end])box(x,1.12,z,.18,2.24,.055,'white');box(x,2.25,DOOR_Z,.18,.065,DOOR_WIDTH+.08,'white');
   }
   if(home){
+    if(site.cupboardBoard)cupboardJoinery(add);
     if(site.doorsteps)doorbellGrounds(add);
     box(0,-.15,(HOME_BACK+BACK)/2,13.45,.28,BACK-HOME_BACK,'concrete');
     for(const room of HOME_ROOMS.filter(r=>r.id>=4&&r.id!==REAR_GARDEN.id)){
@@ -372,7 +374,7 @@ function HallPlant(){
 }
 export default function InstallationRoom({site,economy,cupboardOpen,operateCupboard}:{site:JobSite;economy:boolean;cupboardOpen:boolean;operateCupboard:()=>void}){
   const {kind,building,name}=site;
-  const batches=useMemo(()=>{const map=new Map<string,Piece[]>();for(const piece of installation(site)){const k=piece.shape+'/'+piece.surface;if(!map.has(k))map.set(k,[]);map.get(k)!.push(piece);}return map;},[kind,name,building.rooms.join('/')]);
+  const batches=useMemo(()=>{const map=new Map<string,Piece[]>();for(const piece of installation(site)){const k=piece.shape+'/'+piece.surface;if(!map.has(k))map.set(k,[]);map.get(k)!.push(piece);}return map;},[kind,name,site.cupboardBoard,building.rooms.join('/')]);
   const res=useMemo(()=>{
     const maps=new Map<SurfacePattern,ReturnType<typeof createSurfaceTextures>>();
     const materials:Record<string,THREE.Material>={};

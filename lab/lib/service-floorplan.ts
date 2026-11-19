@@ -18,6 +18,11 @@ export const SERVICE_AREAS:Record<ServiceKind,ServiceArea>={
   works:{name:'Packing line',left:-13.1,right:-6.6,back:-4.25,front:2.8,side:-1,door:1.05,opening:1.65,
     station:{x:-9.90,z:-2.83,w:3.85,d:.92},visit:{position:[-7.56,1.53,.71],yaw:.56,pitch:-.17}},
 };
+export function serviceSpaces(kind:ServiceKind){
+  const a=SERVICE_AREAS[kind];
+  return [...[-6.6,-2.2,2.2].map((left,id)=>({id,left,right:left+4.4,back:-2.8,front:2.8})),
+    {id:3,left:-6.6,right:6.6,back:2.8,front:6},{...a,id:4}];
+}
 const wallThickness=.12;
 function horizontal(x1:number,x2:number,z:number):Rect{return {x:(x1+x2)/2,z,w:x2-x1,d:wallThickness};}
 function vertical(x:number,z1:number,z2:number):Rect{return {x,z:(z1+z2)/2,w:wallThickness,d:z2-z1};}

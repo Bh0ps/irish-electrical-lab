@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {getLesson} from '../lib/lessons';
+import {protectionFeedback,type ProtectionAction} from '../lib/protection-feedback';
+import {simulate} from '../lib/simulation';
+
+test('the field caption follows the contact and a persistent fault after reset',()=>{
+  const doc=structuredClone(getLesson(7)!.circuit);
+  const breaker=doc.components.find(c=>c.type==='rcbo')!;
+  const action:ProtectionAction={kind:'lever',circuit:doc.id,revision:doc.revision,ids:[breaker.id],wasTripped:false};
+  const run=(previous?:ReturnType<typeof simulate>)=>simulate(doc,previous?.deviceStates);
+  breaker.params.closed=false;
+  let result=run();
+  assert.match(protectionFeedback(action,doc,result)!,/Contacts open/);
+  breaker.params.closed=true;
+  breaker.params.testPressed=true;
+  action.kind='test';
+  result=run(result);
+  assert.match(protectionFeedback(action,doc,result)!,/tripped. Contacts open/);
+  action.wasTripped=true;
+  assert.match(protectionFeedback(action,doc,result)!,/already tripped/);
+  breaker.params.testPressed=false;
+  breaker.params.resetToken=1;
+  action.kind='reset';
+  result=run(result);
+  assert.match(protectionFeedback(action,doc,result)!,/Contacts closed/);
+  doc.faults=[{type:'earth-fault',enabled:true,component:'light'}];
+  result=run(result);
+  breaker.params.resetToken=2;
+  result=run(result);
+  assert.match(protectionFeedback(action,doc,result)!,/tripped again/);
+  assert.equal(protectionFeedback({...action,revision:doc.revision-1},doc,result),undefined);
+  assert.equal(protectionFeedback({...action,circuit:'elsewhere'},doc,result),undefined);
+  assert.match(protectionFeedback(action,doc,{...result,converged:false})!,/unresolved/);
+});

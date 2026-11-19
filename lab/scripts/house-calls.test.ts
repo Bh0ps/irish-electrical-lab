@@ -1,3 +1,4 @@
+import {checkBoardChoice} from '../lib/house-calls';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { HOUSE_CALLS, houseStepId, stairReadings, checkStairChoice, callActivityId, callReadings, checkCallSample, savedCallStep, houseJobLabels, nextHouseCall, onlyCallControlsChanged, verifiedCallStep } from '../lib/house-calls';
@@ -20,6 +21,11 @@ for(const call of HOUSE_CALLS){
       assert.ok(callReadings(step.before,doc,reading)?.every(r=>r.matches));
       const id=houseStepId(call,index);
       const action={component:step.target,activity:id,before:doc,reading};
+      if(step.boardQuestion){
+        assert.ok(checkBoardChoice(call,index,doc,reading,{activity:id,circuitId:doc.id,revision:doc.revision,component:'load1'})?.pass);
+        assert.equal(verifiedCallStep(call,index,doc,reading,action),false);
+        continue;
+      }
       if(step.stairCheck){
         const view=stairReadings(step.stairCheck,doc,reading);
         assert.ok(view?.answer);
@@ -80,7 +86,7 @@ test('the board job follows the connected branch, including a board with the fee
   assert.equal(onlyCallControlsChanged(call,exchanged,original),false);
   const setBreaker=(doc:CircuitDocument,id:string,closed:boolean)=>({...doc,revision:doc.revision+1,components:doc.components.map(c=>c.id===id?{...c,params:{...c.params,closed}}:c)});
   const check=(index:number,before:CircuitDocument,after:CircuitDocument,component:string)=>verifiedCallStep(call,index,after,simulate(after),{
-    component,activity:callActivityId(2,index),before,reading:simulate(before),
+    component,activity:houseStepId(call,index),before,reading:simulate(before),
   });
   for(const [board,lighting,sockets] of [[circuit,'branch1','branch2'],[exchanged,'branch2','branch1']] as const){
     const wrong=setBreaker(board,sockets,false);
@@ -91,6 +97,30 @@ test('the board job follows the connected branch, including a board with the fee
     const lampOff=setBreaker(restored,lighting,false);
     assert.equal(check(0,restored,lampOff,lighting),true);
     assert.equal(check(1,lampOff,setBreaker(lampOff,lighting,true),lighting),true);
+    const socketOff=setBreaker(board,sockets,false),idx=(id:string)=>savedCallStep(call,'book:2:'+id)!;
+    assert.equal(check(idx('socket-off'),board,socketOff,sockets),true);
+    assert.equal(check(idx('socket-off'),board,lampOff,lighting),false);
+    const question=idx('read-branches'),choice={activity:houseStepId(call,question),revision:socketOff.revision,circuitId:socketOff.id,component:'load2'};
+    assert.equal(checkBoardChoice(call,question,socketOff,simulate(socketOff),choice)?.pass,false);
+    assert.equal(checkBoardChoice(call,question,socketOff,simulate(socketOff),{...choice,component:'load1'})?.pass,true);
+    assert.equal(checkBoardChoice(call,question,socketOff,simulate(board),{...choice,component:'load1'}),undefined);
+    const cutoff=setBreaker(board,'group',false),sharedStep=idx('shared-off');
+    assert.equal(check(sharedStep,board,cutoff,'group'),true);
+    const offReadings=callReadings(call.steps[sharedStep].after,cutoff,simulate(cutoff))!;
+    assert.ok(offReadings.every(r=>r.value===null&&r.disconnected&&r.matches));
+    assert.equal(check(idx('shared-on'),cutoff,setBreaker(cutoff,'group',true),'group'),true);
+    const testDoc={...board,revision:board.revision+1,components:board.components.map(c=>c.id==='group'?{...c,params:{...c.params,testPressed:true}}:c)};
+    const tripped=simulate(testDoc,simulate(board).deviceStates);
+    assert.equal(tripped.deviceStates.group.tripped,true);
+    assert.equal(verifiedCallStep(call,sharedStep,testDoc,tripped,{component:'group',activity:houseStepId(call,sharedStep),before:board,reading:simulate(board)}),false);
+    const reset={...testDoc,revision:testDoc.revision+1,components:testDoc.components.map(c=>c.id==='group'?{...c,params:{...c.params,testPressed:false,resetToken:1}}:c)};
+    const resetState=simulate(reset,tripped.deviceStates);
+    assert.equal(resetState.deviceStates.group.tripped,false);
+    const restoration=idx('shared-on');
+    assert.equal(verifiedCallStep(call,restoration,reset,resetState,{component:'group',activity:houseStepId(call,restoration),before:testDoc,reading:tripped}),false);
+    assert.equal(savedCallStep(call,'book:2:call-2'),call.steps.length);
+    const opened={...board,components:board.components.map(c=>c.id==='course-enclosure'?{...c,params:{...c.params,doorOpen:false}}:c.id==='group'?{...c,params:{...c.params,resetToken:3,testPressed:false}}:c)};
+    assert.ok(onlyCallControlsChanged(call,opened,board));
   }
 });
 
