@@ -1,3 +1,5 @@
+import { cableMeshFrames } from '../lib/cable-mesh.ts';
+import { coreRadius } from '../lib/cable-form.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { COMPONENTS } from '../lib/components.ts';
@@ -6,7 +8,9 @@ import { LESSONS } from '../lib/lessons.ts';
 import { routeCircuit, SHEATH_RADIUS, WIRE_RADIUS } from '../lib/routing.ts';
 import { getComponentTerminals } from '../lib/terminal-layout.ts';
 import { isBoard, mountScale, mountRoll, dinBodyWidth } from '../lib/board-assembly.ts';
-import { Matrix4,Euler,Vector3 } from 'three';
+import { Box3,Mesh,Matrix4,Euler,Vector3 } from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { readFileSync } from 'node:fs';
 import type { CircuitDocument, ComponentInstance, Endpoint, Vec3, Wire } from '../lib/types.ts';
 
 // This checks the exact ring centres used by TubeGeometry, independently of the
@@ -133,7 +137,29 @@ function isTerminalAccess(document: CircuitDocument, rendered: RenderedWire, seg
   return (sameHousing(document, rendered.wire.from.component, housing) && closeTo(first, second)) || (sameHousing(document, rendered.wire.to.component, housing) && closeTo(beforeLast, last));
 }
 
-function fixtureIssues(document: CircuitDocument, rendered: RenderedWire): Issue[] {
+// The open space below a DIN device is a real wire entry route. Measure the
+// device, stand foot, upright, and rail separately from the exported meshes.
+// This check does not reuse the planner's envelopes.
+async function measuredProtection() {
+  const byType=new Map<string,Map<string,Box3>>(), loader=new GLTFLoader();
+  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo']){
+    const bytes=readFileSync(new URL('../public/models/'+type+'_default.glb',import.meta.url));
+    const {scene}=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
+    scene.updateMatrixWorld(true);
+    const groups=new Map<string,Box3>();
+    scene.traverse(node=>{
+      if(!(node instanceof Mesh))return;
+      let key='device';
+      for(let owner=node.parent;owner;owner=owner.parent)if(owner.userData.standMember)key=owner.userData.standMember;
+      const bounds=groups.get(key)??new Box3();
+      bounds.union(new Box3().setFromObject(node,true));groups.set(key,bounds);
+    });
+    assert.deepEqual([...groups.keys()].sort(),['device','foot','leg','rail']);
+    byType.set(type,groups);
+  }
+  return byType;
+}
+function fixtureIssues(document: CircuitDocument, rendered: RenderedWire, measured:Map<string,Map<string,Box3>>): Issue[] {
   const issues: Issue[] = [];
   for (const component of document.components) {
     const definition = COMPONENTS[component.type], terminals = getComponentTerminals(component, definition);
@@ -149,9 +175,13 @@ function fixtureIssues(document: CircuitDocument, rendered: RenderedWire): Issue
     if(isBoard(component.type))high[2]=low[2]+.07;
     if (component.params.gangModule === 'left') { low[0] = Math.min(low[0], .23 - .565 * definition.size[0] / 1.3); high[0] = Math.max(high[0], .23 + .565 * definition.size[0] / 1.3); }
     const scale=mountScale(component);
-    const inflatedLow = low.map((value,i) => value - (rendered.radius + EPSILON)/scale[i]) as Vec3, inflatedHigh = high.map((value,i) => value + (rendered.radius + EPSILON)/scale[i]) as Vec3;
-    const hit = rendered.segments.find(segment => !isTerminalAccess(document, rendered, segment, component) && entersBox(inLocal(component, segment.a), inLocal(component, segment.b), inflatedLow, inflatedHigh));
-    if (hit) issues.push({ kind: 'rendered tube enters fixture clearance', wire: rendered.wire.id, other: component.id, position: hit.a });
+    const actual=measured.get(component.type);
+    const regions=actual?[...actual.entries()].filter(([key])=>key==='device'||!component.mount).map(([,box])=>[box.min.toArray(),box.max.toArray()]):[[low,high]];
+    for(const [min,max] of regions){
+      const inflatedLow = min.map((value,i) => value - (rendered.radius + EPSILON)/scale[i]) as Vec3, inflatedHigh = max.map((value,i) => value + (rendered.radius + EPSILON)/scale[i]) as Vec3;
+      const hit = rendered.segments.find(segment => !isTerminalAccess(document, rendered, segment, component) && entersBox(inLocal(component, segment.a), inLocal(component, segment.b), inflatedLow, inflatedHigh));
+      if (hit) issues.push({ kind: 'rendered tube enters fixture clearance', wire: rendered.wire.id, other: component.id, position: hit.a });
+    }
   }
   return issues;
 }
@@ -190,7 +220,8 @@ test('shared-bore clipping removes only the common joint neighbourhood', () => {
   assert.equal(minimumWireGap(document, one, { ...two, wire: { ...b, from: separate } }), 0);
 });
 
-test('all 80 configurations have non-overlapping rendered tubes and clear fixture paths', () => {
+test('all 80 configurations have non-overlapping rendered tubes and clear fixture paths', async () => {
+  const measured=await measuredProtection();
   assert.equal(LESSONS.length, 80);
   const failures: { lesson: number; issues: Issue[] }[] = [];
   let wires = 0, meshSegments = 0;
@@ -207,18 +238,20 @@ test('all 80 configurations have non-overlapping rendered tubes and clear fixtur
       assert.ok(distanceSquared(source.at(-1)!,physicalTerminal(document,wire.to))<1e-20,`${lesson.id}/${wire.id}: ending bore moved`);
       if(!wire.cable){rendered.push(renderedWire(wire,source));continue;}
       const {runId,reversed}=wire.cable;
+      const radius=coreRadius(document.cableRuns!.find(run=>run.id===runId)!.kind);
       const tails=plan.cables?.get(runId)?.tails.get(wire.id);
       assert.ok(tails);
-      rendered.push(renderedWire({...wire,from:reversed?wire.to:wire.from,to:head(runId,0)},tails[0],.012),
-        renderedWire({...wire,from:head(runId,1),to:reversed?wire.from:wire.to},tails[1],.012));
+      rendered.push(renderedWire({...wire,from:reversed?wire.to:wire.from,to:head(runId,0)},tails[0],radius),
+        renderedWire({...wire,from:head(runId,1),to:reversed?wire.from:wire.to},tails[1],radius));
     }
     for(const run of document.cableRuns??[]){
       const geometry=plan.cables?.get(run.id);assert.ok(geometry?.sheath.length);
       const jacket:Wire={id:run.id,from:head(run.id,0),to:head(run.id,1),role:'output',resistance:.01,bends:[]};
-      rendered.push(renderedWire(jacket,geometry.sheath,SHEATH_RADIUS));
+      const jacketPoints=cableMeshFrames(geometry.sheath,geometry.faces,run.kind).map(frame=>frame.point.toArray() as Vec3);
+      rendered.push({wire:jacket,source:geometry.sheath,points:jacketPoints,segments:segmentsFor(jacketPoints),radius:SHEATH_RADIUS});
       for(const [i,open] of geometry.open.entries()){
-        const side=distanceSquared(open.points[0],geometry.sheath[0])<1e-14?0:1;
-        rendered.push(renderedWire({...jacket,id:run.id+' free '+i,from:head(run.id,side),to:head(run.id,2+i)},open.points,.012));
+        const side=open.side;
+        rendered.push(renderedWire({...jacket,id:run.id+' free '+i,from:head(run.id,side),to:head(run.id,2+i)},open.points,coreRadius(run.kind)));
       }
     }
     for(const model of rendered){
@@ -230,7 +263,7 @@ test('all 80 configurations have non-overlapping rendered tubes and clear fixtur
         const nearest = Math.sqrt(Math.min(...segmentsFor(source).map(line => pointDistanceSquared(point, line.a, line.b))));
         if (nearest > WIRE_CORNER_RADIUS + EPSILON) issues.push({ kind: 'corner exceeds source corridor', wire: wire.id, distance: nearest, position: point });
       }
-      issues.push(...fixtureIssues(document, model));
+      issues.push(...fixtureIssues(document, model, measured));
     }
     for (let left = 0; left < rendered.length; left++) for (let right = left + 1; right < rendered.length; right++) {
       const gap = minimumWireGap(document, rendered[left], rendered[right]);

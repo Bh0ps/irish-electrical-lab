@@ -36,6 +36,10 @@ for (const file of await readdir(path.join(directory, 'site-assets'))) {
   assert.match(file, /^[a-z0-9_-]+\.(glb|hdr|jpg)$/);
   packPaths.add('site-assets/'+file);
 }
+for (const file of await readdir(path.join(directory, 'cable-samples'))) {
+  assert.match(file, /^[a-z-]+\.webp$/);
+  packPaths.add('cable-samples/'+file);
+}
 const shell = await Promise.all(['index.html', 'favicon.svg', ...installFiles, ...emittedAssets].sort().map(describe));
 for (const worker of ['routing', 'simulation']) assert.ok(shell.some(asset => asset.path.includes(`${worker}.worker-`)), `Missing ${worker} worker`);
 const pack = await Promise.all([...packPaths].sort().map(describe));

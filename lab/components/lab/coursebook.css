@@ -63,3 +63,11 @@
   .course-position { appearance: auto; }
   .installation-lab.simple-lab .learn-column .prediction-options button[aria-pressed="true"]::before { border-color: Highlight; }
 }
+.wiring-step p{margin:.35rem 0;font-size:.9rem;line-height:1.45}
+.wiring-step ul{list-style:none;margin:.55rem 0;padding:0;border-left:2px solid var(--line)}
+.wiring-step li{display:flex;align-items:baseline;flex-wrap:wrap;gap:.15rem .65rem;padding:.25rem .6rem;overflow-wrap:anywhere}
+.wiring-step li b{font-family:ui-monospace,monospace}.wiring-step li span{font-size:.9rem}
+.task-feedback button{display:block;margin-top:.45rem}
+
+.call-readings{display:flex;flex-wrap:wrap;gap:.6rem 1.3rem;padding:.6rem 0;margin:.25rem 0 .6rem;border-block:1px solid var(--line)}
+.call-readings dt{font-size:.85rem}.call-readings dd{margin:0;font-weight:650;font-variant-numeric:tabular-nums}

@@ -2,6 +2,9 @@ import type { CircuitDocument, ComponentInstance, ConfigurationLesson, Vec3 } fr
 import { physicalFixture, isStrip, type FixturePose } from './site-fixtures.ts';
 import {seatPosition} from './board-assembly';
 import { COMPONENTS } from './components';
+import { houseFixing, onWall } from './house-installation';
+import { HOME_ROOMS, walkHome } from './home-floorplan';
+import { SERVICE_AREAS, serviceFixing, walkService } from './service-floorplan';
 
 export type SiteKind = 'home' | 'plant' | 'shop' | 'workshop' | 'works';
 export interface Building { name:string; rooms:[string,string,string]; walls:[string,string,string]; floor:string }
@@ -122,7 +125,8 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
     if(id===80&&c.id==='courtesy'){x=.99;y=2.07;z=FRONT+.11;}
     const cabinets = kind === 'home' && area === 0 && [13,65,66,68,69].includes(id);
     const atBackWall = !outside && Math.abs(z - (BACK + .11)) < .0001;
-    const fixture = physicalFixture(c, atBackWall, cabinets);
+    const mapped=kind==='home'?houseFixing(id,c):undefined;
+    const fixture = physicalFixture(c, !!mapped||atBackWall, cabinets);
     let scale = physicalHeight(c) / Math.max(.1, COMPONENTS[c.type]?.size[1] ?? 1);
     if (fixture) scale = fixture.scale[1];
     // Plaster face is BACK - .01. Only the flush switch faceplate projects into the room.
@@ -143,7 +147,8 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
       z = id === 65 ? -2.498 : -2.405;
       x = c.id === 'right' ? -3.83 : -4.65;
     }
-    return {id:c.id,ref,room:area,position:[x,y,z] as Vec3,rotation:0,scale,fixture};
+    const station=kind!=='home'&&!c.mount?serviceFixing(id,c,kind):undefined;
+    return {id:c.id,ref,room:mapped?.room??station?.room??area,position:mapped?onWall(mapped,c,scale,fixture):station?.position??[x,y,z] as Vec3,rotation:mapped?.yaw??station?.rotation??0,scale:station?.scale??scale,fixture};
   });
   // Mounted devices retain their enclosure's physical origin and orientation on site.
   const installed=new Map(doc.components.map(c=>[c.id,c]));
@@ -158,7 +163,7 @@ export function jobSite(doc:CircuitDocument,reference?:CircuitDocument):JobSite{
   const load=(id===24?all.find(c=>c.type==='shaveroutlet'):undefined)??all.find(c=>['gammaboard','invictaboard'].includes(c.type))
     ??(id===3?all.find(c=>c.type==='rcbo'):id===5?all.find(c=>c.type==='spd'):undefined)
     ??all.find(c=>/switch|pushbutton|dimmer|pwmcontrol/.test(c.type)&&roomFor(c,id,room)===room)??all.find(c=>roomFor(c,id,room)===room&&!isSupply(c));
-  return {kind,building,name,room,items,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):rooms[r]??name};
+  return {kind,building,name,room,items,first:load?.id??items.find(c=>c.room===room)?.id??items[0]?.id,location:r=>r===3?(kind==='home'?'Front entrance':'Service yard'):rooms[r]??(kind==='home'?HOME_ROOMS.find(space=>space.id===r)?.name:r===4?SERVICE_AREAS[kind].name:undefined)??name};
 }
 export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wiring'{
   if(!lesson)return 'wiring';
@@ -167,6 +172,8 @@ export function drawingKind(lesson?:ConfigurationLesson):'ladder'|'schedule'|'wi
 }
 /** Stop at the walls while allowing passage through the same openings shown on the floor plan. */
 export function walkStep(from:Vec3,dx:number,dz:number,site?:JobSite):Vec3{
+  if(site?.kind==='home')return walkHome(from,dx,dz,site.building.rooms[1]==='Bathroom',site.building.rooms[0]==='Back entrance',site.building.rooms[1]==='Stair hall');
+  if(site)return walkService(from,dx,dz,site.kind);
   const radius=.16;let [x,y,z]=from;
   const clamp=(v:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,v));
   const testX=clamp(x+dx,ROOM_WALLS[0]+radius,ROOM_WALLS[3]-radius);
@@ -174,14 +181,5 @@ export function walkStep(from:Vec3,dx:number,dz:number,site?:JobSite):Vec3{
   if(z>FRONT+radius||Math.abs(z-DOOR_Z)<DOOR_WIDTH/2-radius||!ROOM_WALLS.slice(1,3).some(w=>gate(x,testX,w)))x=testX;
   const testZ=clamp(z+dz,BACK+radius,6.0);
   if(Math.abs(x)<.68-radius||!gate(z,testZ,FRONT))z=testZ;
-  if(site){
-    // The carried tools use an eye-level camera. Slide alongside full-height furniture and plant.
-    const blocks=site.kind==='home'?[[-4.4,-2.49,3.65,.57],[3.13,-.65,1.36,.54],[5.6,-2.49,1.39,.57],[1.01,-2.48,.96,.74]]:
-      site.kind==='plant'?[[-1.33,-2.15,.69,.69],[1.33,-2.15,.69,.69],[5.83,-.70,1.36,.54]]:
-      site.kind==='shop'?[[-5.84,-2.43,1.36,.54],[-3.1,-2.49,1.35,.57],[5.68,-.70,1.36,.54]]:
-      [[-5.4,-2.3,1.90,.74],[.8,-2.3,1.90,.74],[5.68,-.70,1.36,.54]];
-    const inside=(px:number,pz:number)=>blocks.some(([cx,cz,w,d])=>Math.abs(px-cx)<w/2+radius&&Math.abs(pz-cz)<d/2+radius);
-    if(!inside(from[0],from[2])){if(inside(x,from[2]))x=from[0];if(inside(x,z))z=from[2];}
-  }
   return [x,y,z];
 }

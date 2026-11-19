@@ -1,13 +1,16 @@
 import { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import type { CircuitDocument, Endpoint, Vec3 } from '../../lib/types';
+import { sceneBounds } from '../../lib/workbench-presentation';
 import { terminalPosition, terminalDirection, type CircuitRoutes } from '../../lib/routing';
 import type { WorkshopVisual } from '../../lib/termination-practice';
 
 const up=new THREE.Vector3(0,1,0);
 const ignore:THREE.Mesh['raycast']=()=>{};
 export function testerPose(doc:CircuitDocument,routing:CircuitRoutes,wireId?:string){
-  const parked={position:new THREE.Vector3(doc.components[0]?.position[0]??-4,0,3),rotation:new THREE.Quaternion(),sampled:undefined};
+  // Leave a clear line of sight on either side of the parked tester, including its rear probe docks.
+  const bounds=sceneBounds(doc);
+  const parked={position:new THREE.Vector3(bounds.min.x-.8,0,bounds.max.z+.8),rotation:new THREE.Quaternion(),sampled:undefined};
   const w=doc.wires.find(w=>w.id===wireId);
   if(!w)return parked;
   // For multicore sheaths, seat the fork on an exposed single tail.
@@ -45,19 +48,20 @@ function Link({a,b,r,c,metal=false}:{a:THREE.Vector3;b:THREE.Vector3;r:number;c:
   if(len<.001)return null;
   return <mesh position={a.clone().lerp(b,.5)} quaternion={new THREE.Quaternion().setFromUnitVectors(up,delta.normalize())} raycast={ignore}><cylinderGeometry args={[r,r,len,12]}/><meshStandardMaterial color={c} roughness={metal?.26:.55} metalness={metal?.75:.02}/></mesh>;
 }
-export function TestLead({doc,endpoint,origin,negative}:{doc:CircuitDocument;endpoint:Endpoint;origin:THREE.Vector3;negative:boolean}){
+export function TestLead({doc,endpoint,origin,rotation,negative}:{doc:CircuitDocument;endpoint:Endpoint;origin:THREE.Vector3;rotation:THREE.Quaternion;negative:boolean}){
   const shape=useMemo(()=>{
     const tip=new THREE.Vector3(...terminalPosition(doc,endpoint));
     const normal=new THREE.Vector3(...terminalDirection(doc,endpoint)).normalize();
     const shaft=tip.clone().addScaledVector(normal,.08),grip=tip.clone().addScaledVector(normal,.33);
-    const outlet=origin.clone().add(new THREE.Vector3(negative?-.1:.1,.15,0));
+    const outlet=new THREE.Vector3(negative?.062:-.062,.017,0).applyQuaternion(rotation).add(origin);
     const slack=outlet.clone().lerp(grip,.48);slack.y=Math.max(.07,slack.y-.3);slack.z+=negative?.22:.48;
     return {tip,shaft,grip,normal,curve:new THREE.CatmullRomCurve3([outlet,slack,grip.clone().addScaledVector(normal,.18),grip])};
-  },[doc,endpoint,origin,negative]);
+  },[doc,endpoint,origin,rotation,negative]);
   const c=negative?'#272a30':'#bd342e';
-  return <group><mesh raycast={ignore}><tubeGeometry args={[shape.curve,30,.015,7,false]}/><meshStandardMaterial color={c}/></mesh>
+  return <group><mesh raycast={ignore}><tubeGeometry args={[shape.curve,30,.015,7,false]}/><meshStandardMaterial color="#272a30"/></mesh>
     <Link a={shape.tip} b={shape.shaft} r={.012} c="#b4b7b9" metal/>
     <Link a={shape.shaft} b={shape.grip} r={.034} c={c}/>
+    <Link a={shape.grip.clone().addScaledVector(shape.normal,-.075)} b={shape.grip} r={.036} c="#272a30"/>
     <Link a={shape.shaft} b={shape.shaft.clone().addScaledVector(shape.normal,.025)} r={.067} c={c}/></group>;
 }
 const v=(x:number,y:number,z:number)=>new THREE.Vector3(x,y,z);

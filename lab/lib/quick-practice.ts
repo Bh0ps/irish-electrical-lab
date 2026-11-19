@@ -265,11 +265,11 @@ export function observeQuickPractice(experiment: QuickPracticeExperiment, baseli
     if (sequence.pressedRevision === undefined || circuit.revision <= sequence.pressedRevision) return waiting('Press Start first. You can also hold it from the equipment controls.');
   }
   if (!experiment.action(control.params)) {
-    if (experiment.sequence === 'run-on' && sequence.during) return unresolved('Motion demand was restored before the timer expired. Restart and leave it off until the light goes out.');
+    if (experiment.sequence === 'run-on' && sequence.during) return unresolved('The sensor picked up movement again. Restart, then leave motion off until the light goes out.');
     return waiting('');
   }
   if (result?.revision !== circuit.revision) return waiting('Waiting for the live reading.');
-  if (!isReady(result, circuit)) return unresolved(`The reading could not be resolved. ${experiment.nextCheck}`);
+  if (!isReady(result, circuit)) return unresolved(`The bench has no reading yet. ${experiment.nextCheck}`);
 
   if (experiment.sequence === 'run-on') {
     const timer = result.deviceStates['occupancy-hold'];
@@ -278,9 +278,9 @@ export function observeQuickPractice(experiment: QuickPracticeExperiment, baseli
       const readings = readAll(experiment, result);
       if (!readings) return unresolved(experiment.nextCheck);
       sequence = sequence.during ? sequence : { ...sequence, during: readings };
-      return waiting('Motion demand is off. Watch the lamp while the timer runs.');
+      return waiting('Movement has stopped. Watch the lamp while the timer runs.');
     }
-    if (!sequence.during) return unresolved('The held-on reading was missed. Restart and watch the lamp until the timer expires.');
+    if (!sequence.during) return unresolved('The bench missed the reading while the lamp was still on. Restart and watch it until it goes out.');
   }
 
   const readings = readAll(experiment, result);

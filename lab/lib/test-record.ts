@@ -1,4 +1,4 @@
-import type { BuildAssessment, AssessmentCheck } from './assessment';
+import type { BuildAssessment, AssessmentCheck, CheckReading } from './assessment';
 import type { CircuitDocument } from './types';
 import { electricalKey } from './simulation-identity';
 
@@ -22,7 +22,13 @@ export function validateTestRecord(value:unknown):TestRecord {
   if(!plain(a)||!Number.isSafeInteger(a.revision)||Number(a.revision)<0||!text(a.circuitId,128)||typeof a.passed!=='boolean'||!text(a.summary,8192)||!Array.isArray(a.checks)||a.checks.length>4096)return fail();
   const checks:AssessmentCheck[]=a.checks.map(c=>{
     if(!plain(c)||!text(c.id,512)||!['operation','protection','objectives','model'].includes(String(c.category))||!['pass','fail','not-run','unresolved'].includes(String(c.status))||!text(c.title,2048)||!text(c.explanation,8192)||c.component!==undefined&&!text(c.component,128)||c.wire!==undefined&&!text(c.wire,128))return fail();
-    return {id:c.id,category:c.category as AssessmentCheck['category'],status:c.status as AssessmentCheck['status'],title:c.title,explanation:c.explanation,...c.component!==undefined?{component:c.component as string}:{},...c.wire!==undefined?{wire:c.wire as string}:{}};
+    let reading: CheckReading | undefined;
+    if (c.reading !== undefined) {
+      const r=c.reading;
+      if (!plain(r) || typeof r.value!=='number' || !Number.isFinite(r.value) || (r.unit!=='V' && r.unit!=='A' && r.unit!=='W')) return fail();
+      reading={value:r.value,unit:r.unit};
+    }
+    return {id:c.id,...(reading?{reading}:{}),category:c.category as AssessmentCheck['category'],status:c.status as AssessmentCheck['status'],title:c.title,explanation:c.explanation,...c.component!==undefined?{component:c.component as string}:{},...c.wire!==undefined?{wire:c.wire as string}:{}};
   });
   if(a.passed&&checks.some(c=>c.status==='fail'||c.status==='unresolved')||!checks.length)return fail();
   return {version:1,fingerprint:value.fingerprint,recordedAt:Number(value.recordedAt),assessment:{revision:Number(a.revision),circuitId:a.circuitId,passed:a.passed,summary:a.summary,checks}};

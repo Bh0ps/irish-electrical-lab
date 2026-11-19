@@ -3,19 +3,25 @@
   "classification": "Original representative training equipment. Each model illustrates an equipment architecture. Construction, circuit ratings and simplified interfaces are identified in the lesson. Product literature documents the features used for comparison.",
   "coordinateContract": "Recipe Y-up, +Z operating front. Each electrical ID has its own physical cable mouth and outward entry vector. Wall accessories are wired at the rear. DIN protective devices have upper and lower banks, motor boards face upward, and fronts opened for service have connection blocks behind their covers. Source and meter earth connections represent the separate protective path at the installation boundary. The valve flying lead ends in a separate connector strip. Circuit IDs stay fixed when inspecting or moving equipment.",
   "sources": [
+    {"id": "hager-device-mounting", "title": "Hager device mounting · rail clip and operating fronts", "url": "https://assets.hager.com/step-content/P/HA_22836455/Document/std.lang.all/ZD0828.pdf", "architecture": "Page 4 shows the lower rail clip and the fronts of a two-module RCCB, RCBO and one-module breaker. The training cutaway illustrates the clip and separate wire and screwdriver access."},
+    {"id": "hager-nbn116a", "title": "Hager NBN116A · one-pole breaker", "url": "https://hager.com/ie/catalogue/products/nbn116a-mcb-1p-10ka-15ka-b-16a-1m", "architecture": "Front photograph, single grey lever, one pair of screw terminals and a 17.5 × 83 × 70 mm body."},
+    {"id": "hager-nbn316a", "title": "Hager NBN316A · three-pole breaker", "url": "https://hager.com/ie/catalogue/products/nbn316a-mcb-3p-10ka-15ka-b-16a-3m", "architecture": "Three linked poles and a single 52.5 × 83 × 70 mm assembly."},
+    {"id": "hager-cda240u", "title": "Hager CDA240U · two-pole RCCB", "url": "https://hager.com/ie/catalogue/products/cda240u-rccb-2p-40a-30ma-a", "architecture": "One lever, a separate test button and terminals numbered 1 and 3 at the top, 2 and 4 below. Body 35 × 83 × 70 mm."},
+    {"id": "hager-cda440u", "title": "Hager CDA440U · four-pole RCCB", "url": "https://hager.com/ie/catalogue/products/cda440u-rccb-4p-40a-30ma-a", "architecture": "One operating lever for four poles. The neutral pair on this model is on the right. Body 70 × 83 × 70 mm."},
+    {"id": "hager-ada516d", "title": "Hager ADA516D · RCBO", "url": "https://hager.com/ie/catalogue/products/ada516d-rcbo-1p-n-10ka-b-16a-30ma-a", "architecture": "Two-module RCBO. Neutral is on the right, with the test button below the handle. Body 35 × 83 × 68 mm."},
     {"id":"mk-k701-shaver","title":"MK Electric Logic Plus K701WHI · shaver supply unit","url":"https://buildings.honeywell.com/gb/en/products/by-category/electrical-and-wiring/wiring-devices/sockets/shaver-sockets/logic-plus-shaver-socket","architecture":"Original model of the 86 × 146 mm output face with 120.6 mm fixing centres and interlocked 115 V and 230 V positions. The lesson connects the isolated 230 V pair. The internal study tags are separated from the transformer to make measurements possible."},
     {"id":"radium-a55","title":"Radium 11118941 · 60 W clear A55 B22d","url":"https://www.radium.de/en/products/standard-lamp-clear-60w230cb22d-ex","architecture":"The archived 230 V tungsten bulb has a 22 mm bayonet base, 55 mm diameter, clear round envelope and a maximum overall length of 97 mm."},
     {
       "id": "bg-wall-one",
       "title": "BG 811 single one-way plate · rear product view",
       "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/20a-16ax-light-switches/811-01",
-      "architecture": "Two recessed cable windows, a stepped captive-screw cassette, plate-reinforcing ribs and fixing bosses."
+      "architecture": "Two recessed cable windows. The rear photograph shows two upper fixing ears and a third case screw inside the lower curved recess, separate from the wire clamps. The plate has cruciform mouldings below the fixing bushes."
     },
     {
       "id": "bg-wall-two",
       "title": "BG 812 two-way plate · rear and side views",
       "url": "https://www.bgelectrical.uk/uk/wiring-devices/800-series/20a-16ax-light-switches/812-01",
-      "architecture": "Three recessed entries on the grey snap cassette, moulded COM/L1/L2 inscriptions and isolated side latches."
+      "architecture": "Three recessed entries on the grey snap cassette, moulded COM/L1/L2 inscriptions and side latches. As on the 811, the lower case screw sits between the two feet."
     },
     {
       "id": "bg-wall-intermediate",
@@ -33,7 +39,7 @@
       "id": "bg-rose",
       "title": "BG 661 ceiling rose · exposed clear base photograph",
       "url": "https://www.bgelectrical.uk/uk/wiring-devices/ceiling-accessories/ceiling-roses/661-01",
-      "architecture": "Eight captive screws in grouped brass links (three neutral, three loop and two lamp line), a separate earth block, moulded wiring aperture, knockout and mounting slots."
+      "architecture": "Photo A6 shows eight captive screws in three brass groups (three neutral, three loop and two lamp line), a separate earth block, three round fixing holes and one slanted slot. The rectangular wiring opening is above a separate knockout marked REMOVE."
     },
     {
       "id": "lilley-batten",
@@ -51,7 +57,7 @@
       "id": "hager-accessory",
       "title": "Hager Ireland WMPS12 wall switch",
       "url": "https://hager.com/ie/catalogue/products/wmps12-10ax-1-gang-2-way-wall-switch",
-      "architecture": "Flush mounting, white gloss face, screw fixings, single operating rocker and marked rear switching contacts."
+      "architecture": "WMPS12 is a 10AX flush-mounted single rocker with an 86 × 86 mm glossy face. Its data sheet also lists a loop terminal. The lab’s one- and two-way cassette layouts follow BG 811 and 812 rear photographs."
     },
     {
       "id": "mennekes-plug",
@@ -243,7 +249,7 @@
       "id": "fluke-t6",
       "title": "Fluke T6-600 · front/rear photographs and functions",
       "url": "https://www.fluke.com/en-us/product/electrical-testing/basic-testers/fluke-t6-600",
-      "architecture": "Open fork, rotary selector, function/HOLD buttons, display, stowed leads and rear grounding contact."
+      "architecture": "Overall outline, open yellow fork, finger guard, LCD, right-side knob, two rectangular keys, purple HOLD button and attached leads. Fluke T6-600/T6-1000 Quick Reference Guide, PN 4897598 Rev. 4, pp. 1–2, shows the battery cover, rear contact, probe docks, selector positions and one-wire seating. External features are modelled from photographs and drawings."
     },
     {
       "id": "knipex-tools",
@@ -809,24 +815,11 @@
     "terminal:default": [
       "phoenix-clamp"
     ],
-    "mcb:default": [
-      "abb-mcb"
-    ],
-    "mcb3:default": [
-      "abb-mcb"
-    ],
-    "rcd:default": [
-      "hager-rcbo",
-      "abb-mcb"
-    ],
-    "rcbo:default": [
-      "hager-rcbo",
-      "abb-mcb"
-    ],
-    "rcd3:default": [
-      "hager-rcbo",
-      "abb-mcb"
-    ],
+    "mcb:default": ["hager-nbn116a", "hager-device-mounting"],
+    "mcb3:default": ["hager-nbn316a", "hager-device-mounting"],
+    "rcd:default": ["hager-cda240u", "hager-device-mounting"],
+    "rcbo:default": ["hager-ada516d", "hager-device-mounting"],
+    "rcd3:default": ["hager-cda440u", "hager-device-mounting"],
     "spd:default": [
       "schneider-spd"
     ],

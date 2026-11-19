@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { createRoot, extend, flushSync } from '@react-three/fiber';
 import { BenchStage } from '../components/lab/BenchStage';
 import { configureSceneRenderer, createSceneEffectPipeline, withOcclusionSurfaces } from '../components/lab/GraphicEffects';
-import { backdropVisible, benchFootprint, DEFAULT_SCENERY, lampIllumination, normaliseScenery, SCENERIES, sceneQualityBudget, selectLampIllumination } from '../lib/scene-settings';
+import { adaptWorkbenchDpr, backdropVisible, benchFootprint, DEFAULT_SCENERY, lampIllumination, normaliseScenery, SCENERIES, sceneQualityBudget, selectLampIllumination } from '../lib/scene-settings';
 import { createSceneryBatches, createSceneryParts } from '../lib/scenery-geometry';
 import { createSurfaceTextures, type SurfacePattern } from '../lib/scene-materials';
 import { LESSONS } from '../lib/lessons';
@@ -121,4 +121,18 @@ test('all mounted surroundings keep a single pickable work mat and actual instan
       const surround = scene.getObjectByName('surround-with-rear-access')!, frame = scene.getObjectByName('bench-underframe')!; surround.visible = false; assert.equal(frame.visible, true); assert.equal(interactive[0].visible, true); assert.notEqual(frame.parent, surround); surround.visible = true;
     }
   } finally { root.unmount(); }
+});
+test('Auto drops decorative passes for a slow scene and waits for sustained headroom before restoring them',()=>{
+  let state=adaptWorkbenchDpr(1,1,31,0);
+  assert.equal(state.dpr,.85);assert.equal(sceneQualityBudget('auto',state.dpr).keyShadowSize,0);
+  assert.equal(sceneQualityBudget('auto',state.dpr).bloom,false);
+  const step=(ms:number)=>{state=adaptWorkbenchDpr(state.dpr,1,ms,state.fastSamples);};
+  for(let i=0;i<7;i++)step(8);
+  assert.equal(state.dpr,.85);step(19);assert.equal(state.fastSamples,0);
+  for(let i=0;i<8;i++)step(8);
+  assert.ok(state.dpr>.86);assert.equal(sceneQualityBudget('auto',state.dpr).bloom,true);
+  for(let i=0;i<25;i++)step(6);
+  assert.equal(state.dpr,1);
+  for(let i=0;i<8;i++)step(34);
+  assert.equal(state.dpr,.8);
 });

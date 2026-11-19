@@ -19,7 +19,13 @@ test('lesson 7 open live is accepted from the actual broken path even without a 
   // The helper must not rely on any engine's diagnostic wording or presence.
   result.diagnostics = [];
   const before = structuredClone(document), states = structuredClone(result.deviceStates);
-  assert.equal(assessFaultDiagnosis(document, result, 'open-live', 2, target).accepted, true);
+  const verdict = assessFaultDiagnosis(document, result, 'open-live', 2, target);
+  assert.equal(verdict.accepted, true);
+  const broken = document.wires.find(wire => wire.id === target.wire)!;
+  for (const end of [broken.from, broken.to]) {
+    assert.ok(verdict.explanation.includes(document.components.find(c=>c.id===end.component)!.label));
+  }
+  assert.match(verdict.explanation, /[\d.]+ V/);
   assert.deepEqual(document, before);
   assert.deepEqual(result.deviceStates, states);
 });

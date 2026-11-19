@@ -12,7 +12,7 @@ import { auditOfflineWorker } from './web-offline-worker-audit.mjs';
 const build = fileURLToPath(new URL('../dist-web/', import.meta.url));
 const info = JSON.parse(await readFile(path.join(build, 'offline-manifest.json'), 'utf8'));
 const manifest = JSON.parse(await readFile(path.join(build, 'models', 'manifest.json'), 'utf8'));
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.glb': 'model/gltf-binary', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css', '.webmanifest': 'application/manifest+json' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.glb': 'model/gltf-binary', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.css': 'text/css', '.webmanifest': 'application/manifest+json' };
 const getLocal = pathname => {
   if (!pathname.startsWith(WEB_BASE)) return;
   const local = pathname.slice(WEB_BASE.length) || 'index.html';
@@ -75,8 +75,9 @@ try {
 
   const siteAssets=(await readdir(path.join(build,'site-assets'))).map(file=>'site-assets/'+file);
   assert.ok(siteAssets.includes('site-assets/daylight.hdr') && siteAssets.includes('site-assets/potted-plant.glb'));
-  assert.equal(info.pack.length, manifest.length * 2 + 1 + siteAssets.length);
-  assert.deepEqual(new Set(info.pack.map(asset => asset.path)), new Set([...siteAssets,'models/manifest.json', ...manifest.flatMap(entry => [entry.lowUrl.slice(1), entry.thumbnailUrl.slice(1)])]));
+  const cables = ['single','flat','flex','bell-pair','led-pair','multi-strip'].map(kind=>'cable-samples/'+kind+'.webp');
+  assert.equal(info.pack.length, manifest.length * 2 + 1 + siteAssets.length + cables.length);
+  assert.deepEqual(new Set(info.pack.map(asset => asset.path)), new Set([...cables,...siteAssets,'models/manifest.json', ...manifest.flatMap(entry => [entry.lowUrl.slice(1), entry.thumbnailUrl.slice(1)])]));
   assert.equal(info.bytes, [...info.shell, ...info.pack].reduce((total, asset) => total + asset.bytes, 0));
   for (const entry of manifest) assert.ok(await readFile(getLocal(`${WEB_BASE}${entry.url.slice(1)}`)), `Missing full detail ${entry.url}`);
   const assets = [...info.shell, ...info.pack];
@@ -92,12 +93,25 @@ try {
 
   const script = references.find(url => /\/index-.*\.js$/.test(url.pathname));
   assert.ok(script, 'Missing main application bundle');
-  const executable = await (await fetch(script)).text();
+  const modules=new Map();
+  const pending=[script];
+  while(pending.length){
+    const url=pending.pop();
+    if(modules.has(url.href))continue;
+    assert.ok(url.href.startsWith(scope), 'A script import left the app');
+    const file=await fetch(url);
+    assert.equal(file.status,200,url.href);
+    const source=await file.text();
+    modules.set(url.href,source);
+    for(const match of source.matchAll(/\b(?:import\s*\(\s*|from\s*|import\s*)["'\u0060]((?:\.\.?\/|\/)[^"'\u0060]+\.js)["'\u0060]/g)){
+      pending.push(new URL(match[1],url));
+    }
+  }
   const document = structuredClone(LESSONS.find(lesson => lesson.id === 7).circuit);
   const [simulation, routed] = await Promise.all(['simulation', 'routing'].map(async kind => {
     const worker = info.shell.find(asset => asset.path.includes(`${kind}.worker-`));
     assert.ok(worker, `No ${kind} module in shell cache`);
-    assert.ok(executable.includes(`${WEB_BASE}${worker.path}`), `Wrong ${kind} worker URL in main bundle`);
+    assert.ok([...modules.values()].some(source=>source.includes(`${WEB_BASE}${worker.path}`)), `Missing ${kind} worker URL in the loaded application modules`);
     const file = await fetch(new URL(worker.path, scope));
     assert.match(file.headers.get('content-type'), /javascript/);
     return await messageFromWorker(worker.path, { id: 73, key: 'mobile-audit', document, dt: .25, electricalGeneration: 22 });

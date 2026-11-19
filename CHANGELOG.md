@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.7.0 — Follow the wire
+
+- Three short jobs in Oakfield house let you try the cupboard door, both stair switches and the lighting breaker. Each check follows the voltage at the fitting. Closing the app keeps your place.
+- The switch backs have the recessed case screw and stepped moulding seen on the BG fittings. The ceiling rose now has a separate cable opening and knockout. These features also appear in Economy graphics.
+- The shop, plant, workshop and factory have walk-in work areas matched to their lessons, including a receiving bay, pump gallery and packing line.
+- Oakfield now has a furnished sitting room, bedroom, back hall and study. The socket circuits run between their installed fittings. Follow a selected wire on site or look up its two marked terminals on the drawing.
+- A busy routing worker can finish large builds while reporting its progress. The separate check for a stalled worker still recovers the wire display.
+- Connect shows the two ends of the wire first. The named picker works alongside the 3D terminals. The chapter index shows which lessons you’ve completed through practical work.
+
+- The opening exercise keeps the wall switch and lamp together. Use the rocker on the wall or the labelled control. Open the switch to see the metal contacts move.
+- Wiring steps show the wire marking and the two terminals once. A wrong connection identifies both ends and gives you an Undo action.
+- Operating tests give the reading, its unit or the actual contact position. Fault feedback names the two fittings. Explanations use the markings on the equipment.
+- The distribution boards have recessed breaker handles, separate screw access and wire entries. The fork tester has working dial positions, HOLD, a backlight and a rear view.
+- The cable picker shows cut ends so you can see the difference between solid wire and flex. Bell and LED wire choices work in either connection order.
+
 ## 1.6.0 — A closer look at the fitting
 
 - Rewrote the coursebook, predictions, fault clues and worked answers across 80 lessons. Meter tasks name the fitting and terminal at each probe. Help explains trade words in the step where they appear.

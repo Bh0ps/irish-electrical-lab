@@ -31,47 +31,103 @@ function Cord({points,r,c}:{points:Point[];r:number;c:string}){
 function Stud({x,y,z}:{x:number;y:number;z:number}){
   return <group><Disk p={[x,y,z]} r={.018} d={.008} c={steel}/><Box p={[x,y,z+.005]} s={[.024,.004,.003]} c={rubber}/></group>;
 }
-// Original interpretation of Fluke's T6-600 front/rear photographs and QRG.
-// Proportions follow 259.3 × 61.1 × 43.8 mm. Leads are stowed on the back.
+// Original geometry shaped from Fluke's T6-600 photographs and Quick Reference Guide, pp. 1–2.
+// This is the closed instrument. The fork throat, selector, buttons, dock and leads are separate parts.
+function Shell({shape,depth,z,c}:{shape:THREE.Shape;depth:number;z:number;c:string}){
+  const geo=cached('shell'+shape.uuid+depth,()=>new THREE.ExtrudeGeometry(shape,{
+    depth,curveSegments:12,bevelEnabled:true,bevelSegments:3,bevelSize:.007,bevelThickness:.008,steps:1
+  }));
+  return <mesh geometry={geo} position={[0,0,z-depth/2]} material={material(c)}/>;
+}
+function testerHousing(top:number,bottom:number,waist:number){
+  const s=new THREE.Shape();
+  s.moveTo(-.136,bottom);s.quadraticCurveTo(-.17,bottom,-.177,bottom+.048);
+  s.quadraticCurveTo(-waist,.57,-.224,1.20);s.lineTo(-.221,top-.035);
+  s.quadraticCurveTo(-.218,top,-.186,top);s.lineTo(.186,top);
+  s.quadraticCurveTo(.218,top,.221,top-.035);s.lineTo(.224,1.2);
+  s.quadraticCurveTo(waist,.57,.177,bottom+.048);s.quadraticCurveTo(.17,bottom,.136,bottom);
+  s.closePath();return s;
+}
+const housingShape=testerHousing(1.485,.157,.222), seamShape=testerHousing(1.478,.16,.224);
+const forkShape=(()=>{
+  const s=new THREE.Shape();
+  s.moveTo(-.203,1.427);s.quadraticCurveTo(-.200,1.77,-.177,1.915);
+  s.quadraticCurveTo(-.174,1.947,-.140,1.965);s.quadraticCurveTo(-.084,2.012,-.079,1.941);
+  s.lineTo(-.079,1.641);s.absarc(0,1.641,.079,Math.PI,2*Math.PI,false);
+  s.lineTo(.079,1.941);s.quadraticCurveTo(.084,2.012,.14,1.965);
+  s.quadraticCurveTo(.174,1.947,.177,1.915);s.quadraticCurveTo(.20,1.77,.203,1.427);
+  s.closePath();return s;
+})();
+const frontLabel:Outline=[[-.149,.202],[-.181,.53],[-.198,.817],[-.18,.849],[-.10,.852],[.045,.578],[.179,.613],[.151,.211],[.135,.195]];
+const redLead='#bd362e', slate='#444546', testYellow='#f5b51d';
+function Shaft({x,y,z,r1,r2,h,c}:{x:number;y:number;z:number;r1:number;r2:number;h:number;c:string}){
+  const g=cached('shaft'+[r1,r2,h].join('/'),()=>new THREE.CylinderGeometry(r1,r2,h,18));
+  return <mesh position={[x,y,z]} geometry={g} material={material(c)}/>;
+}
 function ForkTester({dialPosition,held,redOut,blackOut}:{dialPosition:number;held:boolean;redOut:boolean;blackOut:boolean}) {
   return <>
     <group userData={{partId:'body'}}>
-      <Box p={[0,.64,0]} s={[.454,1.13,.291]} c={rubber} r={.07}/>
-      <Box p={[0,.86,.012]} s={[.481,.86,.308]} c={amber} r={.064}/>
-      <Box p={[0,.44,.037]} s={[.436,.73,.26]} c={amber} r={.053}/>
+      <Shell shape={seamShape} depth={.04} z={-.015} c="#825614"/>
+      <Shell shape={housingShape} depth={.138} z={.071} c={testYellow}/>
+      <Shell shape={housingShape} depth={.084} z={-.078} c="#e8a51a"/>
+      <Box p={[0,1.408,.006]} s={[.476,.030,.288]} r={.013} c={testYellow}/>
+      <Plate outline={frontLabel} depth={.007} z={.152} color={slate}/>
+      <Box p={[0,.137,-.006]} s={[.30,.099,.229]} r={.033} c={rubber}/>
+      <Box p={[0,.741,-.140]} s={[.211,1.065,.030]} r={.030} c="#a27323"/>
+      <Box p={[0,.744,-.160]} s={[.203,1.049,.024]} r={.027} c={testYellow}/>
+      <Box p={[0,1.304,-.136]} s={[.287,.119,.037]} r={.014} c={testYellow}/>
+      <Box p={[0,1.317,-.162]} s={[.131,.035,.021]} r={.008} c="#c1891e"/>
+      <Disk p={[0,.281,-.180]} r={.027} d={.012} c="#806225"/>
+      <Box p={[0,.281,-.188]} s={[.035,.006,.006]} c={rubber} angle={.55}/>
       {[-1,1].map(side=><group key={side}>
-        <Box p={[side*.217,.59,.012]} s={[.036,.64,.245]} r={.017} c={rubber}/>
-        {Array.from({length:6},(_,i)=><Box key={i} p={[side*.224,.38+i*.072,.008]} s={[.015,.023,.221]} c={trim}/>)}
+        <Stud x={side*.151} y={1.485} z={-.101}/>
+        <Shaft x={side*.062} y={.075} z={0} r1={.033} r2={.023} h={.116} c={rubber}/>
+        <Box p={[side*.061,.203,.157]} s={[.084,.026,.009]} r={.004} c={side<0?redLead:rubber}/>
       </group>)}
-      <Box p={[0,1.263,0]} s={[.494,.067,.319]} c={rubber} r={.024}/>
-      <Box p={[0,.786,.18]} s={[.405,.259,.035]} c={trim} r={.022}/>
-      <Box p={[0,.72,-.161]} s={[.35,.80,.025]} c={trim} r={.025}/>
-      {[[-.135,.37],[.135,.37]].map(([x,y])=><Stud key={x} x={x} y={y} z={.172}/>)}
     </group>
     <group userData={{partId:'sensing'}}>
-      <Box p={[0,1.403,0]} s={[.39,.28,.233]} c={amber} r={.057}/>
-      {[-1,1].map(side=><group key={side}>
-        <Box p={[side*.13,1.698,0]} s={[.101,.46,.195]} c={amber} r={.039} angle={-side*.021}/>
-        <Box p={[side*.135,1.927,.002]} s={[.099,.10,.173]} c={rubber} r={.038}/>
-        <Box p={[side*.126,1.586,.101]} s={[.052,.017,.007]} c={trim}/>
-      </group>)}
+      <Shell shape={forkShape} depth={.174} z={0} c={testYellow}/>
+      <Cord points={[[-.104,1.664,.097],[-.097,1.598,.097],[-.062,1.553,.097],[0,1.531,.097],[.062,1.553,.097],[.097,1.598,.097],[.104,1.664,.097]]} r={.006} c={redLead}/>
     </group>
-    <group userData={{partId:'display'}}><Box p={[0,.795,.203]} s={[.346,.165,.014]} r={.006} c="#a9bc96"/></group>
-    <group userData={{partId:'mode'}}><Disk p={[-.103,.61,.186]} r={.048} d={.024} c={trim}/><Disk p={[-.103,.61,.201]} r={.037} d={.009} c={amber}/></group>
-    <group userData={{partId:'hold'}}><Box p={[.089,.61,held?.197:.208]} s={[.12,.066,.026]} c={trim} r={.019}/><Box p={[.089,.61,held?.212:.223]} s={[.065,.010,.005]} c="#dddcd4"/></group>
-    <group userData={{partId:'actuator',animation:'testerDial',axis:'z'}} position={[0,.39,.18]} rotation={[0,0,-dialPosition*.59]}>
-      <Disk p={[0,0,0]} r={.133} d={.046} c={rubber}/><Box p={[0,.012,.036]} s={[.076,.20,.047]} c={trim} r={.025}/>
-      <Box p={[0,.078,.063]} s={[.045,.026,.005]} c="#eee9d8"/>
+    <group userData={{partId:'display'}}>
+      <Box p={[0,1.286,.153]} s={[.408,.266,.036]} r={.022} c="#b78622"/>
+      <Box p={[0,1.285,.174]} s={[.386,.245,.024]} r={.015} c="#393a37"/>
+      <Box p={[0,1.285,.190]} s={[.365,.222,.013]} r={.013} c="#beccaa"/>
     </group>
-    <group userData={{partId:'ground'}}><Disk p={[0,.72,-.183]} r={.086} d={.015} c={rubber}/><Disk p={[0,.72,-.194]} r={.055} d={.009} c="#a4a5a2"/></group>
+    <group userData={{partId:'backlight'}}><Box p={[-.133,1.084,.157]} s={[.085,.048,.023]} c={rubber}/></group>
+    <group userData={{partId:'mode'}}><Box p={[-.018,1.084,.156]} s={[.090,.050,.025]} c="#9f751b"/><Box p={[-.018,1.084,.171]} s={[.073,.038,.012]} c={testYellow}/></group>
+    <group userData={{partId:'display'}}><Plate outline={[[.087,1.061],[.125,1.115],[.163,1.061]]} depth={.008} z={.156} color={rubber}/></group>
+    <group userData={{partId:'hold'}}><Disk p={[-.139,.982,.158]} r={.055} d={.024} c={rubber}/><Disk p={[-.139,.982,held?.174:.180]} r={.044} d={.019} c="#6d5185"/></group>
+    <group userData={{partId:'actuator',animation:'testerDial',axis:'z'}} position={[.070,.837,.165]} rotation={[0,0,-dialPosition*.55]}>
+      <Disk p={[0,0,0]} r={.155} d={.028} c="#72551d"/><Disk p={[0,0,.023]} r={.148} d={.030} c={testYellow}/>
+      {Array.from({length:15},(_,i)=>{
+        const a=-.51+i*.137;
+        return <Disk key={i} p={[.130*Math.cos(a),.130*Math.sin(a),.043]} r={.0095} d={.010} c="#d79716"/>;
+      })}
+      <Disk p={[0,-.125,.047]} r={.017} d={.008} c="#6c551f"/><Disk p={[0,-.125,.053]} r={.012} d={.005} c="#f9c738"/>
+    </group>
+    <group userData={{partId:'ground'}}>
+      <Disk p={[0,.916,-.180]} r={.083} d={.015} c={rubber}/>
+      <Disk p={[0,.916,-.190]} r={.064} d={.008} c={testYellow}/><Disk p={[0,.916,-.200]} r={.042} d={.014} c="#525252"/>
+      <Box p={[.024,.954,-.204]} s={[.014,.054,.005]} c={rubber} angle={-.48}/>
+    </group>
     <group userData={{partId:'probes'}}>
-      {[-1,1].map(side=><group key={side}>
-        <Box p={[side*.14,1.01,-.185]} s={[.08,.21,.06]} c={rubber}/>
-        <group userData={{probeSide:side>0?'red':'black',partId:'probes'}} visible={side>0?!redOut:!blackOut}>
-        <Box p={[side*.14,.946,-.215]} s={[.069,.26,.05]} r={.023} c={side>0?'#ad322b':rubber}/>
-        <Box p={[side*.14,.775,-.21]} s={[.018,.087,.016]} c={steel}/>
-        <Cord points={[[side*.14,1.07,-.21],[side*.202,1.10,-.20],[side*.212,.66,-.18],[side*.204,.16,-.105],[side*.15,.082,-.033],[side*.138,.142,0]]} r={.013} c={side>0?'#a02a28':rubber}/></group>
-      </group>)}
+      {[-1,1].map(side=>{
+        const x=side*.149,col=side<0?redLead:rubber;
+        return <group key={side}>
+          <Box p={[x,.956,-.151]} s={[.079,.61,.063]} r={.025} c="#a67625"/>
+          <Box p={[x,.525,-.155]} s={[.090,.162,.070]} r={.014} c={testYellow}/>
+          <group userData={{probeSide:side<0?'red':'black',partId:'probes'}} visible={side<0?!redOut:!blackOut}>
+            <Shaft x={x} y={.801} z={-.198} h={.552} r1={.029} r2={.030} c={col}/>
+            <Shaft x={x} y={1.086} z={-.198} h={.023} r1={.043} r2={.041} c={col}/>
+            <Shaft x={x} y={1.169} z={-.198} h={.152} r1={.011} r2={.023} c={col}/>
+            <Shaft x={x} y={1.280} z={-.198} h={.070} r1={.003} r2={.009} c={steel}/>
+            <Shaft x={x} y={.375} z={-.198} h={.304} r1={.034} r2={.025} c={rubber}/>
+            {[0,1,2].map(i=><Shaft key={i} x={x} y={.471+i*.024} z={-.198} h={.009} r1={.036} r2={.036} c={trim}/>)}
+            <Cord points={[[side*.062,.017,0],[side*.07,.010,-.12],[side*.119,.040,-.187],[x,.115,-.198],[x,.224,-.198]]} r={.015} c={rubber}/>
+          </group>
+        </group>;
+      })}
     </group>
   </>;
 }

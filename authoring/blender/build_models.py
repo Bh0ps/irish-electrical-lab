@@ -13,6 +13,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent))
 from detail_library import enrich, REVISION, FAMILY_REQUIREMENTS
 from service_details import add_service_details
 from lighting_backs import add_lighting_back
+from din_protection import build_din_protection
 from power_accessories import build_power_accessory
 from shaver_face import build_shaver_face
 from png_metadata import strip_text_metadata
@@ -488,6 +489,8 @@ def render_thumbnail(entry):
     root=next(obj for obj in bpy.context.scene.objects if obj.name.startswith('Electrical Lab'));set_view(root,'normal');camera=studio()
     # A transparent studio render supplies reusable local menu icons. This is
     # the actual full-detail asset, not a painted illustration.
+    for obj in root.children_recursive:
+        if obj.type=='MESH' and any(p.get('benchOnly') for p in ancestors(obj)):obj.hide_render=True
     floor=next(obj for obj in bpy.context.scene.objects if obj.name=='Studio bench');floor.hide_render=True
     bpy.context.scene.render.film_transparent=True;fit_camera(root,camera,(1.6,-3.8,1.35),1.12)
     bpy.context.scene.render.resolution_x=192;bpy.context.scene.render.resolution_y=192
@@ -558,12 +561,20 @@ def export_lod(root,path):
         # Engraved text needs the close-inspection mesh. At distance its tiny
         # triangles add cost without legible information; terminal identity,
         # physical clamp and live canonical picking anchor are retained.
-        if obj.type=='MESH' and any(m.name.startswith('Rear terminal legend') for m in obj.data.materials):
+        if obj.type=='MESH' and any(m.name.startswith(('Rear terminal legend','DIN diagram close-up print','Switch close-up rating')) for m in obj.data.materials):
             bpy.data.objects.remove(obj,do_unlink=True);continue
         if obj.type!='MESH' or len(obj.data.polygons)<80:continue
         if any('legend' in m.name.lower() or 'marking' in m.name.lower() for m in obj.data.materials):continue
         if obj.data.users>1:obj.data=obj.data.copy()
-        modifier=obj.modifiers.new('Distance geometry simplification','DECIMATE');modifier.ratio=.24 if any(p.get('terminalId') for p in ancestors(obj)) else .18
+        modifier=obj.modifiers.new('Distance geometry simplification','DECIMATE')
+        owner=next((p for p in ancestors(obj) if p.get('detailId') or p.get('terminalId') or p.get('partId')),root)
+        if owner.get('preservePlanarLod'):
+            # Collapsing large drilled faces warped the flat mouldings into
+            # visible triangular ridges. Dissolve coplanar faces on these parts.
+            modifier.decimate_type='DISSOLVE'
+            modifier.angle_limit=math.radians(1)
+        else:
+            modifier.ratio=.24 if any(p.get('terminalId') for p in ancestors(obj)) else .18
         bpy.context.view_layer.objects.active=obj;bpy.ops.object.modifier_apply(modifier=modifier.name)
     export_glb(path)
     return sum(sum(len(p.vertices)-2 for p in obj.data.polygons) for obj in root.children_recursive if obj.type=='MESH')
@@ -588,6 +599,8 @@ def main():
         workshop=any(o.get('detailId') for o in root.children_recursive) or recipe['component']['type'] in ('forktester','stripper','crimper','torquedriver')
         if recipe['component']['type'] == 'shaveroutlet':
             features=build_shaver_face(recipe,root,api)
+        elif recipe['component']['type'] in ('mcb','mcb3','rcd','rcd3','rcbo'):
+            features=build_din_protection(recipe,root,api)
         elif recipe['component']['type'] in ('fcu','socket'):
             features=build_power_accessory(recipe,root,api)
         else:

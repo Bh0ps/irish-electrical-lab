@@ -64,7 +64,7 @@ export function GraphicEffects({ scenery = DEFAULT_SCENERY, quality = 'auto' }: 
   }, [gl, preset.exposure, invalidate]);
   useLayoutEffect(() => {
     failed.current = false;
-    if (quality !== 'economy') {
+    if (budget.ambientOcclusion || budget.bloom) {
       try { pipeline.current = createSceneEffectPipeline(gl, scene, camera, budget); }
       catch (error) { failed.current = true; window.dispatchEvent(new CustomEvent('electrical-lab-graphics-fallback', { detail: { stage: 'post processing', message: String(error) } })); }
     }

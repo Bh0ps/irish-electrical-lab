@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createAppServer } = require('./server.cjs');
 const { ORIGIN, MAX_JSON_BYTES, allowedReference, validKind, safeFileName } = require('./security.cjs');
+const { verificationProfile, isolateVerification } = require('./verification-profile.cjs');
 const PROFILE_NAME = 'Irish Electrical Lab';
 const startedAt = Date.now();
 const verifyDesktop = process.argv.includes('--verify-desktop');
@@ -13,14 +14,24 @@ const verifyLifecycle = process.argv.includes('--verify-lifecycle') || process.a
 const verifyRetention = process.argv.includes('--verify-retention-seed') || process.argv.includes('--verify-retention-check');
 const verifyPortConflict = process.argv.includes('--verify-port-conflict');
 const verificationMode = verifyDesktop || verifyGuidedBuild || verifyLifecycle || verifyRetention;
+let auditProfile;
+try {
+  auditProfile = verificationProfile(process.argv);
+  app.setName(PROFILE_NAME);
+  if (auditProfile) isolateVerification(app, auditProfile);
+  else app.setPath('userData', path.join(app.getPath('appData'), PROFILE_NAME));
+} catch (error) {
+  process.stderr.write(error.message + '\n');
+  app.exit(2);
+  return;
+}
 if (verificationMode) process.on('uncaughtException', error => {
   try { const directory = path.join(app.getPath('userData'), 'verification'); fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(directory, 'desktop-startup-error.json'), JSON.stringify({ message: error.message, stack: error.stack, recordedAt: new Date().toISOString() }, null, 2)); } catch { /* Preserve the original startup failure. */ }
   app.quit();
 });
 const consoleErrors = [];
+const linkedShaderWarnings = [];
 const networkRequests = [];
-app.setName(PROFILE_NAME);
-app.setPath('userData', path.join(app.getPath('appData'), PROFILE_NAME));
 app.setAppUserModelId('ie.irish-electrical-lab.desktop');
 const hasLock = app.requestSingleInstanceLock();
 let mainWindow;
@@ -33,6 +44,10 @@ if (!hasLock) {
     fs.writeFileSync(path.join(output, 'desktop-startup-error.json'), JSON.stringify({ message: 'Another application instance owns the study profile; this verification launch was forwarded instead of executed.', recordedAt: new Date().toISOString() }, null, 2));
   }
   app.quit();
+}
+else if (process.argv.includes('--verify-secondary-instance')) {
+  // A lifecycle probe may only forward to its existing primary.
+  app.exit(2);
 }
 else {
   app.on('second-instance', () => { if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.show(); mainWindow.focus(); } });
@@ -79,7 +94,19 @@ async function start() {
     icon: app.isPackaged ? path.join(process.resourcesPath, 'icon.ico') : path.join(__dirname, '../assets/icon.ico'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false, webSecurity: true, spellcheck: false, backgroundThrottling: !verificationMode } });
   mainWindow.once('ready-to-show', () => { if (settings.maximized) mainWindow.maximize(); if (!verificationMode) mainWindow.show(); });
-  mainWindow.webContents.on('console-message', details => { if (details.level === 'warning' || details.level === 'error') consoleErrors.push(details.message); });
+  mainWindow.webContents.on('console-message', details => {
+    if(details.level!=='warning'&&details.level!=='error')return;
+    const prefix='THREE.WebGLProgram: Program Info Log:';
+    // Three emits this warning only after a successful link. The error path
+    // starts with "Shader Error" and still fails verification.
+    if(details.level==='warning' && details.message.startsWith(prefix)){
+      const lines=details.message.slice(prefix.length).replaceAll('\u0000','').trim().split(/\r?\n/);
+      if(lines.every(line=>/: warning X3595: gradient instruction used in a loop|: warning X4000: use of potentially uninitialized variable \(f_ApplyFXAA\)/.test(line))){
+        linkedShaderWarnings.push(details.message);return;
+      }
+    }
+    consoleErrors.push(details.message);
+  });
   mainWindow.on('close', persistBounds);
   mainWindow.on('enter-full-screen', () => mainWindow.webContents.send('electrical:fullscreen-changed', true));
   mainWindow.on('leave-full-screen', () => mainWindow.webContents.send('electrical:fullscreen-changed', false));
@@ -118,13 +145,14 @@ async function start() {
     const report = await require('./guided-build-diagnostics.cjs').runGuidedBuildDiagnostics({ app, window: mainWindow, directory, output, fixtures, dialog });
     report.packaged = app.isPackaged;
     report.consoleErrors = consoleErrors;
+    report.linkedShaderWarnings = linkedShaderWarnings;
     report.network = { observed: networkRequests.length, remoteRequests: networkRequests.filter(request => request.blocked) };
     report.passed = report.passed && consoleErrors.length === 0 && report.network.remoteRequests.length === 0;
     fs.writeFileSync(path.join(output, 'desktop-guided-build-report.json'), JSON.stringify(report, null, 2));
     app.quit();
     return;
   }
-  if (verifyLifecycle) await require('./lifecycle-diagnostics.cjs').runLifecycleDiagnostics({ app, window: mainWindow, settings, startedAt });
+  if (verifyLifecycle) await require('./lifecycle-diagnostics.cjs').runLifecycleDiagnostics({ app, window: mainWindow, settings, startedAt, run: auditProfile.run });
   if (verifyRetention) await require('./retention-diagnostics.cjs').runRetentionDiagnostics({ app, window: mainWindow });
-  if (verifyDesktop) await require('./diagnostics.cjs').runDesktopDiagnostics({ app, window: mainWindow, directory, startedAt, consoleErrors, networkRequests, dialog });
+  if (verifyDesktop) await require('./diagnostics.cjs').runDesktopDiagnostics({ app, window: mainWindow, directory, startedAt, consoleErrors, linkedShaderWarnings, networkRequests, dialog });
 }

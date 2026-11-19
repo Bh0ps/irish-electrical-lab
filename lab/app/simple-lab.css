@@ -346,3 +346,23 @@ body:has(.mobile-lab) [data-slot=dialog-content] button { min-height: 44px; }
   margin-block: 1rem .5rem;
   font: 650 1rem/1.35 system-ui, sans-serif;
 }
+
+.simple-lab .test-observations { padding:.7rem .8rem; border-inline-start:3px solid var(--lab-accent,#3f7668); }
+.simple-lab .test-observations h4 { margin:0 0 .4rem; font-size:1rem; }
+.simple-lab .test-observations p { margin:.4rem 0; line-height:1.4; }
+
+.simple-lab .switch-readings { display:flex; flex-wrap:wrap; gap:.55rem 2rem; margin:.5rem 0; }
+.simple-lab .switch-readings dt { font-size:.85rem; }
+.simple-lab .switch-readings dd { font-size:1.25rem; font-weight:650; font-variant-numeric:tabular-nums; margin:0; }
+
+.wire-destinations{margin:0 0 .65rem;color:#21392c}
+.wire-destinations p{font-weight:650;margin:.1rem 0 .55rem}
+.wire-destinations ol{list-style:none;margin:0;padding:0;border-left:2px solid #c2cfc4}
+.wire-destinations li{display:grid;grid-template-columns:3.1em 1fr;gap:.3rem;padding:.3rem .65rem;align-items:baseline}
+.wire-destinations li span{color:#48594d;font-size:.85rem}
+.wire-destinations li b{font-size:.9rem;font-weight:550;overflow-wrap:anywhere}
+.wire-destinations li.current{background:#eaf1e8;border-left:2px solid #376e4a;margin-left:-2px}
+.wire-destinations + .manual-probes{margin-block:.6rem}
+.point-picker:focus-visible{outline:2px solid #366747;outline-offset:2px}
+
+.scene-loading{display:grid;place-items:center;min-height:10rem;height:100%;color:#38523e;background:#e6e9e3}

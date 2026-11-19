@@ -7,9 +7,10 @@ type Feature = [id:string,part:string,title:string,explanation:string,face?:'fro
 const rocker:Feature[]=[
   ['ribbed-switch-plate','body','Faceplate ribs','The ridges stiffen the plate. The two round fixing holes line it up with the wall box.'],
   ['recessed-switch-cassette','body','Switch mechanism','This grey case holds the moving contact. A wire enters through a rectangular opening. A separate opening at the end gives access to its screw.'],
+  ['switch-case-fixings','body','Case screws','Look for two screws at the top and one in the curved recess below. These hold the case together. The screws that grip the wires are reached from the ends.'],
 ];
 const rose:Feature[]=[
-  ['cable-entry-knockouts','body','Cable openings','Fixed cables enter the rose through its base. The other holes take the fixing screws.'],
+  ['cable-entry-knockouts','body','Cable openings','The rectangular hole lets a cable through. The panel marked REMOVE below it is a knockout. Removing it makes the opening bigger. The round holes and the slot take the fixing screws.'],
   ['three-insulated-terminal-groups','body','Three separate brass links','Each brass strip joins its own row of wires. The three rows carry neutral, permanent line and switched line. A fourth clamp below joins the protective conductors.'],
   ['cover-fixing','cover','Pendant cover','The cover screws onto the base. The flex to the lamp passes through the smooth opening in its centre.','front'],
 ];

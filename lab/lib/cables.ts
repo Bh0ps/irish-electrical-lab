@@ -10,7 +10,6 @@ const coreSets:Record<CableKind,readonly CableCore[]>={single:['brown'],flex:CAB
 export const cableCores=(kind:CableKind)=>coreSets[kind];
 export const cableKinds=Object.keys(coreSets) as CableKind[];
 export const isSheathKind=(value:unknown):value is CableRun['kind']=>typeof value==='string'&&value!=='single'&&Object.hasOwn(coreSets,value);
-export const sheathStyle=(kind:CableKind)=>({flat:kind==='flat'||kind==='led-pair'||kind==='multi-strip',stranded:['flex','led-pair','multi-strip'].includes(kind),radius:kind==='bell-pair'?.68:kind==='led-pair'?.80:1,colour:kind==='flat'?'#919998':kind==='multi-strip'?'#dad9d3':kind==='led-pair'?'#31353a':'#e5e0d4'});
 export interface CableChoice { kind: CableKind; runId?: string; core?: CableCore; newRun?: boolean }
 
 function sameHousings(run: CableRun, wire: Wire) {
@@ -49,6 +48,17 @@ export function suggestedCableChoice(document: CircuitDocument, target?: Wire, e
   return {kind:'single'};
 }
 
+function suggestedCore(kind: CableKind, wire: Wire): CableCore {
+  const markings = [wire.from.terminal, wire.to.terminal];
+  if (kind === 'bell-pair') return markings.includes('-') || markings.includes('AC2') ? 'white' : 'red';
+  if (kind === 'led-pair' || kind === 'multi-strip') {
+    if (wire.role === 'DC-') return 'black';
+    if (wire.role === 'control') return kind === 'led-pair' ? 'black' : markings.includes('C') ? 'yellow' : 'white';
+    return 'red';
+  }
+  return nominalCore(wire.role);
+}
+
 /** Only terminated cores become wires in the existing simulation graph. An available
  * core has two loose ends, even if the other cores in the same sheath carry current. */
 export function addCableConnection(document: CircuitDocument, wire: Wire, choice: CableChoice): {document: CircuitDocument; choice: CableChoice} {
@@ -59,7 +69,7 @@ export function addCableConnection(document: CircuitDocument, wire: Wire, choice
   }
   const runs = document.cableRuns ?? [];
   const cores=cableCores(choice.kind);
-  const core=choice.core??(choice.kind==='bell-pair'?(wire.from.terminal==='-'||wire.to.terminal==='AC2'?'white':'red'):choice.kind==='led-pair'||choice.kind==='multi-strip'?(wire.role==='DC-'?'black':wire.role==='control'?choice.kind==='multi-strip'?(wire.to.terminal==='C'?'yellow':'white'):'black':'red'):nominalCore(wire.role));
+  const core = choice.core ?? suggestedCore(choice.kind, wire);
   if(!cores.includes(core))throw Error('Choose a core present in this cable.');
   const inUse = (run: CableRun) => document.wires.some(w => w.cable?.runId === run.id && w.cable.core === core);
   let run = runs.find(r => r.id === choice.runId && r.kind === choice.kind);

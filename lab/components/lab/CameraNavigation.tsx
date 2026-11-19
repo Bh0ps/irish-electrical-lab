@@ -31,12 +31,12 @@ const heldInput=(keys:Set<string>):CameraInput=>({
   up:Number(keys.has('KeyE')||keys.has('ArrowUp'))-Number(keys.has('KeyQ')||keys.has('ArrowDown')),
   fast:keys.has('ShiftLeft')||keys.has('ShiftRight'),
 });
-function presetPose(props:CameraNavigationProps,camera:THREE.Camera):CameraPose {
+function presetPose(props:CameraNavigationProps,camera:THREE.Camera,canvas:HTMLCanvasElement):CameraPose {
   const action=props.cameraCommand.action,selected=props.document.components.find(c=>c.id===props.selected),focus=!!selected&&['focus','focus-service-detail','rear'].includes(action);
   const starter=action==='first-light'&&props.document.lessonId===7;
   const wirePoints=action==='focus-wire'&&props.selectedWire?props.routing.routes.get(props.selectedWire):undefined;
-  const instrument=action==='focus-instrument'?props.nodes.get('@meter'):undefined;
-  const bounds=instrument?new THREE.Box3().setFromObject(instrument):wirePoints?.length?new THREE.Box3().setFromPoints(wirePoints.map(p=>new THREE.Vector3(...p))):starter?sceneBounds({...props.document,components:props.document.components.filter(c=>c.id==='switch'||c.id==='light')}):focus?selectedPartBounds(selected!,action==='rear'?undefined:props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
+  const instrument=action==='focus-instrument'||action==='rear-instrument'?props.nodes.get('@meter'):undefined;
+  const bounds=instrument?new THREE.Box3().setFromObject(instrument,true):wirePoints?.length?new THREE.Box3().setFromPoints(wirePoints.map(p=>new THREE.Vector3(...p))):starter?sceneBounds({...props.document,components:props.document.components.filter(c=>c.id==='switch'||c.id==='light')}):focus?selectedPartBounds(selected!,action==='rear'?undefined:props.selectedPart,props.nodes.get(selected!.id)):sceneBounds(props.document,props.routing.routes);
   const target=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),perspective=camera as THREE.PerspectiveCamera,aspect=perspective.aspect||1,fov=THREE.MathUtils.degToRad(perspective.fov||43);
   const distance=instrument?Math.max(1.35,Math.max(size.y,size.x/aspect,size.z/aspect)*.66/Math.tan(fov/2)):starter||wirePoints?.length?Math.max(2.6,Math.max(size.x/aspect,size.y,size.z)*.69/Math.tan(fov/2)):Math.max(6.3,Math.max(size.x/aspect,size.z,size.y)*1.75);
   const offset=new THREE.Vector3(3.7,5.8,9).normalize().multiplyScalar(distance);
@@ -44,7 +44,18 @@ function presetPose(props:CameraNavigationProps,camera:THREE.Camera):CameraPose 
   if(action==='top')offset.set(0,distance,.01);
   if(action==='front')offset.set(0,distance*.25,distance);
   const definition=selected&&COMPONENTS[selected.type],rear=action==='rear'||action==='focus-service-detail'||action==='focus'&&selected&&definition&&getComponentTerminals(selected,definition).some(t=>props.selectedPart==='terminals'||t.id===props.selectedPart);
-  if(instrument){offset.set(.08,.11,1).applyQuaternion(instrument.getWorldQuaternion(new THREE.Quaternion())).normalize().multiplyScalar(distance);offset.y=Math.max(.14*distance,offset.y);}
+  if(instrument){
+    offset.set(action==='rear-instrument'?-.10:.08,.10,action==='rear-instrument'?-1:1).applyQuaternion(instrument.getWorldQuaternion(new THREE.Quaternion()));
+    offset.y=Math.max(.12,offset.y);offset.normalize();
+    // The view buttons sit over the canvas. Centre the whole tester in the space below them.
+    const area=canvas.getBoundingClientRect();
+    const toolbar=canvas.closest('.canvas-wrap')?.querySelector('.toolbar:not([hidden])');
+    const covered=THREE.MathUtils.clamp(((toolbar?.getBoundingClientRect().bottom??area.top)-area.top)/Math.max(1,area.height),0,.65);
+    const framing=inspectionDistance(bounds,offset,aspect,fov)/(1-covered);
+    const cameraUp=new THREE.Vector3(0,1,0).addScaledVector(offset,-offset.y).normalize();
+    target.addScaledVector(cameraUp,framing*Math.tan(fov/2)*covered);
+    offset.multiplyScalar(framing);
+  }
   else if(focus){if(rear&&definition){offset.fromArray(terminalInspectionDirection(selected!,definition,getComponentTerminals(selected!,definition).some(t=>t.id===props.selectedPart)?props.selectedPart:undefined));}else offset.set(.28,.2,1);offset.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),selected!.rotation);offset.multiplyScalar(inspectionDistance(bounds,offset,aspect,fov));}
   else if(action==='rear')offset.set(0,distance*.25,-distance);
   const position=target.clone().add(offset).toArray() as Vec3,to=target.toArray() as Vec3;
@@ -266,7 +277,7 @@ export default function CameraNavigation(props:CameraNavigationProps) {
     const current=latest.current,now=performance.now(),dt=lastFrame.current?(now-lastFrame.current)/1000:1/60;lastFrame.current=now;
     if(modalOpen.current||current.dragging)return;
     if(current.cameraCommand.id!==lastCommand.current&&!(current.routingPending&&current.cameraCommand.action==='fit')) {
-      lastCommand.current=current.cameraCommand.id;keys.current.clear();navigation.current=stopCameraNavigation(navigation.current);const pose=presetPose(current,frameCamera);
+      lastCommand.current=current.cameraCommand.id;keys.current.clear();navigation.current=stopCameraNavigation(navigation.current);const pose=presetPose(current,frameCamera,gl.domElement);
       if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){transition.current=null;navigation.current=createCameraNavigationState(pose);}
       else transition.current=createCameraTransition(navigation.current,pose);
       invalidate();

@@ -12,11 +12,11 @@ export interface LessonStage {
 export const LESSON_STAGE_ORDER: readonly LessonStageId[] = ['look', 'predict', 'build', 'try', 'measure', 'fix'];
 const STAGES: Record<LessonStageId, { title: string; description: string }> = {
   look: { title: 'Look', description: 'Find the equipment and learn what its parts do.' },
-  predict: { title: 'Predict', description: 'Decide what you expect before trying it.' },
-  build: { title: 'Build', description: 'Connect the actual terminals with the simulated sources isolated.' },
-  try: { title: 'Try', description: 'Operate the controls and observe their response.' },
-  measure: { title: 'Measure', description: 'Record real simulated readings and explain what they show.' },
-  fix: { title: 'Fix', description: 'Investigate a fault, repair its cause and retest.' },
+  predict: { title: 'Predict', description: 'What do you think will happen?' },
+  build: { title: 'Build', description: 'Switch off the bench supplies, then join the marked terminals.' },
+  try: { title: 'Try', description: 'Try the controls and watch what changes.' },
+  measure: { title: 'Measure', description: 'Take a meter reading. What does it tell you?' },
+  fix: { title: 'Fix', description: 'Find the fault, repair it and test again.' },
 };
 const ACTIVITY_STAGE: Record<LessonActivity['kind'], LessonStageId> = {
   inspect: 'look', predict: 'predict', connect: 'build', operate: 'try',

@@ -34,53 +34,58 @@ export function assessFaultDiagnosis(
   challenge: DiagnosisTarget,
   evidence?: MeasurementEvidence[],
 ): FaultDiagnosisAssessment {
-  if (!result || result.revision !== document.revision || !result.converged) return reject('Wait for a current, resolved circuit result before submitting a diagnosis.');
+  if (!result || result.revision !== document.revision || !result.converged) return reject('Wait for the bench reading. If it stays blank, choose Test circuit.');
   if(evidence!==undefined){const measured=validateDiagnosisEvidence(document,result,evidence,challenge);if(!measured.accepted)return reject(measured.explanation);}
-  else if (!Number.isFinite(observations) || observations < 2) return reject('Take at least two probe observations before submitting a diagnosis.');
+  else if (!Number.isFinite(observations) || observations < 2) return reject('Take two meter readings before choosing the fault.');
   const enabled = document.faults.filter(fault => fault.enabled);
   const fault = enabled.find(candidate => candidate.type === challenge.fault && (!challenge.wire || candidate.wire === challenge.wire) && (!challenge.component || candidate.component === challenge.component));
-  if (!fault || (!challenge.wire && !challenge.component)) return reject('The authored challenge defect is not active at its expected target. Restart the challenge.');
-  if (enabled.length !== 1) return reject('Isolate the challenge defect before diagnosing it; other injected faults make this evidence ambiguous.');
-  if (diagnosis !== fault.type) return reject('That diagnosis does not match the defect at the investigated challenge target.');
+  if (!fault || (!challenge.wire && !challenge.component)) return reject('The practice fault is missing from this circuit. Restart fault practice.');
+  if (enabled.length !== 1) return reject('There is more than one practice fault on the bench. Restart fault practice to work on one at a time.');
+  if (diagnosis !== fault.type) return reject('That fault does not fit these readings. Follow the feed and return wires, then try again.');
   const targetComponent = fault.component && document.components.find(component => component.id === fault.component);
-  if (fault.component && !targetComponent) return reject('The challenge equipment has been removed. Restart the challenge.');
+  if (fault.component && !targetComponent) return reject('The fitting you need has been removed. Restart fault practice to put it back.');
   const wire = fault.wire && document.wires.find(candidate => candidate.id === fault.wire);
-  if (fault.wire && !wire) return reject('The challenge conductor has been removed. Restart the challenge.');
+  if (fault.wire && !wire) return reject('The wire you need has been removed. Restart fault practice to put it back.');
   if (wire && [wire.from, wire.to].some(endpoint => {
     const component = document.components.find(candidate => candidate.id === endpoint.component);
     return !component || !COMPONENTS[component.type]?.terminals.some(terminal => terminal.id === endpoint.terminal);
-  })) return reject('The challenge conductor no longer has valid terminal endpoints.');
+  })) return reject('One end of the wire is missing its terminal. Check both ends on the bench.');
 
   try {
     const clear = repaired(document, fault);
     if (openFaults.has(fault.type)) {
-      if (!wire) return reject('This open-path exercise needs its exact conductor target. Restart the challenge.');
+      if (!wire) return reject('Restart fault practice to put the broken wire back on the bench.');
+      const ends = [wire.from, wire.to].map(end => {
+        const item = document.components.find(c => c.id === end.component)!;
+        const marking = COMPONENTS[item.type].terminals.find(t => t.id === end.terminal)?.label ?? end.terminal;
+        return item.label + ' ' + marking;
+      }).join(' and ');
       const current = magnitude(result.wireCurrents[wire.id]);
-      if (current === undefined || current > 1e-6) return reject('The targeted conductor is not confirmed open by the current result. Recheck its current and connections.');
+      if (current === undefined || current > 1e-6) return reject('Check the reading on this wire and follow it to both terminals.');
       const voltage = measureVoltage(result, wire.from, wire.to).value;
-      if (voltage !== null && voltage > 1) return accept(`The targeted conductor ${wire.id} carries no current while ${voltage.toFixed(2)} V appears across its interrupted ends. This corroborates the open path.`);
+      if (voltage !== null && voltage > 1) return accept(`The break is between ${ends}. No current flows through this wire. The voltage across the break is ${voltage.toFixed(2)} V.`);
       const brokenResistance = measureResistance(continuityDocument(document), wire.from, wire.to).value;
       const intactResistance = measureResistance(continuityDocument(clear), wire.from, wire.to).value;
       if (intactResistance !== null && (brokenResistance === null || brokenResistance > intactResistance * 1.25 + 1e-6)) {
-        return accept(`The targeted conductor ${wire.id} carries no current. An isolated model continuity comparison shows ${brokenResistance === null ? 'an open path' : 'a higher-resistance alternative path'} where the intact conductor provides continuity.`);
+        return accept(`The wire between ${ends} is broken. With the supply off, the bench finds ${brokenResistance === null ? 'no path between its ends' : 'another path with more resistance'}.`);
       }
       // Converter terminals can be excluded from passive ohmmeter models. A
       // referenced current comparison can still corroborate that broken loop.
       const restored = simulate(clear, result.deviceStates, 0);
       const restoredCurrent = magnitude(restored.wireCurrents[wire.id]);
-      if (restored.converged && restoredCurrent !== undefined && restoredCurrent > 1e-5) return accept(`The target ${wire.id} carries no current; clearing only that interruption restores current in the same control state.`);
-      return reject('No observable open-path effect is corroborated at this target yet. Expose the affected route and compare voltage, current or isolated continuity.');
+      if (restored.converged && restoredCurrent !== undefined && restoredCurrent > 1e-5) return accept(`No current flows between ${ends}. In a copy of your circuit, repairing this wire lets current flow again.`);
+      return reject('Zero amps alone can mean the equipment is switched off. Try its control, or switch off all supplies and check continuity across the wire.');
     }
 
-    if (!targetComponent || !['short-circuit', 'earth-fault', 'overload'].includes(fault.type)) return reject('This defect has no supported measurement-based challenge check.');
+    if (!targetComponent || !['short-circuit', 'earth-fault', 'overload'].includes(fault.type)) return reject('The bench has no meter check for this fault. Restart the exercise.');
     const branch = fault.type === 'short-circuit' ? `fault:${targetComponent.id}:short` : fault.type === 'earth-fault' ? `fault:${targetComponent.id}:earth` : undefined;
     const faultCurrent = branch && magnitude(result.branchCurrents[branch]);
-    if (typeof faultCurrent === 'number' && faultCurrent > 1e-5) return accept(`The targeted ${fault.type === 'earth-fault' ? 'line-to-earth' : 'line-to-neutral'} fault branch carries ${faultCurrent.toFixed(4)} A. The actual fault path, rather than an unrelated finding, corroborates this diagnosis.`);
+    if (typeof faultCurrent === 'number' && faultCurrent > 1e-5) return accept(`At ${targetComponent.label}, ${faultCurrent.toFixed(2)} A flows from line to ${fault.type === 'earth-fault' ? 'earth' : 'neutral'} through the fault.`);
 
     const restored = simulate(clear, result.deviceStates, 0);
     if (fault.type === 'overload' && restored.converged) {
       const before = restored.componentPower[targetComponent.id] ?? 0, after = result.componentPower[targetComponent.id] ?? 0;
-      if (before > .01 && after > before * 1.5) return accept(`The target demand is substantially higher than the same equipment with the injected excess removed (${after.toFixed(1)} W versus ${before.toFixed(1)} W).`);
+      if (before > .01 && after > before * 1.5) return accept(`${targetComponent.label} draws ${after.toFixed(1)} W with the overload. It draws ${before.toFixed(1)} W in a repaired copy.`);
     }
 
     // A trip suppresses post-trip current. Reproduce the declared defect after
@@ -98,9 +103,9 @@ export function assessFaultDiagnosis(
       && result.deviceStates[component.id]?.tripped
       && reproduced.deviceStates[component.id]?.tripped
       && !repairedResult.deviceStates[component.id]?.tripped);
-    if (reproduced.converged && repairedResult.converged && corroboratedTrip) return accept(`Protection ${corroboratedTrip.id} is interrupted. Resetting a model copy with this defect reproduces the trip; removing only the targeted defect prevents it.`);
-    return reject('The chosen fault is not corroborated by the target current, excess demand or a repeatable protective response. Expose the affected load and investigate further.');
+    if (reproduced.converged && repairedResult.converged && corroboratedTrip) return accept(`${corroboratedTrip.label} tripped. The bench tried a reset in a copy of your circuit. It tripped again with the fault present and stayed on after repair.`);
+    return reject('These readings do not yet show the fault. Try running the affected equipment and check its current.');
   } catch {
-    return reject('The comparison could not be resolved. Restore valid terminal connections and repeat the measurements.');
+    return reject('The bench could not compare the readings. Check both connections and measure again.');
   }
 }

@@ -25,11 +25,22 @@ export interface SceneQualityBudget {
   ambientOcclusion: boolean; bloom: boolean; aoScale: number; aaSamples: number;
   environmentSize: number; textureSize: number;
 }
+/** One sample covers at least 350 ms of active rendering. Give a slow scene
+ * a cheaper frame promptly. Restore detail after several fast samples so a
+ * single easy frame during a camera turn cannot switch effects back on. */
+export function adaptWorkbenchDpr(current:number, maximum:number, meanFrameMs:number, fastSamples:number) {
+  if(meanFrameMs>23)return {dpr:Math.max(.8,current-.15),fastSamples:0};
+  if(meanFrameMs>=14)return {dpr:current,fastSamples:0};
+  const count=fastSamples+1;
+  if(count<8)return {dpr:current,fastSamples:count};
+  return {dpr:Math.min(maximum,current+.08),fastSamples:0};
+}
 /** Degrades expensive light/effect work with the same DPR used by the adaptive
  * renderer. It does not remove geometry, change electrical results or run a clock. */
 export function sceneQualityBudget(quality: RenderQuality = 'auto', dpr = 1.5): SceneQualityBudget {
   if (quality === 'economy') return { lampLights: 2, lampShadows: 0, keyShadowSize: 0, lampShadowSize: 0, ambientOcclusion: false, bloom: false, aoScale: .5, aaSamples: 0, environmentSize: 64, textureSize: 128 };
   if (quality === 'high') return { lampLights: 8, lampShadows: 1, keyShadowSize: 2048, lampShadowSize: 512, ambientOcclusion: true, bloom: true, aoScale: .7, aaSamples: 4, environmentSize: 256, textureSize: 256 };
+  if (Number.isFinite(dpr) && dpr<=.86) return { lampLights:3, lampShadows:0, keyShadowSize:0, lampShadowSize:0, ambientOcclusion:false, bloom:false, aoScale:.5, aaSamples:0, environmentSize:128, textureSize:128 };
   const low = !Number.isFinite(dpr) || dpr < 1.15;
   return { lampLights: low ? 3 : 5, lampShadows: low ? 0 : 1, keyShadowSize: low ? 1024 : 2048, lampShadowSize: 256, ambientOcclusion: !low, bloom: true, aoScale: .5, aaSamples: 2, environmentSize: 128, textureSize: 128 };
 }

@@ -51,7 +51,7 @@ export function physicalFixture(c: ComponentInstance, backWall: boolean, cupboar
 }
 
 /** Translate the exact workbench pin, including the leftmost feed on a run of tape. */
-export function fixturePoint(position: Vec3, uniform: number, pose: FixturePose | undefined, component: ComponentInstance, anchor: Vec3): Vec3 {
+export function fixturePoint(position: Vec3, uniform: number, pose: FixturePose | undefined, component: ComponentInstance, anchor: Vec3, yaw=0): Vec3 {
   const p = mountVector(component, anchor);
   const scale = pose?.scale ?? [uniform, uniform, uniform];
   const x = p[0]*scale[0] - (pose?.tape ? (TAPE_SECTIONS-1)*TAPE_SECTION_LENGTH/2 : 0);
@@ -59,5 +59,7 @@ export function fixturePoint(position: Vec3, uniform: number, pose: FixturePose 
   const roll = pose?.roll ?? 0, tilt = pose?.tilt ?? 0;
   const along = x*Math.cos(roll) - y*Math.sin(roll);
   const up = x*Math.sin(roll) + y*Math.cos(roll);
-  return [position[0]+along, position[1]+up*Math.cos(tilt)-z*Math.sin(tilt), position[2]+up*Math.sin(tilt)+z*Math.cos(tilt)];
+  const forward=up*Math.sin(tilt)+z*Math.cos(tilt);
+  return [position[0]+along*Math.cos(yaw)+forward*Math.sin(yaw), position[1]+up*Math.cos(tilt)-z*Math.sin(tilt),
+    position[2]+forward*Math.cos(yaw)-along*Math.sin(yaw)];
 }

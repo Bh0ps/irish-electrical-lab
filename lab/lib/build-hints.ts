@@ -26,6 +26,8 @@ export interface EndpointDescription {
   endpoint: Endpoint;
   equipmentName: string;
   terminalLabel: string;
+  /** Includes its bank when two terminals carry the same printed mark. */
+  pointLabel: string;
   role: TerminalRole;
   purpose: string;
   group?: string;
@@ -38,12 +40,16 @@ export function describeEndpoint(document: CircuitDocument, endpoint?: Endpoint)
   const component = document.components.find(item => item.id === endpoint.component);
   const definition = component && COMPONENTS[component.type];
   if (!component || !definition) return undefined;
-  const terminal = getComponentTerminals(component, definition).find(item => item.id === endpoint.terminal);
+  const terminals = getComponentTerminals(component, definition);
+  const terminal = terminals.find(item => item.id === endpoint.terminal);
   if (!terminal) return undefined;
+  const sameMark = terminals.filter(t=>t.label===terminal.label);
+  const bank = terminal.group&&sameMark.filter(t=>t.group===terminal.group).length===1 ? terminal.group : terminal.id;
+  const pointLabel = sameMark.length>1 ? `${terminal.label} · ${bank}` : terminal.label;
   return {
-    endpoint: { ...endpoint }, equipmentName: component.label, terminalLabel: terminal.label,
+    endpoint: { ...endpoint }, equipmentName: component.label, terminalLabel: terminal.label, pointLabel,
     role: terminal.role, purpose: terminal.purpose, ...(terminal.group ? { group: terminal.group } : {}),
-    label: `${component.label} · ${terminal.label}`,
+    label: `${component.label} · ${pointLabel}`,
   };
 }
 
@@ -53,24 +59,24 @@ type Finding = Pick<AssessmentCheck, 'id' | 'category' | 'status' | 'title' | 'e
 export function nextCheckForFinding(finding: Finding): string {
   const id = finding.id;
   if (id === 'scenario:unassigned') return 'Open Live readings to check your own circuit.';
-  if (finding.status === 'unresolved' || finding.category === 'model') return 'Open the circuit test, fix the first problem it shows and test again.';
+  if (finding.status === 'unresolved' || finding.category === 'model') return 'Check the supply and the connections at the named fitting. Then run Test circuit again.';
   if (id.includes('neutralEarth:')) return 'Turn the simulated supply off. Follow the highlighted wire between neutral and earth.';
   if (id.includes('cpc:')) return 'Follow the wire from the earth terminal (PE) back to the supply earth.';
   if (id.includes('polarity:')) return 'Trace L back to line and N back to neutral.';
   if (id.includes('tripped:')) return 'Check the wiring and read what tripped. Repair the fault, reset the device and test again.';
   if (id.includes('mechanical:') || id.includes('interlock')) return 'Check which contactor is on before trying the other direction.';
   if (id.includes('neutral:')) return 'Measure across the load, then trace its return wire.';
-  if (id.includes('phase:') || id.includes('windingVoltage:')) return 'Compare the actual phase paths and winding connections with the equipment rating.';
-  if (id.startsWith('equipment:')) return 'Add or select the named lesson equipment, then inspect its purpose before connecting it.';
+  if (id.includes('phase:') || id.includes('windingVoltage:')) return 'Check the voltage across each winding and compare it with the motor rating.';
+  if (id.startsWith('equipment:')) return 'Find the fitting named above in Add equipment.';
   if (id.startsWith('connection:')) return 'Choose Connect and select the two terminals named above.';
-  if (id.startsWith('extra:')) return 'Select this conductor and compare both endpoints with the lesson. Keep it if you want to investigate its effect.';
+  if (id.startsWith('extra:')) return 'Select the wire and compare its two ends with the lesson drawing.';
   if (id.startsWith('identity:')) return 'Compare the marking on the wire with the one in the lesson.';
   if (id.startsWith('fault:')) return 'Take a reading at the fault. Repair it and test again.';
   if (id === 'supply') return 'Turn the bench supply on and test again.';
-  if (finding.status === 'not-run') return 'Complete the required operating state or resolve the current calculation, then retest.';
-  if (finding.category === 'protection') return 'Inspect the highlighted protective path and compare it with the operating current before resetting or retesting.';
-  if (finding.category === 'operation') return 'Check the intended control state, then measure at the affected equipment and follow its supply and return paths.';
-  return 'Compare the stated objective with the current connections and controls, then run the test again.';
+  if (finding.status === 'not-run') return 'Try the control named in this step, then test again.';
+  if (finding.category === 'protection') return 'Follow the highlighted wire to its terminals. Check the connection before you reset or test again.';
+  if (finding.category === 'operation') return 'Check the switch position. Measure across the fitting, then follow the feed and return wires.';
+  return 'Compare your wiring with the drawing and test again.';
 }
 
 /** Presentation priority; it does not change assessment status or suppress checks. */
@@ -104,7 +110,7 @@ export function getBuildHint({ document, result, expected }: BuildHintInput): Bu
   const diagnostic = diagnostics.slice().sort((a, b) => findingPriority({ ...a, status: 'fail' }) - findingPriority({ ...b, status: 'fail' }))[0];
   if (diagnostic) return diagnosticHint(diagnostic);
   if (current && !current.converged) return {
-    id: 'hint:unresolved', kind: 'unresolved', severity: 'error', title: 'Calculation is unresolved',
+    id: 'hint:unresolved', kind: 'unresolved', severity: 'error', title: 'No reading yet',
     explanation: 'The bench could not calculate a reliable reading.',
     nextCheck: 'Open Test circuit to find out why.',
   };

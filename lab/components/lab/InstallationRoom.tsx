@@ -5,17 +5,23 @@ import { SiteFinishes } from './SiteFinishes';
 import { publicAssetUrl } from '../../web/asset-url';
 import { CUPBOARD_HINGE, CUPBOARD_SWING } from '../../lib/site-fixtures';
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { createSurfaceTextures, type SurfacePattern } from '../../lib/scene-materials';
 import { BACK, FRONT, ROOM_CENTRES, ROOM_WALLS, DOOR_Z, DOOR_WIDTH, type JobSite } from '../../lib/job-site';
 import type { Vec3 } from '../../lib/types';
+import { HOME_BACK,HOME_ROOMS,HOME_WALLS,HOUSE_FURNITURE,alignWall,doorsOn,doorLeaf,wallSpans,type FloorWall } from '../../lib/home-floorplan';
+import {SERVICE_AREAS} from '../../lib/service-floorplan';
+import {serviceRoom} from './ServiceRooms';
 
-type Shape='box'|'cylinder'|'ball';
+type Shape='box'|'cylinder'|'ball'|'cushion';
 interface Piece {shape:Shape; surface:string; p:Vec3; s:Vec3; rotation:Vec3}
 const spec:Record<string,[string,SurfacePattern?,number?]>={
+  carton:['#bd9869'],packingTape:['#c4b28d'],
   oak:['#ae9470','timber'],walnut:['#8e7055','timber'],white:['#eeeae2'],cream:['#d9d3bd'],sage:['#73877b'],tile:['#dce1dc','tiles'],
   metal:['#a6aeb0','brushed',.65],iron:['#454f50','brushed',.45],black:['#303736'],glass:['#bed6dc'],blue:['#4e8196'],yellow:['#deae46'],
   concrete:['#a3a7a4','concrete'],brick:['#ac8270','brick'],paving:['#a3a198','paving'],green:['#608365'],linen:['#b1b9ad'],
   brass:['#b1965e','brushed',.52],trim:['#91a39b'],paint:['#c2cbbd'],paper:['#eee7d7'],foliage:['#536955'],steel:['#737f82','brushed',.6],copper:['#b77e57','brushed',.6],rubber:['#4a5556','rubber'],red:['#af584c'],
+  curtain:['#c2ac91'],pane:['#c1e3ea'],fabric:['#a57c64'],lawn:['#81916c'],
 };
 function installation(site:JobSite){
   const parts:Piece[]=[];
@@ -58,13 +64,35 @@ function installation(site:JobSite){
   box(0,-.15,-.1,13.45,.28,5.95,'concrete');
   box(0,-.16,4.65,19,.22,3.8,'paving');
   const industrial=site.kind==='works'||site.kind==='workshop',home=site.kind==='home';
+  const bathroom=site.building.rooms[1]==='Bathroom';
+  function wallPart(wall:FloorWall,along:number,y:number,recess:number,length:number,height:number,thickness:number,material:string){
+    const b=alignWall(wall,along,recess,length,thickness);box(b.x,y,b.z,b.w,height,b.d,material);
+  }
+  function partition(wall:FloorWall,material:string,frontRow=false){
+    const depth=frontRow?-.08:0;
+    for(const [a,b] of wallSpans(wall,bathroom)){
+      wallPart(wall,(a+b)/2,1.43,depth,b-a,2.86,frontRow?.14:.12,material);
+      for(const side of [-1,1])wallPart(wall,(a+b)/2,.068,depth+side*.067,b-a,.136,.04,'white');
+    }
+    for(const door of doorsOn(wall,bathroom)){
+      wallPart(wall,door.centre,2.49,depth,door.width,.74,.14,material);
+      for(const side of [-1,1])wallPart(wall,door.centre+side*door.width/2,1.06,depth,.055,2.12,.17,'white');
+      wallPart(wall,door.centre,2.12,depth,door.width+.10,.07,.17,'white');
+      const leaf=doorLeaf(wall,door);box(leaf.x,1.035,leaf.z,leaf.w,2.07,leaf.d,'cream');
+      const hinge=door.centre+door.hinge*(door.width/2-.022);
+      for(const y of [.63,1.54])wallPart(wall,hinge-door.hinge*.026,y,door.side*door.width*.5,.014,.72,door.width*.76,'paper');
+      wallPart(wall,hinge-door.hinge*.045,.98,door.side*door.width*.83,.055,.10,.035,'metal');
+      wallPart(wall,hinge-door.hinge*.072,.99,door.side*door.width*.78,.022,.02,.12,'metal');
+    }
+  }
   ROOM_CENTRES.forEach((x,i)=>{
-    box(x,1.43,BACK-.08,4.4,2.86,.14,'wall'+i);
+    if(home)partition(HOME_WALLS.find(w=>w.id===['kitchen-back','hall-back','utility-back'][i])!,'wall'+i,true);
+    else box(x,1.43,BACK-.08,4.4,2.86,.14,'wall'+i);
     const wood=home&&i!==2&&site.building.rooms[i]!=='Bathroom';
     if(wood){for(let k=0;k<19;k++)box(x-2.09+k*.232,-.018,0,.229,.034,5.58,k%4===0?'walnut':'oak');}
     else box(x,-.015,0,4.39,.035,5.59,(home||site.kind==='shop')?'tile':'concrete');
     box(x,2.91,0,4.39,.06,5.59,home?'cream':'concrete');
-    box(x,.07,BACK+.013,4.39,.13,.035,home?'white':'iron');
+    if(!home)box(x,.07,BACK+.013,4.39,.13,.035,'iron');
     for(const edge of [BACK+.2,FRONT-.42]){box(x,2.86,edge,4.38,.10,.11,home?'white':'steel');}
     // Entrance windows and their two solid wall sections keep the glazing at a real opening.
     if(i!==1){
@@ -81,14 +109,110 @@ function installation(site:JobSite){
       box(0,.015,FRONT+.36,1.34,.025,.56,'rubber');
     }
   });
-  for(const x of [ROOM_WALLS[0],ROOM_WALLS[3]])box(x,1.43,0,.12,2.86,5.7,'wall2');
+  for(const x of [ROOM_WALLS[0],ROOM_WALLS[3]]){
+    if(site.kind!=='home'&&x===SERVICE_AREAS[site.kind].side*6.6)continue;
+    box(x,1.43,0,.12,2.86,5.7,'wall2');
+  }
+  if(site.kind!=='home')serviceRoom(site.kind,add,site.items);
   for(const x of ROOM_WALLS.slice(1,3)){
+    if(home){partition(HOME_WALLS.find(w=>w.id===(x<0?'kitchen-hall':'hall-utility'))!,'wall1');continue;}
     const start=DOOR_Z-DOOR_WIDTH/2,end=DOOR_Z+DOOR_WIDTH/2;
     box(x,1.42,(BACK+start)/2,.12,2.84,start-BACK,'wall1');box(x,1.42,(end+FRONT)/2,.12,2.84,FRONT-end,'wall1');
     box(x,2.54,DOOR_Z,.12,.59,DOOR_WIDTH,'wall1');
     for(const z of [start,end])box(x,1.12,z,.18,2.24,.055,'white');box(x,2.25,DOOR_Z,.18,.065,DOOR_WIDTH+.08,'white');
   }
   if(home){
+    box(0,-.15,(HOME_BACK+BACK)/2,13.45,.28,BACK-HOME_BACK,'concrete');
+    for(const room of HOME_ROOMS.filter(r=>r.id>=4)){
+      const x=(room.left+room.right)/2,z=(room.front+room.back)/2;
+      box(x,-.02,z,room.right-room.left-.015,.04,room.front-room.back-.015,room.id===5?'linen':room.id===6?'tile':'oak');
+      box(x,2.91,z,room.right-room.left,.07,room.front-room.back,'white');
+    }
+    for(const name of ['sitting','bedroom','study'])partition(HOME_WALLS.find(w=>w.id===name)!,'wall1');
+    for(const edge of [-6.6,6.6]){
+      box(edge,1.43,(HOME_BACK+BACK)/2,.12,2.86,BACK-HOME_BACK,'wall0');
+      box(edge-Math.sign(edge)*.072,.068,(HOME_BACK+BACK)/2,.03,.136,BACK-HOME_BACK,'white');
+    }
+    // Three glazed openings above the furniture. Leave clear wall drops for the actual fittings.
+    box(0,-.12,HOME_BACK-4.35,22,.22,8.8,'lawn');
+    box(0,.74,HOME_BACK-3.95,20,1.43,.07,'trim');
+    for(let i=-9;i<=9;i++){
+      box(i,.80,HOME_BACK-3.88,.066,1.60,.10,'sage');
+      if(i%2===0){pipe(i-1,1.25,HOME_BACK-4.81,.105,2.50,'walnut');
+        add([i-1,2.20+Math.sin(i)*.22,HOME_BACK-4.82],[.92,1.24,.75],'foliage','ball');
+        add([i-.57,2.05,HOME_BACK-4.65],[.65,.74,.58],'green','ball');}
+    }
+    for(const [left,right,cx,w,sill] of [[-6.6,-.6,-3.70,2.05,.90],[-.6,3.6,.46,1.63,1.09],[3.6,6.6,5.57,1.28,1.30]]){
+      const roof=2.33,cz=HOME_BACK-.08,mid=(sill+roof)/2;
+      box((left+right)/2,sill/2,cz,right-left,sill,.14,'wall0');
+      box((left+right)/2,(roof+2.86)/2,cz,right-left,2.86-roof,.14,'wall0');
+      for(const [a,b] of [[left,cx-w/2],[cx+w/2,right]])box((a+b)/2,mid,cz,b-a,roof-sill,.14,'wall0');
+      box(cx,mid,cz,w,roof-sill,.016,'pane');frame(cx,mid,HOME_BACK-.008,w,roof-sill);
+      box(cx,mid,HOME_BACK+.014,.041,roof-sill,.06,'white');
+      box(cx,sill,HOME_BACK+.055,w+.16,.045,.23,'paint');box((left+right)/2,.070,HOME_BACK+.012,right-left,.14,.032,'white');
+      box(cx,roof+.069,HOME_BACK+.11,w+.34,.035,.035,'metal');
+      for(const sign of [-1,1])for(let k=0;k<4;k++){
+        const px=cx+sign*(w/2+.10-k*.047);
+        box(px,(roof+sill-.13)/2,HOME_BACK+.095+(k%2)*.025,.052,roof-sill+.15,.048,k%2?'curtain':'cream');
+      }
+    }
+    // Upholstered seats face the TV. Furniture feet, cushions, duvet, and a desk lamp
+    // reuse the same instanced geometry and small material set throughout the house.
+    const f=HOUSE_FURNITURE,s=f.sofa,b=f.bed,t=f.television,d=f.desk,ward=f.wardrobe;
+    const pad=(x:number,y:number,z:number,w:number,h:number,depth:number,m:string,tilt=0)=>add([x,y,z],[w,h,depth],m,'cushion',[0,0,tilt]);
+    for(const x of [s.x-.29,s.x+.29])for(const z of [s.z-.88,s.z+.88])box(x,.09,z,.065,.18,.065,'walnut');
+    pad(s.x,.27,s.z,s.w,.29,s.d,'sage');pad(s.x-.36,.61,s.z,.20,.65,s.d,'sage',.08);
+    for(const sign of [-1,1]){
+      pad(s.x+.04,.45,s.z+sign*.48,.70,.16,.91,'trim');
+      pad(s.x+.02,.54,s.z+sign*1.03,.89,.49,.15,'sage');
+      pad(s.x-.20,.67,s.z+sign*.56,.19,.38,.40,sign===1?'cream':'fabric',-.12);
+    }
+    // Two framed botanical prints above the sofa. Relief is slight so they read as paper.
+    for(const z of [s.z-.48,s.z+.48]){
+      box(-6.514,1.52,z,.048,.78,.58,'walnut');box(-6.485,1.52,z,.011,.72,.52,'paper');
+      add([-6.473,1.51,z],[.008,.015,.46],'sage','box',[-1.28,0,0]);
+      for(let n=0;n<4;n++)for(const hand of [-1,1]){
+        const y=1.38+n*.085,offset=.04+(n%2)*.014;
+        add([-6.469,y,z+hand*offset+(y-1.51)*.29],[.005,.020,.105],'foliage','box',[hand*-.55,0,0]);
+      }
+    }
+    const coffee=f.coffee;
+    box(coffee.x,.41,coffee.z,coffee.w,.07,coffee.d,'walnut');
+    for(const i of [-1,1])for(const j of [-1,1])box(coffee.x+i*.24,.20,coffee.z+j*.44,.049,.40,.049,'iron');
+    box(coffee.x,.457,coffee.z-.17,.24,.029,.31,'sage');box(coffee.x,.48,coffee.z-.17,.21,.021,.27,'paper');
+    pipe(coffee.x+.12,.49,coffee.z+.25,.047,.084,'cream');
+    box(t.x,.32,t.z,t.w,.50,t.d,'walnut');
+    for(const sign of [-1,1]){box(t.x-.224,.32,t.z+sign*.39,.022,.37,.73,'oak');box(t.x-.24,.40,t.z+sign*.39,.028,.026,.12,'metal');}
+    box(t.x,.608,t.z,.26,.04,.44,'iron');box(t.x,.69,t.z,.057,.17,.063,'black');
+    box(t.x,.997,t.z,.056,.61,1.11,'black');box(t.x-.031,1.00,t.z,.008,.57,1.065,'iron');
+    box(-4.68,.008,-5.15,1.68,.014,2.41,'linen');
+    for(const z of [-6.26,-4.04])box(-4.68,.018,z,1.58,.006,.035,'green');
+    box(b.x,.23,b.z,b.w,.34,b.d,'walnut');pad(b.x,.45,b.z,b.w+.02,.23,b.d+.02,'paper');
+    box(b.x,.55,b.z-.99,b.w+.06,.94,.075,'oak');pad(b.x,.58,b.z+.25,1.49,.18,1.56,'linen');
+    pad(b.x,.67,b.z+.70,1.48,.085,.48,'blue');for(const sign of [-1,1])pad(b.x+sign*.345,.63,b.z-.70,.62,.13,.38,'cream');
+    box(ward.x,1.01,ward.z,ward.w,2.02,ward.d,'oak');
+    for(const sign of [-1,1]){box(ward.x+sign*.355,1.02,ward.z-.271,.685,1.89,.031,'cream');box(ward.x+sign*.075,1.06,ward.z-.301,.025,.14,.027,'brass');}
+    box(d.x,.89,d.z,d.w,.06,d.d,'oak');
+    for(const i of [-1,1])for(const j of [-1,1])box(d.x+i*(d.w/2-.08),.44,d.z+j*.23,.045,.88,.045,'iron');
+    box(d.x,.95,d.z,.38,.028,.27,'iron');
+    add([d.x,1.065,d.z-.125],[.38,.24,.023],'black','box',[-.12,0,0]);
+    pipe(d.x+.49,.945,d.z,.085,.025,'brass');pipe(d.x+.49,1.12,d.z,.012,.35,'brass');
+    add([d.x+.49,1.30,d.z],[.091,.12,.091],'green','cylinder',[0,0,-.20]);
+    const chair=f.deskChair;pad(chair.x,.46,chair.z,.48,.09,.47,'trim');
+    for(const i of [-1,1])for(const j of [-1,1])box(chair.x+i*.19,.23,chair.z+j*.19,.034,.46,.034,'oak');
+    box(chair.x,.68,chair.z+.20,.44,.41,.052,'oak');
+    const books=f.bookcase;box(books.x+.18,.85,books.z,.025,1.70,books.d,'walnut');
+    for(const sign of [-1,1])box(books.x,.85,books.z+sign*.55,books.w,1.70,.033,'oak');
+    for(let row=0;row<4;row++){const y=.13+row*.44;box(books.x,y,books.z,books.w,.027,books.d,'oak');
+      for(let k=0;k<5;k++)box(books.x-.024,y+.13,books.z-.41+k*.11,.22,.23+(k%3)*.03,.075,['sage','blue','cream','walnut','paint'][(row+k)%5]);}
+    const locker=f.locker;box(locker.x,.28,locker.z,locker.w,.50,locker.d,'oak');
+    box(locker.x,.36,locker.z+.20,.34,.21,.025,'cream');pipe(locker.x,.37,locker.z+.222,.021,.026,'brass');
+    box(locker.x,.555,locker.z,.24,.033,.19,'blue');box(locker.x,.580,locker.z,.22,.018,.17,'paper');
+    const shoe=f.shoeBench;box(shoe.x,.46,shoe.z,shoe.w,.054,shoe.d,'oak');
+    for(const hand of [-1,1])box(shoe.x+hand*.45,.25,shoe.z,.044,.46,.31,'sage');
+    box(shoe.x,.15,shoe.z,.93,.033,.29,'sage');box(shoe.x,1.64,-4.918,1.12,.11,.032,'oak');
+    for(const offset of [-.38,0,.38]){box(shoe.x+offset,1.64,-4.873,.028,.023,.073,'brass');box(shoe.x+offset,1.67,-4.84,.028,.071,.023,'brass');}
+    for(const x of [-.26,-.12,.14,.28])pad(shoe.x+x,.21,shoe.z+.02,.105,.10,.22,x<0?'iron':'fabric');
     const entrance=site.building.rooms[0]==='Back entrance';
     furniture(entrance?-3.57:-4.4,-2.49,entrance?1.53:3.65);if(!entrance)sink(-5.62,-2.46);
     shelf(entrance?-3.26:-5.8,1.43,-2.63,.87);
@@ -119,7 +243,7 @@ function installation(site:JobSite){
       }
       box(-.62,.99,-2.61,.043,.137,.017,'brass');box(-.67,1.01,-2.588,.12,.02,.028,'brass');
       // Tongue-and-groove panelling and a capped dado, with a gap at the cupboard.
-      for(const [xx,w] of [[-1.80,.80],[.866,2.65]]){
+      for(const [xx,w] of [[-1.80,.80],[.31,1.57],[2.15,.09]]){
         box(xx,.49,-2.72,w,.98,.05,'trim');
         for(let i=1;i<w/.145;i++)box(xx-w/2+i*.145,.48,-2.689,.008,.94,.009,'paint');
         box(xx,.985,-2.68,w,.05,.072,'paint');box(xx,1.014,-2.673,w,.016,.09,'cream');
@@ -127,8 +251,8 @@ function installation(site:JobSite){
       // The runner, individual drawer fronts and recessed edges give familiar scale.
       box(.03,.003,-1.06,.84,.013,2.48,'linen');
       for(const x of [-.34,.40])box(x,.012,-1.06,.017,.003,2.38,'green');
-      table(1.00,-2.48,.96,'walnut');box(1.0,.78,-2.48,.94,.18,.65,'walnut');
-      for(const x of [.77,1.23]){box(x,.78,-2.145,.43,.15,.025,'oak');pipe(x,.78,-2.114,.018,.026,'brass');}
+      table(.64,-2.48,.80,'walnut');box(.64,.78,-2.48,.78,.18,.65,'walnut');
+      for(const x of [.45,.83]){box(x,.78,-2.145,.35,.15,.025,'oak');pipe(x,.78,-2.114,.018,.026,'brass');}
       frame(-1.47,1.60,-2.72,.48,.64,'oak');box(-1.47,1.60,-2.75,.47,.63,.02,'linen');
     }
     for(const x of [-1.72,1.72]){box(x,.20,3.39,.38,.39,.38,'walnut');add([x,.55,3.39],[.25,.34,.23],'green','ball');}
@@ -154,7 +278,7 @@ const skip:THREE.Mesh['raycast']=()=>{};
 function Batch({items,g,m}:{items:Piece[];g:THREE.BufferGeometry;m:THREE.Material}){
   const ref=useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(()=>{const obj=new THREE.Object3D(),mesh=ref.current;if(!mesh)return;items.forEach((v,i)=>{obj.position.set(...v.p);obj.scale.set(...v.s);obj.rotation.set(...v.rotation);obj.updateMatrix();mesh.setMatrixAt(i,obj.matrix);});mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();},[items]);
-  return <instancedMesh ref={ref} args={[g,m,items.length]} onClick={e=>e.stopPropagation()} receiveShadow castShadow dispose={null}/>;
+  return <instancedMesh ref={ref} args={[g,m,items.length]} onPointerDown={e=>e.stopPropagation()} onPointerUp={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()} receiveShadow castShadow dispose={null}/>;
 }
 // A missing decorative download must never take the operating equipment out of service.
 class SceneryBoundary extends React.Component<{children:React.ReactNode},{failed:boolean}> {
@@ -167,7 +291,7 @@ function HallPlant(){
   const plant=useMemo(()=>{const copy=asset.scene.clone(true);copy.traverse(node=>{
     if(node instanceof THREE.Mesh){node.castShadow=true;node.receiveShadow=true;node.raycast=skip;}
   });return copy;},[asset.scene]);
-  return <primitive object={plant} dispose={null} position={[1.17,.92,-2.46]}/>;
+  return <primitive object={plant} dispose={null} position={[.83,.92,-2.46]}/>;
 }
 export default function InstallationRoom({site,economy,cupboardOpen,operateCupboard}:{site:JobSite;economy:boolean;cupboardOpen:boolean;operateCupboard:()=>void}){
   const {kind,building,name}=site;
@@ -179,11 +303,12 @@ export default function InstallationRoom({site,economy,cupboardOpen,operateCupbo
       if(pattern&&!maps.has(pattern))maps.set(pattern,createSurfaceTextures(pattern,economy?128:256));const tex=pattern&&maps.get(pattern);
       materials[id]=new THREE.MeshStandardMaterial({color,metalness,roughness:metalness?.42:.84,map:tex?tex.color:null,normalMap:tex?tex.normal:null,normalScale:new THREE.Vector2(.13,.13)});
     }
+    const pane=materials.pane;pane.transparent=true;pane.opacity=.16;pane.depthWrite=false;
     const brick=maps.get('brick');if(brick){brick.color.repeat.set(2,4);brick.normal.repeat.set(2,4);}
     const plaster=createSurfaceTextures('plaster',economy?128:256);maps.set('plaster',plaster);
     plaster.color.repeat.set(4,3);plaster.normal.repeat.set(4,3);
     building.walls.forEach((color,i)=>{materials['wall'+i]=new THREE.MeshStandardMaterial({color,roughness:.94,map:plaster.color,normalMap:plaster.normal,normalScale:new THREE.Vector2(.10,.10)});});
-    return {materials,maps,geo:{box:new THREE.BoxGeometry(1,1,1),cylinder:new THREE.CylinderGeometry(1,1,1,20),ball:new THREE.SphereGeometry(1,16,10)}};
+    return {materials,maps,geo:{box:new THREE.BoxGeometry(1,1,1),cylinder:new THREE.CylinderGeometry(1,1,1,20),ball:new THREE.SphereGeometry(1,16,10),cushion:new RoundedBoxGeometry(1,1,1,economy?1:2,.12)}};
   },[kind,economy]);
   useEffect(()=>()=>{for(const m of Object.values(res.materials))m.dispose();for(const g of Object.values(res.geo))g.dispose();for(const t of res.maps.values())t.dispose();},[res]);
   return <group name={'Installation · '+building.name}>

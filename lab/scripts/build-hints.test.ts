@@ -53,7 +53,8 @@ test('template differences only apply to the attached lesson and remain distinct
   const document = circuit(); document.wires.push({ ...structuredClone(document.wires[3]), id: 'parallel-investigation' });
   const hint = getBuildHint({ document, expected });
   assert.equal(hint?.kind, 'different-from-lesson'); assert.equal(hint?.wire, 'parallel-investigation');
-  assert.match(hint!.nextCheck, /Keep it if you want to investigate/);
+  assert.match(hint!.nextCheck, /compare its two ends with the lesson drawing/i);
+  assert.ok(document.wires.some(wire => wire.id === hint!.wire), 'The difference leaves the wire available to investigate');
   delete document.lessonId;
   assert.equal(getBuildHint({ document, result: simulate(document), expected }), undefined);
   const differentLesson = { ...expected, lessonId: 8 };
@@ -69,7 +70,7 @@ test('unresolved current calculations outrank protective and operating hints', (
   result.diagnostics.unshift({ id: 'overload', category: 'protection', severity: 'warning', title: 'Protection', explanation: 'Protection finding.' }, { id: 'solve', category: 'model', severity: 'error', title: 'Unresolved model', explanation: 'No reliable result.' });
   const hint = getBuildHint({ document, result, expected });
   assert.equal(hint?.id, 'solve'); assert.equal(hint?.kind, 'unresolved'); assert.equal(hint?.severity, 'error');
-  assert.match(hint!.nextCheck, /fix the first problem.*test again/i);
+  assert.match(hint!.nextCheck, /check the supply.*test circuit again/i);
   result.diagnostics = [];
   assert.equal(getBuildHint({ document, result })?.kind, 'unresolved');
 });
@@ -83,4 +84,13 @@ test('endpoint previews describe actual equipment terminals and safely omit miss
   from!.endpoint.terminal = 'not-a-change'; assert.deepEqual(source, { component: 'switch', terminal: 'COM' });
   assert.equal(describeEndpoint(document), undefined); assert.equal(describeEndpoint(document, { component: 'missing', terminal: 'L' }), undefined);
   assert.equal(describeEndpoint(document, { component: 'switch', terminal: 'wrong' }), undefined); assert.deepEqual(document, before);
+});
+test('the two N markings on a protective device identify different banks',()=>{
+  const document=LESSONS.find(l=>l.id===7)!.circuit;
+  const incoming=describeEndpoint(document,{component:'protect',terminal:'NIN'});
+  const outgoing=describeEndpoint(document,{component:'protect',terminal:'NOUT'});
+  assert.equal(incoming?.terminalLabel,'N');
+  assert.equal(outgoing?.terminalLabel,'N');
+  assert.equal(incoming?.pointLabel,'N · Supply');
+  assert.equal(outgoing?.pointLabel,'N · Load');
 });

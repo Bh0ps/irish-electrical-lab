@@ -14,6 +14,14 @@ const terms: Array<[RegExp, string, string]> = [
   [/\bPWM\b/i, 'PWM', 'The controller switches the light on and off rapidly. Longer on-time gives more average light.'],
   [/\bLED driver\b/i, 'LED driver', 'A power supply that gives an LED the voltage or current it needs.'],
   [/\bthermostat\b/i, 'Thermostat', 'A temperature switch. It calls for heat or cooling as the temperature changes.'],
+  [/\b(isolator|isolation switch)\b/i, 'Isolator', 'A switch used to disconnect equipment from its supply. Its incoming terminals can still be live.'],
+  [/\b(NO|NC|normally (open|closed))\b/, 'NO and NC', 'Look at the contact at rest. Normally open (NO) has a gap. Normally closed (NC) makes a connection.'],
+  [/\b(COM|common terminal)\b/, 'COM', 'On a changeover switch, this is the common point. Moving the switch joins it to one of the other two terminals.'],
+  [/\bPIR\b/i, 'PIR', 'A motion detector. It senses changes in heat as someone moves past.'],
+  [/\b(dry contact|volt(?:age)?-free)\b/i, 'Volt-free contact', 'A pair of switch contacts with no supply of their own. The circuit you connect to them provides the voltage.'],
+  [/\b(windings?|secondary|primary)\b/i, 'Winding', 'A coil of wire. On a transformer, the supply goes to the primary winding and the other circuit connects to the secondary.'],
+  [/\bstranded\b/i, 'Stranded wire', 'Many fine metal strands make up one conductor. You can see them together at the cut end.'],
+  [/\b(run-on|off-delay)\b/i, 'Run-on', 'The fan or light stays on for a set time after the switch or sensor turns off.'],
   [/\bOL\b/i, 'OL', 'This resistance reading is outside the meter’s range. An open wire can give this reading.'],
 ];
 

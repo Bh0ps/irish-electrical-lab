@@ -15,6 +15,10 @@ import type { EquipmentView } from '../lib/Equipment';
 import type { ComponentInstance,DeviceState } from '../lib/types';
 import { getLesson } from '../lib/lessons';
 import { mountRoll, mountScale } from '../lib/board-assembly';
+import { DIN_UNIT } from '../lib/din-devices';
+import { InstalledHardware } from '../components/lab/WorkshopGeometry';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 const root=fileURLToPath(new URL('../../',import.meta.url)),loader=new GLTFLoader(),inventory=createGalleryInventory();
 const state:DeviceState={energized:false,closed:true,tripped:false,level:1,direction:1,elapsed:0,resetToken:0,details:'asset audit'};
@@ -87,6 +91,53 @@ test('installed breakers present their real operating handles in front of the sh
         for(const points of terminals(model.scene).values())assert.ok(points[0].getWorldPosition(new THREE.Vector3()).z<shield-.045,url+' terminal remains protected');
         model.owned.forEach(material=>material.dispose());
       }
+    }
+  }
+});
+
+test('DIN wire entries and screwdriver wells reach the same terminal from perpendicular sides',async()=>{
+  for(const type of ['mcb','mcb3','rcd','rcd3','rcbo']){
+    const entry=inventory.find(e=>e.component.type===type)!,c=entry.component,definition=COMPONENTS[type];
+    const mounted={...c,mount:{board:'board',row:0,slot:0}};
+    assert.equal(renderToStaticMarkup(createElement(InstalledHardware,{component:mounted,definition,
+      selected:false,showLabels:false,view:'normal',onPart:()=>{},onTerminal:()=>{}})),'',
+      type+' uses its own fitted face so an extra cover cannot intercept a click');
+    const asset=equipmentAsset(c,definition)!;
+    for(const url of [asset.url,asset.lowUrl]){
+      const model=prepareBlenderModel(await load(url));
+      for(const id of ['thermal','magnetic','toroid'].filter(key=>definition.parts.some(p=>p.id===key)))
+        assert.ok(model.meshes.some(m=>m.part===id),url+' selectable '+id+' in the cutaway');
+      presentBlenderModel(model,'normal',c,{...state,closed:true});
+      const shoot=(origin:THREE.Vector3,direction:THREE.Vector3)=>new THREE.Raycaster(origin,direction,0,2).intersectObject(model.scene,true)[0];
+      for(const t of getComponentTerminals(c,definition)){
+        const anchor=new THREE.Vector3(...t.anchor),up=t.entryDirection![1];
+        const screw=shoot(anchor.clone().add(new THREE.Vector3(0,-up*7.7*DIN_UNIT,1.2)),new THREE.Vector3(0,0,-1));
+        assert.equal(screw&&semanticOwner(screw.object).terminal,t.id,url+' front access '+t.id);
+        assert.match((screw.object as THREE.Mesh<THREE.BufferGeometry,THREE.Material>).material.name,/Plated steel/,url+' head visible down well');
+        assert.ok(screw.point.z<anchor.z+12*DIN_UNIT,url+' screw is recessed');
+        const opening=anchor.clone().add(new THREE.Vector3(3.8*DIN_UNIT,up*1.0,0));
+        const entryHit=shoot(opening,new THREE.Vector3(0,-up,0));
+        assert.equal(entryHit&&semanticOwner(entryHit.object).terminal,t.id,url+' conductor mouth '+t.id);
+        assert.ok((entryHit.point.y-anchor.y)*up<-.015,url+' the mouth has depth');
+      }
+      if(['rcd','rcd3','rcbo'].includes(type)){
+        const pad=model.meshes.filter(m=>m.part==='test').reduce((b,m)=>b.union(new THREE.Box3().setFromObject(m.node)),new THREE.Box3());
+        const target=pad.getCenter(new THREE.Vector3());target.z+=1.1;
+        assert.equal(semanticOwner(shoot(target,new THREE.Vector3(0,0,-1)).object).part,'test',url+' separate test button');
+        const flag=model.meshes.find(m=>m.contactFlag)!.light!;
+        const closed=flag.color.getHex();
+        presentBlenderModel(model,'normal',c,{...state,closed:false,tripped:true});
+        assert.notEqual(flag.color.getHex(),closed,url+' indicator follows opened contacts');
+      }
+      for(const stand of model.benchStands)assert.equal(stand.visible,true);
+      presentBlenderModel(model,'open',c,state);
+      for(const stand of model.benchStands)assert.equal(stand.visible,false);
+      const baseline=getComponentTerminals(c,definition).find(t=>t.entryDirection![1]<0)!.anchor[1];
+      const clip=shoot(new THREE.Vector3(0,baseline+15.3*DIN_UNIT,-1.1),new THREE.Vector3(0,0,1));
+      assert.equal(clip&&semanticOwner(clip.object).detail,'din-latch',url+' lower release clip is visible from the back');
+      presentBlenderModel(model,'normal',mounted,state);
+      for(const stand of model.benchStands)assert.equal(stand.visible,false);
+      model.owned.forEach(m=>m.dispose());
     }
   }
 });

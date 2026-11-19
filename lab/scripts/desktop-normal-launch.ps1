@@ -1,10 +1,11 @@
-# Verify the installed app through its real Windows desktop shortcut.
-# This uses the application's own retention workflow, never browser automation.
-param([string]$RecordSnapshot='desktop-1.1-original-records.json')
+# Check both installed shortcuts, then launch a disposable copy of the desktop link.
+param([string]$RecordSnapshot='desktop-1.1-original-records.json',[ValidatePattern('^[a-zA-Z0-9][a-zA-Z0-9_-]{0,47}$')][string]$RunLabel='default')
 $ErrorActionPreference = 'Stop'
 $labRoot = Split-Path $PSScriptRoot -Parent
 $verificationRoot = Join-Path (Split-Path $labRoot -Parent) 'verification/desktop'
-$profileVerification = Join-Path $env:APPDATA 'Irish Electrical Lab/verification'
+$runFolder = Join-Path ([IO.Path]::GetTempPath()) ('Irish-Electrical-Lab-Audits/run-'+$RunLabel.ToLowerInvariant())
+$profileVerification = Join-Path $runFolder 'verification'
+$runArgument = '--verify-run='+$RunLabel
 $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Irish Electrical Lab.lnk'
 $startShortcut = Join-Path $env:APPDATA 'Microsoft/Windows/Start Menu/Programs/Irish Electrical Lab.lnk'
 $installedExe = Join-Path $env:LOCALAPPDATA 'Programs/Irish Electrical Lab/Irish Electrical Lab.exe'
@@ -15,8 +16,12 @@ $utf8Plain = New-Object System.Text.UTF8Encoding($false)
 $normalProcess = $null
 $seeded = $false
 $appVersion = (Get-Content -LiteralPath (Join-Path $labRoot 'desktop/app/package.json') -Raw | ConvertFrom-Json).version
-$report = [ordered]@{ version=$appVersion; passed=$false; launchedThrough='Windows desktop shortcut'; recordedAt=[DateTime]::UtcNow.ToString('o') }
+$report = [ordered]@{ version=$appVersion; passed=$false; launchedThrough='Copy of installed desktop shortcut with audit arguments'; recordedAt=[DateTime]::UtcNow.ToString('o') }
 try {
+  & $nodeRuntime (Join-Path $PSScriptRoot 'desktop-lifecycle-audit.mjs') $installedExe '--check-shell'
+  if($LASTEXITCODE -ne 0){throw 'The installed shell does not support isolated verification.'}
+  if ([IO.Path]::GetFileName($RecordSnapshot) -ne $RecordSnapshot -or -not (Test-Path -LiteralPath (Join-Path $profileVerification $RecordSnapshot))) { throw 'Run the matching desktop UI verification in this disposable run first to capture the record snapshot.' }
+  if (Get-NetTCPConnection -LocalPort 4187 -State Listen -ErrorAction SilentlyContinue) { throw 'The lab port is already in use. Close the active app before the audit.' }
   if (-not (Test-Path -LiteralPath $desktopShortcut)) { throw 'Desktop shortcut is missing.' }
   $shortcutShell = New-Object -ComObject WScript.Shell
   $links = @($desktopShortcut,$startShortcut) | ForEach-Object {
@@ -25,9 +30,15 @@ try {
   }
   if (@($links | Where-Object { -not $_.exists -or $_.target -ne $installedExe -or $_.arguments }).Count) { throw 'Installed shortcuts do not target the normal app.' }
   [System.IO.File]::WriteAllText((Join-Path $verificationRoot 'shortcuts.json'),($links | ConvertTo-Json -Depth 5),$utf8Plain)
-  Start-Process -FilePath $desktopShortcut -WindowStyle Hidden
+  $auditShortcut = Join-Path $profileVerification 'Irish Electrical Lab - audit.lnk'
+  Copy-Item -LiteralPath $desktopShortcut -Destination $auditShortcut -Force
+  $auditLink = $shortcutShell.CreateShortcut($auditShortcut)
+  $auditLink.Arguments = '--verify-window '+$runArgument
+  $auditLink.Save()
+  Start-Process -FilePath $auditShortcut -WindowStyle Hidden
   for($tries=0;$tries -lt 80;$tries++) {
-    $normalProcess = Get-Process -Name 'Irish Electrical Lab' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq 'Irish Electrical Lab' -and $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+    $candidate = Get-CimInstance Win32_Process -Filter "Name='Irish Electrical Lab.exe'" | Where-Object { $_.ExecutablePath -eq $installedExe -and $_.CommandLine -match ('(?:^|\s)--verify-window\s+'+[regex]::Escape($runArgument)+'(?:\s|$)') } | Select-Object -First 1
+    if($candidate){$normalProcess=Get-Process -Id $candidate.ProcessId -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq 'Irish Electrical Lab' -and $_.MainWindowHandle -ne 0 }}
     if ($normalProcess) { break }
     Start-Sleep -Milliseconds 100
   }
@@ -44,8 +55,7 @@ try {
   $normalProcess=$null
   $report.serverStopped= -not (Get-NetTCPConnection -LocalPort 4187 -State Listen -ErrorAction SilentlyContinue)
   if (-not $report.serverStopped) { throw 'Port 4187 remains bound after shutdown.' }
-  # The existing app-owned seed/check pair snapshots and restores all real records.
-  $seedProcess=Start-Process -FilePath $installedExe -ArgumentList '--verify-retention-seed' -PassThru -WindowStyle Hidden
+  $seedProcess=Start-Process -FilePath $installedExe -ArgumentList @('--verify-retention-seed',$runArgument) -PassThru -WindowStyle Hidden
   Wait-Process -Id $seedProcess.Id
   $seeded=$true
   $comparison = @'
@@ -61,7 +71,7 @@ console.log(JSON.stringify({matches:hash===original.digest,expectedDigest:origin
   $report.originalProfileUnchangedAfterNormalLaunch=$profileComparison.matches
   $report.expectedDigest=$profileComparison.expectedDigest
   $report.actualDigest=$profileComparison.actualDigest
-  $checkProcess=Start-Process -FilePath $installedExe -ArgumentList '--verify-retention-check' -PassThru -WindowStyle Hidden
+  $checkProcess=Start-Process -FilePath $installedExe -ArgumentList @('--verify-retention-check',$runArgument) -PassThru -WindowStyle Hidden
   Wait-Process -Id $checkProcess.Id
   $seeded=$false
   $retention=Get-Content -LiteralPath (Join-Path $profileVerification 'desktop-upgrade-retention-report.json') -Raw | ConvertFrom-Json
@@ -71,7 +81,7 @@ console.log(JSON.stringify({matches:hash===original.digest,expectedDigest:origin
   $report.error=$_.Exception.Message
 } finally {
   if($normalProcess -and -not $normalProcess.HasExited) { $null=$normalProcess.CloseMainWindow();$null=$normalProcess.WaitForExit(15000) }
-  if($seeded) { $recoveryProcess=Start-Process -FilePath $installedExe -ArgumentList '--verify-retention-check' -PassThru -WindowStyle Hidden;Wait-Process -Id $recoveryProcess.Id }
+  if($seeded) { $recoveryProcess=Start-Process -FilePath $installedExe -ArgumentList @('--verify-retention-check',$runArgument) -PassThru -WindowStyle Hidden;Wait-Process -Id $recoveryProcess.Id }
   [System.IO.File]::WriteAllText((Join-Path $verificationRoot 'normal-launch.json'),($report | ConvertTo-Json -Depth 7),$utf8Plain)
 }
 $report | ConvertTo-Json -Depth 7

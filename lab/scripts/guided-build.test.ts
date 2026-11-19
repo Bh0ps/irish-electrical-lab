@@ -97,6 +97,25 @@ test('an unrelated or out-of-order addition does not skip the displayed step eve
   assert.equal(document.wires[0].id, event.wireId);
 });
 
+test('guided feedback names an incorrect neutral-to-earth link and recognises a legitimate later wire', () => {
+  const { lesson, activity, document, event } = fixture();
+  const added = document.wires[0];
+  const another = lesson.circuit.wires.find(w=>w.id!==activity.wire)!;
+  Object.assign(added,{from:another.from,to:another.to,role:another.role});
+  const later = evaluateGuidedWireAddition(activity,document,event,'build',lesson.circuit);
+  assert.equal(later?.status,'not-run');
+  assert.match(later!.explanation,/another step/);
+  const earth = lesson.circuit.wires.find(w=>w.role==='PE')!;
+  const neutral = lesson.circuit.wires.find(w=>w.role==='N')!;
+  Object.assign(added,{from:earth.to,to:neutral.to,role:'PE'});
+  const wrong = evaluateGuidedWireAddition(activity,document,event,'build',lesson.circuit);
+  assert.equal(wrong?.status,'fail');
+  assert.match(wrong!.explanation,/joins neutral to earth/);
+  assert.ok(wrong!.explanation.includes(document.components.find(c=>c.id===added.from.component)!.label));
+  assert.equal(document.wires.length,1);
+  assert.equal(evaluateGuidedWireAddition(activity,document,{...event,revision:event.revision-1},'build',lesson.circuit),undefined);
+});
+
 test('every authored connection in all 80 lessons accepts its own isolated addition, retaining exact roles and endpoints', () => {
   let checked = 0;
   for (const lesson of LESSONS) {
@@ -142,7 +161,7 @@ test('PV and battery Try steps retain their IDs and require manual restoration o
     document.wires = structuredClone(lesson.circuit.wires);
     const local = document.components.find(component => ['pv', 'battery'].includes(component.type))!;
     assert.deepEqual(activity.expectedControls, [{ component: local.id, params: { on: true } }]);
-    assert.match(activity.instruction, /use Operate to enable its local source/);
+    assert.match(activity.instruction, /turn it on with Operate/);
     assert.ok(activity.instruction.includes(local.label));
     assert.equal(evaluateActivity(activity, document, simulate(document)).status, 'not-run');
     document.supply.enabled = true;
@@ -159,7 +178,7 @@ test('source instructions follow the original example availability instead of en
   local.params.on = false;
   const activity = getLessonActivities(lesson).find(item => item.id === 'lesson:48:operate:supply')!;
   assert.equal(activity.expectedControls, undefined);
-  assert.doesNotMatch(activity.instruction, /enable its local source/);
+  assert.doesNotMatch(activity.instruction, /turn it on with Operate/);
   const document = createIsolatedGuidedBuild(lesson.circuit, 'disabled-local-example');
   document.wires = structuredClone(lesson.circuit.wires);
   document.supply.enabled = true;

@@ -17,6 +17,31 @@ function meshes(parent:THREE.Object3D){const result:THREE.Mesh[]=[];parent.trave
 function triangles(parent:THREE.Object3D){return meshes(parent).reduce((total,m)=>total+(m.geometry.index?.count??m.geometry.getAttribute('position').count)/3,0);}
 function details(scene:THREE.Object3D){const nodes=new Map<string,THREE.Object3D[]>();scene.traverse(node=>{if(node.userData.detailId){const id=String(node.userData.detailId);nodes.set(id,[...(nodes.get(id)??[]),node]);}});return nodes;}
 
+test('the wall switch case screws and the retained rose knockout can be identified in both detail levels',async()=>{
+  for(const suffix of ['','.low']){
+    for(const key of ['switch_single-rocker','switch2_single-rocker']){
+      const scene=await load('/models/'+key+suffix+'.glb');scene.updateMatrixWorld(true);
+      const all=details(scene),fixings=all.get('switch-case-fixings')![0],cassette=all.get('recessed-switch-cassette')![0];
+      const cast=(x:number,y:number)=>new THREE.Raycaster(new THREE.Vector3(x,y,-1),new THREE.Vector3(0,0,1)).intersectObjects(meshes(cassette),false);
+      for(const [x,y] of [[-.0835,.892],[.0835,.892],[0,.445]]){
+        // Pick off-centre on the face, clear of the crosshead recess.
+        const hit=cast(x+.006,y+.005)[0];
+        assert.equal(semanticOwner(hit?.object).detail,'switch-case-fixings',key+' '+x+' '+y);
+        assert.equal(semanticOwner(hit.object).terminal,undefined);
+      }
+      assert.ok(meshes(fixings).length);
+      assert.ok(cast(0,.427)[0].distance-cast(.072,.427)[0].distance>.045,'real recess between the feet');
+    }
+    const scene=await load('/models/rose_default'+suffix+'.glb');scene.updateMatrixWorld(true);
+    const base=details(scene).get('cable-entry-knockouts')![0];
+    const hit=(x:number,y:number)=>new THREE.Raycaster(new THREE.Vector3(x,y,1),new THREE.Vector3(0,0,-1)).intersectObjects(meshes(base),false);
+    assert.equal(hit(.043,.385).length,0,'upper opening passes through the base');
+    assert.ok(hit(.043,.277).length,'the lower knockout is still present');
+    assert.equal(hit(-.277+.032,.343+.009).length,0,'the slanted fixing slot has clearance');
+    assert.ok(hit(.296+.037,.559).length,'the top right hole has a round boss');
+  }
+});
+
 test('all catalogue variants have actual family construction, original sources and local rendered icons',async()=>{
   assert.equal(manifest.length,109);const families=new Set<string>(),report:unknown[]=[];
   for(const asset of manifest){
