@@ -6,7 +6,7 @@ An offline 3D study game for Irish domestic, commercial and industrial electrica
 
 Open **Irish Electrical Lab** from the Desktop or Start menu. Close its window or choose **File → Exit** to stop the app and private server. **More → Fullscreen**, the window menu **View → Fullscreen**, or **F11** changes fullscreen; normal window size is remembered.
 
-Run `Irish-Electrical-Lab-1.24.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
+Run `Irish-Electrical-Lab-1.25.0-Setup.exe` to install the lab or update an earlier copy. Setup includes the models, circuit simulator and cable router. After installation you can study offline. Reference links open in your browser.
 
 On a phone, the worktop light, heater and back doorbell repairs start in the room. Follow the instruction above it or tap **Job** for more detail. In other lessons, tap **Walk** or **Full screen** to open the room. Tap a direction for one step or hold to walk. Drag the room to look around. For one-handed use, turn on **Tools → One-thumb walking** and use the side arrows to steer. Choose **Go closer** to reach a fitting, or tap **Find** and search for its name or room. Tap **Zoom** in a close-up to read a small terminal marking. **Job** keeps your place while you take readings. **Put meter away** returns to the site. In the two-door bell job the hall chime gives a short caption and a sound for each new call. The two sounds are examples chosen for this lab. You can turn them off in Settings or Site tools. For installation and controls, follow the [Home Screen and touch controls guide](iphone.md).
 
@@ -18,11 +18,11 @@ The app owns `127.0.0.1:4187`. A second launch focuses the existing window; a po
 
 ## Try a kitchen repair
 
-Open **Chapters → The heater stays cold**. The customer has tried the wall switch and the kitchen heater still feels cold. Turn it on in the room, then choose **Use the bench meter**. The training bench gives you test points for the sealed heater. Read **L** (line) to **N** (neutral) at the heater. Leave one probe on heater N and compare the reading where the line leaves the wall switch. If you touch the wrong point, the job tells you what you checked.
+Open **Chapters → The heater stays cold**. Try the wall switch, choose **Check the wall switch**, and turn the simulated supply off. Choose **Show rear screws**. The first resistance reading checks the path from **IN L** to **LOAD L** through the closed switch and fuse. For the second reading, leave one probe on LOAD L and touch the free end of the brown flex core. Record what the meter actually shows. On the standard fault the first reading is close to zero ohms, and the second is **OL** (open circuit). [See the flex and its test point](images/heater-flex-meter.png).
 
 Once you’ve found the fault, choose **Find repair on site** and follow the repair prompts with the simulated supply off. Restore the supply. Switch the heater off and back on and watch its power in watts. Choose **Test the repair** when you’ve seen the power come back.
 
-For a closer look at the wall switch itself, open **Tools → Check wall switch** in the full-screen room. Turn the bench supply off, then choose **Show rear screws**. With the switch on and the fuse intact, **L · IN** to **L · LOAD** reads close to zero ohms (Ω). **Lift and refit** lets you try the other rocker position. With the contacts open in this example the meter shows **OL**. This optional check uses its own two probes. **Put meter away** returns to the room. To continue the voltage checks, turn the supply back on in **Tools**.
+The **Use bench voltmeter** option gives you separate training points to compare the feed at the switch and the heater. In an earlier saved job that described an open wire without identifying a loose end, use these original voltage checks. The installed heater stays closed.
 
 ![The black probe tip touches the L LOAD screw of the isolated kitchen switch. The display reads 0 Ω and shows the red probe on L IN.](images/wall-switch-meter.png)
 

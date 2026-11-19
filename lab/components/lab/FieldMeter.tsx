@@ -2,6 +2,7 @@ import type {RefObject} from 'react';
 import {describeEndpoint} from '../../lib/endpoint-description';
 import {definitionFor} from '../../lib/components';
 import {getComponentTerminals} from '../../lib/terminal-layout';
+import {looseHeaterPoint} from '../../lib/heater-flex-point';
 import type {CircuitDocument,ComponentInstance,Endpoint} from '../../lib/types';
 import type {useInstalledOhmmeter} from './useInstalledOhmmeter';
 import './field-meter.css';
@@ -32,23 +33,25 @@ export function FieldMeter({circuit,active,red,black,display,hint,choose,record,
   </section>;
 }
 
-export function SwitchMeterSheet({circuit,part,check,isolate,isolateLabel,operate,leave}:{
+export function SwitchMeterSheet({circuit,part,check,isolate,isolateLabel,operate,leave,hint}:{
   circuit:CircuitDocument;part:ComponentInstance;check:ReturnType<typeof useInstalledOhmmeter>;
-  isolate?:()=>void;isolateLabel:string;operate:()=>void;leave:()=>void;
+  isolate?:()=>void;isolateLabel:string;operate:()=>void;leave:()=>void;hint?:string;
 }){
+  const copper=looseHeaterPoint(circuit);
   return <section className="switch-check" aria-label="Wall switch continuity check">
     <h3>Check the wall switch</h3>
     {!check.open?<><p>{check.safe?'The simulated supply is off. You can now see the rear contacts.':'This check measures resistance with the simulated supply off.'}</p>
       <button type="button" className="book-primary" disabled={!check.safe&&!isolate} onClick={check.safe?()=>check.setOpen(true):isolate}>{check.safe?'Show rear screws':isolateLabel}</button>
       {check.safe&&<button type="button" onClick={operate}>{part.params.closed===false?'Turn wall switch on':'Turn wall switch off'}</button>}</>:<>
       <FieldMeter circuit={circuit} active={check.lead} red={check.red} black={check.black} choose={check.choose}
-        display={check.reading.shown+' Ω'} hint={check.red&&check.black?check.reading.explanation:undefined}
+        display={check.reading.shown+' Ω'} hint={hint??(check.red&&check.black?check.reading.explanation:undefined)}
         canRecord={check.canRecord} recorded={check.recorded} record={check.record}/>
       <fieldset><legend>Place the {check.lead} probe</legend><div>
         {getComponentTerminals(part,definitionFor(part)).map(t=>{
           const point={component:part.id,terminal:t.id},label=describeEndpoint(circuit,point)?.pointLabel??t.label;
           return <button type="button" key={t.id} onClick={()=>check.pick(point)}>{label}</button>;
         })}
+        {copper&&<button type="button" onClick={()=>check.pick(copper)}>Loose brown wire</button>}
       </div></fieldset>
       <button type="button" onClick={()=>check.setOpen(false)}>Lift probes and refit</button>
     </>}

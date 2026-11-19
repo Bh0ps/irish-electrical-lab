@@ -10,6 +10,8 @@ import { measureResistance, measureVoltage, resistanceSupplyWarning } from './si
 import { endpointKey, type CircuitDocument, type ConfigurationLesson, type Endpoint, type SimulationResult, type Wire } from './types.ts';
 import type { BuildAssessment } from './assessment.ts';
 import { findConnectionWire } from './wire-connections.ts';
+import {looseHeaterPoint} from './heater-flex-point.ts';
+import {provesHeaterGap} from './heater-field-fault.ts';
 import { measurementPoints } from './measurement-points.ts';
 
 export interface MeasurementEvidence {
@@ -17,6 +19,7 @@ export interface MeasurementEvidence {
   a?:Endpoint; b?:Endpoint; wire?:string; value:number|null; unit:string; explanation:string; recordedAt:number;
   controlState:Record<string,string|number|boolean>;
   status?:'value'|'open'|'unresolved';
+  source?:'installed-fcu';
   /** True for a meter setup that supplied the points to the learner. */
   assisted?:boolean;
   /** Labels as they appeared when this reading was recorded. */
@@ -26,7 +29,7 @@ export interface MeasurementEvidence {
 export interface LessonActivity {
   id:string;kind:'inspect'|'predict'|'connect'|'operate'|'measure'|'explain'|'repair'|'retest';title:string;instruction:string;explanation:string;
   component?:string;part?:string;endpoints?:Endpoint[];options?:{id:string;label:string}[];answer?:string;
-  measurement?:{mode:'voltage'|'current'|'resistance';a?:Endpoint;b?:Endpoint;wire?:string;instrument?:InstrumentEvidence};competency:string;
+  measurement?:{mode:'voltage'|'current'|'resistance';a?:Endpoint;b?:Endpoint;wire?:string;instrument?:InstrumentEvidence;source?:'installed-fcu'};competency:string;
   bookStep?:'intro'|'switch-off'|'switch-on'|'contact'|'meter-demo'|'dimmer'|'finish';
   independentMeasurement?:boolean;
   clue?:string;
@@ -65,7 +68,7 @@ export function captureMeasurement(document:CircuitDocument,result:SimulationRes
       value=reading.value;explanation=reading.explanation;open=reading.status==='open';
       instrument=instrumentData(setup,reading);
     }
-  }else if(request.mode==='resistance'&&knownEndpoint(document,request.a)&&knownEndpoint(document,request.b)){
+  }else if(request.mode==='resistance'&&[request.a,request.b].every(p=>knownEndpoint(document,p)||request.source==='installed-fcu'&&eq(p,looseHeaterPoint(document)))){
     const sample=measureResistance(document,request.a!,request.b!,result?.revision===document.revision?result.deviceStates:undefined);
     value=sample.value;explanation=sample.explanation;open=sample.reason==='open';
   }
@@ -114,7 +117,7 @@ function comparedWireEnds(wire:Wire,readings:MeasurementEvidence[]):boolean {
 export function validateDiagnosisEvidence(document:CircuitDocument,result:SimulationResult|undefined,evidence:MeasurementEvidence[],target:{wire?:string;component?:string},readings=currentEvidence(document,result,evidence)):{accepted:boolean;explanation:string}{
   if(readings.length<2)return {accepted:false,explanation:'Record two different readings on the circuit as it is now.'};
   const wire=document.wires.find(w=>w.id===target.wire);
-  const relevant=wire?readings.some(sample=>
+  const joined=wire?readings.some(sample=>
     sample.mode==='current'&&sample.wire===wire.id ||
     sample.instrument?.method!=='fork-voltage'&&(eq(sample.a,wire.from)&&eq(sample.b,wire.to)||eq(sample.a,wire.to)&&eq(sample.b,wire.from)))
     ||comparedWireEnds(wire,currentEvidence(document,result,evidence.filter(sample=>sample?.assisted===false&&sample.mode==='voltage')))
@@ -122,7 +125,7 @@ export function validateDiagnosisEvidence(document:CircuitDocument,result:Simula
       const branch=document.wires.find(w=>w.id===sample.wire);
       return [sample.a,sample.b,branch?.from,branch?.to].some(point=>point?.component===target.component);
     });
-  return relevant
+  return joined||provesHeaterGap(document,result,readings,target.wire)
     ? {accepted:true,explanation:'You’ve taken the readings. Choose the fault you think they point to.'}
     : {accepted:false,explanation:wire?'Put a probe at each end of the wire. Or leave one probe in place and touch the other to each end in turn.':'Take a reading on the fitting you think is faulty.'};
 }

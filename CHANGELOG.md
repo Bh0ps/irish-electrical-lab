@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.25.0 — Trace the heater fault at the wall
+
+- Measure the switch and the loose brown flex end at the installed wall fitting in **The heater stays cold**. The ohmmeter uses the actual connections, including alternate paths. Both the 3D contacts and the labelled picker accept the same probe points.
+- Fixing the loose wire restores just that connection. Recheck the heater from its wall switch before handing it back. Old saved jobs keep their original bench-voltage checks.
+
 ## 1.24.0 — Walk the house and repair the back doorbell
 
 - Oakfield house jobs open full screen on a phone. Keep walking or tap **Find fitting** to reach the control. The current task stays above the room, and **Job** opens the full instructions.

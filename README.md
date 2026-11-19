@@ -27,7 +27,7 @@ open source under the [MIT license](LICENSE).
   full backups. After installation, study and building work offline.
 - Try **Check the bathroom fan timer** to work the bathroom light and fan. Turn the light off, watch the five-second timer, then see what the fan isolator switches off.
 - Try **One worktop stays dark**. Both switches are on, but only the left strip lights. Follow the missing feed with the meter, then open the right switch and put the loose connector back on its blade.
-- In **The heater stays cold**, use the training bench to find where the heater loses its feed. In the kitchen, you can also turn the simulated supply off and try the meter on the screws of the fitted wall switch. [See the meter at the switch](docs/images/wall-switch-meter.png).
+- In **The heater stays cold**, try the switch, isolate the simulated supply and check where the heater flex has come loose. Touch the exposed copper with a probe or choose it by name. [See the meter at the fitting](docs/images/heater-flex-meter.png).
 - In **Try both stair switches**, work the light from both floors. Turn the light off downstairs, read the markings on the back of the switch and see which of the two wires still has power. Go to the landing and use the other switch to light the stairs again.
 - Try **Meter the worktop lights** at Oakfield house. Put the probes on the LED tape and compare a dark worktop with a lit one.
 - Navigate with orbit controls or a **WASD free camera** in four training environments.

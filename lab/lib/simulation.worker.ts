@@ -24,7 +24,7 @@ self.onmessage=(event:MessageEvent)=>{
     }
     if(m.kind==='measure'){
       const result=simulate(doc,states,0);
-      const evidence=captureMeasurement(doc,result,{mode:m.mode??'resistance',a:m.a as Endpoint,b:m.b as Endpoint,wire:m.wire,instrument:m.instrument});
+      const evidence=captureMeasurement(doc,result,{mode:m.mode??'resistance',a:m.a as Endpoint,b:m.b as Endpoint,wire:m.wire,instrument:m.instrument,...(m.source==='installed-fcu'&&m.mode==='resistance'?{source:'installed-fcu' as const}:{})});
       if(m.assisted!==undefined)evidence.assisted=m.assisted===true;
       self.postMessage({kind:'measurement',requestId:m.requestId,electricalGeneration:m.electricalGeneration,circuitId:doc.id,revision:doc.revision,mode:evidence.mode,a:evidence.a,b:evidence.b,wire:evidence.wire,value:evidence.value,explanation:evidence.explanation,evidence});return;
     }

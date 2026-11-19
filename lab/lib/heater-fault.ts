@@ -28,15 +28,26 @@ export function elementWatts(doc:CircuitDocument,result:SimulationResult|undefin
   return typeof watts==='number'&&Number.isFinite(watts)&&watts>=0?watts:undefined;
 }
 
+/** A break in this heater's line invalidates even a stale healthy reading
+ * with the same revision. Other faults are evaluated in the final circuit test. */
+function heaterLineOpen(doc:CircuitDocument){
+  return doc.faults.some(f=>{
+    if(!f.enabled||(f.type!=='open-live'&&f.type!=='open-wire'))return false;
+    if(!f.wire)return f.type==='open-live'&&f.component==='fixed';
+    const wire=doc.wires.find(w=>w.id===f.wire);
+    return !!wire&&[wire.from,wire.to].some(p=>endpointKey(p)===endpointKey(heaterLine));
+  });
+}
+
 export function startHeaterPress(doc:CircuitDocument,result:SimulationResult|undefined,control:string):HeaterSwitchPress|undefined {
-  if(control!=='fcu-switch'||!doc.supply.enabled||doc.faults.some(f=>f.enabled))return;
+  if(control!=='fcu-switch'||!doc.supply.enabled||heaterLineOpen(doc))return;
   const before=elementWatts(doc,result);
   if(before===undefined)return;
   return {circuit:doc.id,revision:doc.revision+1,toOn:!doc.components.find(c=>c.id===control)?.params.closed,before};
 }
 
 export function finishHeaterPress(doc:CircuitDocument,result:SimulationResult|undefined,press:HeaterSwitchPress,previous?:HeaterRun):HeaterRun|undefined {
-  if(press.circuit!==doc.id||press.revision!==doc.revision||!doc.supply.enabled||doc.faults.some(f=>f.enabled))return previous;
+  if(press.circuit!==doc.id||press.revision!==doc.revision||!doc.supply.enabled||heaterLineOpen(doc))return previous;
   const watts=elementWatts(doc,result),closed=doc.components.find(c=>c.id==='fcu-switch')?.params.closed===true;
   if(watts===undefined||closed!==press.toOn)return previous;
   if(!closed&&press.before>1&&watts<1)return {runningBefore:press.before,stopped:watts,offRevision:doc.revision};

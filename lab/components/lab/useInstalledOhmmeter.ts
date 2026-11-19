@@ -1,8 +1,9 @@
-import {useEffect,useMemo,useState,type RefObject} from 'react';
+import {useEffect,useMemo,useRef,useState,type RefObject} from 'react';
 import {forkRead,instrumentData,type ForkReading,type ForkSetup} from '../../lib/fork-tester';
 import {resistanceSupplyWarning} from '../../lib/simulation';
 import type {CircuitDocument,Endpoint,SimulationResult} from '../../lib/types';
 import {fcuWireMouths} from '../../lib/bg851';
+import {looseHeaterPoint} from '../../lib/heater-flex-point';
 
 type Lead='red'|'black';
 interface Visit {circuit:string;device:string;revision?:number;lead:Lead;red?:Endpoint;black?:Endpoint}
@@ -15,6 +16,7 @@ export function useInstalledOhmmeter(doc:CircuitDocument,result:SimulationResult
   const [preview,setPreview]=useState<{key:string;reading:ForkReading}>();
   const [saved,setSaved]=useState('');
   const [recording,setRecording]=useState('');
+  const armAfterReading=useRef<string|undefined>(undefined);
   const [placement,setPlacement]=useState(0);
   const active=!!visit&&visit.circuit===doc.id;
   const safe=!!result?.converged&&result.revision===doc.revision&&!resistanceSupplyWarning(doc);
@@ -31,6 +33,15 @@ export function useInstalledOhmmeter(doc:CircuitDocument,result:SimulationResult
       if(data.kind==='measurement'&&data.requestId===key){
         setRecording('');
         if(data.evidence&&data.evidence.status!=='unresolved')setSaved(key);
+        const sample=data.evidence;
+        if(armAfterReading.current===key&&sample?.source==='installed-fcu'&&sample.mode==='resistance'&&sample.status==='value'&&
+          !sample.assisted&&typeof sample.value==='number'&&sample.value>=0&&sample.value<.5&&looseHeaterPoint(doc)&&
+          red.component==='fcu-switch'&&black.component===red.component&&[red.terminal,black.terminal].sort().join('/')==='LIN/LOUT'){
+          // Leave the probe on L LOAD parked. The next reading only moves the
+          // probe on L IN, whichever colour the learner originally put there.
+          setVisit(v=>v?.red===red&&v.black===black?{...v,lead:red.terminal==='LIN'?'red':'black'}:v);
+        }
+        armAfterReading.current=undefined;
       }
       if(data.kind==='error'&&data.requestId===key){
         setRecording('');
@@ -47,20 +58,21 @@ export function useInstalledOhmmeter(doc:CircuitDocument,result:SimulationResult
   function record(){
     if(!open||!red||!black||!instrument||saved===key||recording===key||!worker.current)return;
     setRecording(key);
-    worker.current.postMessage({kind:'measure',document:doc,mode:'resistance',a:red,b:black,instrument,assisted:false,requestId:key});
+    armAfterReading.current=key;
+    worker.current.postMessage({kind:'measure',document:doc,mode:'resistance',a:red,b:black,instrument,assisted:false,source:'installed-fcu',requestId:key});
   }
   function setOpen(next:boolean){
     if(!active||next&&!safe)return;
-    setSaved('');setPreview(undefined);setVisit({circuit:doc.id,device:visit.device,lead:'red',revision:next?doc.revision:undefined});
+    armAfterReading.current=undefined;setSaved('');setPreview(undefined);setVisit({circuit:doc.id,device:visit.device,lead:'red',revision:next?doc.revision:undefined});
   }
   function pick(point:Endpoint){
-    if(!open||point.component!==visit.device||!Object.hasOwn(fcuWireMouths,point.terminal))return;
-    setSaved('');
+    if(!open||point.component!==visit.device||(!Object.hasOwn(fcuWireMouths,point.terminal)&&point.terminal!==looseHeaterPoint(doc)?.terminal))return;
+    armAfterReading.current=undefined;setSaved('');
     setPlacement(previous=>previous+1);
     setVisit({...visit,[visit.lead]:point,lead:visit.lead==='red'?'black':visit.red?'black':'red'});
   }
   return {active,device:active?visit.device:undefined,safe,open,red,black,lead:active?visit.lead:'red' as Lead,
     start:(device:string)=>{setVisit({circuit:doc.id,device,lead:'red'});setPreview(undefined);setSaved('');},
-    finish:()=>setVisit(undefined),setOpen,pick,choose:(lead:Lead)=>setVisit(v=>v&&({...v,lead})),
+    finish:()=>setVisit(undefined),setOpen,pick,choose:(lead:Lead)=>{armAfterReading.current=undefined;setVisit(v=>v&&({...v,lead}));},
     reading,record,canRecord:open&&!!instrument&&saved!==key&&recording!==key,recorded:open&&saved===key};
 }

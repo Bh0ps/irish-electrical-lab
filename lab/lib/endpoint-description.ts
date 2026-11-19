@@ -1,5 +1,6 @@
 import { COMPONENTS } from './components';
 import { getComponentTerminals } from './terminal-layout';
+import {looseHeaterPoint} from './heater-flex-point';
 import type { CircuitDocument, Endpoint, TerminalRole } from './types';
 
 export interface EndpointDescription {
@@ -20,6 +21,11 @@ export function describeEndpoint(document: CircuitDocument, endpoint?: Endpoint)
   const component = document.components.find(item => item.id === endpoint.component);
   const definition = component && COMPONENTS[component.type];
   if (!component || !definition) return undefined;
+  if(endpoint.terminal.startsWith('loose-flex:')&&endpoint.terminal===looseHeaterPoint(document)?.terminal&&component.id==='fcu-switch'){
+    const name='Loose brown wire';
+    return {endpoint:{...endpoint},equipmentName:component.label,terminalLabel:name,pointLabel:name,role:'L',
+      label:component.label+' · '+name,purpose:'The bare copper at the end of the brown heater wire.'};
+  }
   const terminals = getComponentTerminals(component, definition);
   const terminal = terminals.find(item => item.id === endpoint.terminal);
   if (!terminal) return undefined;

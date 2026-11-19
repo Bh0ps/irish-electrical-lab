@@ -3,8 +3,9 @@ import { definitionFor } from './components.ts';
 import { describeEndpoint } from './endpoint-description.ts';
 import { measureResistance, measureVoltage, simulate } from './simulation.ts';
 import type { CircuitDocument, Complex, ConfigurationLesson, Endpoint, FaultSetting, SimulationResult } from './types.ts';
-import { validateDiagnosisEvidence, type MeasurementEvidence } from './learning.ts';
+import { currentEvidence, validateDiagnosisEvidence, type MeasurementEvidence } from './learning.ts';
 import { worktopFaultPoints, worktopFaultReadings } from './worktop-fault.ts';
+import {provesHeaterGap,heaterFieldReadings} from './heater-field-fault.ts';
 import { heaterComparisonReady, heaterFaultReadings, heaterFeed, heaterLine } from './heater-fault.ts';
 
 export type DiagnosisTarget = Pick<ConfigurationLesson['challenge'], 'fault' | 'wire' | 'component'> & {hint?:string};
@@ -39,7 +40,8 @@ export function assessFaultDiagnosis(
   evidence?: MeasurementEvidence[],
 ): FaultDiagnosisAssessment {
   if (!result || result.revision !== document.revision || !result.converged) return reject('Wait for the bench reading. If it stays blank, choose Test circuit.');
-  if(evidence!==undefined){const measured=validateDiagnosisEvidence(document,result,evidence,challenge);if(!measured.accepted)return reject(measured.explanation);}
+  const verified=evidence&&currentEvidence(document,result,evidence);
+  if(verified){const measured=validateDiagnosisEvidence(document,result,evidence!,challenge,verified);if(!measured.accepted)return reject(measured.explanation);}
   else if (!Number.isFinite(observations) || observations < 2) return reject('Take two meter readings before choosing the fault.');
   const enabled = document.faults.filter(fault => fault.enabled);
   const fault = enabled.find(candidate => candidate.type === challenge.fault && (!challenge.wire || candidate.wire === challenge.wire) && (!challenge.component || candidate.component === challenge.component));
@@ -47,7 +49,7 @@ export function assessFaultDiagnosis(
   if (enabled.length !== 1) return reject('There is more than one practice fault on the bench. Restart fault practice to work on one at a time.');
   const targetComponent = fault.component && document.components.find(component => component.id === fault.component);
   if (fault.component && !targetComponent) return reject('The fitting you need has been removed. Restart fault practice to put it back.');
-  const wire = fault.wire && document.wires.find(candidate => candidate.id === fault.wire);
+  const wire = fault.wire ? document.wires.find(candidate => candidate.id === fault.wire) : undefined;
   if (fault.wire && !wire) return reject('The wire you need has been removed. Restart fault practice to put it back.');
   if (wire && [wire.from, wire.to].some(endpoint => {
     const component = document.components.find(candidate => candidate.id === endpoint.component);
@@ -74,6 +76,13 @@ export function assessFaultDiagnosis(
       if(diagnosis!==fault.type)return reject(comparison+' Which wire joins those points?');
       bellComparison=true;
     }
+  }
+  if(verified&&provesHeaterGap(document,result,verified,wire?.id)){
+    const {pole}=heaterFieldReadings(document,result,verified);
+    const through=pole!.instrument!.displayed;
+    const seen='The two L screws read '+through+' Ω. From LOAD L to the loose brown wire you got OL.';
+    if(diagnosis!==fault.type)return reject(seen+' Which connection is open?');
+    return accept(seen+' The break is at the wall switch, before the flex to the heater.');
   }
   const feed=heaterFeed(document);
   if(feed&&evidence&&hasEnd(feed)&&hasEnd(heaterLine)){

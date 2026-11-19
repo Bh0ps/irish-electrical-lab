@@ -7,6 +7,7 @@ import {faultReadingValue as readingValue, repairMeterPrompt} from '../../lib/re
 import type { MeasurementEvidence } from '../../lib/learning';
 import { measurementPoints } from '../../lib/measurement-points';
 import { faultScore, kitchenFaultChoices, lessonFaultChoices, type FaultStage } from '../../lib/fault-practice';
+import {heaterFieldPrompt,type HeaterFieldReadings} from '../../lib/heater-field-fault';
 import { heaterFeed, type HeaterReadings, type HeaterRun } from '../../lib/heater-fault';
 import { Button } from '../ui/button';
 import HeaterFlexChoice,{type FlexLanding} from './HeaterFlexChoice';
@@ -24,6 +25,7 @@ interface Props {
   feedback:string; diagnosis:string; setDiagnosis:(value:string)=>void; submit:()=>void; checking:boolean; repair:()=>void;
   test:()=>void; testing:boolean; failed:boolean; openReport:()=>void; showClue:()=>void; closeTools:()=>void; openMeter:()=>void;
   context?:ReactNode; next:()=>void; readings:{strip?:MeasurementEvidence;switchOutput?:MeasurementEvidence}; heater?:HeaterReadings;
+  heaterField?:HeaterFieldReadings; heaterBench?:boolean; openHeaterField?:()=>void; openHeaterBench?:()=>void;
   heaterRun?:HeaterRun; heaterRunAction?:HandoverAction; worktopStatus?:string;
   restoreSupply?:()=>void; samples:MeasurementEvidence[]; missing:string; wrongPoints:boolean; leftLit?:boolean; scoreThis:()=>void; switchOn:boolean; operateSwitch:()=>void;
 }
@@ -33,6 +35,7 @@ const stages:Record<FaultStage,string> = {
 };
 
 function measurePrompt(props:Props,wrong?:MeasurementEvidence) {
+  if(props.heaterField&&!props.heaterBench)return heaterFieldPrompt(props.doc,props.heaterField,wrong);
   const namedJob=props.bell?'chime':props.heater?'heater':props.worktop?'worktop':undefined;
   if(namedJob)return repairMeterPrompt(props.doc,namedJob,props.readings,props.heater,props.bell,wrong);
   if(props.wrongPoints&&props.missing)return props.missing;
@@ -40,8 +43,8 @@ function measurePrompt(props:Props,wrong?:MeasurementEvidence) {
   return props.context?'Record two readings to find the fault.':props.lesson.challenge.briefing;
 }
 
-function FaultReadings({doc,samples,readings,worktop,heater,bell}:Pick<Props,'doc'|'samples'|'readings'|'worktop'|'heater'|'bell'>) {
-  const rows=bell?[{label:chimeMark(doc,'REAR')+' to '+chimeMark(doc,'AC2'),sample:bell.call},{label:'Back button to '+chimeMark(doc,'AC2'),sample:bell.push}]:heater?[{label:'Across the heater',sample:heater.heater},{label:heaterFeed(doc)?.component==='fuse'?'Fuse OUT to heater N':'Wall switch LOAD L to heater N',sample:heater.output}]:worktop
+function FaultReadings({doc,samples,readings,worktop,heater,bell,heaterField,heaterBench}:Pick<Props,'doc'|'samples'|'readings'|'worktop'|'heater'|'bell'|'heaterField'|'heaterBench'>) {
+  const rows=heaterField&&!heaterBench?[{label:'IN L to LOAD L',sample:heaterField.pole},{label:'LOAD L to brown wire',sample:heaterField.gap}]:bell?[{label:chimeMark(doc,'REAR')+' to '+chimeMark(doc,'AC2'),sample:bell.call},{label:'Back button to '+chimeMark(doc,'AC2'),sample:bell.push}]:heater?[{label:'Across the heater',sample:heater.heater},{label:heaterFeed(doc)?.component==='fuse'?'Fuse OUT to heater N':'Wall switch LOAD L to heater N',sample:heater.output}]:worktop
     ? [{label:'Across the right strip',sample:readings.strip},{label:'Right switch to − pad',sample:readings.switchOutput}]
     : samples.map(sample=>({label:sample.measuredAt ?? measurementPoints(doc,sample),sample}));
   const table=(items:typeof rows)=><dl className="fault-readings" aria-label="Your fault readings">
@@ -94,7 +97,8 @@ export function FaultPracticePanel(props:Props) {
   const frontHeld=Boolean(props.doc.components.find(c=>c.id==='front')?.params.pressed);
   const backHeld=Boolean(props.doc.components.find(c=>c.id==='back')?.params.pressed);
   const doorAction=props.bell&&(frontHeld||!backHeld)?{label:frontHeld?'Let go of front button':'Hold back button',run:()=>props.toggleDoor?.(frontHeld?'front':'back')}:undefined;
-  const measureAction=doorAction??{
+  const fieldHeater=!!props.heaterField&&!props.heaterBench;
+  const measureAction=fieldHeater&&props.switchOn&&props.openHeaterField?{label:'Check the wall switch',run:props.openHeaterField}:doorAction??{
     label:props.bell?(props.bell.call?'Check the back button':'Check the chime'):props.heater?(props.switchOn?'Use the bench meter':'Turn heater switch on'):worktop&&!props.switchOn?'Turn the right switch on':'Use the meter',
     run:(worktop||props.heater)&&!props.switchOn?props.operateSwitch:props.openMeter,
   };
@@ -130,13 +134,15 @@ export function FaultPracticePanel(props:Props) {
     </div>
     {stage==='measure'&&!instrumentOpen&&!props.wrongPoints&&!props.samples.length&&(
       props.bell?<p>The front doorbell rings in the hall. The back doorbell is quiet.</p>
-      :props.heater?<p>{props.switchOn?'L is line and N is neutral. The training bench lets you check both without opening the heater.':'“I’ve tried the wall switch, but the kitchen heater stays cold.”'}</p>
+      :props.heater?<p>{props.switchOn?fieldHeater?'Keep the wall switch on. The bench supply must be off for a resistance check.':'L is line and N is neutral. The training bench lets you check both without opening the heater.':'“I’ve tried the wall switch, but the kitchen heater stays cold.”'}</p>
       :worktop?<p>{props.leftLit?'“The light under the left cupboard works. The right one stays dark.”':'“The light under the right cupboard stays dark.”'}</p>
       :<p>Record two meter readings before choosing the fault.</p>
     )}
     {stage==='measure'&&props.bell?.call&&!props.bell.push&&!props.wrongPoints&&
       <p role="status">At the hall chime · <b>{readingValue(props.bell.call)}</b></p>}
-    {stage==='measure'&&props.heater?.heater&&!props.heater.output&&!props.wrongPoints&&
+    {stage==='measure'&&fieldHeater&&props.heaterField?.pole&&!props.heaterField.gap&&!props.wrongPoints&&
+      <p role="status">Switch and fuse · <b>{readingValue(props.heaterField.pole)}</b></p>}
+    {stage==='measure'&&!fieldHeater&&props.heater?.heater&&!props.heater.output&&!props.wrongPoints&&
       <p role="status">At the heater · <b>{readingValue(props.heater.heater)}</b></p>}
     {stage==='measure'&&worktop&&readings.strip&&!readings.switchOutput&&!props.wrongPoints&&
       <p role="status">Right strip · <b>{readingValue(readings.strip)}</b></p>}
@@ -144,7 +150,9 @@ export function FaultPracticePanel(props:Props) {
     {props.feedback&&stage!=='done'&&<p className="task-feedback" role="status">{props.feedback}</p>}
     {stage==='diagnose'&&!instrumentOpen&&<FaultReadings {...props}/>}
     {!instrumentOpen&&<>
-      {stage==='measure'&&<Button className="primary-button full" onClick={measureAction.run}>{measureAction.label}</Button>}
+      {stage==='measure'&&<><Button className="primary-button full" onClick={measureAction.run}>{measureAction.label}</Button>
+        {props.openHeaterBench&&fieldHeater&&<Button variant="ghost" onClick={props.openHeaterBench}>Use bench voltmeter</Button>}
+        {props.openHeaterField&&props.heaterBench&&<Button variant="ghost" onClick={props.openHeaterField}>Check at the wall instead</Button>}</>}
       {stage==='diagnose'&&<>
         <label className="field-label"><span className="sr-only">Your diagnosis</span>
           <select aria-label="Your diagnosis" value={props.diagnosis} onChange={e=>props.setDiagnosis(e.target.value)}>
@@ -175,6 +183,6 @@ export function FaultPracticePanel(props:Props) {
       {!props.scored&&<Button variant="ghost" onClick={props.scoreThis}>Restart for a score</Button>}
     </details>}
     {context}
-    {!instrumentOpen&&stage==='measure'&&(worktop&&hasWorktopReading||props.heater?.heater||props.heater?.output||props.bell?.call||props.bell?.push)&&<details className="fault-help"><summary>Your saved readings</summary><FaultReadings {...props}/></details>}
+    {!instrumentOpen&&stage==='measure'&&(worktop&&hasWorktopReading||props.heaterField?.pole||props.heaterField?.gap||props.heater?.heater||props.heater?.output||props.bell?.call||props.bell?.push)&&<details className="fault-help"><summary>Your saved readings</summary><FaultReadings {...props}/></details>}
   </section>;
 }

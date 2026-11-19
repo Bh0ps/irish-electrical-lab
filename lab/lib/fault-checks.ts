@@ -72,8 +72,13 @@ export function faultMeterCheck(lesson:ConfigurationLesson,doc:CircuitDocument):
     instruction:'Turn off the bench supply. Set the precision study meter to ohms. Check '+pointName(doc,wire.from)+' to '+pointName(doc,wire.to)+'. Compare with '+pointName(doc,comparison.from)+' to '+pointName(doc,comparison.to)+'.'};
 }
 
-export function faultClue(lesson:ConfigurationLesson,doc:CircuitDocument,hints:number,worktop:boolean):string {
+export function faultClue(lesson:ConfigurationLesson,doc:CircuitDocument,hints:number,worktop:boolean,heaterField=false):string {
   if(hints<1)return '';
+  if(heaterField){
+    if(hints===1)return 'With the simulated supply off, check the switch and fuse first.';
+    if(hints===2)return 'Use the two screws marked L. With the switch closed, a good path reads close to zero ohms.';
+    return 'Leave one probe on LOAD L. Touch the other to the brown flex end. Is the wire actually touching that clamp?';
+  }
   if(hints===1)return worktop?'The left strip lights. Check the one that stays dark.':lesson.challenge.firstCheck;
   if(hints===2)return worktop?'Keep one probe on the right strip’s − pad. Compare the voltage at its + pad with the voltage leaving the switch.':lesson.challenge.hint;
   return faultMeterCheck(lesson,doc)?.instruction??lesson.challenge.hint;

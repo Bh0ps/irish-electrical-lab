@@ -25,7 +25,9 @@ export default function SiteMeterPads({fitting,open,showLabels,meter,pick,blocke
       return <group key={endpoint.terminal}>{(['red','black'] as const).map(lead=>{
         if(!here(meter[lead]))return null;
         const probe=fitting.kind==='sesame'?sesameSiteProbe:fusedProbePose;
-        const seat=probe(fitting.item,fitting.component,endpoint.terminal,lead==='black'&&here(meter.red));
+        const second=lead==='black'&&here(meter.red);
+        const copper=fitting.looseCore;
+        const seat=copper?.endpoint.terminal===endpoint.terminal?(second?copper.second:copper.first):probe(fitting.item,fitting.component,endpoint.terminal,second);
         return seat&&<group key={lead} position={seat.position}><MeterProbe red={lead==='red'} direction={seat.approach}/></group>;
       })}</group>;
     }

@@ -1,4 +1,6 @@
 import {isPanelHeater,panelThermostat} from './panel-heater.ts';
+import {looseHeaterWire} from './heater-connection.ts';
+import {heaterCopperEndpoint,looseHeaterPoint} from './heater-flex-point.ts';
 import { simulatePulses } from './pulse-simulation.ts';
 import { definitionFor as definition, hasReplaceableFuse } from './components.ts';
 import { endpointKey, type CircuitDocument, type Complex, type ComponentInstance, type DeviceState, type Diagnostic, type Endpoint, type Parameters, type SimulationEvent, type SimulationResult } from './types.ts';
@@ -97,14 +99,25 @@ function network(document: CircuitDocument, states: Record<string, DeviceState>,
     for (const t of definition(item).terminals) node(terminal(item, t.id));
   }
   const faults = document.faults.filter(f => f.enabled);
+  const looseFlex=passive?looseHeaterWire(document):undefined;
   for (const wire of document.wires) {
     const a = endpointKey(wire.from), b = endpointKey(wire.to);
     if (!net.nodes.has(a) || !net.nodes.has(b) || wire.from.component === wire.to.component && wire.from.terminal === wire.to.terminal) {
       net.diagnostics.push({ ...diag(`wire:${wire.id}`, 'Check the ends of this wire', 'Each end needs its own terminal. Check whether one end is missing or both ends go to the same terminal.', undefined, 'error', 'model'), wire: wire.id }); continue;
     }
-    const open = faults.some(f => (f.wire === wire.id && ['open', 'open-wire', 'open-live', 'open-neutral', 'open-cpc', 'missing-earth', 'phase-loss', 'wrong-control'].includes(f.type)) ||
-      (!f.wire && f.component && (f.component === wire.from.component || f.component === wire.to.component) && ((f.type === 'open-neutral' && wire.role === 'N') || (['open-cpc', 'missing-earth'].includes(f.type) && wire.role === 'PE') || (f.type === 'phase-loss' && wire.role === 'L3') || (f.type === 'open-live' && ['L', 'L1'].includes(wire.role)) || (f.type === 'wrong-control' && wire.role === 'control'))));
-    if (!open) resistor(`wire:${wire.id}`, a, b, Math.max(0.0001, Number.isFinite(wire.resistance) ? wire.resistance : 0.01), undefined, false);
+    const opensWire=(f:CircuitDocument['faults'][number])=>(f.wire === wire.id && ['open', 'open-wire', 'open-live', 'open-neutral', 'open-cpc', 'missing-earth', 'phase-loss', 'wrong-control'].includes(f.type)) ||
+      (!f.wire && f.component && (f.component === wire.from.component || f.component === wire.to.component) && ((f.type === 'open-neutral' && wire.role === 'N') || (['open-cpc', 'missing-earth'].includes(f.type) && wire.role === 'PE') || (f.type === 'phase-loss' && wire.role === 'L3') || (f.type === 'open-live' && ['L', 'L1'].includes(wire.role)) || (f.type === 'wrong-control' && wire.role === 'control')));
+    const r=Math.max(0.0001, Number.isFinite(wire.resistance) ? wire.resistance : 0.01);
+    if (!faults.some(opensWire)) resistor(`wire:${wire.id}`, a, b, r, undefined, false);
+    else if(wire===looseFlex){
+      // Only this end is out of its clamp. The wire itself is still joined to
+      // the appliance, with its saved resistance and any real parallel paths.
+      const attached=wire.from.component==='fixed'?a:b;
+      const tip=node(endpointKey(heaterCopperEndpoint(wire)));
+      const marked=wire.from.component==='fcu-switch'?a:b;
+      const anotherBreak=faults.some(f=>opensWire(f)&&(!f.looseEnd||endpointKey(f.looseEnd)!==marked));
+      if(!anotherBreak)resistor(`wire:${wire.id}`,tip,attached,r,undefined,false);
+    }
   }
   for (const item of document.components) {
     if (!definition(item)) continue;
@@ -974,6 +987,11 @@ export function resistanceSupplyWarning(document:CircuitDocument):string|undefin
 export function measureResistance(document: CircuitDocument, a: Endpoint, b: Endpoint, deviceStates?:Record<string,DeviceState>): MeterReading {
   const warning=resistanceSupplyWarning(document);
   if(warning)return {value:null,reason:'supply-on',explanation:warning};
+  if([a,b].some(p=>p.terminal.startsWith('loose-flex:'))){
+    const copper=looseHeaterPoint(document);
+    if(!copper||[a,b].some(p=>p.terminal.startsWith('loose-flex:')&&endpointKey(p)!==endpointKey(copper)))
+      return {value:null,explanation:'That loose wire end is no longer available to test.'};
+  }
   if (endpointKey(a) === endpointKey(b)) return { value: 0, explanation: 'Both probes touch the same terminal.' };
   const passiveDocument: CircuitDocument = { ...document, supply: { ...document.supply, enabled: false }, components: document.components.filter(item => !isType(item, 'transformer', 'driver', 'dcsupply', 'vfd', 'pv', 'battery')) };
   // Isolation removes power but leaves blown fuses and tripped breakers open.

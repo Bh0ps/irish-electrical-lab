@@ -91,8 +91,8 @@
 .site-meter-heading button{min-height:44px;padding:0 .6rem;border:1px solid #99ab9a;border-radius:6px;background:#fefff8;color:#183b30;font-weight:600}
 .site-meter-heading button:focus-visible,.site-pad button:focus-visible{outline:3px solid #225ca3;outline-offset:2px}
 @media (orientation:landscape) and (max-height:540px){
-  .jobsite[data-immersive][data-bell-meter]>.site-meter-heading{max-width:calc(50% - 3rem);max-height:calc(100% - 1rem);overflow:auto;align-content:start}
-  .jobsite[data-bell-meter] .site-meter-heading select{max-width:9rem}
+  .jobsite[data-immersive]:is([data-bell-meter],[data-fcu-meter])>.site-meter-heading{max-width:calc(50% - 3rem);max-height:calc(100% - 1rem);overflow:auto;align-content:start}
+  .jobsite:is([data-bell-meter],[data-fcu-meter]) .site-meter-heading select{max-width:9rem}
 }
 .site-bell-state {flex-basis:100%;color:#324e40;font-size:.8rem;line-height:1.25}
 @media(max-width:600px){.site-meter-heading{gap:.15rem .30rem;padding:.1rem .3rem}.site-meter-heading select{max-width:38vw}.site-meter-heading button{padding:0 .4rem}}
@@ -156,12 +156,14 @@
 .site-walk-stick[data-pressed] > i{display:block}
 .jobsite[data-immersive] .site-actions .site-repair{background:#27553e;color:#fff;white-space:normal;line-height:1.25}
 @media(max-width:365px){
-  .jobsite[data-immersive][data-bell-meter]{display:flex;flex-direction:column}
-  .jobsite[data-immersive][data-bell-meter]>.site-camera{position:relative;flex:1;min-height:0;height:auto}
-  .jobsite[data-immersive][data-bell-meter]>.site-meter-heading{position:static;order:-1;display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;max-width:none;border-radius:0;padding:2px 5px;gap:2px}
-  .jobsite[data-bell-meter] .site-meter-heading select{width:100%;max-width:100%}
+  .jobsite[data-immersive]:is([data-bell-meter],[data-fcu-meter]){display:flex;flex-direction:column}
+  .jobsite[data-immersive]:is([data-bell-meter],[data-fcu-meter])>.site-camera{position:relative;flex:1;min-height:0;height:auto}
+  .jobsite[data-immersive]:is([data-bell-meter],[data-fcu-meter])>.site-meter-heading{position:static;order:-1;display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;max-width:none;border-radius:0;padding:2px 5px;gap:2px}
+  .jobsite:is([data-bell-meter],[data-fcu-meter]) .site-meter-heading select{width:100%;max-width:100%}
   .jobsite[data-bell-meter] .site-meter-heading label b{display:none}
   .jobsite[data-bell-meter] .site-bell-state{grid-column:1/-1}
+  .jobsite[data-immersive][data-fcu-meter]>.site-meter-heading{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
+  .jobsite[data-fcu-meter] .site-meter-heading label>span{display:none}
   .jobsite[data-immersive][data-loose-rocker]{display:flex;flex-direction:column}
   .jobsite[data-immersive][data-loose-rocker]>.site-camera{position:relative;flex:1;min-height:0;height:auto}
   .jobsite[data-immersive][data-loose-rocker=meter]>.site-meter-heading{position:static;order:-1;display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;max-width:none;border-radius:0;padding:2px 5px;gap:2px}
