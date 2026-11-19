@@ -152,9 +152,9 @@ export function closedForPresentation(component:ComponentInstance,state?:DeviceS
   if(component.type==='dimmer')return component.params.closed!==false;
   return state?.closed??component.params.closed!==false;
 }
-export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet',connectedTerminals='',installedHeaterFlex=false,looseRockerTerminal?:string):void{
+export function presentBlenderModel(presentation:AssetPresentation,view:EquipmentView,component:ComponentInstance,state?:DeviceState,contactPiece?:'reed'|'magnet',connectedTerminals='',installedHeaterFlex=false,looseRockerTerminal?:string,installedPushWithdrawn=false):void{
   if(presentation.looseHeaterLead)presentation.looseHeaterLead.visible=!installedHeaterFlex;
-  const batch=view==='normal'&&!contactPiece&&!installedHeaterFlex;
+  const batch=view==='normal'&&!contactPiece&&!installedHeaterFlex&&!installedPushWithdrawn;
   for(const mesh of presentation.terminalBatches)mesh.visible=batch;
   for(const clip of presentation.receptacles){
     clip.node.visible=connectedTerminals.split(' ').includes(clip.terminal);
@@ -200,6 +200,7 @@ export function presentBlenderModel(presentation:AssetPresentation,view:Equipmen
     // together in Open, and show the inner lamp through the glass in Cutaway.
     const bulbInterior=clearBulb&&(visibleBulbStem||mesh.filament||mesh.node.userData.lampEnvelope);
     mesh.node.visible=!(view==='cutaway'&&mesh.coverAssembly&&!bulbInterior||view==='normal'&&(conceptualInternal||mesh.serviceChamber));
+    if(installedPushWithdrawn&&component.type==='pushbutton'&&component.variant==='sesame'&&(mesh.coverAssembly||mesh.part==='mounting'))mesh.node.visible=false;
     if(component.variant==='door-contact' && contactPiece){
       mesh.node.visible &&= (mesh.part==='actuator')===(contactPiece==='magnet');
     }

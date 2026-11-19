@@ -44,7 +44,8 @@ import {repairMeterPrompt} from '../../lib/repair-meter-guidance';
 import { faultChoices, faultScore, worktopComparisonReady, faultStage, faultStageId, worktopFaultTitle } from '../../lib/fault-practice';
 import { faultClue } from '../../lib/fault-checks';
 import { reseatWorktopConnector, worktopFaultReadings, worktopLampStatus, worktopLooseEnd } from '../../lib/worktop-fault';
-import { bellComparisonReady, bellFaultActivity, bellFaultTitle, bellInput, bellReadings } from '../../lib/bell-fault';
+import { bellComparisonReady, bellFaultActivity, bellFaultTitle, bellInput, bellReadings, hasBellHandover, startBellPress, finishBellPress, bellRunReady, bellHandoverStep, type BellRun, type BellPress } from '../../lib/bell-fault';
+import { looseBellWire, reseatBellWire } from '../../lib/bell-connection';
 import { heaterComparisonReady, heaterFaultActivity, heaterFaultReadings, heaterFaultTitle, heaterFeed, hasPanelHeater, elementWatts, startHeaterPress, finishHeaterPress, heaterRunReady, heaterHandoverStep, type HeaterRun, type HeaterSwitchPress } from '../../lib/heater-fault';
 import { lessonCompetency } from '../../lib/scenarios';
 import { HOUSE_CALLS, houseStepId, savedCallStep, onlyCallControlsChanged, houseJobLabels, nextHouseCall, type CallOperation, type CallSample } from '../../lib/house-calls';
@@ -126,6 +127,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const [meterVisit,setMeterVisit]=useState<{circuit:string;pose?:SitePose;component?:string;selected?:string}>();
   const fieldPointsButton=useRef<HTMLButtonElement>(null);
   const [sitePoints,setSitePoints]=useState(false),[recordedFieldPair,setRecordedFieldPair]=useState('');
+  const [pushAccess,setPushAccess]=useState<{circuit:string;id:string}>();
   const [chimeOpenIn,setChimeOpenIn]=useState<string>();
   const [siteJump,setSiteJump]=useState<SiteFocus>({id:0});
   const [bookmark,setBookmark]=useState<LessonBookmark>();
@@ -135,8 +137,8 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const scoredFault=useRef(false);
   const pendingProtection=useRef<ProtectionAction|undefined>(undefined);
   const [protectionMessage,setProtectionMessage]=useState<{circuit:string;text:string}>();
-  const [fieldRoom,setFieldRoom]=useState<{circuit:string;name:string}>();
-  const reportRoom=useCallback((circuit:string,name:string)=>setFieldRoom(previous=>previous?.circuit===circuit&&previous.name===name?previous:{circuit,name}),[]);
+  const [fieldRoom,setFieldRoom]=useState<{circuit:string;name:string;focused?:string}>();
+  const reportRoom=useCallback((circuit:string,name:string,focused?:string)=>setFieldRoom(previous=>previous?.circuit===circuit&&previous.name===name&&previous.focused===focused?previous:{circuit,name,focused}),[]);
   const testButton=useRef<{circuit:string;component:string}|undefined>(undefined);
   const [scored,setScored]=useState(false);
   const activityCircuit=useRef('');
@@ -163,7 +165,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       void setFullscreen(true).catch(()=>{nativeField.current=false;});
     }
   }
-  function arriveAtRepair(){
+  function enterSiteJob(){
     if(touchLayout&&!isDesktop()&&!listView&&!startWithList&&window.matchMedia('(pointer: coarse)').matches){
       // The job fills the app window. Browser fullscreen stays on the user's explicit control.
       showField(true);
@@ -215,6 +217,8 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   const [diagnosisAccepted,setDiagnosisAccepted]=useState(false),[challengeRepaired,setChallengeRepaired]=useState(false);
   const [challengeComplete,setChallengeComplete]=useState(false),[faultJob,setFaultJob]=useState<'worktop'|'heater'|'chime'>();
   const worktopFault=faultJob==='worktop',heaterFault=faultJob==='heater',chimeFault=faultJob==='chime';
+  const [bellRun,setBellRun]=useState<BellRun>();
+  const pendingBellPress=useRef<BellPress|undefined>(undefined);
   const [heaterRun,setHeaterRun]=useState<HeaterRun>();
   const pendingHeaterPress=useRef<HeaterSwitchPress|undefined>(undefined);
   const [faultFeedback,setFaultFeedback]=useState(''),[faultReadingIds,setFaultReadingIds]=useState<string[]>([]);
@@ -300,7 +304,9 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   },[investigating,worktopFault,liveHeaterReadings,liveBellReadings,document,result,evidence,checkedFault,evidenceKey]);
   const isOriginalFault=(f:CircuitDocument['faults'][number])=>f.enabled&&f.type===lesson.challenge.fault&&
     (!lesson.challenge.wire||f.wire===lesson.challenge.wire)&&(!lesson.challenge.component||f.component===lesson.challenge.component);
-  const repairInPlace=challengeRepaired&&!(worktopFault?document.faults.some(isOriginalFault):document.faults.some(f=>f.enabled));
+  const repairInPlace=challengeRepaired&&!((worktopFault||chimeFault)?document.faults.some(isOriginalFault):document.faults.some(f=>f.enabled));
+  const checkingBell=faultSession&&chimeFault&&repairInPlace&&!challengeComplete&&hasBellHandover(document);
+  const bellProved=checkingBell&&bellRunReady(document,result,bellRun);
   const checkingHeater=faultSession&&heaterFault&&repairInPlace&&!challengeComplete&&hasPanelHeater(document);
   const heaterProved=checkingHeater&&heaterRunReady(document,result,heaterRun);
   const faultStep=faultStage({accepted:diagnosisAccepted,repaired:repairInPlace,completed:challengeComplete,scored,hints},faultObservation.ready);
@@ -335,7 +341,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       !new RegExp('^(lesson|book):'+document.lessonId+':').test(activityId))return;
     const saved:LessonBookmark={version:1,circuit:document,activityId,path,
       mode:mode==='challenges'?'challenges':mode==='build'?'build':'explore',
-      ...(faultSession?{fault:{hints,accepted:diagnosisAccepted,repaired:challengeRepaired,scored,...(faultJob?{[faultJob]:true,probes:{...(probePlacement.current.red&&probeA?{red:probeA}:{}),...(probePlacement.current.black&&probeB?{black:probeB}:{})}}:{}),...(heaterFault&&challengeRepaired&&heaterRun?{heaterRun}:{}),...(faultReadingIds.length?{readingIds:faultReadingIds}:{}),...(faultJob==='worktop'||heaterFault&&hasPanelHeater(document)?{completed:challengeComplete}:challengeComplete?{completed:true}:{})}}:{})};
+      ...(faultSession?{fault:{hints,accepted:diagnosisAccepted,repaired:challengeRepaired,scored,...(faultJob?{[faultJob]:true,probes:{...(probePlacement.current.red&&probeA?{red:probeA}:{}),...(probePlacement.current.black&&probeB?{black:probeB}:{})}}:{}),...(heaterFault&&challengeRepaired&&heaterRun?{heaterRun}:{}),...(chimeFault&&challengeRepaired&&bellRun?.revision===document.revision?{bellRun}:{}),...(faultReadingIds.length?{readingIds:faultReadingIds}:{}),...(faultJob==='worktop'||heaterFault&&hasPanelHeater(document)||chimeFault&&hasBellHandover(document)?{completed:challengeComplete}:challengeComplete?{completed:true}:{})}}:{})};
     setBookmark(saved);
     // A learner may close the app after a wrong turn as well as after a checked step.
     let active=true;
@@ -343,7 +349,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       .catch(()=>{if(active)setSaveStatus('Could not save the lesson position.');})
       .then(()=>{if(active&&callView)setSavedCallView(callView);});
     return ()=>{active=false;};
-  },[hydrated,workspace,path,activePractice,activeActivity,startActivity,currentCall,callView,document,mode,challengeStarted,hints,diagnosisAccepted,challengeRepaired,scored,challengeComplete,faultJob,heaterFault,faultReadingIds,heaterRun,faultSession,faultStep,lessonId,probeA,probeB]);
+  },[hydrated,workspace,path,activePractice,activeActivity,startActivity,currentCall,callView,document,mode,challengeStarted,hints,diagnosisAccepted,challengeRepaired,scored,challengeComplete,faultJob,heaterFault,chimeFault,faultReadingIds,heaterRun,bellRun,faultSession,faultStep,lessonId,probeA,probeB]);
   const lampMeterDemo=workspace==='learn'&&path!=='home'&&activeActivity?.bookStep==='meter-demo'&&document.lessonId===7;
   useEffect(()=>{
     if(!lampMeterDemo||!docRef.current.components.some(c=>c.id==='light'&&c.type==='lamp'))return;
@@ -396,6 +402,15 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
       const m=e.data;
       if(m.kind==='result'&&acceptsElectricalResult({id:docRef.current.id,revision:docRef.current.revision,generation:electricalIdentity.current.generation},{circuitId:m.circuitId,revision:m.result.revision,electricalGeneration:m.electricalGeneration})){lastSolvedGeneration.current=electricalIdentity.current.generation;setResult({...m.result,revision:docRef.current.revision});setSimError('');schedule(!!m.needsTick);
         receiveChime(docRef.current,{...m.result,revision:docRef.current.revision});
+        const bellPress=pendingBellPress.current;
+        if(bellPress){
+          pendingBellPress.current=undefined;
+          const current=docRef.current;
+          if(bellPress.circuit===current.id&&bellPress.revision===current.revision){
+            const solved={...m.result,revision:current.revision};
+            setBellRun(previous=>finishBellPress(current,solved,bellPress,previous));
+          }
+        }
         const heaterPress=pendingHeaterPress.current;
         if(heaterPress&&heaterPress.circuit===docRef.current.id&&heaterPress.revision===docRef.current.revision){
           pendingHeaterPress.current=undefined;
@@ -466,7 +481,7 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
     probePlacement.current={red:false,black:false,current:false};
     setProbeA(undefined);setProbeB(undefined);setActiveProbe('red');setResistance(undefined);
   }
-  function commit(next:CircuitDocument,replacing=false){next=cleanCableRuns(normalizeBoardMounts(next,docRef.current));if(replacing||next.id!==docRef.current.id){switchCheck.finish();pendingProtection.current=undefined;setProtectionMessage(undefined);clearChime();setHistory([]);clearProbes();cancelConnection();}else setHistory(h=>[...h.slice(-39),clone(docRef.current)]);setFuture([]);setDocument({...next,revision:docRef.current.revision+1});}
+  function commit(next:CircuitDocument,replacing=false){next=cleanCableRuns(normalizeBoardMounts(next,docRef.current));if(replacing||next.id!==docRef.current.id){setPushAccess(undefined);switchCheck.finish();pendingProtection.current=undefined;setProtectionMessage(undefined);clearChime();setHistory([]);clearProbes();cancelConnection();}else setHistory(h=>[...h.slice(-39),clone(docRef.current)]);setFuture([]);setDocument({...next,revision:docRef.current.revision+1});}
   function changeFitting(item:ComponentInstance,variant:string){
     const next=applyEquipmentVariant(item,variant==='automatic'?undefined:variant);
     const missing=connectedTerminalMissing(document,next);
@@ -483,7 +498,8 @@ export default function Lab({startWithList=false}:{startWithList?:boolean}={}){
   function endDimming(){setDimmingActive(false);const before=dimmerBefore.current;dimmerBefore.current=null;if(before&&fingerprintLayout(before)!==fingerprintLayout(docRef.current)){setHistory(h=>[...h.slice(-39),before]);setFuture([]);}}
   function pairContactor(id:string,partner:string){commit({...document,components:document.components.map(c=>c.id===id?{...c,params:{...c.params,mechanicallyInterlockedWith:partner}}:c.id===partner?{...c,params:{...c.params,mechanicallyInterlockedWith:id}}:c.params.mechanicallyInterlockedWith===id||!!(partner&&c.params.mechanicallyInterlockedWith===partner)?{...c,params:{...c.params,mechanicallyInterlockedWith:''}}:c)});}
   function restoreHistoryEntry(previous:CircuitDocument){
-    if(faultSession&&worktopFault&&challengeComplete&&previous.id===docRef.current.id&&previous.faults.some(isOriginalFault)){
+    pendingBellPress.current=undefined;setBellRun(undefined);
+    if(faultSession&&(worktopFault||chimeFault)&&challengeComplete&&previous.id===docRef.current.id&&previous.faults.some(isOriginalFault)){
       // Keep the earned achievement. Putting the break back needs another live repair and test.
       challengeRef.current.accepted=diagnosisAccepted;
       setChallengeComplete(false);
@@ -565,6 +581,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     }
     const p={...COMPONENTS[c.type].defaults,...c.params};if(c.type==='pwmcontrol'){patch(c.id,{on:!Boolean(p.on)});return;}if(c.type==='proximity'){patch(c.id,{active:!Boolean(p.active)});return;}if(c.type==='pushbutton'){const previous=pulseTimers.current.get(c.id);if(previous)clearTimeout(previous);patch(c.id,{pressed:true});pulseTimers.current.set(c.id,setTimeout(()=>{const d=docRef.current;setDocument({...d,revision:d.revision+1,components:d.components.map(x=>x.id===c.id?{...x,params:{...x.params,pressed:false}}:x)});pulseTimers.current.delete(c.id);},400));}else if(['switch2','intermediate','selector','changeover'].includes(c.type))patch(c.id,{position:Number(p.position)===0?1:0});else if(['sensor','smartrelay','timer','plc','ev','vfd','pv','battery'].includes(c.type))patch(c.id,{on:!Boolean(p.on??p.active??p.demand),active:!Boolean(p.active??p.on??p.demand),demand:!Boolean(p.demand??p.on??p.active)});else patch(c.id,{closed:!Boolean(p.closed??true)});}
   function holdButton(c:ComponentInstance){
+    if(checkingBell)pendingBellPress.current=startBellPress(docRef.current,lastSolvedGeneration.current===electricalIdentity.current.generation?result:undefined,c.id);
     if(!c.params.pressed)prepareChime(docRef.current,lastSolvedGeneration.current===electricalIdentity.current.generation?result:undefined,c);
     if(currentCall&&startActivity)setCallOperation({component:c.id,activity:startActivity,before:docRef.current,reading:result});
     const pending=pulseTimers.current.get(c.id);if(pending)clearTimeout(pending);pulseTimers.current.delete(c.id);
@@ -587,13 +604,13 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     const example=clone(course.circuit);example.id=uid('challenge');
     const heaterSwitch=job==='heater'&&example.components.find(c=>c.id==='fcu-switch');
     if(heaterSwitch)heaterSwitch.params.closed=false;
-    example.faults=[{type:course.challenge.fault,wire:course.challenge.wire,component:course.challenge.component,enabled:true}];
+    example.faults=[{type:course.challenge.fault,wire:course.challenge.wire,component:course.challenge.component,enabled:true,...(job==='chime'&&hasBellHandover(example)?{looseEnd:{...bellInput}}:{})}];
     freshWorkerState.current=true;baseline.current=fingerprintLayout(example);commit(example,true);
     setLessonId(course.id);setPath('full');setStartActivity(faultStageId(course.id,'measure'));setSessionKey(k=>k+1);setCoursesOpen(false);
     setPractice(undefined);setActiveActivity(undefined);activityCircuit.current='';setMoveTarget(undefined);cancelConnection();clearProbes();setEvents([]);
-    setWorkspace('learn');setMode('challenges');setFaultJob(job);setHeaterRun(undefined);pendingHeaterPress.current=undefined;setSurface(job?'site':'bench');sitePose.current=undefined;
+    setWorkspace('learn');setMode('challenges');setFaultJob(job);setBellRun(undefined);pendingBellPress.current=undefined;setHeaterRun(undefined);pendingHeaterPress.current=undefined;setSurface(job?'site':'bench');sitePose.current=undefined;
     if(job)setSiteJump(prev=>({id:prev.id+1,component:job==='chime'?'back':job==='heater'?'fcu-switch':'right',overview:job==='chime'||job==='worktop'||job==='heater'&&hasPanelHeater(example)}));
-    if(job)arriveAtRepair();else setSheetOpen(true);
+    if(job)enterSiteJob();else setSheetOpen(true);
     setPanel('lesson');setTool('select');setInspectorCollapsed(true);setCamera(c=>({id:c.id+1,action:'fit'}));
     scoredFault.current=forScore;setScored(forScore);setChallengeStarted(true);setDiagnosisAccepted(false);setChallengeRepaired(false);setChallengeComplete(false);
     lastFaultReading.current='';setDiagnosis('');setFaultFeedback('');setFaultSample(undefined);setFaultReadingIds([]);setCheckingDiagnosis(false);diagnosisRequest.current=null;setHints(0);setNotice('');
@@ -616,11 +633,11 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   }
   function repair(){
     const doc=docRef.current;
-    if(worktopFault&&faultSession&&worktopLooseEnd(doc))return false;
+    if(faultSession&&(worktopFault&&worktopLooseEnd(doc)||chimeFault&&looseBellWire(doc)))return false;
     return applyRepair({...doc,faults:[],components:doc.components.map(c=>({...c,params:{...c.params,resetToken:Number(c.params.resetToken??0)+1}}))});
   }
   function markLesson(){setProgress(p=>({...p,lessons:Array.from(new Set([...p.lessons,lessonId]))}));setNotice('Lesson marked as studied.');}
-  function runTest(){setSheetOpen(true);const d=docRef.current;setAssessmentKey(testFingerprint(d));setInspectorCollapsed(false);setPanel('results');if(!worker.current){setSimError('The bench is still starting. If it stays here, reopen the app.');return;}const id=++testSequence.current;activeTest.current={id,revision:d.revision,circuitId:d.id,mode:workspace!=='learn'?'sandbox':mode==='build'&&path==='coursebook'&&!CHAPTERS.some(ch=>ch.practical===d.lessonId)?'practice':mode,repairTest:faultSession&&repairInPlace&&!challengeComplete&&(!checkingHeater||heaterProved),faultJob};setPendingTest({revision:d.revision,circuitId:d.id});setAssessment(undefined);if(testTimeout.current)clearTimeout(testTimeout.current);testTimeout.current=setTimeout(()=>{if(activeTest.current?.id!==id)return;activeTest.current=null;setPendingTest(undefined);setAssessment({revision:d.revision,circuitId:d.id,passed:false,summary:'Test could not finish.',checks:[{id:'test-timeout',category:'model',status:'unresolved',title:'No test response',explanation:'The bench took too long to give a result. Reopen the app and test again.'}]});},10000);worker.current.postMessage({kind:'test',requestId:id,document:d,electricalGeneration:electricalIdentity.current.generation,expected:d.lessonId?getLesson(d.lessonId,d)?.circuit:undefined,dt:.1});}
+  function runTest(){setSheetOpen(true);const d=docRef.current;setAssessmentKey(testFingerprint(d));setInspectorCollapsed(false);setPanel('results');if(!worker.current){setSimError('The bench is still starting. If it stays here, reopen the app.');return;}const id=++testSequence.current;activeTest.current={id,revision:d.revision,circuitId:d.id,mode:workspace!=='learn'?'sandbox':mode==='build'&&path==='coursebook'&&!CHAPTERS.some(ch=>ch.practical===d.lessonId)?'practice':mode,repairTest:faultSession&&repairInPlace&&!challengeComplete&&(!checkingHeater||heaterProved)&&(!checkingBell||bellProved),faultJob};setPendingTest({revision:d.revision,circuitId:d.id});setAssessment(undefined);if(testTimeout.current)clearTimeout(testTimeout.current);testTimeout.current=setTimeout(()=>{if(activeTest.current?.id!==id)return;activeTest.current=null;setPendingTest(undefined);setAssessment({revision:d.revision,circuitId:d.id,passed:false,summary:'Test could not finish.',checks:[{id:'test-timeout',category:'model',status:'unresolved',title:'No test response',explanation:'The bench took too long to give a result. Reopen the app and test again.'}]});},10000);worker.current.postMessage({kind:'test',requestId:id,document:d,electricalGeneration:electricalIdentity.current.generation,expected:d.lessonId?getLesson(d.lessonId,d)?.circuit:undefined,dt:.1});}
   function inspectCheck(check:AssessmentCheck){setSurface('bench');if(check.wire){setSelectedWire(check.wire);setSelected(undefined);setSheetOpen(true);setPanel('inspect');setInspectorCollapsed(false);}else if(check.component)selectComponent(check.component);setCamera(c=>({id:c.id+1,action:check.wire?'focus-wire':'focus'}));}
   function submit(){
     if(!worker.current||!faultObservation.ready||!diagnosis||!investigating)return;
@@ -742,7 +759,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       baseline.current=fingerprintLayout(job);setDocument(job);
       setPath('coursebook');setMode('explore');setWorkspace('learn');
       setStartActivity(houseStepId(call,0));setSessionKey(k=>k+1);setCallOperation(undefined);
-      setGuidedSession(undefined);setCoursesOpen(false);setSheetOpen(true);setInspectorCollapsed(false);setCourseStage('try');
+      setGuidedSession(undefined);setCoursesOpen(false);enterSiteJob();setInspectorCollapsed(false);setCourseStage('try');
     };
     if(currentCall && onlyCallControlsChanged(currentCall,docRef.current,lesson.circuit))open();
     else requestReplacement(call.title,open);
@@ -765,11 +782,12 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       setCallOperation(undefined);setCoursesOpen(false);loadLesson(circuit.lessonId!);setDocument(circuit);baseline.current=fingerprintLayout(circuit);
       setPath(bookmark.path);setStartActivity(bookmark.activityId);setSessionKey(k=>k+1);setGuidedSession(undefined);setWorkspace('learn');
       if(bookmark.mode!=='explore'||bookmark.path==='full')setSurface('bench');setMode(bookmark.mode);setSheetOpen(true);setInspectorCollapsed(false);
+      if(savedCall)enterSiteJob();
       const f=bookmark.fault;if(f){scoredFault.current=f.scored;setScored(f.scored);setChallengeStarted(true);setHints(f.hints);
-        lastFaultReading.current='';setFaultJob(f.worktop?'worktop':f.heater?'heater':f.chime?'chime':undefined);setHeaterRun(f.heaterRun);pendingHeaterPress.current=undefined;setFaultReadingIds(f.readingIds??[]);setFaultSample(undefined);setFaultFeedback('');setCheckingDiagnosis(false);setDiagnosis('');
-        if(f.worktop||f.heater||f.chime){arriveAtRepair();setProbeA(f.probes?.red);setProbeB(f.probes?.black);setActiveProbe(f.probes?.red?.terminal===(f.chime?'AC2':'N')?'black':'red');
+        lastFaultReading.current='';setFaultJob(f.worktop?'worktop':f.heater?'heater':f.chime?'chime':undefined);setBellRun(f.bellRun?.revision===circuit.revision?f.bellRun:undefined);pendingBellPress.current=undefined;setHeaterRun(f.heaterRun);pendingHeaterPress.current=undefined;setFaultReadingIds(f.readingIds??[]);setFaultSample(undefined);setFaultFeedback('');setCheckingDiagnosis(false);setDiagnosis('');
+        if(f.worktop||f.heater||f.chime){enterSiteJob();setProbeA(f.probes?.red);setProbeB(f.probes?.black);setActiveProbe(f.probes?.red?.terminal===(f.chime?'AC2':'N')?'black':'red');
           probePlacement.current={red:!!f.probes?.red,black:!!f.probes?.black,current:false};setMeterMode('voltage');setForkMethod('probe-voltage');setSurface('site');setSiteJump(prev=>({id:prev.id+1,component:f.chime?'back':f.heater?'fcu-switch':'right',overview:!!f.chime||!!f.heater&&hasPanelHeater(circuit)||!!f.worktop&&(f.repaired||!f.probes?.red&&!f.probes?.black)}));}
-        const finished=f.completed??(!(f.heater&&hasPanelHeater(circuit))&&f.repaired&&progress.lastTest?.assessment.passed===true&&testRecordMatches(progress.lastTest,circuit)&&!!progress.learning[circuit.lessonId!]?.activityIds.includes('fault-repaired'));setChallengeComplete(finished);setDiagnosisAccepted(f.accepted);setChallengeRepaired(f.repaired);challengeRef.current={accepted:f.accepted&&!finished,repaired:f.repaired,lessonId:bookmark.circuit.lessonId!,hints:f.hints,circuitId:bookmark.circuit.id};}
+        const finished=f.completed??(!(f.heater&&hasPanelHeater(circuit))&&!(f.chime&&hasBellHandover(circuit))&&f.repaired&&progress.lastTest?.assessment.passed===true&&testRecordMatches(progress.lastTest,circuit)&&!!progress.learning[circuit.lessonId!]?.activityIds.includes('fault-repaired'));setChallengeComplete(finished);setDiagnosisAccepted(f.accepted);setChallengeRepaired(f.repaired);challengeRef.current={accepted:f.accepted&&!finished,repaired:f.repaired,lessonId:bookmark.circuit.lessonId!,hints:f.hints,circuitId:bookmark.circuit.id};}
     };
     if(fingerprintLayout(document)===fingerprintLayout(bookmark.circuit))restore();else requestReplacement('Continue saved lesson',restore);
   }
@@ -830,7 +848,20 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   const siteChime=activeSurface==='site'?testFittings.find(f=>f.kind==='chime'):undefined;
   const chimeOpen=!!siteChime&&chimeOpenIn===document.id;
   const chimeChoice=siteChime?{component:siteChime.component,covered:!chimeOpen}:undefined;
+  const openPushId=pushAccess?.circuit===document.id?pushAccess.id:undefined;
+  const setOpenPush=(id?:string)=>setPushAccess(id?{circuit:document.id,id}:undefined);
+  function liftFittingProbes(id:string){
+    if(probeA?.component===id){setProbeA(undefined);probePlacement.current.red=false;}
+    if(probeB?.component===id){setProbeB(undefined);probePlacement.current.black=false;}
+    if(probeA?.component===id||probeB?.component===id)setActiveProbe(probeA?.component===id?'red':'black');
+    setCallSample(undefined);
+  }
   function namedMeterPoint(point:Endpoint){
+    const fittedPush=activeSurface==='site'&&testFittings.some(f=>f.kind==='sesame'&&f.component.id===point.component);
+    if(fittedPush){
+      if(openPushId===point.component)terminal(point);
+      return;
+    }
     if(siteChime){
       if(point.component!==siteChime.component.id)return;
       setChimeOpenIn(document.id);
@@ -988,10 +1019,12 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   const measuringChime=currentCall?.lesson===72 && !!currentCall.steps[savedCallStep(currentCall,startActivity)??-1]?.chimeReading;
   const measuringHeater=faultSession&&heaterFault;
   const measuringBellFault=faultSession&&chimeFault;
+  const backMeter=measuringBellFault&&doorReadings?.call&&activeSurface==='site'&&testFittings.some(f=>f.kind==='sesame'&&f.component.id==='back');
   const compactMeter=voltageTask||measuringChime||measuringHeater||measuringBellFault?<LessonVoltmeter key={document.id+(measuringBellFault?(doorReadings?.call?'back-push':'bell-call'):measuringHeater?'heater':measuringChime?'chime':activeActivity?.id)} circuit={document}
-    startAt={measuringBellFault?(doorReadings?.call?'back':'chime'):measuringHeater?(heaterReadings?.heater?heaterFeed(document)?.component:'fixed'):measuringChime?'chime':activeActivity?.measurement?.a?.component} fixedFitting={measuringChime||measuringBellFault&&!doorReadings?.call?siteChime?.component.id:undefined}
-    record={measuringBellFault||measuringChime||measuringHeater?recordReading:undefined} covered={(measuringChime||measuringBellFault)&&!!siteChime&&!chimeOpen} red={probeA} black={probeB} active={activeProbe}
-    chooseLead={setActiveProbe} place={point=>{if(siteChime&&point.component!==siteChime.component.id){setSurface('bench');terminal(point);}else namedMeterPoint(point);}} adjust={adjustMeter} display={liveVoltageMode?lessonVolts:undefined}
+    startAt={measuringBellFault?(doorReadings?.call?'back':'chime'):measuringHeater?(heaterReadings?.heater?heaterFeed(document)?.component:'fixed'):measuringChime?'chime':activeActivity?.measurement?.a?.component} fixedFitting={backMeter?'back':measuringChime||measuringBellFault&&!doorReadings?.call?siteChime?.component.id:undefined}
+    rearAccess={backMeter?{open:openPushId==='back',toggle:()=>{if(openPushId==='back'){liftFittingProbes('back');setOpenPush();}else{chooseTool('meter','back');setOpenPush('back');}}}:undefined}
+    record={measuringBellFault||measuringChime||measuringHeater?recordReading:undefined} covered={!backMeter&&(measuringChime||measuringBellFault)&&!!siteChime&&!chimeOpen} red={probeA} black={probeB} active={activeProbe}
+    chooseLead={setActiveProbe} place={point=>{if(!backMeter&&siteChime&&point.component!==siteChime.component.id){setSurface('bench');terminal(point);}else namedMeterPoint(point);}} adjust={adjustMeter} display={liveVoltageMode?lessonVolts:undefined}
     message={useFork?liveFork.value===null||Number(liveFork.shown)===0?liveFork.explanation:'':voltage?.explanation??''} controls={meterContent}/>:meterContent;
   function chooseFieldView(v:typeof activeSurface){
     if(v==='site'){closeTools();setTool('select');}else setMeterVisit(undefined);
@@ -1025,7 +1058,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       {!currentCall&&!faultSession&&<IconButton label="Close tools" onClick={closeTools}><X size={15}/></IconButton>}</div>}
     {jobConductorList?<ConductorPicker circuit={document} selected={selectedWire} onPick={selectConductor}/>:context}
   </section>:undefined;
-  const diagnosedFault=faultSession&&faultStep==='repair'?document.faults.find(worktopFault?isOriginalFault:f=>f.enabled):undefined;
+  const diagnosedFault=faultSession&&faultStep==='repair'?document.faults.find(worktopFault||chimeFault?isOriginalFault:f=>f.enabled):undefined;
   const brokenWire=diagnosedFault?.wire?document.wires.find(w=>w.id===diagnosedFault.wire):undefined;
   const brokenEnds=brokenWire?[brokenWire.to,brokenWire.from]:[];
   const looseEnd=heaterFault&&document.components.some(c=>c.id==='fcu-switch'&&c.type==='fcu')
@@ -1056,6 +1089,10 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
         sitePose.current=undefined;
         setSiteJump(prev=>({id:prev.id+1,component:'right',overview:true}));
       }
+    }else if(bellEnd&&point&&brokenWire){
+      const fixed=reseatBellWire(doc,diagnosedFault,point);
+      if(!fixed||!applyRepair(fixed))return false;
+      setBellRun(undefined);pendingBellPress.current=undefined;
     }else if(!repair())return false;
     setTool('select');setPanel('lesson');setInspectorCollapsed(true);setSheetOpen(!immersive);
     return true;
@@ -1075,11 +1112,21 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     else if(handover.action==='raise')changeHeat('fixed',1);
     else operate(fusedSwitch);
   }}:undefined;
+  const bellStep=checkingBell?bellHandoverStep(document,result,bellRun,!!simError):undefined;
+  const bellRunAction=bellStep?{...bellStep,run:()=>{
+    if(bellStep.action==='test'){runTest();return;}
+    const button=document.components.find(c=>c.id===bellStep.door);
+    if(!button)return;
+    if(activeSurface==='site'&&siteJump.component!==button.id){
+      sitePose.current=undefined;setSiteJump(prev=>({id:prev.id+1,component:button.id,overview:true}));
+    }
+    holdButton(button);
+  }}:undefined;
   const worktopStatus=worktopFault&&faultStep==='retest'&&!simError?worktopLampStatus(document,result):undefined;
   function restoreRepairSupply(){
     changeBenchSupply(true);
-    if((checkingHeater||worktopFault)&&activeSurface==='site'){
-      sitePose.current=undefined;setSiteJump(prev=>({id:prev.id+1,component:worktopFault?'right':'fcu-switch',overview:true}));
+    if((checkingHeater||checkingBell||worktopFault)&&activeSurface==='site'){
+      sitePose.current=undefined;setSiteJump(prev=>({id:prev.id+1,component:worktopFault?'right':checkingBell?'back':'fcu-switch',overview:true}));
     }
   }
   const repairTestFailed=!!assessment&&!assessmentStale&&!assessment.passed;
@@ -1089,10 +1136,11 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   if(immersive&&faultSession&&faultStep==='retest'&&!sheetOpen){
     if(!document.supply.enabled)siteRetest={label:'Turn bench supply on',reading:worktopStatus,run:restoreRepairSupply};
     else if(handover&&fusedSwitch)siteRetest=heaterRunAction;
+    else if(bellStep)siteRetest=bellRunAction;
     else siteRetest={
       label:showFailedReport?'See test report':testRunning?'Testing…':'Test the repair',
       run:showFailedReport?openFaultReport:runTest,disabled:testRunning,
-      reading:worktopStatus??(heaterProved&&heaterWatts!==undefined?'Heater element · '+Math.round(heaterWatts)+' W':undefined),
+      reading:worktopStatus??(bellProved?'Hall chime · both doors checked':undefined)??(heaterProved&&heaterWatts!==undefined?'Heater element · '+Math.round(heaterWatts)+' W':undefined),
     };
   }
   function openFaultMeter(){
@@ -1101,6 +1149,9 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       if(useFork)chooseForkMethod('probe-voltage');
     }
     if(chimeFault&&doorReadings?.call){
+      if(activeSurface==='site'&&testFittings.some(f=>f.kind==='sesame'&&f.component.id==='back')){
+        chooseTool('meter','back',immersive);return;
+      }
       setSurface('bench');setTool('meter');setPanel('meter');setInspectorCollapsed(false);setSheetOpen(true);setView('open');
       return;
     }
@@ -1130,7 +1181,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
   return <TooltipProvider delayDuration={250}><div className={'lab-shell simple-lab installation-lab surface-'+activeSurface+' '+workspace+(touchLayout?' mobile-lab':'')+(immersive?' phone-field':'')+(inBook?' book-shell':'')+(home?' book-landing':'')+(listView?' showing-equipment-list':'')} aria-busy={backupBusy||replaceBusy}>
     {immersive&&<PhoneFieldControls signal={chimeMessage?.circuit===document.id?chimeMessage.text:protectionMessage?.circuit===document.id&&notice===protectionMessage.text?notice:undefined} sound={document.components.some(c=>c.type==='callchime')?{enabled:!chimeMuted,change:()=>muteChime(!chimeMuted)}:undefined} place={activeSurface==='site'?(fieldRoom?.circuit===document.id?fieldRoom.name:location.name):activeSurface==='bench'?'Workbench':activeSurface==='drawing'?'Drawing':'Equipment'}
       hasJob={workspace==='learn'} jobOpen={sheetOpen} toolsOpen={fieldTools} leave={leaveField} tools={setFieldTools}
-      taskHost={faultSession&&faultJob&&activeSurface==='site'&&!sheetOpen&&!fieldTools&&!voltageMeterHere&&!switchMeterHere?setFieldTaskHost:undefined}
+      taskHost={(faultSession&&faultJob||currentCall)&&activeSurface==='site'&&!sheetOpen&&!fieldTools&&!voltageMeterHere&&!switchMeterHere?setFieldTaskHost:undefined}
       job={()=>setSheetOpen(open=>!open)}
       steering={activeSurface==='site'?{enabled:oneThumb,change:()=>setOneThumb(value=>!value)}:undefined} views={fieldViews} actions={fieldActions}/>}
     <header className="app-header"><div className="brand"><span className="brand-icon"><Zap size={21}/></span><div>IRISH ELECTRICAL <b>LAB</b></div></div><nav className="simple-navigation" aria-label="Main navigation"><Button aria-pressed={workspace==='learn'} onClick={()=>{setWorkspace('learn');setPath('home');setPractice(undefined);setSheetOpen(true);setMoveTarget(undefined);setTool('select');setPanel('lesson');setViewOpen(false);}}><BookOpen size={16}/>Learn</Button><Button aria-pressed={workspace==='sandbox'} onClick={()=>{setWorkspace('sandbox');setSurface('bench');setMode('build');setChallengeStarted(false);challengeRef.current.accepted=false;setMoveTarget(undefined);setSheetOpen(false);setTool('select');setPanel('');setInspectorCollapsed(true);}}><Wrench size={16}/>Sandbox</Button></nav><div className="header-right">{workspace==='learn'&&<Button variant="outline" aria-label="Chapters" onClick={()=>openCourses('learn')}><BookOpen size={15}/><span className="header-action-name chapter-nav-label">Chapters</span></Button>}<Button variant="outline" aria-label="My builds" onClick={()=>setBuildsOpen(true)}><FolderOpen size={15}/><span className="header-action-name">My builds</span></Button><Button variant="ghost" aria-label="More settings and help" onClick={()=>{setSettingsFps(lastBenchFps.current);setMoreOpen(true);}}><Settings2 size={15}/><span className="header-action-name">More</span></Button></div></header>
@@ -1144,7 +1195,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     <nav className="surface-tabs" aria-label="Installation views">{surfaces.map(v=><button key={v} type="button" aria-pressed={activeSurface===v} onClick={()=>showSurface(v)}>{surfaceLabel(v)}</button>)}</nav>
     <div className="toolbar" hidden={activeSurface==='drawing'||activeSurface==='site'}><Button variant="ghost" className={'tool-button '+((tool==='select'||tool==='inspect')&&panel!=='equipment'?'active':'')} onClick={()=>chooseTool('select')}><MousePointer2 size={17}/>Select</Button>{!activePractice&&(currentCall||!inBook||activeActivity?.kind==='connect'||activeActivity?.kind==='measure'||activeActivity?.kind==='repair'||courseStage==='fix')&&<>{!inBook&&!faultSession&&<Button variant="ghost" className={'tool-button '+(tool==='place'||panel==='equipment'?'active':'')} onClick={()=>chooseTool('place')}><Plus size={17}/>{touchLayout?'Add':'Add equipment'}</Button>}{!faultSession&&(!inBook||activeActivity?.kind==='connect')&&<Button variant="ghost" className={'tool-button '+(tool==='wire'?'active':'')} onClick={()=>chooseTool('wire')}><Cable size={17}/>Connect</Button>}{(!inBook||activeActivity?.kind!=='connect')&&<Button variant="ghost" className={'tool-button '+(tool==='meter'?'active':'')} onClick={()=>chooseTool('meter')}><Gauge size={17}/>Measure</Button>}</>}{(!faultSession||history.length>0||future.length>0)&&<><span className="toolbar-divider"/><IconButton label="Undo" onClick={undo} disabled={!history.length}><Undo2 size={17}/></IconButton><span className="desktop-bench-action"><IconButton label="Redo" onClick={redo} disabled={!future.length}><Redo2 size={17}/></IconButton></span></>}<span className="toolbar-spacer"/><span className="desktop-bench-action"><IconButton label="Fit workbench" onClick={()=>setCamera(c=>({id:c.id+1,action:'fit'}))}><Maximize2 size={17}/></IconButton><IconButton label="Rear terminals" onClick={()=>setCamera(c=>({id:c.id+1,action:'rear'}))}><RotateCcw size={17}/></IconButton></span><Button variant="ghost" className="tool-button" onClick={()=>{setViewOpen(v=>!v);if(touchLayout)setSheetOpen(false);}}><Focus size={16}/>View</Button></div>
     {drawingOpened&&<div className="drawing-container" hidden={activeSurface!=='drawing'}><JobDrawing planTrace={planTrace?.docId===document.id?planTrace:undefined} key={String(document.lessonId??document.id)+workspace} doc={document} lesson={attached?lesson:undefined} site={location} selected={selected} part={selectedPart} highlight={(id,pin)=>{setSelected(id);setSelectedPart(pin??'body');}} goTo={findFixture} highlightWire={setDrawingWire} openLocation={hasSite} initialPage={hasSite?'plan':'wiring'}/></div>}
-    <React.Suspense fallback={<div className="scene-loading" role="status">Opening the 3D view…</div>}>{activeSurface==='drawing'?null:activeSurface==='site'?<JobSiteView pointsOpen={immersive&&sitePoints} closePoints={()=>{setSitePoints(false);requestAnimationFrame(()=>fieldPointsButton.current?.focus({preventScroll:true}));}} fcuIsolation={switchMeterHere?{safe:switchCheck.safe,open:switchCheck.open,setOpen:switchCheck.setOpen,isolate:isolateSwitch,label:switchIsolationLabel,operate:operateFittedSwitch,on:switchFitting.component.params.closed!==false}:undefined} onFieldRoom={reportRoom} putMeterAway={()=>chooseFieldView('site')} enterField={enterField} oneThumb={oneThumb} retest={siteRetest} repairHere={immersive||!!repairEnd||heaterFault||chimeFault?repairHere:undefined} immersive={immersive} toolsOpen={immersive&&(fieldTools||sheetOpen)} chimeOpen={chimeOpen} setChimeOpen={v=>setChimeOpenIn(v?document.id:undefined)} stairGoal={currentCall?.lesson===9?currentCall.steps[savedCallStep(currentCall,startActivity)??0]?.target:lessonId===9&&activeActivity?.kind==='operate'?activeActivity.component:undefined} testFittings={testFittings} liftProbes={id=>{if(probeA?.component===id){setProbeA(undefined);probePlacement.current.red=false;}if(probeB?.component===id){setProbeB(undefined);probePlacement.current.black=false;}setActiveProbe(probeA?.component===id?'red':'black');setCallSample(undefined);}} openMeter={id=>chooseTool('meter',id,true)} meter={switchMeterHere?{probe:switchCheck.lead,red:switchCheck.red,black:switchCheck.black}:voltageMeterHere?{probe:activeProbe,red:probeA,black:probeB}:undefined} onExplore={()=>setSheetOpen(false)} onPeek={id=>{setDrawingWire(id);if(id&&touchLayout)setSheetOpen(false);}} onPlan={wire=>{setPlanTrace(previous=>({sequence:(previous?.sequence??0)+1,wire,docId:document.id}));setDrawingWire(wire);showSurface('drawing');if(touchLayout)setSheetOpen(false);}} showWallSwitch={inBook&&!home&&['switch-off','switch-on','contact'].includes(activeActivity?.bookStep??'')} site={location} doc={document} result={result} selected={selected} terminalId={selectedPart} touch={touchLayout} tool={tool} jump={siteJump} pose={sitePose} wire={drawingWire} onFocus={id=>findFixture(id)} onService={inspectFixture} onPart={pickSitePart} onTerminal={switchMeterHere?switchCheck.pick:terminal} onList={()=>showSurface('list')}/>:activeSurface==='list'?<EquipmentList circuit={document} selected={selected} tags={hasSite?Object.fromEntries(location.items.map(item=>[item.id,item.ref+' · '+location.location(item.room)])):undefined} states={Object.fromEntries(document.components.map(c=>[c.id,stateText(c)]))} operable={isControl} onSelect={id=>{setManualInspection({component:id,part:'body'});selectComponent(id);}} onOperate={operate}/>:<Workbench fieldLayout={immersive?(sheetOpen?'field-sheet':'field'):'normal'} onListView={()=>setListView(true)} onCable={id=>{const run=document.cableRuns?.find(r=>r.id===id);if(run){cancelConnection();setCableChoice({kind:run.kind,runId:id});setTool('wire');setView('open');setPanel('connect');setInspectorCollapsed(false);setSheetOpen(true);}}} touchLayout={touchLayout} touchMove={movingOnTouch} document={document} result={result} tool={tool} mode={workspace==='sandbox'?'build':courseStage==='build'?mode:mode==='challenges'?'challenges':'explore'} selected={selected} selectedWire={selectedWire??drawingWire} selectedPart={fittingDetail?'detail:'+fittingDetail.id:selectedPart} view={view} labels={labels} paths={paths} pathFilter={pathFilter} placeType={placementForm.type} placeVariant={placementForm.variant} quality={touchLayout&&quality==='auto'?'economy':quality} scenery={scenery} cameraMode={cameraMode} cameraSpeed={cameraSpeed} guidanceEndpoints={workspace==='learn'&&attached&&!activePractice?activeActivity?.endpoints:undefined} wireStart={tool==='wire'?wireStart:undefined} probes={useFork?[forkSetup.a,forkSetup.b]:[probeA,probeB]} cameraCommand={cameraCommand} onSelect={selectPhysicalPart} onTerminal={terminal} onTerminalHover={setHoverTerminal} onWire={selectConductor} onPlace={place} onMove={move} onFps={reportBenchFps} workshop={handTool} instrumentType={handTool?.type??(useFork?'forktester':undefined)} instrumentParams={{dialPosition:forkDial(forkMethod),held:!!heldReading,fork:forkMethod.startsWith('fork'),redOut:!!forkSetup.a,blackOut:!!forkSetup.b,signal:visibleFork.signal??'',validReference:hasReference,backlight:testerLight,hazard:voltageLight}} meterReading={useFork?visibleFork.shown+' '+visibleFork.unit:(reading?.value==null?(meterMode==='resistance'&&resistance?.status==='open'?'OL':'— — —'):format(reading.value))+' '+(meterMode==='current'?'A':meterMode==='resistance'?'Ω':'V')} meterMode={meterTargetMode}/>}</React.Suspense>
+    <React.Suspense fallback={<div className="scene-loading" role="status">Opening the 3D view…</div>}>{activeSurface==='drawing'?null:activeSurface==='site'?<JobSiteView instructionTarget={currentCall?activeActivity?.component:undefined} pointsOpen={immersive&&sitePoints} closePoints={()=>{setSitePoints(false);requestAnimationFrame(()=>fieldPointsButton.current?.focus({preventScroll:true}));}} fcuIsolation={switchMeterHere?{safe:switchCheck.safe,open:switchCheck.open,setOpen:switchCheck.setOpen,isolate:isolateSwitch,label:switchIsolationLabel,operate:operateFittedSwitch,on:switchFitting.component.params.closed!==false}:undefined} onFieldRoom={reportRoom} putMeterAway={()=>chooseFieldView('site')} enterField={enterField} oneThumb={oneThumb} retest={siteRetest} repairHere={immersive||!!repairEnd||heaterFault||chimeFault?repairHere:undefined} immersive={immersive} toolsOpen={immersive&&(fieldTools||sheetOpen)} chimeOpen={chimeOpen} setChimeOpen={v=>setChimeOpenIn(v?document.id:undefined)} stairGoal={currentCall?.lesson===9?currentCall.steps[savedCallStep(currentCall,startActivity)??0]?.target:lessonId===9&&activeActivity?.kind==='operate'?activeActivity.component:undefined} testFittings={testFittings} pushAccess={{id:openPushId,set:setOpenPush}} liftProbes={liftFittingProbes} openMeter={id=>chooseTool('meter',id,true)} meter={switchMeterHere?{probe:switchCheck.lead,red:switchCheck.red,black:switchCheck.black}:voltageMeterHere?{probe:activeProbe,red:probeA,black:probeB}:undefined} onExplore={()=>setSheetOpen(false)} onPeek={id=>{setDrawingWire(id);if(id&&touchLayout)setSheetOpen(false);}} onPlan={wire=>{setPlanTrace(previous=>({sequence:(previous?.sequence??0)+1,wire,docId:document.id}));setDrawingWire(wire);showSurface('drawing');if(touchLayout)setSheetOpen(false);}} showWallSwitch={inBook&&!home&&['switch-off','switch-on','contact'].includes(activeActivity?.bookStep??'')} site={location} doc={document} result={result} selected={selected} terminalId={selectedPart} touch={touchLayout} tool={tool} jump={siteJump} pose={sitePose} wire={drawingWire} onFocus={id=>findFixture(id)} onService={inspectFixture} onPart={pickSitePart} onTerminal={switchMeterHere?switchCheck.pick:terminal} onList={()=>showSurface('list')}/>:activeSurface==='list'?<EquipmentList circuit={document} selected={selected} tags={hasSite?Object.fromEntries(location.items.map(item=>[item.id,item.ref+' · '+location.location(item.room)])):undefined} states={Object.fromEntries(document.components.map(c=>[c.id,stateText(c)]))} operable={isControl} onSelect={id=>{setManualInspection({component:id,part:'body'});selectComponent(id);}} onOperate={operate}/>:<Workbench fieldLayout={immersive?(sheetOpen?'field-sheet':'field'):'normal'} onListView={()=>setListView(true)} onCable={id=>{const run=document.cableRuns?.find(r=>r.id===id);if(run){cancelConnection();setCableChoice({kind:run.kind,runId:id});setTool('wire');setView('open');setPanel('connect');setInspectorCollapsed(false);setSheetOpen(true);}}} touchLayout={touchLayout} touchMove={movingOnTouch} document={document} result={result} tool={tool} mode={workspace==='sandbox'?'build':courseStage==='build'?mode:mode==='challenges'?'challenges':'explore'} selected={selected} selectedWire={selectedWire??drawingWire} selectedPart={fittingDetail?'detail:'+fittingDetail.id:selectedPart} view={view} labels={labels} paths={paths} pathFilter={pathFilter} placeType={placementForm.type} placeVariant={placementForm.variant} quality={touchLayout&&quality==='auto'?'economy':quality} scenery={scenery} cameraMode={cameraMode} cameraSpeed={cameraSpeed} guidanceEndpoints={workspace==='learn'&&attached&&!activePractice?activeActivity?.endpoints:undefined} wireStart={tool==='wire'?wireStart:undefined} probes={useFork?[forkSetup.a,forkSetup.b]:[probeA,probeB]} cameraCommand={cameraCommand} onSelect={selectPhysicalPart} onTerminal={terminal} onTerminalHover={setHoverTerminal} onWire={selectConductor} onPlace={place} onMove={move} onFps={reportBenchFps} workshop={handTool} instrumentType={handTool?.type??(useFork?'forktester':undefined)} instrumentParams={{dialPosition:forkDial(forkMethod),held:!!heldReading,fork:forkMethod.startsWith('fork'),redOut:!!forkSetup.a,blackOut:!!forkSetup.b,signal:visibleFork.signal??'',validReference:hasReference,backlight:testerLight,hazard:voltageLight}} meterReading={useFork?visibleFork.shown+' '+visibleFork.unit:(reading?.value==null?(meterMode==='resistance'&&resistance?.status==='open'?'OL':'— — —'):format(reading.value))+' '+(meterMode==='current'?'A':meterMode==='resistance'?'Ω':'V')} meterMode={meterTargetMode}/>}</React.Suspense>
     {immersive&&activeSurface==='bench'&&tool==='meter'&&meterVisit?.circuit===document.id&&!sheetOpen&&!fieldTools&&
       <button type="button" className="field-meter-return" onClick={()=>chooseFieldView('site')}>Put meter away</button>}
     {immersive&&!sheetOpen&&!fieldTools&&(voltageMeterHere||switchMeterHere&&switchCheck.open)&&<div className="field-meter-slot">
@@ -1167,7 +1218,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
     </main>{workspace==='learn'&&(attached||home)?<aside id="course-sheet" className="learn-column" data-sheet-open={home&&!immersive||sheetOpen}><div className="phone-sheet-heading"><b>{voltageTask&&voltageToolOpen?activeActivity.instruction:'Lesson and tools'}</b><IconButton label="Close lesson sheet" onClick={()=>setSheetOpen(false)}><X size={17}/></IconButton></div>{home&&immersive&&context&&!inspectorCollapsed?courseContext:home?<BookHome resume={(bookmark?.fault?.worktop?worktopFaultTitle:bookmark?.fault?.heater?heaterFaultTitle:bookmark?.fault?.chime?bellFaultTitle:savedCall?.title)??(bookmark?courseTitle(LESSONS.find(l=>l.id===bookmark.circuit.lessonId)!):undefined)} start={resumeBook} index={()=>openCourses('learn')}/>:faultSession?<FaultPracticePanel key={document.id} lesson={lesson} doc={document} stage={faultStep} worktop={worktopFault} heater={heaterReadings} bell={doorReadings} toggleDoor={id=>{const push=document.components.find(c=>c.id===id);if(push)holdButton(push);}} scored={scored} hints={hints} clue={clue}
         diagnosis={diagnosis} setDiagnosis={value=>{setDiagnosis(value);setFaultFeedback('');}} feedback={faultFeedback} checking={checkingDiagnosis} submit={submit}
         flexLanding={flexLanding} findRepair={canFindRepair&&activeSurface!=='list'&&(immersive||!!repairEnd||heaterFault||chimeFault)?findRepairOnSite:undefined} isolateForRepair={repairEnd||heaterFault||chimeFault||immersive?repairPowerOff:undefined}
-        repair={repair} worktopStatus={worktopStatus} heaterRun={heaterRun} heaterRunAction={heaterRunAction} restoreSupply={!document.supply.enabled?restoreRepairSupply:undefined} test={runTest} testing={testRunning} failed={repairTestFailed}
+        repair={repair} worktopStatus={worktopStatus} heaterRun={heaterRun} heaterRunAction={heaterRunAction} bellRun={bellRun} bellRunAction={bellRunAction} restoreSupply={!document.supply.enabled?restoreRepairSupply:undefined} test={runTest} testing={testRunning} failed={repairTestFailed}
         openReport={openFaultReport} showClue={showHint} closeTools={closeTools} scoreThis={()=>requestReplacement('Start scored fault challenge',()=>startChallenge(true,lesson,faultJob))}
         context={courseContext} fieldTaskHost={fieldTaskHost} openJob={()=>setSheetOpen(true)} next={()=>openCourses('learn',true)}
         openMeter={openFaultMeter}
@@ -1185,7 +1236,7 @@ setManualInspection({component:id,part});const picked=docRef.current.components.
       onRestart={()=>{if(practiceOnlyControlChanged(activePractice,document))beginPractice(activePractice);else requestReplacement('Restart experiment',()=>beginPractice(activePractice));}}
       onExit={()=>{setPractice(undefined);setTool('select');setPanel('lesson');setCourseStage('look');setPathFilter('all');}}
       context={courseContext}/>:currentCall?<HouseCallPanel key={document.id+':call:'+sessionKey}
-      call={currentCall} context={courseContext} closeTools={closeTools} document={document} result={savedCallView===callView?result:undefined} operation={callOperation} sample={callSample} meterHistory={evidence} openMeter={()=>{setMeterMode('voltage');if(useFork)chooseForkMethod('probe-voltage');chooseTool('meter');}} start={startActivity} onActivity={activityChanged}
+      call={currentCall} field={immersive&&fieldTaskHost?{host:fieldTaskHost,focused:fieldRoom?.circuit===document.id?fieldRoom.focused:undefined,openJob:()=>setSheetOpen(true)}:undefined} context={courseContext} closeTools={closeTools} document={document} result={savedCallView===callView?result:undefined} operation={callOperation} sample={callSample} meterHistory={evidence} openMeter={()=>{setMeterMode('voltage');if(useFork)chooseForkMethod('probe-voltage');chooseTool('meter',currentCall.bellPushes?'chime':undefined,immersive);}} start={startActivity} onActivity={activityChanged}
       earlierBoardDone={currentCall.lesson===2&&startActivity===houseStepId(currentCall,currentCall.steps.length)&&!learningRecord.activityIds.includes('book:2:shared-on')}
       continueBoard={()=>setStartActivity('book:2:socket-off')}
       bellFault={currentCall.lesson===72?openBellFault:undefined} worktopFault={currentCall.lesson===66?openWorktopFault:undefined} nextJob={followingCall?{title:followingCall.title,open:()=>openHouseCall(followingCall.lesson)}:undefined}

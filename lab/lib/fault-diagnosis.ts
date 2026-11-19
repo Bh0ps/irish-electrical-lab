@@ -1,4 +1,4 @@
-import {bellReadings,bellComparisonReady,bellInput,backPushOutput} from './bell-fault.ts';
+import {bellReadings,bellComparisonReady,bellInput,bellPushTerminal} from './bell-fault.ts';
 import { definitionFor } from './components.ts';
 import { describeEndpoint } from './endpoint-description.ts';
 import { measureResistance, measureVoltage, simulate } from './simulation.ts';
@@ -64,7 +64,8 @@ export function assessFaultDiagnosis(
     }
   }
   let bellComparison=false;
-  if(document.lessonId===72&&evidence&&hasEnd(bellInput)&&hasEnd(backPushOutput)){
+  const pushTerminal=bellPushTerminal(document);
+  if(pushTerminal&&evidence&&hasEnd(bellInput)&&hasEnd(pushTerminal)){
     const rows=bellReadings(document,result,evidence);
     if(bellComparisonReady(rows)){
       const volts=(sample:MeasurementEvidence)=>sample.instrument?.displayed??sample.value!.toLocaleString('en-IE',{maximumSignificantDigits:3});

@@ -23,6 +23,13 @@ export function cromaProbeContact(id:string):{position:Vec3;normal:Vec3}|undefin
   const i=pinIndex(id);
   if(i>=0)return {position:[.263,pinY(i)+.009,.295],normal:[0,0,1]};
 }
+/** Loose end in the training house: the 6.8 mm bare core has cleared its
+ * side-entry cage. Coordinates use the same scale and axis as the landed GLB. */
+export const CROMA_LOOSE_C2={insulation:[.100,.916,.262] as Vec3,tip:[.168,.916,.262] as Vec3};
+export function looseCromaCallPath():Vec3[] {
+  const [, , , ...entry]=cromaLeadPath('REAR');
+  return [CROMA_LOOSE_C2.insulation,[.069,.916,.262],[.035,.917,.247],...entry];
+}
 export function cromaLeadPath(id:string):Vec3[] {
   const i=pinIndex(id);
   if(i<0)return [];

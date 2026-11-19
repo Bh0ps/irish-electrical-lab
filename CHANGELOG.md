@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.24.0 — Walk the house and repair the back doorbell
+
+- Oakfield house jobs open full screen on a phone. Keep walking or tap **Find fitting** to reach the control. The current task stays above the room, and **Job** opens the full instructions.
+- In **The back doorbell is quiet**, take the meter from the hall chime to the back entrance. Turn the bell button over to probe its two unmarked screws. The fitted wires move with the base. You can also choose a screw from **Points**.
+- On a newly started job, opening the hall chime reveals the loose back-door wire beside C2. After the readings and repair, ring and release both door buttons. The final test checks whether each call reached the hall.
+
 ## 1.23.0 — Start repairs in the room
 
 - The worktop light, heater and back doorbell repairs open in the full-size room on a phone. The current step and its action sit above the room. **Job** opens the full instructions and **Exit** returns to the usual layout.

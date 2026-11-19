@@ -1,3 +1,4 @@
+import { hasBellHandover, isBellRun, type BellRun } from './bell-fault';
 import { validateCircuit } from './storage';
 import { COMPONENTS } from './components';
 import { getComponentTerminals } from './terminal-layout';
@@ -11,7 +12,7 @@ export interface LessonBookmark {
   activityId: string;
   path: 'coursebook' | 'full';
   mode: 'explore' | 'build' | 'challenges';
-  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; heater?: boolean; chime?:boolean; heaterRun?:HeaterRun; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
+  fault?: { hints: number; accepted: boolean; repaired: boolean; scored: boolean; worktop?: boolean; heater?: boolean; chime?:boolean; heaterRun?:HeaterRun; bellRun?:BellRun; completed?: boolean; readingIds?: string[]; probes?:{red?:Endpoint; black?:Endpoint} };
 }
 
 export function validateBookmark(value: unknown): LessonBookmark {
@@ -30,6 +31,7 @@ export function validateBookmark(value: unknown): LessonBookmark {
       (fault.worktop !== undefined && (typeof fault.worktop !== 'boolean' || fault.worktop && circuit.lessonId !== 66)) ||
       (fault.heater !== undefined && (typeof fault.heater !== 'boolean' || fault.heater && circuit.lessonId !== 20)) ||
       (fault.chime!==undefined&&(typeof fault.chime!=='boolean'||fault.chime&&circuit.lessonId!==72)) ||
+      (fault.bellRun!==undefined&&(!fault.chime||!fault.repaired||!hasBellHandover(circuit)||!isBellRun(fault.bellRun,circuit.revision))) ||
       (fault.heaterRun!==undefined&&(!fault.heater||!fault.repaired||!hasPanelHeater(circuit)||!isHeaterRun(fault.heaterRun,circuit.revision))) ||
       (fault.readingIds !== undefined && (!Array.isArray(fault.readingIds) || fault.readingIds.length > 30 || fault.readingIds.some(id=>typeof id!=='string'||id.length>512))) || b.mode !== 'challenges')) throw new Error('Invalid saved fault exercise.');
   if(fault?.probes){

@@ -157,6 +157,13 @@ export function validateCircuit(value:unknown):CircuitDocument {
     const enabled=boolean(f.enabled,`${path}.enabled`),fault:FaultSetting={type,enabled};
     if(f.component!==undefined){fault.component=identity(f.component,`${path}.component`);if(!byId.has(fault.component))return invalid(`${path}.component`,'references missing equipment.');}
     if(f.wire!==undefined){fault.wire=identity(f.wire,`${path}.wire`);if(!wireIds.has(fault.wire))return invalid(`${path}.wire`,'references a missing wire.');}
+    if(f.looseEnd!==undefined){
+      const end=endpoint(f.looseEnd,path+'.looseEnd');
+      const wire=wires.find(w=>w.id===fault.wire);
+      if(type!=='open-wire'||!wire||![wire.from,wire.to].some(p=>p.component===end.component&&p.terminal===end.terminal))
+        return invalid(path+'.looseEnd','must identify an end of the open conductor.');
+      fault.looseEnd=end;
+    }
     if(COMPONENT_FAULTS.has(type)&&!fault.component)return invalid(path,'requires an equipment target.');
     if(OPEN_FAULTS.has(type)&&!fault.component&&!fault.wire)return invalid(path,'requires a wire or equipment target.');
     return fault;

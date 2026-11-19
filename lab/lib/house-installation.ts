@@ -1,7 +1,9 @@
 import { FCU_BOX,KITCHEN_PANEL,heaterFlexRoute,fusedIncomingLead } from './fused-heater-site';
 import { COMPONENTS } from './components';
 import {BELL_CUPBOARD as serviceBoard,bellPrimaryLead,bellSecondaryLead,chimeEnvelope} from './bell-cupboard';
-import {cromaLeadPath} from './croma-chime';
+import {CROMA_LOOSE_C2,cromaLeadPath,looseCromaCallPath} from './croma-chime';
+import {looseBellWire} from './bell-connection';
+import {sesameServiceLead} from './sesame-push';
 import {BOARD_STUDY_ID,UTILITY_BOARD,mountedStudyControl,outgoingBoardLead} from './consumer-unit-site';
 import { GARDEN_DOOR, HOME_BACK, HOME_POINTS, HOME_STAIR, REAR_GARDEN, STAIR_TOP, STAIR_HALF, STAIR_LANDING } from './home-floorplan';
 import { SERVICE_AREAS } from './service-floorplan';
@@ -81,7 +83,7 @@ export function onWall(fixing:WallFixing,c:ComponentInstance,scale:number,fixtur
   return [fixing.face[0]+Math.sin(fixing.yaw)*depth,fixing.face[1],fixing.face[2]+Math.cos(fixing.yaw)*depth];
 }
 
-interface InstalledEnd {pin:Vec3; chase:Vec3; riser:number; item:SiteItem; component:ComponentInstance;lead?:Vec3[]}
+interface InstalledEnd {pin:Vec3; chase:Vec3; riser:number; item:SiteItem; component:ComponentInstance;lead?:Vec3[];bareTip?:Vec3}
 export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openRocker?:string|ReadonlySet<string>,wire?:Wire):InstalledEnd|undefined{
   const component=doc.components.find(c=>c.id===end.component),item=site.items.find(c=>c.id===end.component);
   if(!component||!item)return;
@@ -115,11 +117,21 @@ export function installedEnd(doc:CircuitDocument,site:JobSite,end:Endpoint,openR
     }
   }
   if(item.fixture?.croma){
-    const lead=cromaLeadPath(end.terminal).map(p=>fixturePoint(item.position,item.scale,item.fixture,component,p,item.rotation));
+    const loose=end.terminal==='REAR'&&!!wire&&looseBellWire(doc)?.id===wire.id;
+    const placed=(p:Vec3)=>fixturePoint(item.position,item.scale,item.fixture,component,p,item.rotation);
+    const lead=(loose?looseCromaCallPath():cromaLeadPath(end.terminal)).map(placed);
     if(lead.length){
       const entry=lead[lead.length-1];
       const behind:Vec3=[entry[0],entry[1],chase[2]];
-      return {pin,chase:behind,riser,item,component,lead:[...lead,behind]};
+      return {pin:lead[0],chase:behind,riser,item,component,lead:[...lead,behind],bareTip:loose?placed(CROMA_LOOSE_C2.tip):undefined};
+    }
+  }
+  if(item.fixture?.bellPush&&component.variant==='sesame'){
+    const open=typeof openRocker==='string'?openRocker===component.id:!!openRocker?.has(component.id);
+    const lead=sesameServiceLead(item,component,end.terminal,open);
+    if(lead.length){
+      const entry=lead[lead.length-1],behind:Vec3=[entry[0],entry[1],chase[2]];
+      return {pin:lead[0],chase:behind,riser,item,component,lead:[...lead,behind]};
     }
   }
   if(item.fixture?.worktopRocker){

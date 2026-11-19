@@ -65,8 +65,9 @@ export function terminalDirection(doc:CircuitDocument,e:Endpoint):Vec3 {
 export function probeContact(doc:CircuitDocument,e:Endpoint,second=false):{position:Vec3;normal:Vec3;approach?:Vec3} {
   const c=doc.components.find(item=>item.id===e.component);
   if(c?.type==='pushbutton'&&c.variant==='sesame'){
-    const contact=sesameProbeContact(e.terminal);
-    if(contact)return {position:localToWorld(c,contact.position),normal:rotateDirection(c.rotation,contact.normal)};
+    const contact=sesameProbeContact(e.terminal,second);
+    if(contact)return {position:localToWorld(c,contact.position),normal:rotateDirection(c.rotation,contact.normal),
+      approach:rotateDirection(c.rotation,contact.approach)};
   }
   if(c?.type==='fcu'){
     const contact=fcuProbeContact(e.terminal,second);

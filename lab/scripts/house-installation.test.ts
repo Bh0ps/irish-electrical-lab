@@ -145,7 +145,7 @@ test('the bell transformer supply cores share the side conduit and the chime cir
 });
 test('the installed hall chime has five separate screw heads behind its door and four real wires through K1',()=>{
   const doc=lesson(72),site=jobSite(doc),signature=electricalKey(doc);
-  const fittings=installedTestFittings(doc,site);assert.deepEqual(fittings.map(f=>f.component.id),['chime']);
+  const fittings=installedTestFittings(doc,site);assert.deepEqual(fittings.map(f=>f.component.id),['chime','front','back']);
   const [chime]=fittings,contacts=siteContacts(chime,true);
   assert.deepEqual(siteContacts(chime,false),[]);
   assert.deepEqual(contacts.map(p=>p.label),['=/~','8/12V','C1','C2','V']);
@@ -211,8 +211,9 @@ test('installed runs follow the actual terminals, turn at fitted walls and remai
         assert.ok(sheath.every(q=>path.some(p=>p.every((v,i)=>near(v,q[i])))));continue;
       }
       const [from,to]=[wire.from,wire.to].map(end=>installedEnd(doc,site,end,undefined,wire)!);
-      const start=from.item.fixture?.worktopRocker||from.item.fixture?.croma||from.item.fixture?.fusedHeater?from.lead!.length:1;
-      const stop=to.item.fixture?.worktopRocker||to.item.fixture?.croma||to.item.fixture?.fusedHeater?path.length-to.lead!.length+1:path.length;
+      const flexible=(end:typeof from)=>end.item.fixture?.worktopRocker||end.item.fixture?.croma||end.item.fixture?.fusedHeater||end.item.fixture?.bellPush&&end.component.variant==='sesame';
+      const start=flexible(from)?from.lead!.length:1;
+      const stop=flexible(to)?path.length-to.lead!.length+1:path.length;
       for(let i=start;i<stop;i++)assert.equal(path[i].filter((v,k)=>!near(v,path[i-1][k])).length,1);
     }
     assert.equal(electricalKey(doc),fingerprint);
@@ -295,8 +296,10 @@ test('visitors press each bell from outside and both wires enter through the wal
       for(const w of wires){
         const path=installedWireRoute(doc,site,w)!;
         if(w.to.component===name)path.reverse();
-        assert.ok((path[1][2]-fixing.face[2])*outward<-.06);
-        assert.ok(path[2][1]>2.9);
+        const chase=path.findIndex(p=>(p[2]-fixing.face[2])*outward<-.06);
+        assert.ok(chase>0&&chase<path.length-1);
+        assert.ok(path[chase+1][1]>2.9);
+        assert.ok(path.slice(1,chase+1).every(p=>(p[2]-fixing.face[2])*outward<0));
         if(name===backId)assert.ok(path.some(p=>near(p[2],HOME_BACK-.04)&&p[1]>2.9));
       }
     }

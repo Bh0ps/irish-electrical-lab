@@ -1,5 +1,21 @@
 # Verification summary
 
+## 1.24.0 — Walk the house and repair the back doorbell
+
+**Room and controls.** We opened the cupboard-light and two-door bell jobs from Chapters in touch WebKit. At 390 × 844 the room measured 390 × 739 CSS pixels. At 844 × 390 it measured 844 × 285. The current instruction remained above the room in both orientations. We walked, turned, went straight to the fitting, changed its state and reopened the saved step. Dragging to look left the cupboard door where it was. The named action and the 3D control both worked. Putting the meter away restored the original walking position and direction.
+
+**Working at the fitting.** With the rear door button held, we measured 0 V at the hall chime input and about 12 V at the call-wire screw behind the button. The other screw also measured 12 V, but probing it did not count as checking the call wire. Touching the plastic, cancelling a touch and dragging across a screw left the probe in hand. Refitting the push lifted its probe and left the other at the hall. The landscape controls cleared both screw heads. After isolating the supply, selecting C1 or tapping the bare end left the break in place. Reconnecting at C2 restored the call. We checked these interactions at 390 × 844, at 844 × 390 and at 320 × 568 with enlarged text.
+
+**Testing the repair.** In 1.23.0 the final test could award this job with the rear button still held from diagnosis and the front button untouched. We repeated that sequence on the new version and received no repair credit. Pressing each door's button had to produce its own call at the hall, and releasing it had to clear that call. We resumed with a button held, finished both checks and ran a fresh circuit test. The labelled controls also completed the job using a keyboard. An exported 1.23.0 completion kept its original award when restored, without awarding the new two-button check retrospectively.
+
+**Offline update.** We interrupted the update twice while a 1.23.0 worktop repair was in progress. The previous shell and job continued to work. Once the new download finished, we stopped the server, closed the old tab and reopened the lab in touch WebKit. The draft, named build, progress, probes, earlier readings and unfinished repair survived. We connected and tested the worktop successfully offline. The final Windows-built web archive contains 382 files. The offline pack and shell cover 259 files including both workers.
+
+**Regression and performance.** All 512 automated tests passed. The catalog contains 115 model variants. All 80 lessons passed their operating and fault checks, all 2,485 original activities remained mapped, and all 1,119 reference wires routed. TypeScript passed. Changed files introduced no new lint findings against 1.23.0. On the Windows test PC the 30-component, 42-wire bench averaged 114 frames per second during a driven camera pan. Its 95th-percentile frame took 13 ms. It rendered zero frames and requested zero calculations during a three-second idle sample. Median worker calculation time for eight supply changes was 4.7 ms. These are desktop measurements on a release candidate.
+
+**Windows replacement.** We installed 1.24.0 over 1.23.0. All five record categories in the disposable study profile retained their combined checksum. Both shortcuts and the shutdown/restart check passed. The installed app passed its runtime checks and 120 guided-build checks. Its 393 bundled web assets matched production byte for byte.
+
+Phone checks used touch WebKit and Chrome on Windows. A physical iPhone, first-time learner and qualified electrician were unavailable for this release.
+
 ## 1.23.0 — Start repairs in the room
 
 **Opening a job.** We chose each of the three named repairs from the chapter picker. On a 320 × 568 touch WebKit screen with 150% text, the room in 1.22.0 occupied 304 × 141 to 304 × 177 px. The new layout gave the worktop and doorbell 320 × 393 px and the heater 320 × 422 px. The action was 46 px high. At 390 × 844 the room was 390 × 739 px. At 844 × 390 it was 844 × 285 px. Desktop Chrome at 1280 × 820 retained the ordinary workspace. [View the heater job on arrival](images/phone-repair-start.png).
